@@ -2540,6 +2540,7 @@ function hudUpdate(){
 
 // ============================================================ dock UI
 let dockTab='market',dockErr='';
+const byName=(a,b)=>ITEMS[a].name.localeCompare(ITEMS[b].name);
 function dockCtx(){
   const P=S.player,d=DEF[P.sector];
   if(P.docked==='station'){const R=S.stations[P.sector],f=R.owner;
@@ -2565,7 +2566,7 @@ function renderDock(){
   $('dTabs').innerHTML=tabs.map(([k,l])=>`<button class="tab" role="tab" type="button" aria-selected="${k===dockTab}" data-act="tab" data-arg="${k}">${l}</button>`).join('');
   let h='';
   if(dockTab==='market'){
-    const st=c.market;const items=ITEM_ORDER.filter(k=>k!=='beacon'&&((st[k]||0)>0||countIn(k,srcs)>0));
+    const st=c.market;const items=ITEM_ORDER.filter(k=>k!=='beacon'&&((st[k]||0)>0||countIn(k,srcs)>0)).sort(byName);
     h+=`<p class="note" style="margin:0 0 12px">Prices follow this ${c.kind}'s stock: scarce goods cost more. Purchases go to your ${c.storageName.toLowerCase()}; sales draw from your hold first. Every credit moves between you and the ${sideName(c.wallet)} treasury.</p>`;
     h+=`<div class="tblw"><table class="t"><thead><tr><th>Item</th><th class="r">Stock</th><th class="r">Buy</th><th class="r">Sell</th><th class="r">You have</th><th></th></tr></thead><tbody>`;
     for(const k of items){const bp=buyPrice(st,k),sp=sellPrice(st,k),have=countIn(k,srcs);
@@ -2575,7 +2576,7 @@ function renderDock(){
   }else if(dockTab==='fab'){
     h+=`<p class="note" style="margin:0 0 12px">Fabrication draws from your hold and ${c.storageName.toLowerCase()} and puts the result in your ${c.storageName.toLowerCase()}. Mass is conserved: a part weighs exactly what went into it.${c.fee?' This dock charges a 6% labour fee.':''}${c.forge?'':' Crystal Lattice and Resonance Cores need a Forge.'}</p>`;
     h+=`<div class="tblw"><table class="t"><thead><tr><th>Part</th><th>Recipe</th><th class="r">Have</th><th></th></tr></thead><tbody>`;
-    for(const k of CRAFTABLE){const r=ITEMS[k].recipe,ok=!ITEMS[k].forge||c.forge;const can=ok&&haveIn(r,srcs);
+    for(const k of CRAFTABLE.slice().sort(byName)){const r=ITEMS[k].recipe,ok=!ITEMS[k].forge||c.forge;const can=ok&&haveIn(r,srcs);
       h+=`<tr><td class="iname">${sw(k)}${esc(ITEMS[k].name)}<span class="mass">${mass(k)} t</span></td><td>${Object.keys(r).map(i=>chip(i,r[i],countIn(i,srcs))).join('')}${ok?'':'<span class="req no">Forge only</span>'}</td><td class="r num">${countIn(k,srcs)}</td>
       <td><div class="act"><button class="btn sm" data-act="make" data-arg="${k}:1" ${can?'':'disabled'}>Make 1</button><button class="btn sm" data-act="make" data-arg="${k}:max" ${can?'':'disabled'}>Make max</button></div></td></tr>`}
     h+=`</tbody></table></div>`;
