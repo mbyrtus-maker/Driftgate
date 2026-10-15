@@ -1162,7 +1162,7 @@ const SFX0={
   alarm(){thump(98,96,.22,.12,'triangle');setTimeout(()=>thump(73,72,.3,.12,'triangle'),240)},
   clunk(){thump(88,48,.22,.17,'triangle');rumble(230,.18,.12)},
   lance(v){thump(58,22,1.3,.34*v);thump(116,40,.35,.14*v,'triangle');rumble(150,1.1,.34*v,.8,38)},
-  pd(v){for(let i=0;i<4;i++)setTimeout(()=>{thump(150,85,.07,.09*v,'square');thump(70,45,.09,.11*v);rumble(420,.06,.07*v,1.4)},i*62)},
+  pd(v){for(let i=0;i<4;i++)setTimeout(()=>{thump(95,55,.08,.08*v,'square');thump(48,32,.11,.13*v);rumble(260,.07,.08*v,1.2)},i*70)},
   drum(v,p){const k=.55+.75*p;thump(64-14*p,30,.55+.3*p,(.17+.25*p)*v*k);rumble(170,.45+.35*p,(.13+.22*p)*v*k,.9,45)},
   fjump(v){rumble(1400,1.3,.42*v,1.2,90);thump(95,22,1.5,.44*v);setTimeout(()=>thump(40,18,1.4,.32*v),160)},
   arrive(v){thump(320,60,.45,.2*v,'triangle');rumble(1000,.7,.24*v,1,140);thump(70,30,.8,.22*v)},
@@ -1183,7 +1183,7 @@ function auFrame(){if(!auOK())return;const c=AU.ctx,t=c.currentTime,E=AU.eng;let
   AU.mine.g.gain.setTargetAtTime(ml,t,mOn?.06:.09);
   E.g.gain.setTargetAtTime(g,t,g>0?.1:.25);E.ng.gain.setTargetAtTime(ng,t,ng>0?.08:.22);E.o1.frequency.setTargetAtTime(f,t,.8);E.o2.frequency.setTargetAtTime(f*1.51,t,.8);E.nf.frequency.setTargetAtTime(240+ng*1800,t,.4);
   AU.las.g.gain.setTargetAtTime(lg,t,.05);
-  if(AU.whir){const Wh=AU.whir,wi=running&&AU.on.sfx?AU.whirIn:null;AU.whirIn=null;if(wi){const p=clamp(wi.p,0,1),f=30+115*Math.pow(p,1.4);Wh.o1.frequency.setTargetAtTime(f,t,.15);Wh.o2.frequency.setTargetAtTime(f*1.502,t,.15);Wh.nf.frequency.setTargetAtTime(160+700*p,t,.2);Wh.f.frequency.setTargetAtTime(140+950*p,t,.2);Wh.lfo.frequency.setTargetAtTime(3+24*p,t,.2);Wh.lg.gain.setTargetAtTime(50+260*p,t,.2);Wh.g.gain.setTargetAtTime(Math.min(1.2,wi.v)*(.06+.2*p),t,.12)}else Wh.g.gain.setTargetAtTime(0,t,.12)}}
+  if(AU.whir){const Wh=AU.whir,wi=running&&AU.on.sfx?AU.whirIn:null;AU.whirIn=null;if(wi){const p=Math.pow(clamp(wi.p,0,1),1.7),f=30+58*p;Wh.o1.frequency.setTargetAtTime(f,t,.3);Wh.o2.frequency.setTargetAtTime(f*1.502,t,.3);Wh.nf.frequency.setTargetAtTime(160+350*p,t,.35);Wh.f.frequency.setTargetAtTime(140+475*p,t,.35);Wh.lfo.frequency.setTargetAtTime(3+12*p,t,.35);Wh.lg.gain.setTargetAtTime(50+130*p,t,.35);Wh.g.gain.setTargetAtTime(Math.min(1.2,wi.v)*(.06+.1*p),t,.25)}else Wh.g.gain.setTargetAtTime(0,t,.12)}}
 // generative ambient score: slow low pads over Am - F - C - G, a soft sub pulse, and the odd low bell
 const CHORDS=[[55,110,130.81,164.81],[43.65,87.31,110,130.81],[65.41,98,130.81,164.81],[49,98,123.47,146.83],[55,110,130.81,164.81],[43.65,87.31,110,146.83],[41.2,82.41,123.47,146.83],[49,98,116.54,146.83]];
 function musicStart(){const c=AU.ctx;AU.mf=c.createBiquadFilter();AU.mf.type='lowpass';AU.mf.frequency.value=480;AU.mf.Q.value=.6;AU.mf.connect(AU.mus);
@@ -1419,6 +1419,7 @@ function bridgeUpdate(dt){const B=W.bridge,F=B.f,p=W.player;if(NET.cl&&(!F.alive
   if(!F.alive||!W.ents.includes(F)){W.bridge=null;S.player.docked=null;closeConsole();flash('The frigate is gone. Your fighter is adrift.',true);return}
   p.x=F.x;p.y=F.y-F.st.radius*.5;p.z=F.z;p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;p.shield=p.st.sCap;
   bridgeAmb(dt,F);if(NET.cl){const T=F.tok;if(T&&T.spin){if(B.spinRef!==T.spin){B.spinRef=T.spin;B.spinP=T.spin.p}else B.spinP+=dt/JUMP_TIME*pmul(T,'eng');drumTick(F,B.spinP,dt)}}
+  {const T=F.tok,sp=T&&T.spin?(NET.cl?(B.spinP||T.spin.p):T.spin.p):0;if(sp>.88||FJFX){const k=Math.min(1,dt*3);B.yaw+=(Math.round(B.yaw/TAU)*TAU-B.yaw)*k;B.pitch+=(0-B.pitch)*k}}
   if(B.panel){B.vx=B.vz=0;return}
   const lk=lookLocked(),si=lk?keyLook():steerInput();B.yaw+=si.yaw*1.8*dt;B.pitch=clamp(B.pitch-si.pitch*1.4*dt,-1.2,1.2);
   if(B.seat){B.vx=B.vz=0;B.fy=.56;return}
@@ -1429,6 +1430,11 @@ function bridgeUpdate(dt){const B=W.bridge,F=B.f,p=W.player;if(NET.cl&&(!F.alive
   const fl=Math.abs(B.x)<5.5&&B.z>-9.75&&B.z<-3.25?.56:Math.abs(B.x)<3&&B.z>=-3.35&&B.z<-2.45?.28:0;B.fy=(B.fy||0)+(fl-(B.fy||0))*Math.min(1,dt*12);
   const sp=Math.hypot(B.vx,B.vz),ph=B.bob||0;B.bob=ph+sp*dt*1.15;B.bobA=(B.bobA||0)+((sp>1?1:0)-(B.bobA||0))*Math.min(1,dt*8);if(Math.floor(B.bob/Math.PI)!==Math.floor(ph/Math.PI)&&sp>1)SFX.step(run>1?1.2:1)}
 // mouse look: click the view to capture the pointer (Esc releases); without capture the old edge-steering still works
+function bridgeTargets(F){const out=[],SE=W.stationEnt,OE=W.outpostEnt;if(SE&&hostile('player',SE.fac))out.push(SE);if(OE&&OE.o.owner&&hostile('player',OE.o.owner)&&!OE.o.breached)out.push(OE);
+  for(const e of W.ents.filter(e=>e.type==='ship'&&e.alive&&hostile('player',e.side)&&d3(e,F)<6000).sort((a,b)=>(b.role==='frigate')-(a.role==='frigate')||d3(a,F)-d3(b,F)))out.push(e);return out}
+function bridgeSetTgt(e){const B=W.bridge;if(!B||!e)return;fconSend(B.f.tok,'tgt',e);const d=Math.round(d3(e,B.f));flash(`Battery targeting ${fTgtName(e)} · ${fmt(d)} m${d>2600?' (out of range: close to 2.6 km)':''}.`)}
+function bridgeTarget(next){const B=W.bridge;if(!B)return;const L=bridgeTargets(B.f);if(!L.length){flash('No hostile ships, stations or outposts here.',true);return}const C=fctl(B.f.tok);if(!next){bridgeSetTgt(L.slice().sort((a,b)=>d3(a,B.f)-d3(b,B.f))[0]);return}const i=L.indexOf(C.tgt);bridgeSetTgt(L[(i+1)%L.length])}
+function bridgeClickTarget(){const B=W.bridge;if(!B)return;let best=null,bd=1e9;for(const e of bridgeTargets(B.f)){const P=proj(e.x,e.y,e.z);if(P.behind)continue;const r=Math.max(36,projR(P.d,e.type==='ship'?e.st.radius*1.3:e.type==='station'?130:100)+10),d=hyp(P.x-VW/2,P.y-VH/2);if(d<r&&d<bd){bd=d;best=e}}if(best)bridgeSetTgt(best);else flash('Aim the centre dot at a hostile ship, station or outpost, then click (or press T / Q).')}
 function lookLocked(){return document.pointerLockElement===$('gl')}
 function keyLook(){let yaw=0,pitch=0;if(keys.ArrowLeft)yaw+=1;if(keys.ArrowRight)yaw-=1;if(keys.ArrowUp)pitch-=1;if(keys.ArrowDown)pitch+=1;return{yaw,pitch}}
 function freeLook(){if(lookLocked())try{document.exitPointerLock()}catch(e){}}
@@ -1541,6 +1547,8 @@ function bridgeScreens(c,B,F,O,C,T){const at=(x,y,z)=>{qRot(F.q,x,y,z,_u);return
 const _bx={};function _axis(F,k){if(_bx.q!==F.q||_bx.t!==W.t){_bx.q=F.q;_bx.t=W.t;qRot(F.q,1,0,0,_u);_bx.r=[_u.x,_u.y,_u.z];qRot(F.q,0,1,0,_u);_bx.u=[_u.x,_u.y,_u.z];qRot(F.q,0,0,1,_u);_bx.f=[_u.x,_u.y,_u.z]}return _bx[k]}
 function _r0(F,i){return _axis(F,'r')[i]}function _u0(F,i){return _axis(F,'u')[i]}function _f0(F,i){return _axis(F,'f')[i]}
 function drawBridgeOverlay(c,t){const B=W.bridge,F=B.f,O=bridgeOrigin(F),near=bridgeNear(),T=F.tok,C=fctl(T);bridgeScreens(c,B,F,O,C,T);
+  if(!B.panel){if(lookLocked()){c.fillStyle='rgba(240,178,74,.9)';c.beginPath();c.arc(VW/2,VH/2,2.5,0,TAU);c.fill()}const tg=C.tgt;if(tg){const P=proj(tg.x,tg.y,tg.z);if(!P.behind){const r=Math.max(14,projR(P.d,tg.type==='ship'?tg.st.radius*1.3:tg.type==='station'?130:100))+8;c.strokeStyle='#ff5d4f';c.lineWidth=2;for(const[dx,dy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){c.beginPath();c.moveTo(P.x+dx*r,P.y+dy*r-dy*9);c.lineTo(P.x+dx*r,P.y+dy*r);c.lineTo(P.x+dx*r-dx*9,P.y+dy*r);c.stroke()}c.fillStyle='#ff5d4f';c.textAlign='left';c.font='600 12px "Saira Semi Condensed",sans-serif';c.fillText(`BATTERY · ${fTgtName(tg)} · ${fmt(Math.round(d3(tg,F)))} m`,P.x+r+6,P.y-r+10)}}
+    c.textAlign='center';c.font='500 12px "Saira Semi Condensed",sans-serif';c.fillStyle='rgba(207,214,228,.7)';c.fillText('Battery target: T nearest · Q next · or aim the centre dot and click',VW/2,VH-112)}
   if(!B.panel&&!lookLocked()){c.textAlign='center';c.font='500 12px "Saira Semi Condensed",sans-serif';c.fillStyle='rgba(207,214,228,.75)';c.fillText('Click the view to look around with the mouse · Esc releases',VW/2,B.seat?VH-242:VH-130)}
   c.font='600 12px "Saira Semi Condensed",sans-serif';c.textAlign='center';
   for(const k of BRIDGE.cons){qRot(F.q,k.x,k.id==='hatch'?8.8:(k.id==='strat'?4.6:4.8),k.id==='hatch'?k.z-3.5:k.z,_u);const P=proj(O.x+_u.x,O.y+_u.y,O.z+_u.z);if(P.behind)continue;c.fillStyle=near===k?'#f0b24a':hexA(k.col,.85);c.fillText(k.name.toUpperCase(),P.x,P.y)}
@@ -1599,6 +1607,7 @@ addEventListener('keydown',e=>{
   if(!$('map').hidden||!$('help').hidden)return;
   if(W&&W.gunseat){if(c==='KeyE'){leaveSeat();return}if(c==='KeyC'){if(NET.cl)netSend({t:'gmsl'});else W.gunseat.msl=1;return}}
   if(W&&W.bridge&&W.bridge.panel){const i=['Digit1','Digit2','Digit3','Digit4','Digit5'].indexOf(c);if(i>=0){W.bridge.panel=FC_TABS[i][0];renderConsole(true);return}}
+  if(W&&W.bridge&&!W.bridge.panel&&(c==='KeyT'||c==='KeyQ')){bridgeTarget(c==='KeyQ');return}
   if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd')sitChair();else openConsole(n.id)}return}if(S.player.docked)undock();else tryDock();return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
@@ -1626,7 +1635,7 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=f
 const glc=$('gl');
 glc.addEventListener('mousemove',e=>{if(lookLocked()&&W){const k=.0024;if(W.bridge&&!W.bridge.panel){W.bridge.yaw-=e.movementX*k;W.bridge.pitch=clamp(W.bridge.pitch-e.movementY*k,-1.2,1.2);return}if(W.gunseat){W.gunseat.yaw=wrapA(W.gunseat.yaw-e.movementX*k);W.gunseat.pitch=clamp(W.gunseat.pitch-e.movementY*k,GT_MINP,GT_MAXP);return}}mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});
 glc.addEventListener('mouseleave',()=>{mouse.in=false});
-glc.addEventListener('mousedown',e=>{if(W&&((W.bridge&&!W.bridge.panel)||W.gunseat)&&!lookLocked()&&glc.requestPointerLock){try{glc.requestPointerLock()}catch(er){}if(W.bridge&&!W.bridge.seat)return}if(lookLocked()&&W&&(W.bridge||W.gunseat)){if(e.button===0)mouse.l=true;return}mouse.x=e.clientX;mouse.y=e.clientY;mouse.in=true;if(e.button===0){mouse.l=true;clickTarget()}if(e.button===2)mouse.r=true;if(e.button===1){e.preventDefault();fireMissile()}});
+glc.addEventListener('mousedown',e=>{if(W&&((W.bridge&&!W.bridge.panel)||W.gunseat)&&!lookLocked()&&glc.requestPointerLock){try{glc.requestPointerLock()}catch(er){}if(W.bridge&&!W.bridge.seat)return}if(lookLocked()&&W&&(W.bridge||W.gunseat)){if(W.bridge&&!W.bridge.panel&&e.button===0){bridgeClickTarget();return}if(e.button===0)mouse.l=true;return}mouse.x=e.clientX;mouse.y=e.clientY;mouse.in=true;if(e.button===0){mouse.l=true;clickTarget()}if(e.button===2)mouse.r=true;if(e.button===1){e.preventDefault();fireMissile()}});
 addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;if(e.button===2)mouse.r=false});
 glc.addEventListener('contextmenu',e=>e.preventDefault());
 glc.addEventListener('wheel',e=>{e.preventDefault();cam.dist=clamp(cam.dist*Math.exp(e.deltaY*.0012),.6,3)},{passive:false});
@@ -2180,12 +2189,19 @@ function gateTransit(J,dt){const p=W.player,g=J.g,l=hyp(g.x,g.y,g.z)||1,dx=g.x/l
   else{const sp=260+(J.t-.55)*(J.t-.55)*4200;p.vx=dx*sp;p.vy=dy*sp;p.vz=dz*sp;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt}
   p.thrusting=true;p.boosting=J.t>.55;W.shake=Math.max(W.shake||0,.1+J.t*.12);
   const f=$('fade');f.style.opacity=clamp((J.t-JUMP_OUT+.35)/.35,0,1)}
-let FJFX=0;function frigWarpStart(){FJFX=performance.now()}
-function frigWarpFx(c){if(!FJFX)return;const a=(performance.now()-FJFX)/1000;if(a>1.6){FJFX=0;return}const cx=VW/2,cy=VH/2,R=Math.hypot(VW,VH)*.62;
-  const k=a<.75?Math.min(1,a/.15):Math.max(0,1-(a-.75)/.2);
+let FJFX=0;function frigWarpStart(){FJFX=performance.now();const B=W&&W.bridge;if(B){B.yaw=Math.round(B.yaw/TAU)*TAU;B.pitch=0}}
+function warpStreaks3D(){const B=W.bridge;if(!B||!FJFX)return;const a=(performance.now()-FJFX)/1000;if(a>1.6)return;const F=B.f,O=bridgeOrigin(F),k=a<.75?Math.min(1,a/.15):Math.max(0,1-(a-.75)/.2);
+  const at=(x,y,z)=>{qRot(F.q,x,y,z,_u);return[O.x+_u.x,O.y+_u.y,O.z+_u.z]};
+  if(k>0)for(let i=0;i<170;i++){const h1=Math.sin(i*12.9898)*43758.5453,h2=Math.sin(i*78.233)*12345.678,h3=Math.sin(i*39.425)*24634.6345,fx=h1-Math.floor(h1),fy=h2-Math.floor(h2),sd=h3-Math.floor(h3);
+    const side=i%3,u=(sd+a*2.4)%1,len=60+520*k;let x,y,z;if(side===0){x=(fx-.5)*1400;y=(fy-.5)*700;z=1800-u*1800+40}else{const sg=side===1?1:-1;x=sg*(60+fx*900);y=(fy-.5)*600;z=1500-u*2400}
+    const h=at(x,y,z),tl=at(x,y,z+len),col=i%6===0?[.7,.82,1]:[.9,.94,1];streak(h[0],h[1],h[2],tl[0],tl[1],tl[2],2.2+3*k,col,.8*k)}
+  const fl=a<.7?0:a<.78?(a-.7)/.08:Math.max(0,1-(a-.78)/.8);if(fl>0){const g=at(0,4,700);sprite(g[0],g[1],g[2],1600*fl,[1,1,1],.9*fl);sprite(g[0],g[1],g[2],600,[.75,.88,1],.8*fl)}}
+function frigWarpFx(c){if(!FJFX)return;const a=(performance.now()-FJFX)/1000;if(a>1.6){FJFX=0;const el=$('fcon');if(el)el.style.visibility='';return}const cx=VW/2,cy=VH/2,R=Math.hypot(VW,VH)*.62;
+  {const el=$('fcon');if(el)el.style.visibility='hidden'}
+  const k=W.bridge?0:a<.75?Math.min(1,a/.15):Math.max(0,1-(a-.75)/.2);
   if(k>0){c.save();c.lineCap='round';for(let i=0;i<160;i++){const h1=Math.sin(i*12.9898)*43758.5453,h2=Math.sin(i*78.233)*12345.678,an=(h1-Math.floor(h1))*TAU,sd=h2-Math.floor(h2),u=((sd+a*2.6)%1),r0=R*u*u,len=R*(.08+.4*k)*u;c.strokeStyle=i%6===0?`rgba(170,205,255,${.7*k})`:`rgba(225,236,255,${.55*k})`;c.lineWidth=1+u*3*k;c.beginPath();c.moveTo(cx+Math.cos(an)*r0,cy+Math.sin(an)*r0);c.lineTo(cx+Math.cos(an)*(r0+len),cy+Math.sin(an)*(r0+len));c.stroke()}
     const g=c.createRadialGradient(cx,cy,0,cx,cy,R*.45);g.addColorStop(0,`rgba(200,225,255,${.3*k})`);g.addColorStop(1,'rgba(200,225,255,0)');c.fillStyle=g;c.fillRect(0,0,VW,VH);c.restore()}
-  const fl=a<.7?0:a<.78?(a-.7)/.08:Math.max(0,1-(a-.78)/.8);if(fl>0){c.fillStyle=`rgba(240,246,255,${.9*fl})`;c.fillRect(0,0,VW,VH)}}
+  const fl=a<.7?0:a<.78?(a-.7)/.08:Math.max(0,1-(a-.78)/.8);if(fl>0){c.fillStyle=`rgba(240,246,255,${(W.bridge?.4:.9)*fl})`;c.fillRect(0,0,VW,VH)}}
 function frigArriveFx(e){if(!W)return;W.fx.push({x:e.x,y:e.y,z:e.z,vx:0,vy:0,vz:0,life:.9,max:.9,c:[1,1,1],sz:e.st.radius*1.25*7,flash:true});W.fx.push({x:e.x,y:e.y,z:e.z,vx:0,vy:0,vz:0,life:1.4,max:1.4,c:[.7,.85,1],sz:e.st.radius*1.25*4,flash:true});const v=vAt(e);if(v>.03)SFX.arrive(Math.min(1,v*1.5))}
 function jumpFx(c){const out=W.jump,k=out?clamp((out.t-.25)/1.1,0,1):JIN.t<JIN.d?1-JIN.t/JIN.d:0;if(k<=0)return;
   const cx=VW/2,cy=VH/2,R=Math.hypot(VW,VH)*.6,now=performance.now()/1000,col=FACTIONS[S.player.faction].col;
@@ -2749,6 +2765,7 @@ function draw3D(){
   if(SE)sprite(SE.x,SE.y+98,SE.z,22,rgb(sideCol(SE.fac)),.5+.5*Math.sin(t*3));
   if(SE&&SE.offline&&Math.random()<.3)fxSpark({x:SE.x+rnd(-60,60),y:SE.y+rnd(-40,40),z:SE.z+rnd(-60,60)},'#8fc8ff',1);
   if(OE&&OE.o.type==='forge')sprite(OE.x,OE.y-26,OE.z,70,[1,.55,.2],.45);
+  if(FJFX&&W.bridge)warpStreaks3D();
   flushBB();G.depthMask(true);G.disable(G.BLEND);
 }
 
