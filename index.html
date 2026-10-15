@@ -408,7 +408,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Sensors, not omniscience.</b> You only hear about strikes, convoys and battles in sectors your side can see: sectors with a friendly station or depot (plus their neighbours), friendly outposts, and wherever a friendly scout is (plus neighbours). Holding the Hollow Relay taps the whole network. The map dims sectors you cannot see. Scout hulls are the fastest ships, see the whole sector and the sectors next door, but carry light guns and turn slowly.</p>
             <p><b>Wings.</b> Combat ships fly in wings of three or more and share targets. When a wing is cut down to one or two ships, the survivors break off and run for home.</p>
             <p><b>Shields.</b> Hits flare blue on your shield bubble and the screen edges. When the shield collapses it bursts outward, the edges glow red and the shield bar blinks: boost away with Shift. Shields start recharging 2.5 s after the last hit, except in an ion storm.</p>
-            <p>Fly through a gate ring to jump. Gates through Hollow Verge charge a toll to whoever holds the Hollow Relay.</p>
+            <p>To jump, line up in front of a gate ring with your nose pointing straight through it (within 20°) and hold steady: the gate counts down 5 seconds, then flings you through. Turn away or fly off and the countdown resets. Autopilot (J) lines up for you. Gates through Hollow Verge charge a toll to whoever holds the Hollow Relay.</p>
           </div>
           <div>
             <div class="h3">The closed economy</div>
@@ -1764,7 +1764,8 @@ function apTarget(){if(W.tgt&&validTgt(W.tgt)&&W.tgt.kind!=='ship')return W.tgt;
 function toggleAutopilot(){if(!W||S.player.docked)return;if(apOn){apOn=false;flash('Autopilot off.');return}const T=apTarget();if(!T){flash('Autopilot needs a destination: target a gate, station or rock (Tab cycles), or set a course on the map (M).',true);return}
   if(T.kind==='ship'&&hostile('player',T.ref.side)){flash('Autopilot will not fly at hostiles.',true);return}apOn=true;W.tgt=T;flash('Autopilot engaged. Steer or thrust to take back control.')}
 function autopilot(p,dt){const T=apTarget();if(!T){apOn=false;return false}W.tgt=T;const R=T.ref;let stand=0,arrive=true;
-  if(T.kind==='gate'){arrive=false}else if(T.kind==='station'||T.kind==='outpost')stand=230;else if(T.kind==='ast')stand=astR(R)+140;else if(T.kind==='ship')stand=180;else stand=0;
+  if(T.kind==='gate'){const g=R,d=gateAxis(g),z=gateZone(g,p);if(W.gc||(z.inZone&&z.along>-420)){faceDir(p,d.x,d.y,d.z,dt);p.thrusting=false;if(!W.gc&&z.cos>.9)brake(p,dt*.6);return true}
+    const ax=g.x-d.x*300,ay=g.y-d.y*300,az=g.z-d.z*300,ex=ax-p.x,ey=ay-p.y,ez=az-p.z,de=hyp(ex,ey,ez)||1,er=faceDir(p,ex,ey,ez,dt);if(er<.6)steer(p,ax,ay,az,dt,true,1);else brake(p,dt*.4);p.thrusting=er<.6;return true}else if(T.kind==='station'||T.kind==='outpost')stand=230;else if(T.kind==='ast')stand=astR(R)+140;else if(T.kind==='ship')stand=180;else stand=0;
   const dx=R.x-p.x,dy=R.y-p.y,dz=R.z-p.z,d=hyp(dx,dy,dz)||1,tx=R.x-dx/d*stand,ty=R.y-dy/d*stand,tz=R.z-dz/d*stand;
   const err=faceDir(p,dx,dy,dz,dt);if(err<.6)steer(p,tx,ty,tz,dt,arrive,1);else brake(p,dt*.4);p.thrusting=err<.6;
   if(arrive&&d-stand<40&&hyp(p.vx,p.vy,p.vz)<40){apOn=false;flash(T.kind==='station'||T.kind==='outpost'?'Arrived. Press E to dock.':'Arrived.');return true}return true}
@@ -1830,11 +1831,39 @@ function pickupAndGates(p,P,st){const sec=S.sectors[W.sid];
     if(took)feed(`Recovered ${took} t of salvage.`,'good');if(!Object.keys(cr.inv).length){sec.crates.splice(i,1);if(W.tgt&&W.tgt.ref===cr)W.tgt=null}else if(W.t-(W.fullMsg||0)>3){flash('Hold is full; some salvage is still in the crate.');W.fullMsg=W.t}}}
   if(!W.jump)for(const g of GATES[W.sid]){if(d3(g,p)<95){
     if(S.gateDown[gateKey(W.sid,g.to)]){if(W.t-(W.gateMsg||0)>2){flash('This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}const dx=p.x-g.x,dy=p.y-g.y,dz=p.z-g.z,l=hyp(dx,dy,dz)||1;p.vx=dx/l*200;p.vy=dy/l*200;p.vz=dz/l*200;break}
-    W.jump={to:g.to,t:0,g,q0:qCopy(q0(),p.q)};p.inJump=true;W.tgt=null;SFX.jump();flash(`Gate transit to ${DEF[g.to].name}…`);break}}
+    }}
+  if(!W.jump)gateCountdown(p);
 }
 // gate transit: the field grabs the ship, lines it up on the gate axis and flings it down the tunnel (about 1.7 s),
 // then it drops out of the far gate (about 1.2 s of arrival with controls locked for the first half second)
-const JUMP_OUT=1.7,JIN={t:9,d:1.2};
+const JUMP_OUT=1.3,JIN={t:9,d:1.1},GATE_HOLD=5;
+// line up on a gate and hold it: within ~500 m in front of the ring, near its axis, nose within 20° of straight through.
+// The gate field then holds the ship on the axis and counts down 5 seconds; break alignment or leave and it resets.
+function gateAxis(g){const l=hyp(g.x,g.y,g.z)||1;return{x:g.x/l,y:g.y/l,z:g.z/l}}
+function gateZone(g,p){const d=gateAxis(g),rx=p.x-g.x,ry=p.y-g.y,rz=p.z-g.z,along=rx*d.x+ry*d.y+rz*d.z,lx=rx-d.x*along,ly=ry-d.y*along,lz=rz-d.z*along;qRot(p.q,0,0,1,_f);
+  return{d,along,lat:hyp(lx,ly,lz),cos:_f.x*d.x+_f.y*d.y+_f.z*d.z,inZone:along>-560&&along<70&&hyp(lx,ly,lz)<170}}
+function gateCountdown(p){const dt=W.fdt||1/60;let best=null;for(const g of GATES[W.sid]){const z=gateZone(g,p);if(z.inZone&&(!best||Math.abs(z.along)<Math.abs(best.z.along)))best={g,z}}
+  if(!best){if(W.gc){W.gc=null;if(!W.gcDone)flash('Left the gate approach. Countdown cancelled.')}W.gate=null;return}
+  const{g,z}=best;W.gate={g,z};
+  if(S.gateDown[gateKey(W.sid,g.to)]){W.gc=null;if(W.t-(W.gateMsg||0)>3){flash('This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}return}
+  if(z.cos<.94){if(W.gc){W.gc=null;SFX.beep(140);flash('Alignment lost. Line up with the gate again.',true)}return}
+  if(!W.gc||W.gc.g!==g){W.gc={g,t:0,last:6};SFX.beep(180)}
+  const C=W.gc;C.t+=dt;const n=Math.ceil(GATE_HOLD-C.t);if(n<C.last&&n>0){C.last=n;SFX.beep(170+(5-n)*25,n===1?1.3:1)}
+  // the field: ease the ship onto the axis and let it creep toward the ring
+  const tx=g.x-z.d.x*60,ty=g.y-z.d.y*60,tz=g.z-z.d.z*60,ex=tx-p.x,ey=ty-p.y,ez=tz-p.z,el=hyp(ex,ey,ez)||1,sp=Math.min(55,el*.35),k=Math.min(1,1.6*dt);
+  p.vx+=(ex/el*sp-p.vx)*k;p.vy+=(ey/el*sp-p.vy)*k;p.vz+=(ez/el*sp-p.vz)*k;
+  if(C.t>=GATE_HOLD){W.gc=null;W.gate=null;W.jump={to:g.to,t:0,g};p.inJump=true;W.tgt=null;SFX.jump();flash(`Jumping to ${DEF[g.to].name}.`)}}
+function drawGateCountdown(c,t){if(W.jump||!W.gate||S.player.docked||W.dead)return;const cx=VW/2,cy=VH*.36,G=W.gate,C=W.gc,col=FACTIONS[S.player.faction].col,to=DEF[G.g.to].name;
+  c.save();c.textAlign='center';c.textBaseline='middle';
+  if(S.gateDown[gateKey(W.sid,G.g.to)]){c.font='600 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#ff5d4f';c.fillText(`GATE TO ${to.toUpperCase()} HAS COLLAPSED`,cx,cy);c.restore();return}
+  if(!C){const err=Math.round(Math.acos(clamp(G.z.cos,-1,1))*180/Math.PI);c.font='700 15px "Saira Semi Condensed",sans-serif';c.fillStyle='#f0b24a';c.fillText(`LINE UP WITH THE GATE TO ${to.toUpperCase()}`,cx,cy-8);
+    c.font='500 12px "JetBrains Mono",monospace';c.fillStyle='rgba(236,228,207,.8)';c.fillText(`point straight through the ring · off by ${err}° (need under 20°)`,cx,cy+14);
+    const P=proj(G.g.x+G.z.d.x*2500,G.g.y+G.z.d.y*2500,G.g.z+G.z.d.z*2500);const off=P.behind||P.x<40||P.x>VW-40||P.y<40||P.y>VH-40;if(off){let ax=P.x-VW/2,ay=P.y-VH/2;const l=hyp(ax,ay)||1;ax/=l;ay/=l;const ex=VW/2+ax*Math.min(VW*.4,VH*.38),ey=VH/2+ay*Math.min(VW*.4,VH*.38);c.fillStyle='#f0b24a';c.beginPath();c.moveTo(ex+ax*16,ey+ay*16);c.lineTo(ex-ay*9-ax*4,ey+ax*9-ay*4);c.lineTo(ex+ay*9-ax*4,ey-ax*9-ay*4);c.closePath();c.fill()}if(!off){c.strokeStyle='#f0b24a';c.lineWidth=2;c.beginPath();c.arc(P.x,P.y,16+3*Math.sin(t*6),0,TAU);c.stroke();c.beginPath();c.moveTo(P.x-24,P.y);c.lineTo(P.x-10,P.y);c.moveTo(P.x+10,P.y);c.lineTo(P.x+24,P.y);c.moveTo(P.x,P.y-24);c.lineTo(P.x,P.y-10);c.moveTo(P.x,P.y+10);c.lineTo(P.x,P.y+24);c.stroke()}
+    c.restore();return}
+  const left=Math.max(0,GATE_HOLD-C.t),n=Math.ceil(left),fr=left-Math.floor(left),pulse=1+.18*Math.pow(fr,3),big=Math.min(VW,VH)*.16*pulse;
+  c.font=`800 ${Math.round(big)}px "Big Shoulders Display","Arial Narrow",sans-serif`;c.fillStyle=n<=1?'#ffd27a':'#ece4cf';c.shadowColor=col;c.shadowBlur=24;c.globalAlpha=.55+.45*fr;c.fillText(String(Math.max(1,n)),cx,cy);c.shadowBlur=0;c.globalAlpha=1;
+  const R=Math.min(VW,VH)*.12;c.strokeStyle='rgba(255,255,255,.12)';c.lineWidth=4;c.beginPath();c.arc(cx,cy,R,0,TAU);c.stroke();c.strokeStyle=col;c.beginPath();c.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+TAU*(C.t/GATE_HOLD));c.stroke();
+  c.font='600 13px "Saira Semi Condensed",sans-serif';c.fillStyle='rgba(236,228,207,.9)';c.fillText(`JUMP TO ${to.toUpperCase()} · HOLD ALIGNMENT`,cx,cy+R+20);c.restore()}
 function gateTransit(J,dt){const p=W.player,g=J.g,l=hyp(g.x,g.y,g.z)||1,dx=g.x/l,dy=g.y/l,dz=g.z/l;
   qSlerp(p.q,qLook(dx,dy,dz,0,1,0,_tq),Math.min(1,3.2*dt));
   if(J.t<.55){const k=Math.min(1,3.5*dt);p.x+=(g.x-p.x)*k;p.y+=(g.y-p.y)*k;p.z+=(g.z-p.z)*k;p.vx=(g.x-p.x)*3;p.vy=(g.y-p.y)*3;p.vz=(g.z-p.z)*3}
@@ -1926,7 +1955,7 @@ function shotsUpdate(dt){
     if(hit)W.shots.splice(i,1)}
 }
 function worldUpdate(dt){
-  W.t+=dt;const loc=W===LW&&W.player;
+  W.t+=dt;W.fdt=dt;const loc=W===LW&&W.player;
   if(loc){
   if(W.dead){if(W.t-W.dead>3.2){respawn();return}}
   if(W.jump){const J=W.jump;J.t+=dt;gateTransit(J,dt);if(J.t>JUMP_OUT){const to=J.to;W.jump=null;$('fade').style.opacity=1;doJump(to);JIN.t=0;SFX.jump();return}}
@@ -2390,7 +2419,7 @@ function drawOverlay(){
   if(p.shield<=.5||crit)vignette(c,'255,93,79',(crit?.55:.36)+(crit?.22:.16)*Math.sin(t*(crit?9:6)));
   if(crit&&W.t-(W.critT||-9)>1.2){W.critT=W.t;SFX.alarm()}
   if(cam.mode==='cockpit')drawCockpit(c,p,t);
-  drawHorizon(c,p);drawStatusRing(c,p,t);
+  drawHorizon(c,p);drawStatusRing(c,p,t);drawGateCountdown(c,t);
   c.font='600 11px "Saira Semi Condensed",sans-serif';c.lineWidth=1.5;
   for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.isPlayer||!seenShip(e))continue;const P=proj(e.x,e.y,e.z);if(P.behind||P.d>4500||P.x<0||P.y<0||P.x>VW||P.y>VH)continue;const r=Math.max(7,projR(P.d,e.st.radius*1.4)),col=sideCol(e.side),h=hostile('player',e.side);
     if(!h){const uf=W.t-e.lastHit<2.5&&hostile(e.side,e.lastHitBy);const tg=e.ai&&e.ai.tgt;
