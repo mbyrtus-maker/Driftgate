@@ -35,7 +35,7 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .sec-name{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:.05em;text-transform:uppercase;line-height:1;text-wrap:balance}
 .sec-sub{font-size:13px;color:var(--dim);margin-top:5px;letter-spacing:.02em}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
-.mpbox{margin:2px 0 4px}.mprow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.mpin{flex:1 1 150px;min-width:0;background:var(--deep);border:1px solid var(--line-hi);color:var(--ivory);padding:9px 11px;border-radius:8px;font:inherit;font-size:14px}.mpin:focus{outline:2px solid var(--amber);outline-offset:1px}
+.mpbox{margin:2px 0 4px}.mpor{align-self:center;color:var(--faint);font-size:13px}.mpinv{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 26px 0;padding:8px 10px;border:1px solid var(--amber);border-radius:8px;background:rgba(240,178,74,.07)}.mpinv span{color:var(--amber);font-weight:600;font-size:13px}.mpinv code{font-family:var(--f-mono);font-size:12.5px;color:var(--ivory);word-break:break-all;flex:1 1 220px}.mprow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;padding:0 26px}.mpin{flex:1 1 150px;min-width:0;background:var(--deep);border:1px solid var(--line-hi);color:var(--ivory);padding:9px 11px;border-radius:8px;font:inherit;font-size:14px}.mpin:focus{outline:2px solid var(--amber);outline-offset:1px}
 .netchip{margin-top:8px;font-size:12px;color:var(--dim);line-height:1.45}.netchip b{color:var(--ok);font-weight:600}.netchip small{color:var(--faint)}
 .netban{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(10,15,29,.92);border:1px solid var(--amber);color:var(--amber);padding:8px 14px;border-radius:8px;font-size:13px;z-index:30}
 .chatin{position:absolute;left:16px;bottom:calc(120px + env(safe-area-inset-bottom,0px));width:min(420px,calc(100% - 32px));background:rgba(10,15,29,.94);border:1px solid var(--line-hi);color:var(--ivory);padding:9px 11px;border-radius:8px;font:inherit;font-size:14px;z-index:30}
@@ -265,7 +265,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     <div class="hud" id="hTR">
       <div class="cr"><small>CREDITS</small><span id="hCr">0</span></div>
       <div class="holdline">Hold <b id="hHold">0/0</b></div>
-      <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button><button class="hbtn" id="bQuit" type="button" aria-label="Save and quit">Quit</button></div>
+      <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button><button class="hbtn" id="bInvite" type="button" hidden>Invite</button><button class="hbtn" id="bQuit" type="button" aria-label="Save and quit">Quit</button></div>
     </div>
     <div class="hud" id="hBL">
       <canvas id="radar" width="340" height="300" aria-label="Radar"></canvas>
@@ -304,8 +304,9 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
         </div>
         <div class="note snote" id="legacy" style="padding-top:8px"></div>
         <div class="mpbox" id="mpBox"><div class="step"><i>✦</i><span>Play with friends <small style="color:var(--faint);font-weight:400">(optional)</small></span></div>
-          <div class="mprow"><input id="mpCode" class="mpin" placeholder="Galaxy code" maxlength="24" autocomplete="off" spellcheck="false"><button class="btn" id="bMp" type="button">Join galaxy</button></div>
-          <div class="note snote" id="mpStat">Up to four pilots share one galaxy. Everyone types the same galaxy code: the first one in hosts, and the galaxy waits, frozen, while nobody is online. Other pilots see your callsign over your ship. Leave this blank to play solo.</div></div>
+          <div class="mprow"><button class="btn pri" id="bNewGal" type="button">Create a galaxy for friends</button><span class="mpor">or enter a friend's code</span><input id="mpCode" class="mpin" placeholder="e.g. amber-falcon-42" maxlength="24" autocomplete="off" spellcheck="false"><button class="btn" id="bMp" type="button">Join</button></div>
+          <div class="mpinv" id="mpInv" hidden><span>Invite link</span><code id="mpLink"></code><button class="btn sm" id="bCopy" type="button">Copy link</button></div>
+          <div class="note snote" id="mpStat">To play together, one of you presses <b>Create a galaxy for friends</b> and sends the invite link (or the code) to the others. Everyone who uses the same code shares one galaxy, up to four pilots. Leave it empty to play solo.</div></div>
         <div class="step"><i>1</i><span>Your callsign</span></div>
         <div class="mprow" style="margin:0 0 4px"><input id="mpName" class="mpin" placeholder="Callsign (required)" maxlength="16" autocomplete="off" spellcheck="false" style="flex:0 1 320px"></div>
         <div class="step"><i>2</i><span>Choose your faction</span></div>
@@ -342,7 +343,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       <div class="c-head"><div><div class="c-title" id="dTitle"></div><div class="c-sub" id="dSub"></div></div><div class="c-meta" id="dMeta"></div></div>
       <div class="tabs" role="tablist" id="dTabs"></div>
       <div class="c-body" id="dBody"></div>
-      <div class="c-foot"><div class="err" id="dErr"></div><div id="dRep" class="rep"></div><button class="btn" data-act="quit" type="button" title="Save your pilot and return to the title screen">Save &amp; quit</button><button class="btn pri" data-act="launch" type="button">Launch <kbd style="color:inherit;border-color:currentColor">E</kbd></button></div>
+      <div class="c-foot"><div class="err" id="dErr"></div><div id="dRep" class="rep"></div><button class="btn" data-act="invite" id="dInvite" type="button" hidden>Copy invite link</button><button class="btn" data-act="quit" type="button" title="Save your pilot and return to the title screen">Save &amp; quit</button><button class="btn pri" data-act="launch" type="button">Launch <kbd style="color:inherit;border-color:currentColor">E</kbd></button></div>
     </div>
   </section>
 
@@ -2794,6 +2795,7 @@ $('dock').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const act=b.dataset.act,arg=b.dataset.arg||'';dockErr='';
   if(act==='launch'){undock();return}
   if(act==='quit'){quitGame();return}
+  if(act==='invite'){$('bInvite').click();dockErr=`Invite link copied: ${inviteURL(MP.code)}`;renderDock();return}
   if(act==='tab'){dockTab=arg;renderDock();return}
   if(NET.cl){netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
   dockAction(act,arg);renderDock()});
@@ -2977,6 +2979,11 @@ const MPV=1,MP={st:'off',code:'',name:'',pid:'',hostId:'',myId:'',sig:null,sigCf
   seenEv:new Set(),snT:0,syT:0,prT:0,ckT:0,uT:0,since:0,ckpt:null,hostPid:null,roster:[],mid:0,pend:[],needPilot:false,elect:0,ckMeta:null};
 const rid=n=>{let s='';const a='abcdefghijkmnpqrstuvwxyz23456789';for(let i=0;i<n;i++)s+=a[Math.floor(Math.random()*a.length)];return s};
 const cleanCall=n=>String(n||'').replace(/[^A-Za-z0-9 _.\-']/g,'').replace(/\s+/g,' ').trim().slice(0,16);
+const GAL_A=['amber','silver','crimson','quiet','iron','violet','solar','frozen','hollow','swift','golden','ember','azure','dusky','stellar','rusty'],GAL_B=['falcon','comet','drift','harbor','lantern','nova','kestrel','reef','vessel','orbit','beacon','spire','tide','forge','nebula','wren'];
+const genCode=()=>`${pick(GAL_A)}-${pick(GAL_B)}-${ri(10,99)}`;
+const inviteURL=c=>location.origin+location.pathname+'?galaxy='+encodeURIComponent(c);
+function copyText(t){try{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t);return true}}catch(e){}try{const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}catch(e){return false}}
+function showInvite(){const c=($('mpCode').value||'').trim();const box=$('mpInv');if(!box)return;if(!mpSlug(c)){box.hidden=true;return}box.hidden=false;$('mpLink').textContent=inviteURL(c)}
 const mpSlug=c=>String(c||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24);
 function mpConfig(){const q=new URLSearchParams(location.search);let c={host:'0.peerjs.com',port:443,path:'/',key:'peerjs',secure:true};
   const sg=q.get('sig');if(sg){try{const u=new URL(sg);c={host:u.hostname,port:+u.port||(u.protocol==='wss:'?443:80),path:u.pathname.endsWith('/')?u.pathname:u.pathname+'/',key:q.get('key')||'peerjs',secure:u.protocol==='wss:'}}catch(e){}}
@@ -3326,12 +3333,15 @@ function takeOver(){const ck=MP.ckpt;if(!ck||!ck.S){mpFail('No saved copy of the
   const l=ledger();S.ledger0={tot:l.tot,credits:l.credits};
   mpRun();feed(`The host left. You are now hosting “${MP.code}”.`,'warn')}
 
-function netHud(){const el=$('netChip');if(!el)return;if(!NET.on||!S||!S.player){el.hidden=true;return}el.hidden=false;
+function netHud(){const el=$('netChip');if(!el)return;{const ib=$('bInvite');if(ib)ib.hidden=!NET.on;const di=$('dInvite');if(di)di.hidden=!NET.on}if(!NET.on||!S||!S.player){el.hidden=true;return}el.hidden=false;
   el.innerHTML=`<b>●</b> ${NET.host?'Hosting':'Online'} · ${esc(MP.code)}<br>`+MP.roster.map(r=>`<span style="color:${sideCol(r[2])}">${esc(r[1])}</span>${r[0]===MP.pid?' <small>(you)</small>':r[3]===S.player.sector?' <small>here</small>':` <small>${esc(DEF[r[3]].name)} · ${HOP[S.player.sector][r[3]]}j</small>`}`).join(' · ')+(MP.roster.length<2?'<br><small>No one else yet: friends join with the same galaxy code.</small>':'')}
 function openChat(){const el=$('chatIn');el.hidden=false;el.value='';el.focus()}
 $('chatIn').addEventListener('keydown',e=>{const el=$('chatIn');if(e.key==='Enter'){const t=el.value.trim();el.hidden=true;el.blur();if(t){if(NET.host)netChat(S.player.name||MP.name,t,NET.me);else netSend({t:'chat',m:t})}e.preventDefault()}else if(e.key==='Escape'){el.hidden=true;el.blur()}e.stopPropagation()});
 $('bMp').addEventListener('click',()=>{auInit();mpJoin()});
-$('mpCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('bMp').click()});$('mpCode').addEventListener('input',()=>{if(!running&&!$('start').hidden)shipCard()});
+$('mpCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('bMp').click()});$('mpCode').addEventListener('input',()=>{showInvite();if(!running&&!$('start').hidden)shipCard()});
+$('bNewGal').addEventListener('click',()=>{const c=genCode();$('mpCode').value=c;showInvite();shipCard();mpStatus(`Your galaxy code is <b>${esc(c)}</b>. Copy the invite link and send it to your friends, then press <b>Launch</b>. They appear in your galaxy as soon as they open the link and launch.`);if(!cleanCall($('mpName').value))$('mpName').focus()});
+$('bCopy').addEventListener('click',()=>{const ok=copyText($('mpLink').textContent);$('bCopy').textContent=ok?'Copied!':'Select and copy';setTimeout(()=>{$('bCopy').textContent='Copy link'},1800)});
+$('bInvite').addEventListener('click',()=>{if(!NET.on)return;const u=inviteURL(MP.code),ok=copyText(u);flash(ok?`Invite link copied: ${u}`:`Invite link: ${u}`);feed(`Invite friends with this link: ${u} (galaxy code ${MP.code})`,'info')});
 function mpNewGalaxy(){const f=S.player.faction,cls=START_HULLS.find(k=>roleOf(k)===roleOf(S.player.cls))||'interceptor';$('win').hidden=true;
   if(W)exitSector();WORLDS={};LW=null;W=null;MP.rp={};MP.inp={};newGame(f,cls);S.gid=rid(10);S.pilots={};S.pilots[MP.pid]=S.player;S.player.pid=MP.pid;S.player.name=MP.name;
   for(const c of readyCl()){c.ready=false;send(c.L,{t:'reset'})}mpRun()}
@@ -3345,7 +3355,7 @@ function quitGame(){if(!S||!running)return;const wasNet=NET.on,code=MP.code;
   else if(NET.cl){const p=W&&W.player;netSend({t:'bye',...(p&&!S.player.docked?{x:p.x,y:p.y,z:p.z,vx:0,vy:0,vz:0,q:[p.q.x,p.q.y,p.q.z,p.q.w]}:{})})}
   else save();
   setTimeout(()=>{try{closeSheets()}catch(e){}mpShutdown();if(W)exitSector();WORLDS={};LW=null;W=null;S=null;running=false;apOn=false;$('hud').hidden=true;$('dock').hidden=true;$('deathMsg').hidden=true;$('start').hidden=false;buildSectorScene(null);showStart();
-    mpStatus(wasNet?`Saved and left “${esc(code)}”. Join again any time to pick up where you left off.`:'Up to four pilots share one galaxy. Everyone types the same galaxy code: the first one in hosts, and the galaxy waits, frozen, while nobody is online. Other pilots see your callsign over your ship. Leave this blank to play solo.');
+    mpStatus(wasNet?`Saved and left “${esc(code)}”. Join again any time to pick up where you left off.`:'To play together, one of you presses <b>Create a galaxy for friends</b> and sends the invite link (or the code) to the others. Everyone who uses the same code shares one galaxy, up to four pilots. Leave it empty to play solo.');
     if(!wasNet)$('ssum').innerHTML='<b>Saved.</b> Press <b>Continue saved pilot</b> to fly again.'},wasNet?250:30)}
 function mpShutdown(){if(MP.sig){MP.sig.close();MP.sig=null}for(const L of Object.values(MP.links))linkClose(L,true);MP.links={};MP.host=null;MP.cl={};MP.rp={};MP.inp={};MP.elect=0;MP.st='off';MP.roster=[];NET.on=false;NET.host=false;NET.cl=false;const b=$('bMp');if(b)b.disabled=false}
 // ============================================================ main loop
@@ -3377,7 +3387,7 @@ function boot(data){
   if(!G){$('glErr').hidden=false;return}
   try{initGL();genMeshes()}catch(e){$('glErr').hidden=false;$('glErr').textContent='WebGL failed to start: '+e.message;return}
   resize();buildSectorScene(null);auApply();
-  mpConfig();{const q=new URLSearchParams(location.search);let n='',c='';try{n=localStorage.getItem('driftgate.mpname')||'';c=localStorage.getItem('driftgate.mpcode')||''}catch(e){}$('mpName').value=q.get('name')||n;$('mpCode').value=q.get('galaxy')||c;if(!mpOK())$('mpBox').hidden=true;if(window.claude&&!q.get('sig')){$('mpBox').querySelector('.mprow').hidden=true;mpStatus(`Multiplayer runs from the shareable copy at <a href="${MP_HOME}" target="_blank" rel="noopener" style="color:var(--amber)">${MP_HOME.replace('https://','')}</a>. Open it there, then you and up to three friends type the same galaxy code.`)}if(q.get('auto')&&mpOK())setTimeout(mpJoin,50)}
+  mpConfig();{const q=new URLSearchParams(location.search);let n='',c='';try{n=localStorage.getItem('driftgate.mpname')||'';c=localStorage.getItem('driftgate.mpcode')||''}catch(e){}$('mpName').value=q.get('name')||n;$('mpCode').value=q.get('galaxy')||c;showInvite();if(q.get('galaxy')&&!q.get('auto'))mpStatus(`You've been invited to the galaxy <b>${esc(q.get('galaxy'))}</b>. Choose a callsign, faction and ship, then press <b>Launch</b> to join your friends.`);if(!mpOK())$('mpBox').hidden=true;if(window.claude&&!q.get('sig')){$('mpBox').querySelector('.mprow').hidden=true;mpStatus(`Multiplayer runs from the shareable copy at <a href="${MP_HOME}" target="_blank" rel="noopener" style="color:var(--amber)">${MP_HOME.replace('https://','')}</a>. Open it there, then you and up to three friends type the same galaxy code.`)}if(q.get('auto')&&mpOK())setTimeout(mpJoin,50)}
   const saved=data&&data.save;
   if(saved&&saved.v===2)startWith(saved);else showStart();
   requestAnimationFrame(frame);

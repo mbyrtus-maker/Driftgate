@@ -6,9 +6,9 @@ A 3D space game you play in the browser: three rival factions and an alien Brood
 
 ## Playing with friends
 
-1. Everyone opens the link above.
-2. On the start screen, choose a callsign (every pilot needs one; it's shown over your ship to other pilots and must be unique in the galaxy), then type the **same galaxy code** as your friends (any word you agree on, e.g. `thursday-crew`) and press **Join galaxy**.
-3. The first pilot in hosts the galaxy. Everyone else joins them. Each pilot picks their own faction and ship, so you can fly together or fight each other.
+1. One of you opens the link above, types a callsign, and presses **Create a galaxy for friends**. That makes a galaxy code (like `amber-falcon-42`) and an **invite link**: copy it and send it to your friends, then press **Launch**.
+2. Friends open the invite link, choose a callsign, faction and ship, and press **Launch**. (Or they open the game normally and type the code into "enter a friend's code".)
+3. Pick the same faction to start in the same system. Each pilot's callsign floats over their ship. Need the link again later? Press **Invite** in flight, or **Copy invite link** when docked.
 
 - **Drop in and out.** Your ship, cargo and position are saved. Come back with the same browser and you pick up where you left off.
 - **Anyone can host.** Every pilot's browser keeps the latest save, so whoever opens the galaxy first next time hosts it. If the host leaves mid-game, another pilot takes over within a few seconds.
