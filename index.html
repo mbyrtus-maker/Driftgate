@@ -1487,7 +1487,7 @@ function fireLaser(e){if(e.cool>0)return;const cost=e.st.shotCost*1.6;
   if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg,e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1,e.side,'laser');if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
-  if(!e.alive)return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;
+  if(!e.alive||e.inJump)return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;
   if(e.cls==='frigate'){const k=kind||(at&&at.kind);if(k==='torpedo'){dmg*=4;stat('torpHit');stat('torpDmg',dmg)}else if(k!=='capital'){if(e.shield>0){e.shield=Math.max(0,e.shield-dmg*.6);e.shHitT=W.t;e.shHitA=.5;fxSpark(at||e,'#8fc8ff',3)}else{fxSpark(at||e,'#ffd9a0',2);if(srcSide==='player'&&W.t-(W.capT||-99)>8){W.capT=W.t;flash('Frigate armour shrugs off fighter weapons: guns drain its shield, only torpedoes break the hull.',true)}}return}}
   if(e.isPlayer&&at&&srcSide){let dx,dy,dz;if(at.src&&at.src.x!==undefined&&at.vx===undefined){dx=at.src.x-e.x;dy=at.src.y-e.y;dz=at.src.z-e.z}else if(at.vx!==undefined){dx=-at.vx;dy=-at.vy;dz=-at.vz}else{dx=at.x-e.x;dy=at.y-e.y;dz=at.z-e.z}
     const l=hyp(dx,dy,dz)||1;W.hitDirs=(W.hitDirs||[]).filter(h=>W.t-h.t<1.3);W.hitDirs.push({x:dx/l,y:dy/l,z:dz/l,t:W.t})}
@@ -1830,14 +1830,28 @@ function pickupAndGates(p,P,st){const sec=S.sectors[W.sid];
     if(took)feed(`Recovered ${took} t of salvage.`,'good');if(!Object.keys(cr.inv).length){sec.crates.splice(i,1);if(W.tgt&&W.tgt.ref===cr)W.tgt=null}else if(W.t-(W.fullMsg||0)>3){flash('Hold is full; some salvage is still in the crate.');W.fullMsg=W.t}}}
   if(!W.jump)for(const g of GATES[W.sid]){if(d3(g,p)<95){
     if(S.gateDown[gateKey(W.sid,g.to)]){if(W.t-(W.gateMsg||0)>2){flash('This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}const dx=p.x-g.x,dy=p.y-g.y,dz=p.z-g.z,l=hyp(dx,dy,dz)||1;p.vx=dx/l*200;p.vy=dy/l*200;p.vz=dz/l*200;break}
-    W.jump={to:g.to,t:0};$('fade').style.opacity=1;SFX.jump();break}}
+    W.jump={to:g.to,t:0,g,q0:qCopy(q0(),p.q)};p.inJump=true;W.tgt=null;SFX.jump();flash(`Gate transit to ${DEF[g.to].name}…`);break}}
 }
+// gate transit: the field grabs the ship, lines it up on the gate axis and flings it down the tunnel (about 1.7 s),
+// then it drops out of the far gate (about 1.2 s of arrival with controls locked for the first half second)
+const JUMP_OUT=1.7,JIN={t:9,d:1.2};
+function gateTransit(J,dt){const p=W.player,g=J.g,l=hyp(g.x,g.y,g.z)||1,dx=g.x/l,dy=g.y/l,dz=g.z/l;
+  qSlerp(p.q,qLook(dx,dy,dz,0,1,0,_tq),Math.min(1,3.2*dt));
+  if(J.t<.55){const k=Math.min(1,3.5*dt);p.x+=(g.x-p.x)*k;p.y+=(g.y-p.y)*k;p.z+=(g.z-p.z)*k;p.vx=(g.x-p.x)*3;p.vy=(g.y-p.y)*3;p.vz=(g.z-p.z)*3}
+  else{const sp=260+(J.t-.55)*(J.t-.55)*4200;p.vx=dx*sp;p.vy=dy*sp;p.vz=dz*sp;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt}
+  p.thrusting=true;p.boosting=J.t>.55;W.shake=Math.max(W.shake||0,.1+J.t*.12);
+  const f=$('fade');f.style.opacity=clamp((J.t-JUMP_OUT+.35)/.35,0,1)}
+function jumpFx(c){const out=W.jump,k=out?clamp((out.t-.25)/1.1,0,1):JIN.t<JIN.d?1-JIN.t/JIN.d:0;if(k<=0)return;
+  const cx=VW/2,cy=VH/2,R=Math.hypot(VW,VH)*.6,now=performance.now()/1000,col=FACTIONS[S.player.faction].col;
+  c.save();c.lineCap='round';for(let i=0;i<110;i++){const a=i*2.399963,sd=(i*0.6180339)%1,u=((sd+now*(.55+k*1.6))%1),r0=R*u*u,len=R*(.04+.22*k)*u;
+    c.strokeStyle=i%5===0?hexA(col,.55*k):`rgba(210,228,255,${.45*k})`;c.lineWidth=1+u*2*k;c.beginPath();c.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);c.lineTo(cx+Math.cos(a)*(r0+len),cy+Math.sin(a)*(r0+len));c.stroke()}
+  const g=c.createRadialGradient(cx,cy,0,cx,cy,R*.5);g.addColorStop(0,`rgba(200,225,255,${.18*k})`);g.addColorStop(1,'rgba(200,225,255,0)');c.fillStyle=g;c.fillRect(0,0,VW,VH);c.restore()}
 function doJump(to){
   const from=W.sid,h=S.outposts.hollow;
   if((from==='ho'||to==='ho')&&h.owner&&h.owner!=='player'&&h.owner!==S.player.faction){const n=transfer('player',h.owner,40);if(n)feed(`Paid ${n} cr gate toll to ${sideName(h.owner)} at Hollow Relay.`,'news')}
   exitSector();S.player.sector=to;const g=GATES[to].find(g=>g.to===from);const l=hyp(g.x,g.y,g.z),ux=-g.x/l,uy=-g.y/l,uz=-g.z/l;
   const P=S.player;P.x=g.x+ux*230;P.y=g.y+uy*230;P.z=g.z+uz*230;P.vx=ux*180;P.vy=uy*180;P.vz=uz*180;const q=qLook(ux,uy,uz,0,1,0,q0());P.q=[q.x,q.y,q.z,q.w];
-  enterSector(to);if(NET.cl){const q=W.player;netSend({t:'jump',to,x:q.x,y:q.y,z:q.z,vx:q.vx,vy:q.vy,vz:q.vz,q:[q.q.x,q.q.y,q.q.z,q.q.w]})}setTimeout(()=>{$('fade').style.opacity=0},60);save();
+  enterSector(to);if(NET.cl){const q=W.player;netSend({t:'jump',to,x:q.x,y:q.y,z:q.z,vx:q.vx,vy:q.vy,vz:q.vz,q:[q.q.x,q.q.y,q.q.z,q.q.w]})}setTimeout(()=>{$('fade').style.opacity=0},120);save();
   feed(`Arrived in ${DEF[to].name}.`,'news');
 }
 function dockTarget(){const p=W.player;for(const e of W.ents){if((e.type==='station'||e.type==='outpost')&&d3(e,p)<290)return e}return null}
@@ -1855,7 +1869,7 @@ function flash(m,alert){if(CTX&&NET.host&&CTX!==NET.me){netMsg(CTX,'flash',m,ale
 
 // ============================================================ world update
 function segHit(ax,ay,az,bx,by,bz,c,R){const dx=bx-ax,dy=by-ay,dz=bz-az,L2=dx*dx+dy*dy+dz*dz;let t=L2?((c.x-ax)*dx+(c.y-ay)*dy+(c.z-az)*dz)/L2:0;t=clamp(t,0,1);const px=ax+dx*t-c.x,py=ay+dy*t-c.y,pz=az+dz*t-c.z;return px*px+py*py+pz*pz<R*R}
-function physics(e,dt){
+function physics(e,dt){if(e.inJump)return;
   const pl=e.isPlayer||e.rp,bm=pl?(CLASSES[e.cls].boost||1):1,cap=e.st.maxSpd*(pl&&e.boosting?1.95*bm:e.npc&&(e.role==='flee'||(e.role==='scout'&&e.boosting))?1.4:1);
   const v=hyp(e.vx,e.vy,e.vz);if(v>cap){const k=Math.min(1,(pl?(e.boosting?2:.75):3)*dt),f=1-k+k*cap/v;e.vx*=f;e.vy*=f;e.vz*=f}
   e.x+=e.vx*dt;e.y+=e.vy*dt;e.z+=e.vz*dt;
@@ -1915,10 +1929,10 @@ function worldUpdate(dt){
   W.t+=dt;const loc=W===LW&&W.player;
   if(loc){
   if(W.dead){if(W.t-W.dead>3.2){respawn();return}}
-  if(W.jump){W.jump.t+=dt;if(W.jump.t>.35){const to=W.jump.to;W.jump=null;doJump(to);return}}
+  if(W.jump){const J=W.jump;J.t+=dt;gateTransit(J,dt);if(J.t>JUMP_OUT){const to=J.to;W.jump=null;$('fade').style.opacity=1;doJump(to);JIN.t=0;SFX.jump();return}}
   if(W.pendingFJump){const J=W.pendingFJump;W.pendingFJump=null;bridgeJump(J.tok,J.to);return}
   if(W.bridge)bridgeUpdate(dt);
-  playerUpdate(dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}}
+  if(JIN.t<JIN.d)JIN.t+=dt;if(!W.jump&&JIN.t>=.45)playerUpdate(dt);else if(!W.jump)levelRoll(W.player,dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}}
   if(NET.cl){clientWorld(dt);return}
   if(NET.host)netWorld(dt);
   groupsUpdate();
@@ -2366,7 +2380,7 @@ function draw3D(){
 // ---- 2D overlay
 function drawOverlay(){
   const c=octx;c.setTransform(DPR,0,0,DPR,0,0);c.clearRect(0,0,VW,VH);
-  if(!W)return;const p=W.player,t=W.t,sec=S.sectors[W.sid];
+  if(!W)return;const p=W.player,t=W.t,sec=S.sectors[W.sid];if(p)jumpFx(c);
   if(sec.storm>S.T){c.fillStyle=`rgba(120,140,255,${.05+.03*Math.sin(t*7)})`;c.fillRect(0,0,VW,VH);if(Math.random()<.02){c.strokeStyle='rgba(200,220,255,.5)';c.beginPath();let x=rnd(VW),y=0;c.moveTo(x,y);while(y<VH){x+=rnd(-40,40);y+=rnd(20,60);c.lineTo(x,y)}c.stroke()}}
   if(W.hurt){c.fillStyle=`rgba(255,93,79,${W.hurt*.5})`;c.fillRect(0,0,VW,VH)}
   if(W.bridge){drawBridgeOverlay(c,t);return}
@@ -3103,7 +3117,7 @@ function netSyncPilots(){for(const pid in MP.rp){const e=MP.rp[pid],P=S.pilots[p
 // per system, every tick: move remote ships to where their pilots say they are, fire their guns, run their mining lasers
 function netWorld(dt){const now=performance.now();
   for(const e of W.ents){if(!e.rp||!e.alive)continue;const u=MP.inp[e.rp],P=S.pilots[e.rp];if(!P)continue;
-    if(u){const age=Math.min(.25,(now-u.at)/1000);e.x=u.x+u.vx*age;e.y=u.y+u.vy*age;e.z=u.z+u.vz*age;e.vx=u.vx;e.vy=u.vy;e.vz=u.vz;e.q.x=u.q[0];e.q.y=u.q[1];e.q.z=u.q[2];e.q.w=u.q[3];qNorm(e.q);e.boosting=!!u.b;e.thrusting=!!u.th;e.wpn=u.w==='l'?'laser':'kinetic';
+    if(u){const age=Math.min(.25,(now-u.at)/1000);e.x=u.x+u.vx*age;e.y=u.y+u.vy*age;e.z=u.z+u.vz*age;e.vx=u.vx;e.vy=u.vy;e.vz=u.vz;e.q.x=u.q[0];e.q.y=u.q[1];e.q.z=u.q[2];e.q.w=u.q[3];qNorm(e.q);e.boosting=!!u.b;e.thrusting=!!u.th;e.wpn=u.w==='l'?'laser':'kinetic';e.inJump=!!u.j;
       if(u.f&&now-u.at<600){if(u.w==='l')fireLaser(e);else fire(e)}}
     e.mining=null;
     if(u&&u.m){const sec=S.sectors[W.sid],a=sec.ast.find(x=>x.id===u.m);if(a&&d3(a,e)-astR(a)<340){const room=e.st.cargo-invMass(P.cargo);
@@ -3142,7 +3156,7 @@ function netSend(o,fast){if(NET.cl&&MP.host)send(MP.host,o,fast)}
 function netTid(T){if(!T)return 0;if(T.type==='station')return'S';if(T.type==='outpost')return'O';return T.id}
 function clientTick(dt){if(!running||!S||!S.player||!W)return;MP.uT-=dt;if(MP.uT>0)return;MP.uT=1/20;const P=S.player,p=W.player;if(!p||P.docked||W.dead)return;
   const firing=!!(keys.Space||mouse.l||touch.fire);
-  netSend({t:'u',x:r1(p.x),y:r1(p.y),z:r1(p.z),vx:Math.round(p.vx),vy:Math.round(p.vy),vz:Math.round(p.vz),q:[+p.q.x.toFixed(4),+p.q.y.toFixed(4),+p.q.z.toFixed(4),+p.q.w.toFixed(4)],f:firing?1:0,w:P.wpn==='laser'?'l':'k',m:p.mining?p.mining.id:0,b:p.boosting?1:0,th:p.thrusting?1:0,fa:P.fa?1:0,rt:P.route||0},true)}
+  netSend({t:'u',x:r1(p.x),y:r1(p.y),z:r1(p.z),vx:Math.round(p.vx),vy:Math.round(p.vy),vz:Math.round(p.vz),q:[+p.q.x.toFixed(4),+p.q.y.toFixed(4),+p.q.z.toFixed(4),+p.q.w.toFixed(4)],f:firing?1:0,w:P.wpn==='laser'?'l':'k',m:p.mining?p.mining.id:0,b:p.boosting?1:0,th:p.thrusting?1:0,fa:P.fa?1:0,rt:P.route||0,j:W.jump?1:0},true)}
 function clientRecv(m){
   switch(m.t){
     case 'welcome':mpClientStart(m);break;
