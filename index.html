@@ -421,6 +421,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <div class="h3" style="margin-top:18px">Instruments</div>
             <p>The amber ring ahead of you is where your guns point. Put it on the target's diamond lead marker to hit a moving ship. The green circle shows which way you are actually drifting. The radar is a disc around your ship: blips sit on stalks above or below the disc to show height.</p>
             <p><b>Missiles.</b> Target a hostile and keep it inside the dashed lock ring around your gun reticle. A diamond closes in on the target; when it turns red and reads LOCKED, press C. Missiles home on the target but turn slower than ships, so hard turns and flares can beat them. Red arrows on the ring around the centre point to hostiles off-screen; a blinking warning means someone is locking you or a missile is inbound.</p>
+            <p><b>Distress calls.</b> When a friendly station, depot or outpost is attacked anywhere in the galaxy, it radios every pilot of its faction: a two-tone chirp and a message saying who is under attack, where and how many jumps away. The call goes into the Friendly ops list, and O sets course to it.</p>
             <p><b>Magazines, not ammunition.</b> Missiles, torpedoes and swarm pods never need building or loading. Each hull carries a set number of shots (more with Weapons Mk). Once a magazine is below full, a reload countdown runs (missiles 20 s, torpedoes 35 s, swarm pods 30 s) and then it refills completely; the HUD shows the count and the countdown. You can target hostile stations, depots and outposts with T, Q or a click as well as ships and frigates; only torpedoes and capital guns hurt station armour.</p>
             <p><b>Hulls.</b> Every pilot starts in a Light hull: a Light Fighter, Light Miner or Light Hauler. You can switch between those three starter hulls for free in the Shipyard at your faction's home station. Bigger hulls are built in a core station's Shipyard from materials (plates, conduit, coils and, for the heaviest, Crystal Lattice) plus a small fee; the old frame's materials come back to you. Miners and haulers come in Light, Medium and Heavy: more mining lasers, more guard drones and bigger holds as they grow. Load Guard Drones into your drone bay in the Shipyard; they launch with you and defend your ship. Light fighters are the fastest, accelerate hardest, turn tightest, burn the least energy on afterburner and shake missiles best (flares work more often), but carry small racks and thin armour. Medium fighters are nearly as quick and nimble with heavier guns: both can out-run and out-turn heavies and bombers, and staying out of a heavy's nose is how you survive its swarm. Heavy fighters trade speed for armour, bigger guns and a larger missile rack. Bombers are slow and tough and carry Siege Torpedoes: lock an outpost (it takes longer), launch, and each torpedo hits it three times as hard as a missile. Torpedoes are slow and turn badly, but fighter guns can't touch one once it's away: only station, depot and frigate point-defence turrets can shoot them down. Stop the bombers before they launch, and escort your own so they get their shots off (enemy torpedoes show a yellow TORPEDO marker). Change hull at your faction's main station.</p>
             <p><b>Kinetic vs laser.</b> Both guns share your Weapons upgrade. Kinetic cannons (1) fire slugs that take time to arrive, so aim at the diamond lead marker; they sip energy, reach about 950 m and hit hull 15% harder. Lasers (2) hit instantly wherever your nose points, no lead needed, but drain about three times the energy, reach only 820 m and are 25% stronger against shields and weaker against hull. The reticle becomes a diamond in laser mode and turns red when the beam is on a target. A good pattern: strip shields with lasers, then finish the hull with kinetics.</p>
@@ -870,7 +871,7 @@ function capitalTick(){const T=S.T;S.frigates=S.frigates||[];
   // abstract fighting away from the player
   for(const t of S.frigates.slice()){if(t.live||t.hull<=0)continue;const sid=t.sector;let hit=0;
     for(const o of frigatesIn(sid))if(o!==t&&!o.live&&hostile(t.side,o.side))hit+=rnd(250,420);
-    const Rs=S.stations[sid];if(Rs&&hostile(t.side,Rs.owner)){hit+=Rs.kind==='core'?150:Rs.kind==='hive'?200:90;
+    const Rs=S.stations[sid];if(Rs&&hostile(t.side,Rs.owner)){hit+=Rs.kind==='core'?150:Rs.kind==='hive'?200:90;distressCall(sid,Rs.name,Rs.owner,t.side);
       if(!WORLDS[sid]){if(Rs.shield>0)Rs.shield=Math.max(0,Rs.shield-700);else Rs.hull-=rnd(320,420);if(Rs.hull<=0){if(Rs.kind==='depot')razeStation(sid,t.side);else Rs.hull=1}}}
     if(hit){t.hull-=hit;if(t.hull<=0)killFrigateToken(t,'in battle')}else t.hull=Math.min(FRIG_HULL*(t.side==='brood'?1.5:1),t.hull+FRIG_HULL*.03)}
   // control: an uncontested frigate holds the system, mines it, and takes its outpost after a minute
@@ -1000,9 +1001,19 @@ function scheduleContract(){
   S.contracts.push({id:S.nextId++,fac:f,item,n,reward,until:S.T+480});
   feed(`New ${FACTIONS[f].short} supply contract: ${n} ${ITEMS[item].name} for ${fmt(reward)} cr.`,'info');
 }
+// ---- distress calls: friendly stations, depots and outposts radio every pilot of their faction when attacked, wherever they are
+function distressCall(sid,name,owner,by){if(NET.cl||!owner||!S)return;S.distress=S.distress||[];const key=sid+':'+name,now=S.T;let d=S.distress.find(x=>x.key===key);
+  if(d){d.T2=now;if(by)d.by=by;if(now-d.T<60)return;d.T=now}else{d={key,sid,name,fac:owner,by:by||null,T:now,T2:now};S.distress.push(d)}
+  const send=(pid,P)=>{const fac=P?P.faction:S.player.faction,mine=owner===fac||(owner==='player'&&!NET.on);if(!mine)return;const here=P?P.sector:S.player.sector,h=HOP[sid][here];
+    const msg=`📡 Distress call from ${name} in ${DEF[sid].name}: under attack${d.by&&d.by!==owner?' by '+(d.by==='player'?'a pilot':sideName(d.by)):''}. ${h?h+' jump'+(h>1?'s':'')+' away':'You are in that system'}. Press O to respond.`;
+    if(!pid||pid===NET.me){feed(msg,'bad');SFX.distress()}else netMsg(pid,'distress',msg)};
+  if(NET.host){for(const pid in S.pilots)send(pid,S.pilots[pid])}else send(null,null)}
+function distressOps(){const pf=S.player.faction,out=[];for(const d of S.distress||[]){if(S.T-d.T2>90)continue;if(!(d.fac===pf||d.fac==='player'))continue;out.push({kind:'defend',ev:{type:'distress',stage:'engaged',sector:d.sid},sector:d.sid,hops:HOP[d.sid][S.player.sector],eta:0,label:`Distress: ${d.name} (${DEF[d.sid].name})`})}return out}
 function updateEvents(){
   const T=S.T;
+  if(S.distress)S.distress=S.distress.filter(d=>T-d.T2<120);
   for(const ev of S.events){
+    if(ev.type==='offensive'&&!ev.dist&&ev.stage!=='done'&&T>=ev.eta){ev.dist=1;const ow=evOwner(ev);if(ow&&ow!==ev.att)distressCall(ev.sector,evName(ev),ow,ev.att)}
     if(ev.type==='build'){buildTick(ev,T);continue}
     if(ev.type==='yardbuild'||ev.type==='frigbuild')continue;
     if(ev.type!=='offensive'){if(T>ev.until)ev.stage='done';continue}
@@ -1157,6 +1168,7 @@ const SFX0={
   beep(f,v){thump(f,f*.99,.08,.05*(v||1),'sine')},
   count(fin){if(fin){thump(988,984,.34,.15,'triangle');setTimeout(()=>thump(1318,1312,.22,.09,'sine'),80)}else thump(659,656,.16,.14,'triangle')},
   warn(){thump(146,144,.16,.075,'triangle')},
+  distress(){[0,150,300,560,710,860].forEach((d,i)=>setTimeout(()=>thump(i%2?660:880,i%2?655:874,.11,.075,'triangle'),d));setTimeout(()=>chatterRun(),1050)},
   boost(){rumble(170,.9,.32,1,480);thump(52,38,.6,.17)},
   jump(){rumble(110,2,.34,1.2,640);thump(40,26,1.8,.2)},
   alarm(){thump(98,96,.22,.12,'triangle');setTimeout(()=>thump(73,72,.3,.12,'triangle'),240)},
@@ -1835,7 +1847,7 @@ function respawn(){if(NET.cl){clientRespawn();return}
   const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';
   enterSector(P.sector);openDock();save();
 }
-function damageStation(E,dmg,by,kind){if(NET.cl)return;if(kind!=='torpedo'&&kind!=='capital'){if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only scratch station armour. Torpedoes are needed: bring a Bomber.',true)}return}
+function damageStation(E,dmg,by,kind){if(NET.cl)return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only scratch station armour. Torpedoes are needed: bring a Bomber.',true)}return}
   E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
   if(!E.offline){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.offline=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! Its turrets are offline and the hull is exposed.`:`${E.name}'s shield collapsed. Its turrets are offline and the hull is exposed.`,mine?'bad':'warn')}
   if(!R||dmg<=0)return;R.hull-=dmg;if(Math.random()<.3)fxSpark({x:E.x+rnd(-60,60),y:E.y+rnd(-60,60),z:E.z+rnd(-60,60)},'#ffcf8a',3);
@@ -1849,7 +1861,7 @@ function razeStation(sid,by){const R=S.stations[sid];if(!R)return;const s=S.sect
 function razeStationFx(sid,R){if(W&&W.sid===sid&&W.stationEnt&&W.stationEnt.rec===R){const E=W.stationEnt;if(W===LW&&S.player.docked==='station')undock();if(NET.host)netKickDocked(sid,'station');fxBoom(E,260,sideCol(R.owner));fxBoom(E,160,'#ffe2b0');const i=W.ents.indexOf(E);if(i>=0)W.ents.splice(i,1);W.stationEnt=null;if(W.tgt&&W.tgt.ref===E)W.tgt=null;
     for(const e of W.ents)if(e.npc&&e.role==='strike'&&e.ai.siege)e.role='leave'}}
 function damageOutpost(E,dmg){if(NET.cl)return;
-  const o=E.o;E.lastHit=W.t;if(o.shield>0){const a=Math.min(o.shield,dmg);o.shield-=a;dmg-=a}
+  const o=E.o;if(o.owner)distressCall(W.sid,o.name,o.owner,null);E.lastHit=W.t;if(o.shield>0){const a=Math.min(o.shield,dmg);o.shield-=a;dmg-=a}
   if(dmg>0){o.hull-=dmg;fxSpark({x:E.x+rnd(-50,50),y:E.y+rnd(-30,30),z:E.z+rnd(-50,50)},'#ffcf8a',3)}
   if(o.hull<=0&&!o.breached){o.hull=0;o.breached=S.T;o.shield=0;fxBoom(E,160,sideCol(o.owner));
     feed(o.owner==='player'?`Your ${o.name} has been breached! Hold the ring or lose it.`:`${o.name}'s defenses are down. Its ring is open for a claim.`,o.owner==='player'?'bad':'warn')}
@@ -2058,6 +2070,7 @@ function friendlyOps(){const pf=S.player.faction,out=[];
     else if(friendSide(ow))out.push({kind:'defend',ev,sector:ev.sector,hops,eta,label:`${sideName(ev.att)} ${ev.att==='brood'?'swarm':'strike'} (${ev.n}) → ${ow==='player'?'your ':''}${nm}`});
     else if(ev.att==='brood')out.push({kind:'defend',ev,sector:ev.sector,hops,eta,label:`Brood swarm (${ev.n}) → ${nm} (${sideName(ow)||'unclaimed'})`})}
   for(const t of S.frigates||[]){if(friendSide(t.side)||!covered(t.sector))continue;const sid=t.sector,Rs=S.stations[sid],oid=OUT_BY_SECTOR[sid];if(friendSide(sectorOwner(sid))||(Rs&&friendSide(Rs.owner))||(oid&&friendSide(S.outposts[oid].owner)))out.push({kind:'defend',ev:{type:'frigate',stage:'engaged',sector:sid},sector:sid,hops:HOP[sid][S.player.sector],eta:0,label:`${t.side==='brood'?'Brood Leviathan':sideName(t.side)+' frigate'} in ${DEF[sid].name}`})}
+  for(const d of distressOps())if(!out.some(o=>o.sector===d.sector)&&!(d.sector===S.player.sector&&localTrouble().length))out.push(d);
   out.sort((a,b)=>a.hops-b.hops||a.eta-b.eta);return[...localTrouble(),...out]}
 function opWhen(op){if(op.kind==='local')return'here';const j=op.hops?`${op.hops} jump${op.hops>1?'s':''}`:'this sector';if(op.ev.stage==='engaged')return j+' · fighting now';if(op.ev.stage==='building')return j+` · building ${Math.round((op.ev.prog||0)*100)}%`;return j+(op.held?' · holding for you':` · ${op.eta}s`)}
 function joinOp(op){if(!op)return;
@@ -3664,7 +3677,7 @@ function clientRecv(m){
     case 'gjump':{if(S.player.docked!=='turret')break;const G=W&&W.gunseat,keep=G?{id:G.id,yaw:G.yaw,pitch:G.pitch,msl:0}:{id:m.id,yaw:Math.PI,pitch:.1,msl:0};exitSector();S.player.sector=m.to;enterSector(m.to);S.player.docked='turret';W.gunseat={...keep,ent:null,lost:performance.now()};SFX.jump();feed(`Jumped to ${DEF[m.to].name} with the gunboat.`,'info');break}
     case 'nobridge':{if(W&&W.bridge)exitBridge();else if(S.player.docked==='bridge')S.player.docked=null;flash(m.gone?'The frigate is gone. Your fighter is adrift.':'You can only board your own frigate, close up.',true);break}
     case 'ckpt':MP.ckpt=m.ck;MP.ckMeta={gid:m.ck.gid,T:m.ck.T};try{localStorage.setItem(ckKey(),JSON.stringify(m.ck))}catch(e){}break;
-    case 'msg':if(m.k==='taken'){mpShutdown();running=false;$('hud').hidden=true;$('start').hidden=false;showStart();mpStatus(`The callsign <b>${esc(m.a[0])}</b> is already taken in this galaxy. Pick another one and join again.`,true);$('mpName').focus();break}if(m.k==='feed')feed(...m.a);else if(m.k==='flash')flash(...m.a);else if(m.k==='stat')mpStatus(m.a[0]);break;
+    case 'msg':if(m.k==='taken'){mpShutdown();running=false;$('hud').hidden=true;$('start').hidden=false;showStart();mpStatus(`The callsign <b>${esc(m.a[0])}</b> is already taken in this galaxy. Pick another one and join again.`,true);$('mpName').focus();break}if(m.k==='feed')feed(...m.a);else if(m.k==='distress'){feed(m.a[0],'bad');SFX.distress()}else if(m.k==='flash')flash(...m.a);else if(m.k==='stat')mpStatus(m.a[0]);break;
     case 'actr':dockErr=m.err||'';if(!$('dock').hidden&&S.player.docked)renderDock();break;
     case 'dead':if(W){W.dead=W.t;$('deathMsg').hidden=false;W.tgt=null;if(W.player)W.player.alive=false}break;
     case 'roster':MP.roster=m.r;break;
