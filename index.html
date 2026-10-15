@@ -1066,6 +1066,12 @@ function auInit(){
   // laser hum: two close low saws, heavily filtered; swells while the trigger is held
   const lg=c.createGain();lg.gain.value=0;const lf=c.createBiquadFilter();lf.type='lowpass';lf.frequency.value=230;lf.Q.value=5;lf.connect(lg);lg.connect(AU.sfx);
   for(const f of[68,69.4]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(lf);o.start()}AU.las={g:lg};
+  // mining beam: a buzzing square pair through a resonant band-pass that wobbles, plus gritty filtered noise for the rock being cut
+  const mg=c.createGain();mg.gain.value=0;mg.connect(AU.sfx);const mbp=c.createBiquadFilter();mbp.type='bandpass';mbp.frequency.value=520;mbp.Q.value=4;mbp.connect(mg);
+  const mos=[];for(const f of[110,110.9]){const o=c.createOscillator();o.type='square';o.frequency.value=f;const og=c.createGain();og.gain.value=.5;o.connect(og);og.connect(mbp);o.start();mos.push(o)}
+  const wob=c.createOscillator();wob.frequency.value=7.5;const wg=c.createGain();wg.gain.value=140;wob.connect(wg);wg.connect(mbp.frequency);wob.start();
+  const mn=c.createBufferSource();mn.buffer=nb;mn.loop=true;const mnf=c.createBiquadFilter();mnf.type='bandpass';mnf.frequency.value=900;mnf.Q.value=1.4;const mng=c.createGain();mng.gain.value=.9;mn.connect(mnf);mnf.connect(mng);mng.connect(mg);mn.start();
+  AU.mine={g:mg,bp:mbp,os:mos,wob};
   musicStart()}
 function vAt(p){if(!W||!p)return 1;const d=hyp(p.x-cam.x,p.y-cam.y,p.z-cam.z);return 1/(1+Math.pow(d/450,1.5))}
 function voice(dur){if(AU.voices>26)return false;AU.voices++;setTimeout(()=>AU.voices--,dur*1000+60);return true}
@@ -1088,11 +1094,18 @@ const SFX0={
   jump(){rumble(110,2,.34,1.2,640);thump(40,26,1.8,.2)},
   alarm(){thump(98,96,.22,.12,'triangle');setTimeout(()=>thump(73,72,.3,.12,'triangle'),240)},
   clunk(){thump(88,48,.22,.17,'triangle');rumble(230,.18,.12)},
+  mineOn(){thump(180,420,.18,.07,'square');rumble(700,.12,.06,2)},
+  mineOff(){thump(400,140,.2,.06,'square')},
+  ore(n){const f=[740,880,988,1175][n%4];thump(f,f*.98,.09,.06,'triangle');setTimeout(()=>thump(f*1.5,f*1.48,.07,.03,'sine'),35)},
+  crack(){thump(150,40,.5,.24);rumble(900,.35,.22,1,180);setTimeout(()=>rumble(400,.6,.16,.8,90),90)},
 };
 const SFX={};for(const k in SFX0)SFX[k]=(...a)=>{if(!MUTE)return SFX0[k](...a)};
-function auFrame(){if(!auOK())return;const c=AU.ctx,t=c.currentTime,E=AU.eng;let g=0,ng=0,f=34,lg=0;
+function auFrame(){if(!auOK())return;const c=AU.ctx,t=c.currentTime,E=AU.eng;let g=0,ng=0,f=34,lg=0,ml=0;
   if(running&&W&&W.player&&!S.player.docked&&!W.dead&&AU.on.sfx){const p=W.player,sp=hyp(p.vx,p.vy,p.vz),k=clamp(sp/(p.st.maxSpd*1.9),0,1);
-    const on=p.thrusting||p.boosting;g=on?.05+.02*k+(p.boosting?.03:0):0;ng=on?.05+(p.boosting?.09:0)+k*.012:0;f=41+k*3+(p.boosting?2:0);if(W.t-(AU.lasT||-9)<.14)lg=.1}
+    const on=p.thrusting||p.boosting;g=on?.05+.02*k+(p.boosting?.03:0):0;ng=on?.05+(p.boosting?.09:0)+k*.012:0;f=41+k*3+(p.boosting?2:0);if(W.t-(AU.lasT||-9)<.14)lg=.1;
+    if(p.mining){ml=.075+.012*Math.sin(t*2.3);const m=invMass(S.player.cargo);if(AU.mineM!=null&&m>AU.mineM+.5){AU.oreN=(AU.oreN||0)+1;SFX.ore(AU.oreN)}AU.mineM=m}}
+  const mOn=ml>0;if(mOn!==!!AU.mineOn){AU.mineOn=mOn;if(mOn)SFX.mineOn();else{SFX.mineOff();AU.mineM=null}}if(!mOn)AU.mineM=null;
+  AU.mine.g.gain.setTargetAtTime(ml,t,mOn?.06:.09);
   E.g.gain.setTargetAtTime(g,t,g>0?.1:.25);E.ng.gain.setTargetAtTime(ng,t,ng>0?.08:.22);E.o1.frequency.setTargetAtTime(f,t,.8);E.o2.frequency.setTargetAtTime(f*1.51,t,.8);E.nf.frequency.setTargetAtTime(240+ng*1800,t,.4);
   AU.las.g.gain.setTargetAtTime(lg,t,.05)}
 // generative ambient score: slow low pads over Am - F - C - G, a soft sub pulse, and the odd low bell
@@ -1839,7 +1852,7 @@ function playerUpdate(dt){
     if(!a){let bd=420;for(const x of sec.ast){const d=d3(x,p)-astR(x);if(d<bd){bd=d;a=x}}if(a)W.tgt={kind:'ast',ref:a}}
     if(a){const d=d3(a,p)-astR(a);
       if(d<300){const room=st.cargo-invMass(P.cargo);if(room<1){if(W.t-(W.fullMsg||0)>3){flash('Hold is full. Dock to unload or fabricate.');W.fullMsg=W.t}}
-        else{p.mining=a;if(!NET.cl)p.mineAcc+=st.drill*dt;while(p.mineAcc>=1){p.mineAcc-=1;const k=mainOre(a);if(!k)break;a.ore[k]--;if(!a.ore[k])delete a.ore[k];inv.add(P.cargo,k,1);if(oreTotal(a)<=0){removeAst(sec,a);fxBoom(a,30,ITEMS[k].col);break}}}}
+        else{p.mining=a;if(!NET.cl)p.mineAcc+=st.drill*dt;while(p.mineAcc>=1){p.mineAcc-=1;const k=mainOre(a);if(!k)break;a.ore[k]--;if(!a.ore[k])delete a.ore[k];inv.add(P.cargo,k,1);if(oreTotal(a)<=0){removeAst(sec,a);fxBoom(a,30,ITEMS[k].col);SFX.crack();break}}}}
       else if(W.t-(W.rangeMsg||0)>2){flash('Out of mining range. Close to within 300 m.');W.rangeMsg=W.t}}
   }else p.mining=null;
   pickupAndGates(p,P,st);
