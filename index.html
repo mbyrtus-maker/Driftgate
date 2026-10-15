@@ -100,8 +100,8 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 #comms{position:absolute;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:7;width:min(300px,calc(100% - 32px));display:flex;flex-direction:column;gap:4px;padding:10px 12px 12px;background:rgba(10,16,30,.92);border:1px solid #7ad9a7;box-shadow:0 8px 24px rgba(0,0,0,.45)}
 #comms[hidden]{display:none}.cm-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-family:var(--f-display);font-weight:800;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:#7ad9a7;margin-bottom:4px}.cm-h b{font-family:var(--f-ui);font-weight:600;font-size:13px;letter-spacing:.02em;text-transform:none;color:var(--ivory);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cm-o{display:flex;gap:10px;align-items:center;background:transparent;border:1px solid var(--line-hi);color:var(--ivory);font:inherit;font-size:14px;padding:6px 8px;cursor:pointer;text-align:left}.cm-o:hover{border-color:#7ad9a7;color:#7ad9a7}.cm-o kbd{min-width:30px;text-align:center}.cm-n{font-size:12px;color:var(--dim);margin-top:2px}
-#dev{position:absolute;top:calc(118px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:8;width:min(340px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;padding:12px 14px 14px;background:var(--sheet);border:1px solid var(--amber);box-shadow:0 10px 30px rgba(0,0,0,.5)}
-#dev[hidden]{display:none}.dv-s{display:flex;gap:6px}.dv-s select{flex:1;min-width:0;background:var(--sheet-2);color:var(--ivory);border:1px solid var(--line-hi);font:inherit;font-size:13px;padding:4px 6px}#dev .dv-s .btn{width:auto;flex:none}#dev .btn{max-width:none;width:100%;text-align:left;white-space:normal;font-size:13px;letter-spacing:.08em}#dev .btn:hover{border-color:var(--amber);color:var(--amber)}
+#dev{position:absolute;top:calc(118px + env(safe-area-inset-top,0px));max-height:calc(100% - 140px);overflow:auto;left:50%;transform:translateX(-50%);z-index:8;width:min(340px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;padding:12px 14px 14px;background:var(--sheet);border:1px solid var(--amber);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#dev[hidden]{display:none}.dv-sec{font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);margin-top:6px;border-top:1px solid var(--line);padding-top:8px}.dv-l{font-size:12px;color:var(--dim);align-self:center;white-space:nowrap}.dv-s input[type=number]{width:64px;background:var(--sheet-2);color:var(--ivory);border:1px solid var(--line-hi);font:inherit;font-size:13px;padding:4px 6px}#dev .dv-s .btn{flex:1}.dv-types{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:12.5px;color:var(--ivory)}.dv-types label{display:flex;gap:6px;align-items:center;cursor:pointer}.dv-s{display:flex;gap:6px}.dv-s select{flex:1;min-width:0;background:var(--sheet-2);color:var(--ivory);border:1px solid var(--line-hi);font:inherit;font-size:13px;padding:4px 6px}#dev .dv-s .btn{width:auto;flex:none}#dev .btn{max-width:none;width:100%;text-align:left;white-space:normal;font-size:13px;letter-spacing:.08em}#dev .btn:hover{border-color:var(--amber);color:var(--amber)}
 .dv-h{display:flex;justify-content:space-between;align-items:center;font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
 .dv-x{background:none;border:0;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:0 2px}.dv-m{font-size:12px;color:var(--dim);min-height:1.3em}
 .sheet{position:absolute;inset:0;background:rgba(2,3,7,.72);display:grid;place-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));z-index:5}
@@ -377,6 +377,12 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     <button type="button" class="btn" data-dev="gunboat">Fly a gunboat (AI on the turret)</button>
     <button type="button" class="btn" data-dev="gbwing">Spawn friendly gunboat to crew</button>
     <div class="dv-s"><select id="devShip" aria-label="Ship"></select><button type="button" class="btn" data-dev="hull">Fly it</button></div>
+    <div class="dv-sec">Enemies</div>
+    <div class="dv-s"><label class="dv-l" for="devSide">Side</label><select id="devSide" aria-label="Enemy side"></select></div>
+    <div class="dv-s"><button type="button" class="btn" data-dev="efrig">Enemy frigate</button><button type="button" class="btn" data-dev="levi">Brood Leviathan</button></div>
+    <div class="dv-s"><label class="dv-l" for="devN">Squadron</label><input id="devN" type="number" min="1" max="20" value="4" aria-label="Squadron size"><span class="dv-l">ships</span></div>
+    <div class="dv-types" id="devTypes"></div>
+    <button type="button" class="btn" data-dev="squad">Spawn enemy squadron</button>
     <div class="dv-m" id="devMsg">Ctrl+Alt+D toggles this panel.</div>
   </div>
   <section class="sheet" id="help" hidden>
@@ -1613,7 +1619,7 @@ function civHelp(e){let best=null,bd=2600;for(const c of W.ents){if(!c.npc||!c.a
 const keys={},mouse={x:0,y:0,l:false,r:false,aim:false,in:false},touch={on:false,ox:0,oy:0,dx:0,dy:0,id:null,fire:false,mine:false,boost:false,thrust:false};
 let coarse=matchMedia('(pointer:coarse)').matches;
 addEventListener('keydown',e=>{
-  if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;
+  if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
   const c=e.code;if(running)auInit();
   if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();return}
   if(c==='Enter'&&running&&NET.on&&!S.player.docked){e.preventDefault();openChat();return}
@@ -2001,6 +2007,7 @@ function npcThink(e,dt){
   if(e.role==='escort'&&ai.tgt){const H=escortHauler(e);if(H&&d3(ai.tgt,H)>1700)ai.tgt=null}
   if(combat&&(ai.t<=0||!(ai.tgt&&ai.tgt.alive&&W.ents.includes(ai.tgt)))){ai.t=.5+rnd(.4);ai.tgt=e.role==='screen'?screenTarget(e):e.role==='escort'?escortTarget(e):e.role==='strike'&&ai.siege&&e.cls==='bomber'?null:findHostile(e,e.role==='strike'?(ai.siege?1300:950):1500);
     if(!ai.tgt&&(e.role==='patrol'||e.role==='escort'))ai.tgt=civHelp(e);
+    if(ai.hunt&&W.t<ai.huntUntil&&ai.hunt.alive&&(W.ents.includes(ai.hunt)||ai.hunt===W.player)&&!(ai.hunt.isPlayer&&(S.player.docked||W.dead))&&d3(ai.hunt,e)<5000&&!(ai.tgt&&d3(ai.tgt,e)<400))ai.tgt=ai.hunt;
     if(e.grp){const L=grpLead(e.grp);if(!ai.tgt){for(const m of e.grp.members)if(m!==e&&m.alive&&m.ai.tgt&&m.ai.tgt.alive&&W.ents.includes(m.ai.tgt)&&d3(m.ai.tgt,e)<2200){ai.tgt=m.ai.tgt;break}}
       if(!ai.tgt&&L&&L!==e&&L.lastHitBy&&W.t-L.lastHit<3){const att=W.ents.find(x=>x.type==='ship'&&x.alive&&x.side===L.lastHitBy&&d3(x,e)<2200);if(att)ai.tgt=att}}}
   if(e.role==='raider'&&e.life>150&&!ai.tgt)e.role='leave';
@@ -3523,7 +3530,9 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'order':{if(m.k==='build'){runAs(pid,()=>requestBuild());break}const e=MP.rp[pid],w=e?worldOf(e):WORLDS[P.sector],k=m.k==='guard'?'guard':'escort';if(!w)break;runAs(pid,()=>{const T=m.id==='me'?W.player:entInWorld(w,String(m.id||''));if(T&&!hostile(S.player.faction,T.side==='player'?S.player.faction:T.side))issueOrder(k,T)});break}
     case 'fcon':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(!t||t.owner!==pid)break;const ent=m.e?entInWorld(WORLDS[t.sector],String(m.e)):null;runAs(pid,()=>fconApply(t,String(m.a||'').slice(0,40),ent));sendFtok(c);break}
     case 'fdest':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(t&&t.owner===pid&&DEF[m.dest]){t.dest=String(m.dest);t.jumpTo=null}sendFtok(c);break}
-    case 'dev':{if(m.k==='gbwing'){netMsg(pid,'flash',runAs(pid,()=>devGunboat()));break}if(m.k==='hull'){const r=runAs(pid,()=>devHull(String(m.cls||'')));if(MP.rp[pid]&&!P.docked){spawnRP(pid)}sendPR(c,true,true);send(L,syncMsg(c));netMsg(pid,'flash',r);if(P.docked)send(L,{t:'actr',err:''});break}if(m.k==='frig'){netMsg(pid,'flash',devFrigFor(pid));sendFtok(c);break}if(m.k==='res'){runAs(pid,()=>devRes(P));sendPR(c,false,true);send(L,syncMsg(c));if(P.docked)send(L,{t:'actr',err:''});netMsg(pid,'flash','Developer: added 10 of every resource to your vault.')}break}
+    case 'dev':{if(m.k==='efrig'||m.k==='levi'){netMsg(pid,'flash',runAs(pid,()=>devEnemyFrig(String(m.side||''),m.k==='levi')));break}
+      if(m.k==='squad'){const sd=String(m.side||'');if(!(FACTIONS[sd]||sd==='pirate'||sd==='brood'))break;netMsg(pid,'flash',runAs(pid,()=>devSquad(sd,+m.n,Array.isArray(m.types)?m.types.map(String).slice(0,6):[])));break}
+      if(m.k==='gbwing'){netMsg(pid,'flash',runAs(pid,()=>devGunboat()));break}if(m.k==='hull'){const r=runAs(pid,()=>devHull(String(m.cls||'')));if(MP.rp[pid]&&!P.docked){spawnRP(pid)}sendPR(c,true,true);send(L,syncMsg(c));netMsg(pid,'flash',r);if(P.docked)send(L,{t:'actr',err:''});break}if(m.k==='frig'){netMsg(pid,'flash',devFrigFor(pid));sendFtok(c);break}if(m.k==='res'){runAs(pid,()=>devRes(P));sendPR(c,false,true);send(L,syncMsg(c));if(P.docked)send(L,{t:'actr',err:''});netMsg(pid,'flash','Developer: added 10 of every resource to your vault.')}break}
     case 'act':{if(!P.docked)break;const err=runAs(pid,()=>{dockErr='';dockAction(m.act,String(m.arg||''));return dockErr});send(L,{t:'actr',err});sendPR(c,false,true);send(L,syncMsg(c));break}
     case 'build':{const e=MP.rp[pid];if(e)runAs(pid,()=>{const had=W.pbuild;startPlayerBuild();if(W.pbuild&&W.pbuild!==had)W.pbuild.pid=pid});break}
     case 'hold':{const ev=S.events.find(v=>v.id===m.id);if(ev)ev.hold=Math.max(ev.hold||0,Math.min(+m.hold||0,S.T+240));break}
@@ -3817,7 +3826,21 @@ addEventListener('beforeunload',()=>{if(NET.host){const ck=hostSave();if(ck)for(
 // ============================================================ developer tools (Ctrl+Alt+D)
 // Both actions create matter out of nothing, so they move the zero-sum baseline by exactly what they add: the economy audit stays balanced.
 function devShips(){const sel=$('devShip');if(!sel||!S)return;const f=S.player.faction,cur=S.player.cls;sel.innerHTML=Object.keys(HULL_COST).filter(k=>CLASSES[k]).sort((a,b)=>CLASSES[a].name.localeCompare(CLASSES[b].name)).map(k=>`<option value="${k}"${k===cur?' selected':''}>${esc(CLASSES[k].name)} · ${esc((FACTIONS[f].hulls||{})[k]||k)}${k===cur?' (current)':''}</option>`).join('')}
-function devToggle(){const d=$('dev');d.hidden=!d.hidden;if(!d.hidden)devShips();if(!d.hidden)$('devMsg').textContent=NET.cl?'Requests go to the host.':'Ctrl+Alt+D toggles this panel.'}
+const DEV_TYPES=[['interceptor','Light Fighter'],['striker','Medium Fighter'],['heavy','Heavy Fighter'],['bomber','Bomber'],['gunboat','Gunboat'],['scout','Scout']];
+function devEnemyUI(){const sel=$('devSide');if(!sel||!S)return;const pf=S.player.faction,cur=sel.value;sel.innerHTML=[...FAC_IDS.filter(f=>f!==pf).map(f=>[f,FACTIONS[f].name]),['pirate','The Unbound (pirates)'],['brood','The Brood']].map(([k,n])=>`<option value="${k}"${k===cur?' selected':''}>${esc(n)}</option>`).join('');
+  const T=$('devTypes');if(T&&!T.children.length)T.innerHTML=DEV_TYPES.map(([k,n],i)=>`<label><input type="checkbox" value="${k}"${i<2?' checked':''}>${esc(n)}</label>`).join('')}
+function devEnemyFrig(side,levi){if(!W||!W.player)return 'Not in a system.';if(levi)side='brood';if(side==='pirate')return 'The Unbound have no frigates. Pick a faction or the Brood.';if(!FACTIONS[side]&&side!=='brood')return 'Pick an enemy side.';
+  const p=W.player;let t;devLedger(()=>{t=makeFrigate(side,W.sid,{})});const e=W.ents.find(x=>x.alive&&x.tok===t);
+  if(e){qRot(p.q,0,0,1,_f);const d=2600;e.x=p.x+_f.x*d;e.y=p.y+_f.y*d+120;e.z=p.z+_f.z*d;e.vx=e.vy=e.vz=0;faceInstant(e,p.x-e.x,p.y-e.y,p.z-e.z);for(const k of e.pickets||[]){const o=rdir();k.x=e.x+o.x*170;k.y=e.y+o.y*170;k.z=e.z+o.z*170}fxWarp(e,sideCol(side));frigArriveFx(e)}
+  return side==='brood'?'A Brood Leviathan has surfaced 2.6 km ahead.':`${FACTIONS[side].short} frigate ${t.name} jumped in 2.6 km ahead.`}
+function devSquad(side,n,types){if(!W||!W.player)return 'Not in a system.';n=clamp(Math.round(+n||4),1,20);types=(types||[]).filter(k=>CLASSES[k]);if(!types.length)types=['interceptor'];
+  const p=W.player,fac=side==='pirate'?null:side,tier=side==='pirate'?pirateTier():factionTier(side),g={id:'g'+(RID++),side,role:'raider',members:[],n0:0,fleeing:false};qRot(p.q,0,0,1,_f);qRot(p.q,1,0,0,_r);
+  devLedger(()=>{for(let i=0;i<n;i++){const cls=side==='brood'&&types[i%types.length]==='gunboat'?'heavy':types[i%types.length],ld=loadout('patrol',tier,cls),e=makeNPC(side==='pirate'?'pirate':'raider',side,cls,tier,ld,'stock:'+side);
+    const row=Math.floor(i/5),col=i%5-2,d=1100+row*160;e.x=p.x+_f.x*d+_r.x*col*120;e.y=p.y+_f.y*d+(row%2?60:-30);e.z=p.z+_f.z*d+_r.z*col*120;faceInstant(e,p.x-e.x,p.y-e.y,p.z-e.z);
+    e.grp=g;e.slot=i;g.members.push(e);if(hostile(side,'player')){e.ai.tgt=W.player;e.ai.hunt=W.player;e.ai.huntUntil=W.t+90}W.ents.push(e);fxWarp(e,sideCol(side))}});
+  g.n0=g.members.length;W.groups[g.id]=g;const nm=side==='pirate'?'Unbound':side==='brood'?'Brood':FACTIONS[side].short;
+  feed(`⚠ ${nm} squadron of ${n} (${[...new Set(types)].map(k=>CLASSES[k].name).join(', ')}) jumped in 1.1 km ahead and is coming for you.`,'bad');SFX.alarm();return `Spawned ${n} ${nm} ships.`}
+function devToggle(){const d=$('dev');d.hidden=!d.hidden;if(!d.hidden){devShips();devEnemyUI()}if(!d.hidden)$('devMsg').textContent=NET.cl?'Requests go to the host.':'Ctrl+Alt+D toggles this panel.'}
 function devLedger(fn){const L0=ledger(),r=fn(),L1=ledger();for(const e of RAWS)S.ledger0.tot[e]=(S.ledger0.tot[e]||0)+L1.tot[e]-L0.tot[e];S.ledger0.credits+=L1.credits-L0.credits;return r}
 function devRes(P){P=P||S.player;devLedger(()=>{for(const k of ITEM_ORDER)inv.add(P.vault,k,10)});return `Added 10 of each of ${ITEM_ORDER.length} resources to the vault.`}
 // switch to any hull as though you had built it: its parts come with it (so a later trade-in is honest), the old hull's parts go to the vault
@@ -3842,6 +3865,8 @@ function devDo(k){if(!running||!S)return;let msg='';
   if(k==='res'){if(NET.cl){netSend({t:'dev',k:'res'});msg='Asked the host for resources…'}else{msg=devRes()}}
   else if(k==='frig')msg=devFrig();
   else if(k==='gunboat'){if(NET.cl){netSend({t:'dev',k:'hull',cls:'gunboat'});msg='Asked the host for a gunboat…'}else msg=devHull('gunboat')}
+  else if(k==='efrig'||k==='levi'){const sd=$('devSide').value;if(NET.cl){netSend({t:'dev',k,side:sd});msg='Asked the host…'}else msg=devEnemyFrig(sd,k==='levi')}
+  else if(k==='squad'){const sd=$('devSide').value,n=+$('devN').value,ty=[...document.querySelectorAll('#devTypes input:checked')].map(x=>x.value);if(!ty.length){$('devMsg').textContent='Tick at least one ship type.';return}if(NET.cl){netSend({t:'dev',k:'squad',side:sd,n,types:ty});msg='Asked the host…'}else msg=devSquad(sd,n,ty)}
   else if(k==='gbwing'){if(NET.cl){netSend({t:'dev',k:'gbwing'});msg='Asked the host for a gunboat…'}else msg=devGunboat()}
   else if(k==='hull'){const cls=$('devShip').value;if(NET.cl){netSend({t:'dev',k:'hull',cls});msg='Asked the host for the ship…'}else{msg=devHull(cls);if(NET.host&&W.player)W.player.cls=S.player.cls}devShips()}
   $('devMsg').textContent=msg;SFX.clunk();if(S.player.docked&&typeof renderDock==='function')renderDock();save()}
