@@ -1033,9 +1033,9 @@ function engageOffensive(ev){
 function gateKey(a,b){return[a,b].sort().join('-')}
 
 // ============================================================ audio: everything synthesized, low and soft; a global low-pass caps brightness
-const AU={ctx:null,on:{sfx:true,music:true},voices:0};
-try{const v=JSON.parse(localStorage.getItem('driftgate.audio')||'null');if(v&&typeof v.sfx==='boolean')AU.on=v}catch(e){}
-function auSave(){try{localStorage.setItem('driftgate.audio',JSON.stringify(AU.on))}catch(e){}}
+const AU={ctx:null,on:{sfx:true,music:false},voices:0};
+try{const v=JSON.parse(localStorage.getItem('driftgate.audio2')||'null');if(v&&typeof v.sfx==='boolean')AU.on=v}catch(e){}
+function auSave(){try{localStorage.setItem('driftgate.audio2',JSON.stringify(AU.on))}catch(e){}}
 function auOK(){return!!(AU.ctx&&AU.ctx.state==='running')}
 function auInit(){
   if(AU.ctx){if(AU.ctx.state==='suspended')AU.ctx.resume().catch(()=>{});return}
@@ -1076,6 +1076,7 @@ const SFX0={
   hull(){thump(92,36,.24,.22);rumble(280,.22,.16)},
   shieldDown(){thump(110,108,.26,.13,'triangle');setTimeout(()=>thump(82,80,.38,.13,'triangle'),270)},
   beep(f,v){thump(f,f*.99,.08,.05*(v||1),'sine')},
+  count(fin){if(fin){thump(988,984,.34,.15,'triangle');setTimeout(()=>thump(1318,1312,.22,.09,'sine'),80)}else thump(659,656,.16,.14,'triangle')},
   warn(){thump(146,144,.16,.075,'triangle')},
   boost(){rumble(170,.9,.32,1,480);thump(52,38,.6,.17)},
   jump(){rumble(110,2,.34,1.2,640);thump(40,26,1.8,.2)},
@@ -1085,22 +1086,22 @@ const SFX0={
 const SFX={};for(const k in SFX0)SFX[k]=(...a)=>{if(!MUTE)return SFX0[k](...a)};
 function auFrame(){if(!auOK())return;const c=AU.ctx,t=c.currentTime,E=AU.eng;let g=0,ng=0,f=34,lg=0;
   if(running&&W&&W.player&&!S.player.docked&&!W.dead&&AU.on.sfx){const p=W.player,sp=hyp(p.vx,p.vy,p.vz),k=clamp(sp/(p.st.maxSpd*1.9),0,1);
-    g=.05+.02*k+(p.boosting?.03:0);ng=(p.thrusting?.05:.012)+(p.boosting?.09:0)+k*.012;f=41+k*3+(p.boosting?2:0);if(W.t-(AU.lasT||-9)<.14)lg=.1}
-  E.g.gain.setTargetAtTime(g,t,.4);E.ng.gain.setTargetAtTime(ng,t,.35);E.o1.frequency.setTargetAtTime(f,t,.8);E.o2.frequency.setTargetAtTime(f*1.51,t,.8);E.nf.frequency.setTargetAtTime(240+ng*1800,t,.4);
+    const on=p.thrusting||p.boosting;g=on?.05+.02*k+(p.boosting?.03:0):0;ng=on?.05+(p.boosting?.09:0)+k*.012:0;f=41+k*3+(p.boosting?2:0);if(W.t-(AU.lasT||-9)<.14)lg=.1}
+  E.g.gain.setTargetAtTime(g,t,g>0?.1:.25);E.ng.gain.setTargetAtTime(ng,t,ng>0?.08:.22);E.o1.frequency.setTargetAtTime(f,t,.8);E.o2.frequency.setTargetAtTime(f*1.51,t,.8);E.nf.frequency.setTargetAtTime(240+ng*1800,t,.4);
   AU.las.g.gain.setTargetAtTime(lg,t,.05)}
 // generative ambient score: slow low pads over Am - F - C - G, a soft sub pulse, and the odd low bell
 const CHORDS=[[55,110,130.81,164.81],[43.65,87.31,110,130.81],[65.41,98,130.81,164.81],[49,98,123.47,146.83],[55,110,130.81,164.81],[43.65,87.31,110,146.83],[41.2,82.41,123.47,146.83],[49,98,116.54,146.83]];
 function musicStart(){const c=AU.ctx;AU.mf=c.createBiquadFilter();AU.mf.type='lowpass';AU.mf.frequency.value=480;AU.mf.Q.value=.6;AU.mf.connect(AU.mus);
   const lfo=c.createOscillator();lfo.frequency.value=.04;const lg=c.createGain();lg.gain.value=160;lfo.connect(lg);lg.connect(AU.mf.frequency);lfo.start();
   AU.mNext=c.currentTime+.4;AU.mIdx=0;setInterval(musicTick,500)}
-function musicTick(){if(!auOK())return;const c=AU.ctx;while(AU.mNext<c.currentTime+1.5){playChord(CHORDS[AU.mIdx%CHORDS.length],AU.mNext,11);AU.mIdx++;AU.mNext+=9.5}}
+function musicTick(){if(!auOK())return;const c=AU.ctx;if(!AU.on.music){AU.mNext=c.currentTime+.4;return}while(AU.mNext<c.currentTime+1.5){playChord(CHORDS[AU.mIdx%CHORDS.length],AU.mNext,11);AU.mIdx++;AU.mNext+=9.5}}
 function playChord(ch,t,len){const c=AU.ctx;
   ch.forEach((f,i)=>{for(const det of[-5,5]){const o=c.createOscillator(),g=c.createGain(),pk=i===0?.12:.045;o.type=i===0?'triangle':'sawtooth';o.frequency.value=f;o.detune.value=det;
     g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(pk,t+3.2);g.gain.setValueAtTime(pk,t+len-3.6);g.gain.linearRampToValueAtTime(.0001,t+len);o.connect(g);g.connect(AU.mf);o.start(t);o.stop(t+len+.1)}});
   for(let k=0;k<4;k++){const tb=t+.5+k*2.4,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=ch[0];g.gain.setValueAtTime(.0001,tb);g.gain.linearRampToValueAtTime(.09,tb+.06);g.gain.exponentialRampToValueAtTime(.0001,tb+1.8);o.connect(g);g.connect(AU.mus);o.start(tb);o.stop(tb+1.9)}
   if(Math.random()<.65){const tb=t+2+Math.random()*4.5,f=ch[1+Math.floor(Math.random()*3)]*2,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,tb);g.gain.linearRampToValueAtTime(.045,tb+.03);g.gain.exponentialRampToValueAtTime(.0001,tb+4.5);o.connect(g);g.connect(AU.mus);o.start(tb);o.stop(tb+4.6)}}
-function auToggle(){if(AU.on.sfx&&AU.on.music)AU.on.music=false;else if(AU.on.sfx)AU.on.sfx=false;else{AU.on.sfx=true;AU.on.music=true}auSave();auApply();flash(AU.on.sfx?(AU.on.music?'Sound and music on':'Music off'):'Sound off')}
-function auApply(){const b=$('bSnd');if(b)b.innerHTML=(AU.on.sfx?(AU.on.music?'Sound':'SFX'):'Muted')+' <kbd>N</kbd>';if(!AU.ctx)return;const t=AU.ctx.currentTime;AU.sfx.gain.setTargetAtTime(AU.on.sfx?1:0,t,.1);AU.mus.gain.setTargetAtTime(AU.on.music?.25:0,t,.3)}
+function auToggle(){if(AU.on.sfx&&!AU.on.music)AU.on.music=true;else if(AU.on.sfx){AU.on.sfx=false;AU.on.music=false}else{AU.on.sfx=true;AU.on.music=false}auSave();auApply();flash(AU.on.sfx?(AU.on.music?'Sound effects and music on':'Sound effects on, music off'):'Sound off')}
+function auApply(){const b=$('bSnd');if(b)b.innerHTML=(AU.on.sfx?(AU.on.music?'Music':'Sound'):'Muted')+' <kbd>N</kbd>';if(!AU.ctx)return;const t=AU.ctx.currentTime;AU.sfx.gain.setTargetAtTime(AU.on.sfx?1:0,t,.1);AU.mus.gain.setTargetAtTime(AU.on.music?.25:0,t,.3)}
 
 // ============================================================ feed
 function feed(msg,kind='info'){if(CTX&&NET.host&&CTX!==NET.me){netMsg(CTX,'feed',msg,kind);return}if(MUTE&&!CTX)return;FEED.push({t:S?S.T:0,rt:performance.now(),msg,kind});if(FEED.length>60)FEED.shift();renderFeed()}
@@ -1847,8 +1848,8 @@ function gateCountdown(p){const dt=W.fdt||1/60;let best=null;for(const g of GATE
   const{g,z}=best;W.gate={g,z};
   if(S.gateDown[gateKey(W.sid,g.to)]){W.gc=null;if(W.t-(W.gateMsg||0)>3){flash('This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}return}
   if(z.cos<.94){if(W.gc){W.gc=null;SFX.beep(140);flash('Alignment lost. Line up with the gate again.',true)}return}
-  if(!W.gc||W.gc.g!==g){W.gc={g,t:0,last:6};SFX.beep(180)}
-  const C=W.gc;C.t+=dt;const n=Math.ceil(GATE_HOLD-C.t);if(n<C.last&&n>0){C.last=n;SFX.beep(170+(5-n)*25,n===1?1.3:1)}
+  if(!W.gc||W.gc.g!==g){W.gc={g,t:0,last:6}}
+  const C=W.gc;C.t+=dt;const n=Math.ceil(GATE_HOLD-C.t);if(n<C.last&&n>0){C.last=n;SFX.count(n===1)}
   // the field: ease the ship onto the axis and let it creep toward the ring
   const tx=g.x-z.d.x*60,ty=g.y-z.d.y*60,tz=g.z-z.d.z*60,ex=tx-p.x,ey=ty-p.y,ez=tz-p.z,el=hyp(ex,ey,ez)||1,sp=Math.min(55,el*.35),k=Math.min(1,1.6*dt);
   p.vx+=(ex/el*sp-p.vx)*k;p.vy+=(ey/el*sp-p.vy)*k;p.vz+=(ez/el*sp-p.vz)*k;
