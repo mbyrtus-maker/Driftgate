@@ -1643,6 +1643,13 @@ function missilesUpdate(dt){
     if(!boom)for(const a of s.ast)if(d3(a,m)<astR(a)){boom=true;break}
     if(boom){detonate(m,i);if(!W)return}}
 }
+// AI gate jump: fly to a point on the gate's axis, hold there while the gate charges for 5 s, then warp out
+function npcGateJump(e,g,dt,urgency){const d=gateAxis(g);
+  if(!e.gj||e.gj.g!==g){const ax=g.x-d.x*200,ay=g.y-d.y*200,az=g.z-d.z*200,dist=steer(e,ax,ay,az,dt,true,urgency||1);faceTo(e,{x:ax,y:ay,z:az},dt);if(dist<110)e.gj={g,t:0};return false}
+  const J=e.gj;J.t+=dt;const tx=g.x-d.x*60,ty=g.y-d.y*60,tz=g.z-d.z*60,ex=tx-e.x,ey=ty-e.y,ez=tz-e.z,el=hyp(ex,ey,ez)||1,sp=Math.min(50,el*.35),k=Math.min(1,1.6*dt);
+  e.vx+=(ex/el*sp-e.vx)*k;e.vy+=(ey/el*sp-e.vy)*k;e.vz+=(ez/el*sp-e.vz)*k;faceDir(e,d.x,d.y,d.z,dt);e.thrusting=false;
+  if(Math.random()<dt*(2+J.t*3))fxSpark({x:e.x+rnd(-20,20),y:e.y+rnd(-20,20),z:e.z+rnd(-20,20)},sideCol(e.side),1);
+  if(J.t>=GATE_HOLD){fxWarp(e,sideCol(e.side));despawn(e);return true}return false}
 function nearestGate(e){let b=null,bd=1e9;for(const g of GATES[W.sid]){const d=d3(g,e);if(d<bd){bd=d;b=g}}return b}
 function despawn(e){if(e.drones)for(const d of e.drones)if(d.alive&&W.ents.includes(d)){fxWarp(d,sideCol(d.side));d.mom=null;despawn(d)}
   if(e.escortG){e.escortG.escort=null;for(const m of grpAlive(e.escortG))if(m.role==='escort'){m.role='patrol';m.ai.retireAt=W.t+25}}
@@ -1676,9 +1683,9 @@ function npcThink(e,dt){
     case 'flee':{e.boosting=true;
       if(e.side!=='pirate'&&SE&&SE.fac===e.side){const d=steer(e,SE.x,SE.y,SE.z,dt,true,1.35);faceTo(e,SE,dt);if(d<170)despawn(e);break}
       if(OE&&OE.o.owner===e.side&&!OE.o.breached){const d=steer(e,OE.x,OE.y,OE.z,dt,true,1.35);faceTo(e,OE,dt);if(d<150)despawn(e);break}
-      const g=fleeGate(e);const d=steer(e,g.x,g.y,g.z,dt,false,1.35);faceTo(e,g,dt);e.thrusting=true;
+      const g=fleeGate(e);e.thrusting=true;
       if(W.missiles.some(m=>m.tgt===e&&d3(m,e)<700)&&(ai.flareAt||0)<=W.t){deployFlares(e);ai.flareAt=W.t+6}
-      if(d<130){fxWarp(e,sideCol(e.side));despawn(e)}break}
+      npcGateJump(e,g,dt,1.35);break}
     case 'screen':{const F=e.grp&&e.grp.screen;if(!F){e.role='patrol';break}const n=(e.grp.slotBase||0)*3+(e.slot||0),a=n*2.1+W.t*.05,R=F.st.radius*1.25+520+(n%2)*160;holdSlot(e,F,F.x+Math.cos(a)*R,F.y+Math.sin(n*1.7)*140,F.z+Math.sin(a)*R,dt,1.2);const v=hyp(e.vx,e.vy,e.vz);if(v>15)faceDir(e,e.vx,e.vy,e.vz,dt);break}
     case 'escort':case 'patrol':case 'raider':case 'pirate':{
       if(e.role==='escort'&&e.grp&&!e.grp.fleeing&&grpLead(e.grp)===e){const H=escortHauler(e);if(!H){e.role='patrol';break}qRot(H.q,0,55,-135,_u);holdSlot(e,H,H.x+_u.x,H.y+_u.y,H.z+_u.z,dt,1.4);const hv=hyp(H.vx,H.vy,H.vz);if(hv>15)faceDir(e,H.vx,H.vy,H.vz,dt);else faceTo(e,H,dt);break}
@@ -1712,8 +1719,8 @@ function npcThink(e,dt){
       if(d>r+150){steer(e,a.x,a.y,a.z,dt,true);faceTo(e,a,dt)}
       else{brake(e,dt);if(faceTo(e,a,dt)<.3){e.mining=a;e.mineAcc+=e.st.drill*dt;while(e.mineAcc>=1){e.mineAcc-=1;const k=mainOre(a);if(!k)break;a.ore[k]--;if(!a.ore[k])delete a.ore[k];inv.add(e.cargo,k,1);if(oreTotal(a)<=0){removeAst(s,a);ai.ast=null;break}}}}
       break}
-    case 'hauler':{const g=ai.dest,hit=W.t-e.lastHit<4,dock=g.type==='station'||g.type==='outpost';e.boosting=hit;const d=steer(e,g.x,g.y,g.z,dt,dock,hit?1.15:.75);faceTo(e,g,dt);if(dock&&d<200){despawn(e);break}if(d<120){fxWarp(e,sideCol(e.side));despawn(e)}break}
-    case 'leave':{const g=nearestGate(e);const d=steer(e,g.x,g.y,g.z,dt,false);faceTo(e,g,dt);if(d<120){fxWarp(e,sideCol(e.side));despawn(e)}break}
+    case 'hauler':{const g=ai.dest,hit=W.t-e.lastHit<4,dock=g.type==='station'||g.type==='outpost';e.boosting=hit;if(!dock&&g.to!==undefined&&d3(e,g)<900){npcGateJump(e,g,dt,1);break}const d=steer(e,g.x,g.y,g.z,dt,dock,hit?1.15:.75);faceTo(e,g,dt);if(dock&&d<200){despawn(e);break}break}
+    case 'leave':{const g=e.gj?e.gj.g:nearestGate(e);npcGateJump(e,g,dt,1);break}
   }
 }
 
@@ -1760,7 +1767,11 @@ function assistTarget(){const lt=localTrouble();if(lt.length){joinOp(lt[0]);retu
 function friendlyAlerts(){if(!W||W.dead)return;const lt=localTrouble();if(!lt.length)return;if(W.t-(W.fAlert||-99)<25)return;W.fAlert=W.t;feed(`${lt[0].label}. Press Y to target the attacker.`,'warn');SFX.warn()}
 // ---- navigation helpers: course from the map, next gate, autopilot
 function routeNext(){const P=S.player;if(!P.route||!W)return null;if(P.route===W.sid)return null;let best=null,bs=1e9;for(const g of GATES[W.sid]){const h=(HOP[P.route][g.to]||0)*1e5+(S.gateDown[gateKey(W.sid,g.to)]?5e5:0);if(h<bs){bs=h;best=g}}return best?W.ents.find(e=>e.type==='gate'&&e.to===best.to):null}
-let apOn=false;
+let apOn=false,apSaid=false;
+function say(text){try{if(!AU.on.sfx||!('speechSynthesis' in window))return;const ss=speechSynthesis;ss.cancel();const u=new SpeechSynthesisUtterance(text),vs=ss.getVoices();
+  const v=vs.find(v=>/en[-_]GB/i.test(v.lang)&&/Daniel|Arthur|George|Oliver|Male/i.test(v.name))||vs.find(v=>/en[-_]GB/i.test(v.lang))||vs.find(v=>/UK English|British/i.test(v.name));
+  if(v)u.voice=v;u.lang='en-GB';u.rate=.95;u.pitch=.92;u.volume=.9;ss.speak(u)}catch(e){}}
+try{if('speechSynthesis' in window){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}}catch(e){}
 function apTarget(){if(W.tgt&&validTgt(W.tgt)&&W.tgt.kind!=='ship')return W.tgt;if(W.tgt&&W.tgt.kind==='ship'&&!hostile('player',W.tgt.ref.side)&&validTgt(W.tgt))return W.tgt;const g=routeNext();return g?{kind:'gate',ref:g}:null}
 function toggleAutopilot(){if(!W||S.player.docked)return;if(apOn){apOn=false;flash('Autopilot off.');return}const T=apTarget();if(!T){flash('Autopilot needs a destination: target a gate, station or rock (Tab cycles), or set a course on the map (M).',true);return}
   if(T.kind==='ship'&&hostile('player',T.ref.side)){flash('Autopilot will not fly at hostiles.',true);return}apOn=true;W.tgt=T;flash('Autopilot engaged. Steer or thrust to take back control.')}
@@ -2385,7 +2396,8 @@ function draw3D(){
     const fl=e.thrusting?(e.boosting?1.9:1.25)+Math.sin(t*50+sc)*.15:.5;qRot(e.q,0,0,-1,_f);
     for(const en of m.eng){qRot(e.q,en[0]*sc,en[1]*sc,en[2]*sc,_u);const ex=e.x+_u.x,ey=e.y+_u.y,ez=e.z+_u.z,rr=en[3]*sc;sprite(ex,ey,ez,rr*3*fl,c,.85);sprite(ex,ey,ez,rr*1.3*fl,[1,1,1],.75);
       if(e.thrusting){const Lt=rr*(e.boosting?16:9);streak(ex,ey,ez,ex+_f.x*Lt,ey+_f.y*Lt,ez+_f.z*Lt,rr*.8,c,.32)}}
-    if(e.isPlayer)sprite(e.x,e.y+sc*.3,e.z,sc*.18,rgb(PLAYER_COL),.6)}
+    if(e.isPlayer)sprite(e.x,e.y+sc*.3,e.z,sc*.18,rgb(PLAYER_COL),.6);
+    {const gk=e.gj?e.gj.t/GATE_HOLD:e.gjc?((W.t*.6)%1):(e.isPlayer&&W.gc?W.gc.t/GATE_HOLD:-1);if(gk>=0){sprite(e.x,e.y,e.z,sc*(2.2+3*gk)+6*Math.sin(t*9),[.6,.8,1],.18+.35*gk);sprite(e.x,e.y,e.z,sc*(1+gk),c,.25+.3*gk)}}}
   for(const b of W.shots){const sp=hyp(b.vx,b.vy,b.vz)||1,st=SHOT_STY[b.sty]||SHOT_STY.pulse,L=st[0],w=st[1],c=rgb(b.col);const ux=b.vx/sp,uy=b.vy/sp,uz=b.vz/sp;
     streak(b.x-ux*L,b.y-uy*L,b.z-uz*L,b.x,b.y,b.z,w*2.6,c,.7);streak(b.x-ux*L,b.y-uy*L,b.z-uz*L,b.x,b.y,b.z,w*.9,[1,.97,.9],.9)}
   for(const e of W.ents){if(e.type!=='ship'||!e.mining||!e.alive)continue;const a=e.mining,sc=e.st.radius*1.25,nl=CLASSES[e.cls].lasers||1;qRot(e.q,0,0,1,_f);qRot(e.q,1,0,0,_r);const k=mainOre(a)||'fe',c=rgb(ITEMS[k].col);
@@ -2641,6 +2653,7 @@ function drawRadar(){
 
 // ============================================================ HUD
 function hudUpdate(){
+  if(apOn!==apSaid){apSaid=apOn;say(apOn?'Engaging autopilot':'Disengaging autopilot')}
   $('hud').classList.toggle('ckm',cam.mode==='cockpit'&&!S.player.docked&&!W.bridge);
   const P=S.player,p=W.player,d=DEF[W.sid],oid=OUT_BY_SECTOR[W.sid],o=oid&&S.outposts[oid];
   $('hSec').textContent=d.name;
@@ -3159,7 +3172,7 @@ function netWorld(dt){const now=performance.now();
     if(W.pbuild&&W.pbuild.pid===e.rp)runAs(e.rp,()=>pbuildTick(dt))}}
 // ---- host -> pilots: snapshots, pilot records, galaxy sync, checkpoints
 const r1=v=>Math.round(v*10)/10,qi=v=>Math.round(v*1000);
-function shipRow(e,full){const id=e.isPlayer?'p_'+NET.me:e.id,fl=(e.thrusting?1:0)|(e.boosting?2:0)|(e.tuned?4:0)|(W.t-(e.shHitT===undefined?-9:e.shHitT)<.1?8:0)|(W.t-e.lastHit<.1?16:0),
+function shipRow(e,full){const id=e.isPlayer?'p_'+NET.me:e.id,fl=(e.thrusting?1:0)|(e.boosting?2:0)|(e.tuned?4:0)|(W.t-(e.shHitT===undefined?-9:e.shHitT)<.1?8:0)|(W.t-e.lastHit<.1?16:0)|(e.gj||(e.isPlayer&&W.gc)?32:0),
   b=[r1(e.x),r1(e.y),r1(e.z),qi(e.q.x),qi(e.q.y),qi(e.q.z),qi(e.q.w),Math.round(e.vx),Math.round(e.vy),Math.round(e.vz),Math.round(clamp(e.hull/e.st.hull,0,1)*1000),Math.round(clamp(e.shield/(e.st.sCap||1),0,1)*1000),fl,e.mining&&e.mining.id||0];
   if(!full)return[id,...b];const side=e.side==='player'?S.player.faction:e.side,fac=e.fac==='player'?S.player.faction:e.fac;
   return[id,side,fac,e.cls,e.isPlayer?'pilot':e.role,e.tier||1,e.wpn||'kinetic',e.isPlayer?(S.player.name||MP.name):e.pname||(e.tok&&e.tok.name)||'',...b,e.mom?(e.mom.isPlayer?'p_'+NET.me:e.mom.id):0]}
@@ -3236,7 +3249,7 @@ function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.p
     e.tx=r[o];e.ty=r[o+1];e.tz=r[o+2];e.tq=e.tq||q0();e.tq.x=r[o+3]/1000;e.tq.y=r[o+4]/1000;e.tq.z=r[o+5]/1000;e.tq.w=r[o+6]/1000;e.vx=r[o+7];e.vy=r[o+8];e.vz=r[o+9];e.snapAt=now;
     if(e.fresh===undefined){e.x=e.tx;e.y=e.ty;e.z=e.tz;qCopy(e.q,e.tq);qNorm(e.q);e.fresh=0}
     e.hull=r[o+10]/1000*e.st.hull;const sh=r[o+11]/1000*e.st.sCap;if(e.shield>1&&sh<=0){e.shBreakT=now}else if(e.shield<=0&&sh>e.st.sCap*.2)e.shUpT=now;e.shield=sh;
-    const fl=r[o+12];e.thrusting=!!(fl&1);e.boosting=!!(fl&2);e.tuned=!!(fl&4);if(fl&8){e.shHitT=now;e.shHitA=.5}if(fl&16)e.lastHit=now;
+    const fl=r[o+12];e.thrusting=!!(fl&1);e.boosting=!!(fl&2);e.tuned=!!(fl&4);if(fl&8){e.shHitT=now;e.shHitA=.5}if(fl&16)e.lastHit=now;e.gjc=!!(fl&32);
     const mi=r[o+13];e.mining=mi?ast.find(a=>a.id===mi)||null:null}
   for(const id in w.pup)if(!seen.has(id)){const e=w.pup[id];e.alive=false;const i=w.ents.indexOf(e);if(i>=0)w.ents.splice(i,1);delete w.pup[id];if(w.tgt&&w.tgt.ref===e)w.tgt=null}
   for(const id in w.pup){const e=w.pup[id];if(e.momId){const M=e.momId==='p_'+MP.pid?w.player:w.pup[e.momId];e.mom=M||null;if(M&&e.role==='drone'){M.drones=M.drones||[];if(!M.drones.includes(e))M.drones.push(e)}}}
