@@ -144,7 +144,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
 .slot{display:grid;grid-template-columns:150px 70px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .slot .sn{font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:.1em;text-transform:uppercase}
 .slot .ss{font-size:12px;color:var(--dim)}
-.mk{font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:.04em;color:var(--amber)}
+.mk{font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:.04em;color:var(--amber)}.mk{white-space:nowrap}
 .pips{display:flex;gap:3px;margin-top:3px}
 .pips i{width:10px;height:4px;background:var(--line-hi)}
 .pips i.on{background:var(--amber)}
@@ -422,7 +422,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p>The amber ring ahead of you is where your guns point. Put it on the target's diamond lead marker to hit a moving ship. The green circle shows which way you are actually drifting. The radar is a disc around your ship: blips sit on stalks above or below the disc to show height.</p>
             <p><b>Missiles.</b> Target a hostile and keep it inside the dashed lock ring around your gun reticle. A diamond closes in on the target; when it turns red and reads LOCKED, press C. Missiles home on the target but turn slower than ships, so hard turns and flares can beat them. Red arrows on the ring around the centre point to hostiles off-screen; a blinking warning means someone is locking you or a missile is inbound.</p>
             <p><b>Distress calls.</b> When a friendly station, depot or outpost is attacked anywhere in the galaxy, it radios every pilot of its faction: a two-tone chirp and a message saying who is under attack, where and how many jumps away. The call goes into the Friendly ops list, and O sets course to it.</p>
-            <p><b>Magazines, not ammunition.</b> Missiles, torpedoes and swarm pods never need building or loading. Each hull carries a set number of shots (more with Weapons Mk). Once a magazine is below full, a reload countdown runs (missiles 20 s, torpedoes 35 s, swarm pods 30 s) and then it refills completely; the HUD shows the count and the countdown. You can target hostile stations, depots and outposts with T, Q or a click as well as ships and frigates; only torpedoes and capital guns hurt station armour.</p>
+            <p><b>Magazines, not ammunition.</b> Missiles, torpedoes and swarm pods never need building or loading. Each hull carries a set number of shots (more with Weapons Mk). Once a magazine is below full, a reload countdown runs (missiles 20 s, torpedoes 35 s, swarm pods 30 s at Payload Bay Mk I) and then it refills completely; the HUD shows the count and the countdown. Each Payload Bay upgrade in the Shipyard cuts reload times by 15% (Mk V reloads in 40% of the time), and Aurora tuning on the bay shaves a little more. You can target hostile stations, depots and outposts with T, Q or a click as well as ships and frigates; only torpedoes and capital guns hurt station armour.</p>
             <p><b>Hulls.</b> Every pilot starts in a Light hull: a Light Fighter, Light Miner or Light Hauler. You can switch between those three starter hulls for free in the Shipyard at your faction's home station. Bigger hulls are built in a core station's Shipyard from materials (plates, conduit, coils and, for the heaviest, Crystal Lattice) plus a small fee; the old frame's materials come back to you. Miners and haulers come in Light, Medium and Heavy: more mining lasers, more guard drones and bigger holds as they grow. Load Guard Drones into your drone bay in the Shipyard; they launch with you and defend your ship. Light fighters are the fastest, accelerate hardest, turn tightest, burn the least energy on afterburner and shake missiles best (flares work more often), but carry small racks and thin armour. Medium fighters are nearly as quick and nimble with heavier guns: both can out-run and out-turn heavies and bombers, and staying out of a heavy's nose is how you survive its swarm. Heavy fighters trade speed for armour, bigger guns and a larger missile rack. Bombers are slow and tough and carry Siege Torpedoes: lock an outpost (it takes longer), launch, and each torpedo hits it three times as hard as a missile. Torpedoes are slow and turn badly, but fighter guns can't touch one once it's away: only station, depot and frigate point-defence turrets can shoot them down. Stop the bombers before they launch, and escort your own so they get their shots off (enemy torpedoes show a yellow TORPEDO marker). Change hull at your faction's main station.</p>
             <p><b>Kinetic vs laser.</b> Both guns share your Weapons upgrade. Kinetic cannons (1) fire slugs that take time to arrive, so aim at the diamond lead marker; they sip energy, reach about 950 m and hit hull 15% harder. Lasers (2) hit instantly wherever your nose points, no lead needed, but drain about three times the energy, reach only 820 m and are 25% stronger against shields and weaker against hull. The reticle becomes a diamond in laser mode and turns red when the beam is on a target. A good pattern: strip shields with lasers, then finish the hull with kinetics.</p>
             <p><b>Stations and depots.</b> Faction stations and depots carry shields and turrets (6 on a main station, 4 on a depot) that fire on hostiles within about 1.3–1.5 km and shoot down torpedoes. Knock a station's shield down and its turrets go offline for 20 seconds; the station itself cannot be destroyed.</p>
@@ -555,7 +555,7 @@ function invValue(o){let v=0;for(const k in o)v+=baseValue(k)*o[k];return v}
 const SLOTS=[
   {id:'engine',name:'Drive',base:{plate:2,wire:2}},{id:'power',name:'Reactor',base:{plate:1,wire:2}},
   {id:'shield',name:'Shield Emitter',base:{plate:1,wire:2}},{id:'weapon',name:'Weapons',base:{plate:1,wire:2}},
-  {id:'armor',name:'Armor',base:{plate:3}},{id:'drill',name:'Mining Laser',base:{plate:1,wire:1}},{id:'cargo',name:'Cargo Hold',base:{plate:2}},
+  {id:'armor',name:'Armor',base:{plate:3}},{id:'drill',name:'Mining Laser',base:{plate:1,wire:1}},{id:'cargo',name:'Cargo Hold',base:{plate:2}},{id:'payload',name:'Payload Bay',base:{}},
 ];
 const SLOT={};SLOTS.forEach(s=>SLOT[s.id]=s);
 const UPG={2:{plate:2,wire:2},3:{plate:2,coil:2},4:{coil:2,lattice:2},5:{lattice:1,core:2}};
@@ -611,7 +611,7 @@ const SHAPES={
 };
 const TUNE_MAX=2,TUNE_STEP=.06,tuneItems=l=>l*(l+1)/2;
 function shipStats(fac,cls,T,U){const B=shipStatsBase(fac,cls,T);if(!U)return B;const u=s=>typeof U==='number'?U:(U[s]||0),m=s=>1+TUNE_STEP*u(s);
-  B.thrust*=m('engine');B.maxSpd*=m('engine');B.turn*=1+TUNE_STEP*.5*u('engine');B.eCap*=m('power');B.eRegen*=m('power');B.sCap*=m('shield');B.dmg*=m('weapon');B.hull*=m('armor');B.drill*=m('drill');B.cargo=Math.round(B.cargo*m('cargo'));return B}
+  B.thrust*=m('engine');B.maxSpd*=m('engine');B.turn*=1+TUNE_STEP*.5*u('engine');B.eCap*=m('power');B.eRegen*=m('power');B.sCap*=m('shield');B.dmg*=m('weapon');B.hull*=m('armor');B.drill*=m('drill');B.cargo=Math.round(B.cargo*m('cargo'));B.reload/=m('payload');return B}
 function shipStatsBase(fac,cls,T){
   const t=s=>typeof T==='number'?T:T[s];
   const C=CLASSES[cls],F=(FACTIONS[fac]&&FACTIONS[fac].trait)||{},tr=k=>F[k]||1;
@@ -619,7 +619,7 @@ function shipStatsBase(fac,cls,T){
     eCap:110*(1+.25*(t('power')-1))*tr('energy'),eRegen:22*(1+.22*(t('power')-1))*tr('energy'),
     sCap:172*C.shield*(1+.32*(t('shield')-1))*tr('shield'),hull:2*C.hull*(1+.22*(t('armor')-1))*tr('hull'),dr:.05*(t('armor')-1),
     dmg:8*C.weapon*(1+.26*(t('weapon')-1)),rof:5.5,shotCost:3.2*(1+.12*(t('weapon')-1)),
-    drill:3.2*C.drill*(1+.3*(t('drill')-1)),cargo:Math.round(C.cargo*(1+.3*(t('cargo')-1))),radius:C.radius};
+    drill:3.2*C.drill*(1+.3*(t('drill')-1)),cargo:Math.round(C.cargo*(1+.3*(t('cargo')-1))),reload:1-.15*((t('payload')||1)-1),radius:C.radius};
 }
 const SHOT_SPD=1150,SHOT_TTL=.9,SHOT_RANGE=SHOT_SPD*SHOT_TTL*.9;
 const LASER_ROF=10,LASER_RANGE=820;
@@ -633,11 +633,12 @@ const rackCapC=(cls,t)=>CLASSES[cls].torp?2+t:Math.round((4+2*(t-1))*CLASSES[cls
 // missiles, torpedoes and swarm pods are magazines now: a hull carries a set number of shots, and once the magazine
 // is below full a reload countdown runs, then it refills completely. Nothing to build or load, and no matter is used.
 const MAG_T={missile:20,torpedo:35,swarm:30};
+function payloadK(P){const t=(P.tiers&&P.tiers.payload)||1,u=(P.tune&&P.tune.payload)||0;return(1-.15*(t-1))/(1+TUNE_STEP*u)}
 function swarmCap(P){return P.cls==='heavy'||P.cls==='bomber'?2:0}
 function magInit(P){if(!P||P.magV)return;if(P.rack>0&&P.vault)inv.add(P.vault,rackItem(P.cls),P.rack);P.rack=rackCapC(P.cls,P.tiers.weapon);P.swarm=swarmCap(P);P.mslT=0;P.swT=0;P.magV=1}
 function magTick(P,dt){if(!P||!P.tiers)return;if(!P.magV)magInit(P);const cap=rackCapC(P.cls,P.tiers.weapon),sc=swarmCap(P);if(P.rack>cap)P.rack=cap;if(P.swarm>sc)P.swarm=sc;
-  if(P.rack<cap){if(!(P.mslT>0))P.mslT=MAG_T[CLASSES[P.cls].torp?'torpedo':'missile'];P.mslT-=dt;if(P.mslT<=0){P.rack=cap;P.mslT=0;if(P===S.player&&!MUTE&&running)feed(`${CLASSES[P.cls].torp?'Torpedo bay':'Missile rack'} reloaded.`,'info')}}else P.mslT=0;
-  if(sc&&(P.swarm||0)<sc){if(!(P.swT>0))P.swT=MAG_T.swarm;P.swT-=dt;if(P.swT<=0){P.swarm=sc;P.swT=0}}else P.swT=0}
+  if(P.rack<cap){if(!(P.mslT>0))P.mslT=MAG_T[CLASSES[P.cls].torp?'torpedo':'missile']*payloadK(P);P.mslT-=dt;if(P.mslT<=0){P.rack=cap;P.mslT=0;if(P===S.player&&!MUTE&&running)feed(`${CLASSES[P.cls].torp?'Torpedo bay':'Missile rack'} reloaded.`,'info')}}else P.mslT=0;
+  if(sc&&(P.swarm||0)<sc){if(!(P.swT>0))P.swT=MAG_T.swarm*payloadK(P);P.swT-=dt;if(P.swT<=0){P.swarm=sc;P.swT=0}}else P.swT=0}
 
 // ============================================================ galaxy
 const SECTOR_DEFS=[
@@ -707,7 +708,7 @@ function canBuildIn(sid,side){const d=DEF[sid];if(S.stations[sid]||d.kind==='hiv
 function FAC_HOME(f){return SECTOR_DEFS.find(d=>d.home===f&&d.kind==='core').id}
 function newGame(fac,cls){
   S={v:2,T:0,nextId:1,sectors:{},outposts:{},econ:{stock:{},treasury:{},fleet:{}},events:[],contracts:[],gateDown:{},ai:{},timers:{tick:2,event:35,contract:12},tollAcc:0,
-    player:{faction:fac,cls,hullInv:{},bay:{drone:CLASSES[cls].drones||0},tiers:{engine:1,power:1,shield:1,weapon:1,armor:1,drill:1,cargo:1},cargo:{},vault:{plate:6,wire:6},rack:rackCapC(cls,1),magV:1,swarm:CLASSES[cls]&&(cls==='heavy'||cls==='bomber')?2:0,wpn:'kinetic',credits:1800,sector:FAC_HOME(fac),docked:'station',x:0,y:0,z:0,vx:0,vy:0,vz:0,q:[0,0,0,1],hull:0,shield:0,energy:0,fa:true,kills:0,tune:{}}};
+    player:{faction:fac,cls,hullInv:{},bay:{drone:CLASSES[cls].drones||0},tiers:{engine:1,power:1,shield:1,weapon:1,armor:1,drill:1,cargo:1,payload:1},cargo:{},vault:{plate:6,wire:6},rack:rackCapC(cls,1),magV:1,swarm:CLASSES[cls]&&(cls==='heavy'||cls==='bomber')?2:0,wpn:'kinetic',credits:1800,sector:FAC_HOME(fac),docked:'station',x:0,y:0,z:0,vx:0,vy:0,vz:0,q:[0,0,0,1],hull:0,shield:0,energy:0,fa:true,kills:0,tune:{}}};
   for(const d of SECTOR_DEFS)S.sectors[d.id]=genSector(d);
   S.stations={};S.scouts=[];S.frigates=[];S.yards={brood:{sector:'bl'}};for(const d of SECTOR_DEFS)if(d.home)makeStation(d.id,d.home,d.kind==='core'?'core':'depot',{x:0,y:0,z:0},d.kind==='core'?{}:{...DEPOT_COST});makeStation('bl','brood','hive',{x:0,y:0,z:0},{});
   for(const id in OUTPOST_DEFS){const D=OUTPOST_DEFS[id],L=id==='wrack'?3:1;const fort={fe:0,cu:0,ir:0,xc:0,au:0};for(let l=1;l<=L;l++)invVec(fortRecipe(l),fort);
@@ -722,7 +723,7 @@ function newGame(fac,cls){
 
 function broodInit(){S.econ.stock.brood={fe:420,cu:300,ir:160,xc:40,plate:50,wire:40,coil:14,missile:10,torpedo:10,frame:2};S.econ.fleet.brood={plate:30,wire:20,coil:8,missile:6,torpedo:6};S.econ.treasury.brood=0;S.ai.brood={next:S.T+150,build:S.T+260}}
 // older saves: add the new sectors, station records and the Brood, then shift the conservation baseline by exactly what was added
-function migrate(st){S=st;magInit(S.player);for(const k in S.pilots||{})magInit(S.pilots[k]);S.frigates=S.frigates||[];for(const t of S.frigates)t.live=false;S.yards=S.yards||{brood:{sector:'bl'}};S.player.hullInv=S.player.hullInv||{};S.player.bay=S.player.bay||{};S.scouts=S.scouts||[];for(const t of S.scouts)t.live=false;for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;for(const id in S.sectors){if(S.sectors[id].debris.au===undefined)S.sectors[id].debris.au=0}for(const id in S.outposts){if(S.outposts[id].fort.au===undefined)S.outposts[id].fort.au=0}S.player.tune=S.player.tune||{};const L0=ledger();let ch=false;
+function migrate(st){S=st;for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.tiers&&!P.tiers.payload)P.tiers.payload=1;magInit(S.player);for(const k in S.pilots||{})magInit(S.pilots[k]);S.frigates=S.frigates||[];for(const t of S.frigates)t.live=false;S.yards=S.yards||{brood:{sector:'bl'}};S.player.hullInv=S.player.hullInv||{};S.player.bay=S.player.bay||{};S.scouts=S.scouts||[];for(const t of S.scouts)t.live=false;for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;for(const id in S.sectors){if(S.sectors[id].debris.au===undefined)S.sectors[id].debris.au=0}for(const id in S.outposts){if(S.outposts[id].fort.au===undefined)S.outposts[id].fort.au=0}S.player.tune=S.player.tune||{};const L0=ledger();let ch=false;
   for(const d of SECTOR_DEFS)if(!S.sectors[d.id]){S.sectors[d.id]=genSector(d);ch=true}
   if(!S.stations){S.stations={};for(const d of SECTOR_DEFS)if(d.home)makeStation(d.id,d.home,d.kind==='core'?'core':'depot',{x:0,y:0,z:0},d.kind==='core'?{}:{...DEPOT_COST});ch=true}
   if(!S.stations.bl){makeStation('bl','brood','hive',{x:0,y:0,z:0},{});ch=true}
@@ -3111,7 +3112,7 @@ function renderDock(){
     const st=p.st;
     h+=`<div class="grid2" style="margin-bottom:10px"><div class="note">Upgrading folds parts permanently into a component. Mk II–III fit at any friendly dock; Mk IV–V need a Forge. If you are destroyed, your most recent upgrade on one random component is torn out and left in the wreck.</div>
       <div class="kv"><span>Top speed</span><b>${Math.round(st.maxSpd)} m/s</b><span>Shield / Hull</span><b>${Math.round(st.sCap)} / ${Math.round(st.hull)}</b><span>Energy · regen</span><b>${Math.round(st.eCap)} · ${st.eRegen.toFixed(1)}/s</b><span>Kinetic · laser DPS</span><b>${Math.round(st.dmg*st.rof)} · ${Math.round(st.dmg*.5*LASER_ROF)}</b><span>Mining · Hold</span><b>${st.drill.toFixed(1)} t/s · ${st.cargo} t</b></div></div><div class="slots">`;
-    const stat={engine:`${Math.round(st.maxSpd)} m/s · thrust ${Math.round(st.thrust)}`,power:`${Math.round(st.eCap)} energy · ${st.eRegen.toFixed(1)}/s`,shield:`${Math.round(st.sCap)} shield`,weapon:`kinetic ${Math.round(st.dmg*st.rof)} dps · laser ${Math.round(st.dmg*.5*LASER_ROF)} dps`,armor:`${Math.round(st.hull)} hull · ${Math.round(st.dr*100)}% reduction`,drill:`${st.drill.toFixed(1)} t/s`,cargo:`${st.cargo} t`};
+    const stat={engine:`${Math.round(st.maxSpd)} m/s · thrust ${Math.round(st.thrust)}`,power:`${Math.round(st.eCap)} energy · ${st.eRegen.toFixed(1)}/s`,shield:`${Math.round(st.sCap)} shield`,weapon:`kinetic ${Math.round(st.dmg*st.rof)} dps · laser ${Math.round(st.dmg*.5*LASER_ROF)} dps`,armor:`${Math.round(st.hull)} hull · ${Math.round(st.dr*100)}% reduction`,drill:`${st.drill.toFixed(1)} t/s`,cargo:`${st.cargo} t`,payload:`${CLASSES[P.cls].torp?'torpedo':'missile'} reload ${Math.round(MAG_T[CLASSES[P.cls].torp?'torpedo':'missile']*payloadK(P))} s${swarmCap(P)?` · swarm ${Math.round(MAG_T.swarm*payloadK(P))} s`:''}`};
     for(const sl of SLOTS){const t=P.tiers[sl.id];let rq='',btn='';
       if(t<5){const r=upgRecipe(sl.id,t+1),fee=c.fee?Math.ceil(invValue(r)*.08):0,needF=t+1>=4&&!c.forge;rq=Object.keys(r).map(i=>chip(i,r[i],countIn(i,srcs))).join('')+(fee?`<span class="req ${P.credits>=fee?'ok':'no'}">${fee} cr fee</span>`:'')+(needF?'<span class="req no">Forge only</span>':'');
         btn=`<button class="btn" data-act="upg" data-arg="${sl.id}" ${!needF&&haveIn(r,srcs)&&P.credits>=fee?'':'disabled'}>To Mk ${ROMAN[t+1]}</button>`}else rq='<span class="ss" style="color:var(--amber)">Fully upgraded</span>';
@@ -3120,7 +3121,7 @@ function renderDock(){
     h+=`</div>`;
     const miss=st.hull-p.hull,rc=c.fee?Math.ceil(miss*1.5):0;
     h+=`<div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap"><button class="btn" data-act="repair" ${miss<1||P.credits<rc?'disabled':''}>Repair hull${rc?` · ${fmt(rc)} cr`:''}</button><span class="note">Hull ${Math.round(p.hull)} / ${Math.round(st.hull)}. Shields and energy recharge free while docked.</span></div>`;
-    {const torp=CLASSES[P.cls].torp,it=rackItem(P.cls),cap=rackCapC(P.cls,P.tiers.weapon),have=countIn(it,srcs);h+=`<div class="h3" style="margin-top:22px">${torp?'Torpedo bay':'Missile rack'} · ${P.rack} / ${cap}${P.mslT>0?` · reloading ${Math.ceil(P.mslT)} s`:''}</div><p class="note" style="margin-top:0">${torp?'Torpedoes':'Missiles'} reload on their own: once the ${torp?'bay':'rack'} is below full it refills completely after ${MAG_T[torp?'torpedo':'missile']} s. Nothing to build or load. Size grows with Weapons Mk, and so does damage.${swarmCap(P)?` Swarm launcher: ${P.swarm||0} / ${swarmCap(P)} pods, refilling after ${MAG_T.swarm} s.`:''}</p>`}
+    {const torp=CLASSES[P.cls].torp,it=rackItem(P.cls),cap=rackCapC(P.cls,P.tiers.weapon),have=countIn(it,srcs);h+=`<div class="h3" style="margin-top:22px">${torp?'Torpedo bay':'Missile rack'} · ${P.rack} / ${cap}${P.mslT>0?` · reloading ${Math.ceil(P.mslT)} s`:''}</div><p class="note" style="margin-top:0">${torp?'Torpedoes':'Missiles'} reload on their own: once the ${torp?'bay':'rack'} is below full it refills completely after ${Math.round(MAG_T[torp?'torpedo':'missile']*payloadK(P))} s. Nothing to build or load. Size grows with Weapons Mk, and so does damage; upgrade the Payload Bay to reload faster (15% per Mk).${swarmCap(P)?` Swarm launcher: ${P.swarm||0} / ${swarmCap(P)} pods, refilling after ${Math.round(MAG_T.swarm*payloadK(P))} s.`:''}</p>`}
     {const cap=CLASSES[P.cls].drones||0;if(cap){const nb=(P.bay&&P.bay.drone)||0;h+=`<div class="h3" style="margin-top:22px">Drone bay · ${nb} / ${cap}</div><div class="note" style="margin-bottom:8px">Guard drones launch with you and defend your ship. Load Guard Drones from your hold or ${c.storageName.toLowerCase()}; lost drones are gone.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="bayload" ${nb<cap&&countIn('drone',srcs)>0?'':'disabled'}>Load drone (${countIn('drone',srcs)} available)</button><button class="btn" data-act="bayunload" ${nb>0?'':'disabled'}>Unload drone</button></div>`}}
     if(c.hulls&&P.sector===FAC_HOME(P.faction)){const Y=S.yards[yk()]||S.yards[P.faction],yb=S.events.find(e=>e.type==='yardbuild'&&e.att===yk()),fb=S.events.find(e=>e.type==='frigbuild'&&e.att===yk()),mine=S.frigates.filter(fMine);
       h+=`<div class="h3" style="margin-top:22px">Capital shipyard</div>`;
@@ -3476,7 +3477,7 @@ function mpLaunch(fac,cls){
     S.player=S.pilots[MP.pid];mpRun();feed(`You are hosting “${MP.code}”. Friends who enter the same galaxy code join you.`,'info');flash(`Hosting “${MP.code}”. Friends join by typing the same galaxy code.`);feed('Launch with E. Steer with the mouse, thrust with W. Hold F near an asteroid to mine.','info')}
   else if(NET.cl&&MP.host){send(MP.host,{t:'newpilot',fac,cls});mpStatus('Joining…')}}
 function newPilot(pid,name,fac,cls){const L0=ledger();
-  const P={pid,name,faction:fac,cls,hullInv:{},bay:{drone:CLASSES[cls].drones||0},tiers:{engine:1,power:1,shield:1,weapon:1,armor:1,drill:1,cargo:1},cargo:{},vault:{plate:6,wire:6},rack:rackCapC(cls,1),magV:1,swarm:CLASSES[cls]&&(cls==='heavy'||cls==='bomber')?2:0,wpn:'kinetic',credits:1800,sector:FAC_HOME(fac),docked:'station',x:0,y:0,z:0,vx:0,vy:0,vz:0,q:[0,0,0,1],hull:0,shield:0,energy:0,fa:true,kills:0,tune:{}};
+  const P={pid,name,faction:fac,cls,hullInv:{},bay:{drone:CLASSES[cls].drones||0},tiers:{engine:1,power:1,shield:1,weapon:1,armor:1,drill:1,cargo:1,payload:1},cargo:{},vault:{plate:6,wire:6},rack:rackCapC(cls,1),magV:1,swarm:CLASSES[cls]&&(cls==='heavy'||cls==='bomber')?2:0,wpn:'kinetic',credits:1800,sector:FAC_HOME(fac),docked:'station',x:0,y:0,z:0,vx:0,vy:0,vz:0,q:[0,0,0,1],hull:0,shield:0,energy:0,fa:true,kills:0,tune:{}};
   const st=shipStats(fac,cls,P.tiers);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;S.pilots[pid]=P;
   const L1=ledger();for(const e of RAWS)S.ledger0.tot[e]+=L1.tot[e]-L0.tot[e];S.ledger0.credits+=L1.credits-L0.credits;return P}
 function hostSave(){if(!NET.host||!S||!S.player)return null;const c=serialize();delete c.player;const ck={gid:S.gid,T:S.T,at:Date.now(),code:MP.code,S:c};
