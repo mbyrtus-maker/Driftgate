@@ -2297,7 +2297,7 @@ function genMeshes(){
   GEN.stars={buf:G.createBuffer(),n:st.length/8};G.bindBuffer(G.ARRAY_BUFFER,GEN.stars.buf);G.bufferData(G.ARRAY_BUFFER,new Float32Array(st),G.STATIC_DRAW);
   GEN.skyTex=G.createTexture();
   GEN.dust={buf:G.createBuffer(),arr:new Float32Array(450*8),base:Array.from({length:450},()=>[rnd(1000),rnd(1000),rnd(1000)])};
-  GEN.bb={buf:G.createBuffer(),arr:new Float32Array(4000*6*9)};
+  GEN.bb={buf:G.createBuffer(),arr:new Float32Array(12000*6*9)};
 }
 function tintOf(sid){const d=DEF[sid];if(!d)return'#40507a';if(d.home)return FACTIONS[d.home].col;if(d.kind==='hive')return'#5f9a2c';if(d.kind==='deep')return'#4a5f86';return d.kind==='contested'?'#ff9a4a':d.kind==='hub'?'#6f8bd6':'#a8995d'}
 const SCN={sun:{x:.5,y:.6,z:.6},sunCol:[1,.95,.85],amb:[.2,.22,.28],sid:null};
@@ -2350,7 +2350,7 @@ let curMesh=null;
 const ONE3=new Float32Array([1,1,1]),ZERO3=new Float32Array([0,0,0]);
 function useMesh(){G.useProgram(PM.p);G.uniformMatrix4fv(PM.u.uVP,false,VP);G.uniform3f(PM.u.uL,SCN.sun.x,SCN.sun.y,SCN.sun.z);G.uniform3fv(PM.u.uSun,SCN.sunCol);G.uniform3fv(PM.u.uAmb,SCN.amb);curMesh=null}
 function drawMesh(m,model,tint,em,alpha){G.uniformMatrix4fv(PM.u.uM,false,model);G.uniform3fv(PM.u.uTint,tint||ONE3);G.uniform3fv(PM.u.uEm,em||ZERO3);G.uniform1f(PM.u.uA,alpha===undefined?1:alpha);if(curMesh!==m){G.bindBuffer(G.ARRAY_BUFFER,m.buf);attribs([3,3,4],10);curMesh=m}G.drawArrays(m.mode,0,m.n)}
-let BBn=0;const BBmax=4000;
+let BBn=0;const BBmax=12000;
 function bbPush(ax,ay,az,r,g,b,a,u,v){const A=GEN.bb.arr,i=BBn*9;A[i]=ax;A[i+1]=ay;A[i+2]=az;A[i+3]=r;A[i+4]=g;A[i+5]=b;A[i+6]=a;A[i+7]=u;A[i+8]=v;BBn++}
 function sprite(x,y,z,s,c,a){if(BBn>=BBmax*6-6)return;const rx=-cX.x*s,ry=-cX.y*s,rz=-cX.z*s,ux=cY.x*s,uy=cY.y*s,uz=cY.z*s;
   bbPush(x-rx-ux,y-ry-uy,z-rz-uz,c[0],c[1],c[2],a,-1,-1);bbPush(x+rx-ux,y+ry-uy,z+rz-uz,c[0],c[1],c[2],a,1,-1);bbPush(x+rx+ux,y+ry+uy,z+rz+uz,c[0],c[1],c[2],a,1,1);
@@ -2358,6 +2358,17 @@ function sprite(x,y,z,s,c,a){if(BBn>=BBmax*6-6)return;const rx=-cX.x*s,ry=-cX.y*
 function streak(x1,y1,z1,x2,y2,z2,w,c,a){if(BBn>=BBmax*6-6)return;const dx=x2-x1,dy=y2-y1,dz=z2-z1,mx=(x1+x2)/2-cam.x,my=(y1+y2)/2-cam.y,mz=(z1+z2)/2-cam.z;let sx=dy*mz-dz*my,sy=dz*mx-dx*mz,sz=dx*my-dy*mx;const l=hyp(sx,sy,sz)||1;sx=sx/l*w;sy=sy/l*w;sz=sz/l*w;
   bbPush(x1-sx,y1-sy,z1-sz,c[0],c[1],c[2],a,0,-1);bbPush(x1+sx,y1+sy,z1+sz,c[0],c[1],c[2],a,0,1);bbPush(x2+sx,y2+sy,z2+sz,c[0],c[1],c[2],a,0,1);
   bbPush(x1-sx,y1-sy,z1-sz,c[0],c[1],c[2],a,0,-1);bbPush(x2+sx,y2+sy,z2+sz,c[0],c[1],c[2],a,0,1);bbPush(x2-sx,y2-sy,z2-sz,c[0],c[1],c[2],a,0,-1)}
+function capsule(x1,y1,z1,x2,y2,z2,w,c,a){if(BBn>=BBmax*6-24)return;let dx=x2-x1,dy=y2-y1,dz=z2-z1;const L=hyp(dx,dy,dz)||1e-3,mx=(x1+x2)/2-cam.x,my=(y1+y2)/2-cam.y,mz=(z1+z2)/2-cam.z;
+  let sx=dy*mz-dz*my,sy=dz*mx-dx*mz,sz=dx*my-dy*mx;const l=hyp(sx,sy,sz)||1;sx=sx/l*w;sy=sy/l*w;sz=sz/l*w;const ux=dx/L*w,uy=dy/L*w,uz=dz/L*w,r=c[0],g=c[1],b=c[2];
+  // body
+  bbPush(x1-sx,y1-sy,z1-sz,r,g,b,a,0,-1);bbPush(x1+sx,y1+sy,z1+sz,r,g,b,a,0,1);bbPush(x2+sx,y2+sy,z2+sz,r,g,b,a,0,1);
+  bbPush(x1-sx,y1-sy,z1-sz,r,g,b,a,0,-1);bbPush(x2+sx,y2+sy,z2+sz,r,g,b,a,0,1);bbPush(x2-sx,y2-sy,z2-sz,r,g,b,a,0,-1);
+  // caps
+  for(const[ex,ey,ez,k]of[[x2,y2,z2,1],[x1,y1,z1,-1]]){const ox=ex+ux*k,oy=ey+uy*k,oz=ez+uz*k;
+    bbPush(ex-sx,ey-sy,ez-sz,r,g,b,a,0,-1);bbPush(ex+sx,ey+sy,ez+sz,r,g,b,a,0,1);bbPush(ox+sx,oy+sy,oz+sz,r,g,b,a,1,1);
+    bbPush(ex-sx,ey-sy,ez-sz,r,g,b,a,0,-1);bbPush(ox+sx,oy+sy,oz+sz,r,g,b,a,1,1);bbPush(ox-sx,oy-sy,oz-sz,r,g,b,a,1,-1)}}
+// a round energy bolt: wide soft halo, coloured body and a white-hot core, each a capsule, plus a glowing head that stays round seen end-on
+function bolt(x1,y1,z1,x2,y2,z2,w,c,a){capsule(x1,y1,z1,x2,y2,z2,w*2.4,c,.28*a);capsule(x1,y1,z1,x2,y2,z2,w,c,.85*a);capsule(x1,y1,z1,x2,y2,z2,w*.38,[1,.97,.92],.95*a);sprite(x2,y2,z2,w*2.2,c,.55*a);sprite(x2,y2,z2,w*.9,[1,1,1],.7*a)}
 function flushBB(){if(!BBn)return;G.useProgram(PB.p);G.uniformMatrix4fv(PB.u.uVP,false,VP);G.bindBuffer(G.ARRAY_BUFFER,GEN.bb.buf);G.bufferData(G.ARRAY_BUFFER,GEN.bb.arr.subarray(0,BBn*9),G.DYNAMIC_DRAW);attribs([3,4,2],9);G.drawArrays(G.TRIANGLES,0,BBn);BBn=0;curMesh=null}
 
 const _qs=q0(),_qs2=q0(),SHOT_STY={capital:[70,8],spore:[13,4.6],pulse:[16,2.6],slug:[24,3.6],lance:[40,1.9],scrap:[12,2.6],turret:[26,3.4]};
@@ -2405,14 +2416,14 @@ function draw3D(){
     if(e.isPlayer)sprite(e.x,e.y+sc*.3,e.z,sc*.18,rgb(PLAYER_COL),.6);
     {const gk=e.gj?e.gj.t/GATE_HOLD:e.gjc?((W.t*.6)%1):(e.isPlayer&&W.gc?W.gc.t/GATE_HOLD:-1);if(gk>=0){sprite(e.x,e.y,e.z,sc*(2.2+3*gk)+6*Math.sin(t*9),[.6,.8,1],.18+.35*gk);sprite(e.x,e.y,e.z,sc*(1+gk),c,.25+.3*gk)}}}
   for(const b of W.shots){const sp=hyp(b.vx,b.vy,b.vz)||1,st=SHOT_STY[b.sty]||SHOT_STY.pulse,L=st[0],w=st[1],c=rgb(b.col);const ux=b.vx/sp,uy=b.vy/sp,uz=b.vz/sp;
-    streak(b.x-ux*L,b.y-uy*L,b.z-uz*L,b.x,b.y,b.z,w*2.6,c,.7);streak(b.x-ux*L,b.y-uy*L,b.z-uz*L,b.x,b.y,b.z,w*.9,[1,.97,.9],.9)}
+    bolt(b.x-ux*L,b.y-uy*L,b.z-uz*L,b.x,b.y,b.z,w*.95,c,1)}
   for(const e of W.ents){if(e.type!=='ship'||!e.mining||!e.alive)continue;const a=e.mining,sc=e.st.radius*1.25,nl=CLASSES[e.cls].lasers||1;qRot(e.q,0,0,1,_f);qRot(e.q,1,0,0,_r);const k=mainOre(a)||'fe',c=rgb(ITEMS[k].col);
-    for(let li=0;li<nl;li++){const o=(li-(nl-1)/2)*sc*.55,j=rnd(-6,6),sx=e.x+_f.x*sc+_r.x*o,sy=e.y+_f.y*sc+_r.y*o,sz=e.z+_f.z*sc+_r.z*o;streak(sx,sy,sz,a.x+j,a.y-j,a.z+j,6,c,.6);streak(sx,sy,sz,a.x+j,a.y-j,a.z+j,1.6,[1,1,1],.8)}if(Math.random()<.4)fxSpark({x:a.x+rnd(-12,12),y:a.y+rnd(-12,12),z:a.z+rnd(-12,12)},ITEMS[k].col,1)}
+    for(let li=0;li<nl;li++){const o=(li-(nl-1)/2)*sc*.55,j=rnd(-6,6),sx=e.x+_f.x*sc+_r.x*o,sy=e.y+_f.y*sc+_r.y*o,sz=e.z+_f.z*sc+_r.z*o;capsule(sx,sy,sz,a.x+j,a.y-j,a.z+j,7,c,.3);capsule(sx,sy,sz,a.x+j,a.y-j,a.z+j,3,c,.6);capsule(sx,sy,sz,a.x+j,a.y-j,a.z+j,1.1,[1,1,1],.85)}if(Math.random()<.4)fxSpark({x:a.x+rnd(-12,12),y:a.y+rnd(-12,12),z:a.z+rnd(-12,12)},ITEMS[k].col,1)}
   for(const e of W.ents){if(e.type!=='ship'||!e.alive||!e.hitPt)continue;const ha=W.t-e.shHitT;if(ha<.25)sprite(e.x+e.hitPt.x,e.y+e.hitPt.y,e.z+e.hitPt.z,e.st.radius*(1.2-ha*2),[.6,.85,1],1-ha/.25)}
   {const p=W.player,sp=hyp(p.vx,p.vy,p.vz);if(sp>150&&!S.player.docked&&!W.dead){const A=GEN.dust.arr,al=clamp((sp-150)/380,0,.5)*(p.boosting?1.6:1),k=.055*(p.boosting?1.8:1);
     for(let i=0;i<180;i++){const o=i*8,x=A[o],y=A[o+1],z=A[o+2];if(!inView(x,y,z,10))continue;streak(x,y,z,x-p.vx*k,y-p.vy*k,z-p.vz*k,.9,[.7,.8,1],al)}}}
   for(const b of W.beams){const e=b.src;if(!e.alive||(e.isPlayer&&(S.player.docked||W.dead)))continue;qRot(e.q,0,0,1,_f);const r=e.st.radius*1.25,sx=e.x+_f.x*r,sy=e.y+_f.y*r,sz=e.z+_f.z*r,c=rgb(b.col),fl=.8+Math.random()*.4;
-    streak(sx,sy,sz,b.x,b.y,b.z,5.5*fl,c,.55);streak(sx,sy,sz,b.x,b.y,b.z,1.5,[1,1,1],.95);sprite(sx,sy,sz,6*fl,c,.8);sprite(b.x,b.y,b.z,10*fl,c,.9)}
+    capsule(sx,sy,sz,b.x,b.y,b.z,7*fl,c,.22);capsule(sx,sy,sz,b.x,b.y,b.z,3*fl,c,.75);capsule(sx,sy,sz,b.x,b.y,b.z,1.1,[1,1,1],.95);sprite(sx,sy,sz,7*fl,c,.85);sprite(b.x,b.y,b.z,11*fl,c,.9);sprite(b.x,b.y,b.z,4*fl,[1,1,1],.8)}
   for(const m of W.missiles){const sp=hyp(m.vx,m.vy,m.vz)||1,ux=m.vx/sp,uy=m.vy/sp,uz=m.vz/sp,c=rgb(m.col),k=(MK[m.kind]||MK.missile).k,tx=m.x-ux*14*k,ty=m.y-uy*14*k,tz=m.z-uz*14*k;streak(tx,ty,tz,m.x,m.y,m.z,3*k,m.kind==='torpedo'?[1,.8,.4]:m.kind==='swarm'?[1,.55,.78]:[.85,.85,.9],.9);sprite(tx,ty,tz,(9+Math.random()*4)*k,c,1);sprite(tx,ty,tz,4*k,[1,1,1],1);if(k>1)sprite(m.x,m.y,m.z,26+8*Math.sin(W.t*12),[1,.75,.3],.5)}
   for(const d of W.decoys)sprite(d.x,d.y,d.z,16+Math.random()*8,[1,.85,.5],Math.min(1,d.life));
   for(const f of W.fx){const a=f.life/f.max;if(f.flash)sprite(f.x,f.y,f.z,f.sz*(1.3-a*.6),f.c,a*.8);else sprite(f.x,f.y,f.z,f.sz,f.c,a)}
