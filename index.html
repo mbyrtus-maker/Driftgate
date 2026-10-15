@@ -3014,16 +3014,16 @@ function sigLost(){if(!NET.host)return;setTimeout(async()=>{if(!NET.host||MP.sig
 async function sigMsg(m){const src=m.src;
   try{
   if(m.type==='OFFER'){if(!NET.host)return;let L=MP.links[src];if(L)linkClose(L,true);L=mkLink(src,false);await L.pc.setRemoteDescription(m.payload.sdp);const a=await L.pc.createAnswer();await L.pc.setLocalDescription(a);MP.sig&&MP.sig.send({type:'ANSWER',dst:src,payload:{sdp:L.pc.localDescription}});flushCands(L)}
-  else if(m.type==='ANSWER'){const L=MP.links[src];if(L&&!L.pc.remoteDescription){await L.pc.setRemoteDescription(m.payload.sdp);flushCands(L)}}
+  else if(m.type==='ANSWER'){const L=MP.links[src];if(L&&!L.pc.remoteDescription){await L.pc.setRemoteDescription(m.payload.sdp);flushCands(L);if(NET.cl){MP.stage='The host answered. Linking your browsers…';if(!running)mpStatus(MP.stage)}}}
   else if(m.type==='CANDIDATE'){const L=MP.links[src];if(!L)return;if(L.pc.remoteDescription)L.pc.addIceCandidate(m.payload.c).catch(()=>{});else(L.cq=L.cq||[]).push(m.payload.c)}
-  else if(m.type==='EXPIRE'){if(NET.cl&&src===MP.hostId&&!(MP.host&&MP.host.open))hostGone()}
+  else if(m.type==='EXPIRE'){if(NET.cl&&src===MP.hostId&&!(MP.host&&MP.host.open)){if(!running)mpStatus('The host did not answer (they may have just left). Retrying…',true);hostGone()}}
   }catch(e){console.warn('signal',e)}}
 function flushCands(L){for(const c of L.cq||[])L.pc.addIceCandidate(c).catch(()=>{});L.cq=[]}
 
 // ---- browser-to-browser link: 'r' is reliable and ordered (requests, saves), 'u' is fire-and-forget (snapshots, flight input)
 function mkLink(peer,init){const pc=new RTCPeerConnection({iceServers:MP.ice}),L={peer,pc,r:null,u:null,open:false,parts:{},dead:false};
   pc.onicecandidate=e=>{if(e.candidate&&MP.sig)MP.sig.send({type:'CANDIDATE',dst:peer,payload:{c:e.candidate.toJSON?e.candidate.toJSON():e.candidate}})};
-  pc.onconnectionstatechange=()=>{const s=pc.connectionState;if(s==='failed'||s==='closed')linkDown(L);else if(s==='disconnected'){clearTimeout(L.dT);L.dT=setTimeout(()=>{if(pc.connectionState!=='connected')linkDown(L)},5000)}};
+  pc.onconnectionstatechange=()=>{const s=pc.connectionState;if(NET.cl&&L===MP.host&&!running){MP.stage=s==='connecting'?'Linking your browsers (finding a network path)…':s==='connected'?'Linked. Loading the galaxy…':s==='failed'?'Your browsers could not find a network path to each other.':MP.stage;mpStatus(MP.stage,s==='failed')}if(s==='failed'||s==='closed')linkDown(L);else if(s==='disconnected'){clearTimeout(L.dT);L.dT=setTimeout(()=>{if(pc.connectionState!=='connected')linkDown(L)},5000)}};
   const wire=ch=>{ch.onopen=()=>{if(!L.open&&L.r&&L.r.readyState==='open'&&L.u&&L.u.readyState==='open'){L.open=true;linkUp(L)}};ch.onmessage=e=>linkRecv(L,e.data);ch.onclose=()=>linkDown(L)};
   if(init){L.r=pc.createDataChannel('r',{ordered:true});L.u=pc.createDataChannel('u',{ordered:false,maxRetransmits:0});wire(L.r);wire(L.u);
     pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>{MP.sig&&MP.sig.send({type:'OFFER',dst:peer,payload:{sdp:pc.localDescription,v:MPV}})}).catch(e=>console.warn(e))}
@@ -3058,8 +3058,8 @@ async function mpElect(first){if(MP.sig){MP.sig.close();MP.sig=null}
   if(r.taken){const me='driftgate1-'+mpSlug(MP.code)+'-'+MP.pid.slice(0,8)+'-'+rid(4);const r2=await sigOpen(me);
     if(!r2.ok){mpFail(r2.err||'Could not register with the matchmaking server.');return}
     MP.sig=r2;MP.myId=me;NET.on=true;NET.cl=true;NET.host=false;NET.me=MP.pid;MP.st='connecting';
-    if(first)mpStatus('A friend is hosting this galaxy. Connecting…');
-    MP.host=mkLink(MP.hostId,true);clearTimeout(MP.cT);MP.cT=setTimeout(()=>{if(NET.cl&&MP.host&&!MP.host.open){linkClose(MP.host,true);MP.host=null;hostGone()}},15000);return}
+    MP.stage='Found the host. Opening a direct connection…';if(first||!running)mpStatus(MP.stage);
+    MP.host=mkLink(MP.hostId,true);clearTimeout(MP.cT);MP.cT=setTimeout(()=>{if(NET.cl&&MP.host&&!MP.host.open){const st=MP.stage;linkClose(MP.host,true);MP.host=null;if(!running)mpStatus(`Couldn't connect to the host. It stopped at: <i>${esc(st)}</i> Retrying… If this keeps happening, one of your networks is blocking direct browser connections.`,true);hostGone()}},15000);return}
   mpFail(r.err)}
 function mpFail(msg){mpStatus(esc(msg)+(/github\.io$|^localhost$|^127\./.test(location.hostname)?' Check your connection and try again.':` Multiplayer runs from <a href="${MP_HOME}" target="_blank" rel="noopener" style="color:var(--amber)">${MP_HOME.replace('https://','')}</a>.`),true);$('bMp').disabled=false;NET.on=false;NET.cl=false;NET.host=false;MP.st='off'}
 
