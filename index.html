@@ -2886,12 +2886,13 @@ function renderMapSide(){
       ${mine.map(t=>`<div class="opr assist"><div><b>${esc(t.name)}</b> · ${esc(DEF[t.sector].name)}${t.dest&&t.dest!==t.sector?` → ${esc(DEF[t.dest].name)}`:''}<br><span>hull ${Math.round(t.hull/FRIG_HULL*100)}% · ${frigControl(t.sector)==='player'?'holding this system':S.stations[t.sector]?(friendSide(S.stations[t.sector].owner)?'at a friendly station':'besieging '+esc(S.stations[t.sector].name)):t.dest&&t.dest!==t.sector?'under way':'contested'}</span></div>${mapSel!==t.sector&&mapSel!==t.dest?`<button class="btn" type="button" data-fsend="${t.id}">Send to ${esc(DEF[mapSel].name)}</button>`:''}</div>`).join('')}
       ${mine.length>1?`<button class="btn" type="button" data-fall="1">All frigates to ${esc(DEF[mapSel].name)}</button>`:''}</div>`+h}}
   {const ops=friendlyOps().filter(o=>o.kind!=='local');h=`<div><div class="h3">Friendly operations</div>${ops.length?ops.map((o,i)=>`<div class="opr ${o.kind}"><div><b>${o.kind==='assist'?'Assist':'Defend'}</b> ${esc(o.label)}<br><span>${esc(DEF[o.sector].name)} · ${esc(opWhen(o))}</span></div>${o.hops?`<button class="btn${o.kind==='defend'?' bad':' pri'}" type="button" data-mop="${i}">${o.kind==='assist'?'Join':'Defend'}</button>`:''}</div>`).join(''):'<p class="note" style="margin:0">No friendly strikes or threats right now. They appear here, on this map, and in the flight HUD.</p>'}</div>`+h}
-  if(NET.on&&MP.roster.length)h=`<div><div class="h3">Pilots online · ${esc(MP.code)}</div><div class="kv">${MP.roster.map(r=>`<span style="color:${sideCol(r[2])}">${esc(r[1])}${r[5]?' (host)':''}</span><b>${esc(DEF[r[3]].name)}${r[4]?' · docked':''}</b>`).join('')}</div><p class="note" style="margin:6px 0 0">Press Enter in flight to message everyone.</p></div>`+h;
+  if(NET.on&&MP.roster.length)h=`<div><div class="h3">Pilots online · ${esc(MP.code)}</div><div class="kv">${MP.roster.map(r=>`<span style="color:${sideCol(r[2])}">${esc(r[1])}${r[5]?' (host)':''}</span><b>${esc(DEF[r[3]].name)}${r[4]?' · docked':''}${r[0]!==MP.pid&&r[3]!==S.player.sector?` · ${HOP[S.player.sector][r[3]]} jumps <button class="btn sm" type="button" data-pc="${r[3]}" style="margin-left:4px">Course</button>`:''}</b>`).join('')}</div><p class="note" style="margin:6px 0 0">Press Enter in flight to message everyone.</p></div>`+h;
   h=h.replace('<div><div class="h3" style','<div>'+(mapSel!==S.player.sector?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn pri" id="bCourse" type="button">Set course here</button>${S.player.route?'<button class="btn" id="bClear" type="button">Clear course</button>':''}</div>`:S.player.route?'<div style="margin-bottom:10px"><button class="btn" id="bClear" type="button">Clear course</button></div>':'')+(S.player.route?`<div class="note" style="margin-bottom:8px">Course to ${esc(DEF[S.player.route].name)}: ${HOP[S.player.route][S.player.sector]} jump${HOP[S.player.route][S.player.sector]===1?'':'s'}. Press J in flight to fly it.</div>`:'')+'<div class="h3" style');
   if(!NET.on)h+=`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn bad" id="bReset" type="button">${resetArm?'Confirm: erase pilot':'New pilot'}</button></div>`;
   $('mapSide').innerHTML=h;
   for(const b of $('mapSide').querySelectorAll('[data-fsend],[data-fall]'))b.onclick=()=>{for(const t of S.frigates)if(t.side==='player'&&(b.dataset.fall||String(t.id)===b.dataset.fsend)){t.dest=mapSel;feed(`${t.name} ordered to ${DEF[mapSel].name}.`,'info')}drawMap();renderMapSide()};
   for(const b of $('mapSide').querySelectorAll('[data-mop]'))b.onclick=()=>{joinOp(friendlyOps().filter(o=>o.kind!=='local')[+b.dataset.mop]);drawMap();renderMapSide()};
+  for(const b of document.querySelectorAll('[data-pc]'))b.onclick=()=>{const sid=b.dataset.pc;S.player.route=sid;feed(`Course set for ${DEF[sid].name}. Press J in flight to engage autopilot.`,'info');drawMap();renderMapSide()};
   if($('bCourse'))$('bCourse').onclick=()=>{S.player.route=mapSel;feed(`Course set for ${DEF[mapSel].name}. Press J in flight to engage autopilot.`,'info');drawMap();renderMapSide()};
   if($('bClear'))$('bClear').onclick=()=>{S.player.route=null;apOn=false;drawMap();renderMapSide()};
   if($('bReset'))$('bReset').onclick=()=>{if(!resetArm){resetArm=true;renderMapSide();return}resetArm=false;try{localStorage.removeItem(SAVE_KEY)}catch(e){}if(W)exitSector();W=null;S=null;running=false;$('map').hidden=true;$('hud').hidden=true;$('dock').hidden=true;buildSectorScene(null);showStart()};
@@ -2937,7 +2938,7 @@ function shipCard(){const C=CLASSES[selCls],st=shipStats(selFac,selCls,1),all=CL
   const bars=[['Speed',x=>x.maxSpd],['Agility',x=>x.turn],['Armour',x=>x.hull],['Shields',x=>x.sCap],['Firepower',x=>x.dmg],['Hold',x=>x.cargo]].map(([l,f])=>`<div class="sbar"><span>${l}</span><div><i style="width:${Math.round(f(st)/mx(f)*100)}%"></i></div></div>`).join('');
   const extra='';const r=HULL_COST[selCls]||{},lock=!START_HULLS.includes(selCls);
   $('shipcard').innerHTML=`<canvas data-prev="${selFac}" data-big="1"></canvas><div><div class="sn2" style="color:${FACTIONS[selFac].col}">${esc(FACTIONS[selFac].hulls[selCls])}</div><div class="sc">${C.name}</div><div class="sd">${esc(C.desc)}${extra?' '+extra:''}</div>${bars}${lock?`<div class="sd" style="margin:8px 0 0;color:var(--amber)">Every pilot starts in a Light hull. Build this one later in a core station Shipyard: ${Object.keys(r).map(i=>r[i]+' '+ITEMS[i].name).join(', ')} + ${HULL_FEE} cr.</div>`:''}</div>`;
-  const start=ROLES[selRole].ships.find(k=>START_HULLS.includes(k));$('ssum').innerHTML=`<b>${esc(FACTIONS[selFac].name)}</b> · ${ROLES[selRole].name} · you launch in a <b>${esc(FACTIONS[selFac].hulls[start])}</b> ${CLASSES[start].name}`;$('bLaunch').textContent=`Launch in a ${FACTIONS[selFac].hulls[start]}`}
+  const start=ROLES[selRole].ships.find(k=>START_HULLS.includes(k));$('ssum').innerHTML=`<b>${esc(FACTIONS[selFac].name)}</b> · ${ROLES[selRole].name} · you launch in a <b>${esc(FACTIONS[selFac].hulls[start])}</b> ${CLASSES[start].name}`;{const code=($('mpCode')&&$('mpCode').value||'').trim();$('bLaunch').textContent=!NET.on&&mpSlug(code)&&mpOK()&&!$('mpBox').hidden?`Join “${code}” in a ${FACTIONS[selFac].hulls[start]}`:`Launch in a ${FACTIONS[selFac].hulls[start]}`}}
 function showStart(){
   $('start').hidden=false;{const lg=loadLegacy();$('legacy').innerHTML=lg.last?`Last galaxy won by <b style="color:${sideCol(lg.last)}">${esc(lg.last==='brood'?'the Brood':FACTIONS[lg.last].name)}</b>: they start this one with ${lg.last==='brood'?'40% richer stores':'a finished capital shipyard and 40% richer stores'}. Galaxies won: ${Object.keys(lg.wins||{}).map(k=>`${sideName(k)} ${lg.wins[k]}`).join(' · ')}.`:'Win the galaxy by holding a majority of its systems for 30 minutes.'}$('bContinue').hidden=!loadSave()||NET.on;if(!ROLES[selRole].ships.includes(selCls))selRole=roleOf(selCls);
   $('roles').innerHTML=Object.keys(ROLES).map(r=>`<button class="role" type="button" data-role="${r}" aria-pressed="${r===selRole}"><b>${ROLES[r].name}</b><span>${ROLES[r].desc}</span></button>`).join('');
@@ -2960,6 +2961,7 @@ $('roles').addEventListener('click',e=>{const b=e.target.closest('[data-role]');
 $('bSnd').addEventListener('click',()=>{auInit();auToggle()});addEventListener('pointerdown',()=>{if(running)auInit()});
 $('bNext').addEventListener('click',()=>{if(NET.host){mpNewGalaxy();return}if(NET.cl){$('win').hidden=true;flash('Waiting for the host to start the next galaxy.');return}$('win').hidden=true;if(W)exitSector();W=null;S=null;running=false;$('hud').hidden=true;$('dock').hidden=true;buildSectorScene(null);showStart()});
 $('bLaunch').addEventListener('click',()=>{const cs=cleanCall($('mpName').value);$('mpName').value=cs;if(cs.length<2){$('ssum').innerHTML='<b style="color:var(--danger)">Choose a callsign first (step 1).</b>';$('mpName').focus();return}MP.name=MP.name||cs;try{localStorage.setItem('driftgate.mpname',cs)}catch(e){}
+  {const code=($('mpCode').value||'').trim();if(!NET.on&&mpSlug(code)&&mpOK()&&!$('mpBox').hidden){auInit();auApply();MP.autoLaunch={fac:selFac,cls:ROLES[selRole].ships.find(k=>START_HULLS.includes(k))};mpJoin();return}}
   if(NET.on){auInit();auApply();mpLaunch(selFac,ROLES[selRole].ships.find(k=>START_HULLS.includes(k)));return}auInit();auApply();FEED.length=0;newGame(selFac,ROLES[selRole].ships.find(k=>START_HULLS.includes(k)));S.player.name=cs;startWith(S);feed(`Welcome aboard, ${cs}, pilot of the ${FACTIONS[selFac].name}. Your vault holds a few plates and conduit: check the Shipyard tab for your first upgrade.`,'info');feed('Launch with E. Steer with the mouse, thrust with W. Hold F near an asteroid to mine.','info');save()});
 $('bContinue').addEventListener('click',()=>{auInit();auApply();const s=loadSave();if(s){FEED.length=0;startWith(s);feed('Welcome back, pilot.','info')}});
 
@@ -3058,6 +3060,7 @@ function hostBegin(first){NET.on=true;NET.host=true;NET.cl=false;NET.me=MP.pid;M
   if(first){
     if(MP.ckpt&&MP.ckpt.S){mpAdoptState(MP.ckpt.S)}
     if(S&&S.player){mpRun();feed(`You are hosting “${MP.code}”. Friends who enter the same galaxy code join you.`,'info')}
+    else if(MP.autoLaunch){const a=MP.autoLaunch;MP.autoLaunch=null;mpLaunch(a.fac,a.cls)}
     else{mpStatus(S?'You are hosting this galaxy. Choose your faction and ship, then Launch.':'You are hosting a brand-new galaxy. Choose your faction and ship, then Launch.');$('bContinue').hidden=true}}
   netRoster()}
 // load a galaxy checkpoint and point S.player at this browser's pilot (null if it has none yet)
@@ -3068,7 +3071,7 @@ function mpRun(){const P=S.player;P.name=MP.name||P.name;P.pid=MP.pid;if(P.docke
   if(NET.host){hostSave();for(const c of Object.values(MP.cl))if(c.hello&&!c.ready)hJoin(c)}}
 function mpLaunch(fac,cls){
   if(NET.host){if(S&&S.pilots){newPilot(MP.pid,MP.name,fac,cls)}else{newGame(fac,cls);S.gid=rid(10);S.pilots={};S.pilots[MP.pid]=S.player;S.player.pid=MP.pid;S.player.name=MP.name}
-    S.player=S.pilots[MP.pid];mpRun();feed(`You are hosting “${MP.code}”. Friends who enter the same galaxy code join you.`,'info');feed('Launch with E. Steer with the mouse, thrust with W. Hold F near an asteroid to mine.','info')}
+    S.player=S.pilots[MP.pid];mpRun();feed(`You are hosting “${MP.code}”. Friends who enter the same galaxy code join you.`,'info');flash(`Hosting “${MP.code}”. Friends join by typing the same galaxy code.`);feed('Launch with E. Steer with the mouse, thrust with W. Hold F near an asteroid to mine.','info')}
   else if(NET.cl&&MP.host){send(MP.host,{t:'newpilot',fac,cls});mpStatus('Joining…')}}
 function newPilot(pid,name,fac,cls){const L0=ledger();
   const P={pid,name,faction:fac,cls,hullInv:{},bay:{drone:CLASSES[cls].drones||0},tiers:{engine:1,power:1,shield:1,weapon:1,armor:1,drill:1,cargo:1},cargo:{},vault:{plate:6,wire:6},rack:rackCapC(cls,1),wpn:'kinetic',credits:1800,sector:FAC_HOME(fac),docked:'station',x:0,y:0,z:0,vx:0,vy:0,vz:0,q:[0,0,0,1],hull:0,shield:0,energy:0,fa:true,kills:0,tune:{}};
@@ -3103,14 +3106,17 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'bye':{if(!P.docked)poseFrom(P,m);delete MP.cl[L.peer];pilotLeft(c);setTimeout(()=>linkClose(L,true),200);break}
   }}
 function hJoin(c){const P=S.pilots[c.pid];c.hello=true;
-  if(!P){send(c.L,{t:'needpilot'});return}
+  if(!P){send(c.L,{t:'needpilot',r:MP.roster});return}
   P.name=c.name||P.name;P.pid=c.pid;c.ready=true;c.known=new Set();
   if(P.docked==='bridge')P.docked='station';
   if(P.docked==='station'&&!S.stations[P.sector])P.docked=null;
   if(!WORLDS[P.sector])openWorld(P.sector);
   if(!P.docked)spawnRP(c.pid);
   send(c.L,{t:'welcome',S:mpState(),you:c.pid,host:NET.me,code:MP.code});c.lastPR=JSON.stringify(P);
-  feed(`${P.name} joined the galaxy (${FACTIONS[P.faction].short}).`,'info');netRoster()}
+  {const where=(sid)=>`${DEF[P.sector].name}, ${HOP[sid][P.sector]===0?'right here':HOP[sid][P.sector]+' jump'+(HOP[sid][P.sector]>1?'s':'')+' away'}`;
+   feed(`${P.name} joined (${FACTIONS[P.faction].short}) at ${where(S.player.sector)}.${HOP[S.player.sector][P.sector]?' Map (M) can set a course to them.':''}`,'good');
+   for(const o of readyCl())if(o!==c){const OP=S.pilots[o.pid];if(OP)send(o.L,{t:'msg',k:'feed',a:[`${P.name} joined (${FACTIONS[P.faction].short}) at ${where(OP.sector)}.`,'good']})}}
+  netRoster()}
 function pilotLeft(c){const P=S.pilots[c.pid];delete MP.inp[c.pid];if(!P)return;const was=MP.rp[c.pid];c.ready=false;
   if(was)despawnRP(c.pid);else{const w=WORLDS[P.sector];if(w&&w!==LW&&!worldBusy(w))closeWorld(w)}
   feed(`${P.name} left the galaxy.`,'info');netRoster()}
@@ -3217,7 +3223,8 @@ function clientTick(dt){if(!running||!S||!S.player||!W)return;MP.uT-=dt;if(MP.uT
 function clientRecv(m){
   switch(m.t){
     case 'welcome':mpClientStart(m);break;
-    case 'needpilot':MP.needPilot=true;running=false;$('hud').hidden=true;$('start').hidden=false;showStart();$('bContinue').hidden=true;mpStatus(`Connected to <b>${esc(MP.code)}</b>. Choose your faction and ship, then Launch to join.`);break;
+    case 'needpilot':MP.roster=m.r||MP.roster;if(MP.autoLaunch){const a=MP.autoLaunch;MP.autoLaunch=null;send(MP.host,{t:'newpilot',fac:a.fac,cls:a.cls});mpStatus('Joining…');break}
+      if(MP.roster.length&&MP.roster[0])selFac=MP.roster[0][2];MP.needPilot=true;running=false;$('hud').hidden=true;$('start').hidden=false;showStart();$('bContinue').hidden=true;mpStatus(`Connected to <b>${esc(MP.code)}</b>. ${MP.roster.length?'Already flying here: '+MP.roster.map(r=>`<b style="color:${sideCol(r[2])}">${esc(r[1])}</b> (${esc(FACTIONS[r[2]].short)}, ${esc(DEF[r[3]].name)})`).join(', ')+'. Pick the same faction to start in their home system. ':''}Choose your ship, then Launch to join.`);break;
     case 'sn':applySnap(m);break;
     case 'pr':applyPR(m);break;
     case 'sync':applySync(m.s);break;
@@ -3240,7 +3247,8 @@ function mpClientStart(m){const first=!running;if(W)exitSector();WORLDS={};LW=nu
   if(S.player.docked==='bridge')S.player.docked='station';
   if(first)FEED.length=0;running=true;$('start').hidden=true;$('hud').hidden=false;showTouch();enterSector(S.player.sector);
   if(S.player.docked){const E=S.player.docked==='station'?W.stationEnt:W.outpostEnt;if(!E)S.player.docked=null;else openDock()}
-  hudUpdate();const hn=(MP.roster.find(r=>r[5])||[])[1];feed(first?`Joined “${MP.code}”${hn?` hosted by ${hn}`:''}.`:'Reconnected to the galaxy.','info')}
+  hudUpdate();const hn=(MP.roster.find(r=>r[5])||[])[1];feed(first?`Joined “${MP.code}”${hn?` hosted by ${hn}`:''}.`:'Reconnected to the galaxy.','good');flash(first?`Joined ${hn?hn+'\u2019s':'the'} galaxy “${MP.code}”.`:'Reconnected.');
+  for(const r of MP.roster)if(r[0]!==MP.pid){const h=HOP[S.player.sector][r[3]];feed(`${r[1]} (${FACTIONS[r[2]].short}) is ${h===0?'in this system':`at ${DEF[r[3]].name}, ${h} jump${h>1?'s':''} away`}${r[4]?', docked':''}.${h?' Map (M) can set a course to them.':''}`,'info')}}
 const OWN=['x','y','z','vx','vy','vz','q','fa','wpn','route','sector','docked'];
 function applyPR(m){const P=S&&S.player,R=m.r;if(!P||!R)return;const keep={};if(!m.fz)for(const k of OWN)keep[k]=P[k];
   for(const k of Object.keys(P))if(!(k in R))delete P[k];Object.assign(P,R,keep);if(W&&W.player&&W.player.alive)refreshPlayerStats()}
@@ -3319,11 +3327,11 @@ function takeOver(){const ck=MP.ckpt;if(!ck||!ck.S){mpFail('No saved copy of the
   mpRun();feed(`The host left. You are now hosting “${MP.code}”.`,'warn')}
 
 function netHud(){const el=$('netChip');if(!el)return;if(!NET.on||!S||!S.player){el.hidden=true;return}el.hidden=false;
-  el.innerHTML=`<b>●</b> ${NET.host?'Hosting':'Online'} · ${esc(MP.code)}<br>`+MP.roster.map(r=>`<span style="color:${sideCol(r[2])}">${esc(r[1])}</span>${r[3]===S.player.sector?'':` <small>${esc(DEF[r[3]].name)}</small>`}`).join(' · ')}
+  el.innerHTML=`<b>●</b> ${NET.host?'Hosting':'Online'} · ${esc(MP.code)}<br>`+MP.roster.map(r=>`<span style="color:${sideCol(r[2])}">${esc(r[1])}</span>${r[0]===MP.pid?' <small>(you)</small>':r[3]===S.player.sector?' <small>here</small>':` <small>${esc(DEF[r[3]].name)} · ${HOP[S.player.sector][r[3]]}j</small>`}`).join(' · ')+(MP.roster.length<2?'<br><small>No one else yet: friends join with the same galaxy code.</small>':'')}
 function openChat(){const el=$('chatIn');el.hidden=false;el.value='';el.focus()}
 $('chatIn').addEventListener('keydown',e=>{const el=$('chatIn');if(e.key==='Enter'){const t=el.value.trim();el.hidden=true;el.blur();if(t){if(NET.host)netChat(S.player.name||MP.name,t,NET.me);else netSend({t:'chat',m:t})}e.preventDefault()}else if(e.key==='Escape'){el.hidden=true;el.blur()}e.stopPropagation()});
 $('bMp').addEventListener('click',()=>{auInit();mpJoin()});
-for(const id of['mpName','mpCode'])$(id).addEventListener('keydown',e=>{if(e.key==='Enter')$('bMp').click()});
+$('mpCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('bMp').click()});$('mpCode').addEventListener('input',()=>{if(!running&&!$('start').hidden)shipCard()});
 function mpNewGalaxy(){const f=S.player.faction,cls=START_HULLS.find(k=>roleOf(k)===roleOf(S.player.cls))||'interceptor';$('win').hidden=true;
   if(W)exitSector();WORLDS={};LW=null;W=null;MP.rp={};MP.inp={};newGame(f,cls);S.gid=rid(10);S.pilots={};S.pilots[MP.pid]=S.player;S.player.pid=MP.pid;S.player.name=MP.name;
   for(const c of readyCl()){c.ready=false;send(c.L,{t:'reset'})}mpRun()}
