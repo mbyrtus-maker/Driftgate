@@ -428,7 +428,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Stations can fall, but only to torpedoes.</b> Guns and missiles cannot hurt station or depot armour; Bomber torpedoes can (five times their normal damage). Once the shield breaks the turrets go dark and the hull takes the hits. Depots at zero hull are destroyed and their frames scatter as debris; main stations and the Bloom Heart only go dark for a while. Station point defence only reaches about 700 m, so launch salvos. Siege fleets bring bombers while their fighters picket the station.</p>
             <p><b>Gunboats.</b> A two-seat hull from the Shipyard (16 plates, 10 conduit, 5 coils, 1 lattice). The pilot flies on twin forward cannons and missiles. A second pilot can pull alongside a friendly gunboat at matched speed and press E to take the rear turret: the mouse aims, click or Space fires, C launches a missile from the shared rack, and E climbs back out to your own ship. When nobody is in the turret, an AI gunner tracks and fires at whatever comes near.</p>
             <p><b>Comms.</b> Press I to pick a friendly: the first press is you, then nearby friendlies. Choose 1 to have up to four nearby friendly fighters guard that ship, or 2 to have them escort it, for two minutes. Choose 3 to ask your faction to build: a capital shipyard in your home system, or a depot where you are anywhere else. It draws on the faction's stores, and the reply says what is missing.</p>
-            <p><b>Commanding a frigate.</b> Fly up to one of your frigates and press E to dock: you step onto its bridge. Walk with WASD, look with the mouse, and press E at a console. The helm and weapons consoles sit just behind the forward window, the strategic table is in the middle, and there are windows port and starboard. <b>Strategic</b> shows the sector live: click space to move there, click a hostile to give it to the capital battery. <b>Navigation</b> sets throttle and runs the jump drive: frigates need no gates, the drive spins up (20 s at normal power) and jumps to a neighbouring system from anywhere, or follows a plotted course. <b>Weapons</b> sets the battery (automatic, a chosen target, or hold fire), point defence priorities, and whether the two Pickets escort or attack. <b>Engineering</b> splits 12 units of power between engines, shields, the battery and point defence. The hatch at the back returns you to your fighter.</p>
+            <p><b>Commanding a frigate.</b> Fly up to one of your frigates and press E to dock: you step onto its bridge. Walk with WASD (Shift to hurry); click the view to look around with the mouse (Esc releases it), and press E at a console. The helm and weapons consoles sit just behind the forward window, the strategic table is in the middle, and there are windows port and starboard. Take the command chair on the raised dais at the back (E) to fly and fight the frigate yourself: W/S throttle, A/D turn, R/F climb and dive, Space or click fires the main battery, T locks it on the nearest hostile, 1 to 4 open the strategic, helm, weapons and engineering consoles, and E stands up. <b>Strategic</b> shows the sector live: click space to move there, click a hostile to give it to the capital battery. <b>Navigation</b> sets throttle and runs the jump drive: frigates need no gates, the drive spins up (20 s at normal power) and jumps to a neighbouring system from anywhere, or follows a plotted course. <b>Weapons</b> sets the battery (automatic, a chosen target, or hold fire), point defence priorities, and whether the two Pickets escort or attack. <b>Engineering</b> splits 12 units of power between engines, shields, the battery and point defence. The hatch at the back returns you to your fighter.</p>
             <p><b>Playing with friends.</b> Up to four pilots can share a galaxy: on the start screen everyone types a callsign and the same galaxy code. The first pilot in hosts; the others join them. Each of you picks your own faction, so you can fly together or fight each other. Press Enter in flight to message everyone. Every pilot keeps a copy of the latest save, so anyone can host the next session, and if the host leaves mid-game another pilot takes over within a few seconds. While nobody is online the galaxy waits, frozen. Capital shipyards and frigates are single-player only for now; outposts you claim and depots you build belong to your faction.</p>
             <p><b>Fighter screens.</b> Friendly fighter wings in a frigate's system form up around it (up to three wings) and screen it: they push out to catch bombers before they can launch, then take on anything else closing in. Once a torpedo is away, the screen can't stop it; only the frigate's point defence can. Your own frigates are screened by your faction's wings.</p>
             <p><b>Winning the galaxy.</b> A side that controls a majority of the systems (8 of 15) for 30 minutes wins. The galaxy resets, and the winner starts the next one with a finished capital shipyard and 40% richer stores; if it was your faction, you start with 4,000 extra credits and a crate of parts.</p>
@@ -1112,6 +1112,20 @@ function auInit(){
   const mn=c.createBufferSource();mn.buffer=nb;mn.loop=true;const mnf=c.createBiquadFilter();mnf.type='bandpass';mnf.frequency.value=900;mnf.Q.value=1.4;const mng=c.createGain();mng.gain.value=.9;mn.connect(mnf);mnf.connect(mng);mng.connect(mg);mn.start();
   AU.mine={g:mg,bp:mbp,os:mos,wob};
   musicStart()}
+// distant radio voices for the bridge: formant-filtered syllables between squelch clicks
+function chatterRun(){if(!auOK()||!AU.on.sfx||!voice(3))return;const c=AU.ctx;let t=c.currentTime+.03;const n=5+Math.floor(Math.random()*9),base=95+Math.random()*85,vol=.026+Math.random()*.014;
+  const bus=c.createGain();bus.gain.value=1;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=300;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1500;hp.connect(lp);lp.connect(bus);bus.connect(AU.sfx);
+  const sq=at=>{const src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;f.type='bandpass';f.frequency.value=1200;f.Q.value=1.5;src.connect(f);f.connect(g);g.connect(bus);g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(vol*1.4,at+.005);g.gain.exponentialRampToValueAtTime(.0001,at+.05);src.start(at,Math.random());src.stop(at+.07)};
+  sq(t);t+=.06;
+  for(let i=0;i<n;i++){const d=.06+Math.random()*.13,o=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain(),f0=base*(.9+Math.random()*.3);o.type='sawtooth';o.frequency.setValueAtTime(f0,t);o.frequency.linearRampToValueAtTime(f0*(.85+Math.random()*.35),t+d);
+    f.type='bandpass';f.frequency.value=450+Math.random()*800;f.Q.value=3.5;o.connect(f);f.connect(g);g.connect(hp);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.015);g.gain.setValueAtTime(vol,t+d*.7);g.gain.linearRampToValueAtTime(.0001,t+d);o.start(t);o.stop(t+d+.02);
+    t+=d+(Math.random()<.2?.12+Math.random()*.22:.02+Math.random()*.05)}
+  sq(t+.02)}
+// bridge ambience: console beeps and crew radio, quiet and irregular
+function bridgeAmb(dt,F){W.ambT=(W.ambT===undefined?2:W.ambT)-dt;if(W.ambT>0)return;const r=Math.random();if(r<.55)SFX.cbeep();else SFX.chatter();W.ambT=r<.55?1.6+Math.random()*4:3.5+Math.random()*6;
+  const T=F.tok;if(NET.cl&&T&&T.spin){const B=W.bridge;if(B)B.spinRef=B.spinRef}}
+// jump-drive countdown: a low drum that quickens and swells from spin-up to the jump
+function drumTick(e,p,dt){e.drumT=(e.drumT===undefined?0:e.drumT)-dt;if(e.drumT>0)return;const v=vAt(e);if(v>.03)SFX.drum(Math.min(1.2,v*1.5),clamp(p,0,1));e.drumT=Math.max(.2,1.5-1.3*Math.pow(clamp(p,0,1),1.15))}
 function vAt(p){if(!W||!p)return 1;const d=hyp(p.x-cam.x,p.y-cam.y,p.z-cam.z);return 1/(1+Math.pow(d/450,1.5))}
 function voice(dur){if(AU.voices>26)return false;AU.voices++;setTimeout(()=>AU.voices--,dur*1000+60);return true}
 function envG(g,t,a,peak,dec){g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dec)}
@@ -1133,6 +1147,13 @@ const SFX0={
   jump(){rumble(110,2,.34,1.2,640);thump(40,26,1.8,.2)},
   alarm(){thump(98,96,.22,.12,'triangle');setTimeout(()=>thump(73,72,.3,.12,'triangle'),240)},
   clunk(){thump(88,48,.22,.17,'triangle');rumble(230,.18,.12)},
+  lance(v){thump(58,22,1.3,.34*v);thump(116,40,.35,.14*v,'triangle');rumble(150,1.1,.34*v,.8,38)},
+  pd(v){for(let i=0;i<4;i++)setTimeout(()=>{thump(560,400,.03,.05*v,'square');rumble(1300,.035,.045*v,2.2)},i*55)},
+  drum(v,p){const k=.55+.75*p;thump(64-14*p,30,.55+.3*p,(.17+.25*p)*v*k);rumble(170,.45+.35*p,(.13+.22*p)*v*k,.9,45)},
+  fjump(v){thump(48,16,2.4,.5*v);rumble(260,2.6,.48*v,1,36);setTimeout(()=>thump(34,17,1.8,.36*v),130)},
+  step(k){thump(92*(k||1),52,.09,.05,'sine');rumble(420,.06,.028,1.4)},
+  cbeep(){const f=[784,880,988,1175,1319][Math.floor(Math.random()*5)];thump(f,f,.07,.024,'sine');if(Math.random()<.45)setTimeout(()=>thump(f*1.26,f*1.26,.06,.02,'sine'),95)},
+  chatter(){chatterRun()},
   mineOn(){thump(180,420,.18,.07,'square');rumble(700,.12,.06,2)},
   mineOff(){thump(400,140,.2,.06,'square')},
   ore(n){const f=[740,880,988,1175][n%4];thump(f,f*.98,.09,.06,'triangle');setTimeout(()=>thump(f*1.5,f*1.48,.07,.03,'sine'),35)},
@@ -1299,39 +1320,54 @@ function despawnFrigate(e){const t=e.tok;if(t){t.hull=e.hull;t.shield=e.shield}f
 function fireLance(e,T){qRot(e.q,0,0,1,_f);const r=e.st.radius,sx=e.x+_f.x*r*.9,sy=e.y+_f.y*r*.9+r*.3,sz=e.z+_f.z*r*.9,spd=820,lp=T.type==='ship'?leadPoint({x:sx,y:sy,z:sz,vx:0,vy:0,vz:0},T,spd):T;
   let dx=lp.x-sx,dy=lp.y-sy,dz=lp.z-sz;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
   W.shots.push({x:sx,y:sy,z:sz,vx:dx*spd,vy:dy*spd,vz:dz*spd,dmg:220,side:e.side,src:e,ttl:3.4,col:sideCol(e.side),sty:'capital',cap:true});fxSpark({x:sx,y:sy,z:sz},'#ffe2b0',10);
-  const v=vAt(e);if(v>.05)SFX.turret(Math.min(1,v*1.6))}
+  const v=vAt(e);if(v>.05)SFX.lance(Math.min(1,v*1.3))}
 function frigTurrets(e,dt){const R=e.st.radius*1.1,C=e.tok&&fOwn(e.tok)?fctl(e.tok):null,mode=C?C.pd:'torps',pm=pmul(e.tok,'pd');if(mode==='hold'||pm<=0)return;for(const tu of e.turrets){tu.cool-=dt*pm;if(tu.cool>0)continue;qRot(e.q,tu.p[0]*R,tu.p[1]*R,tu.p[2]*R,_u);const wp={x:e.x+_u.x,y:e.y+_u.y,z:e.z+_u.z};let t=null,bd=800;
     if(mode!=='fighters')for(const m of W.missiles)if(m.kind==='torpedo'&&m.tgt===e&&hostile(e.side,m.side)){const d=d3(m,wp);if(d<bd){bd=d;t=m}}
     if(!t){bd=1150;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o.role==='frigate'||!hostile(e.side,o.side))continue;if(o.isPlayer&&(S.player.docked||W.dead))continue;const d=d3(o,wp);if(d<bd){bd=d;t=o}}}
     if(!t&&mode==='fighters'){bd=800;for(const m of W.missiles)if(m.kind==='torpedo'&&m.tgt===e&&hostile(e.side,m.side)){const d=d3(m,wp);if(d<bd){bd=d;t=m}}}
-    if(t){tu.cool=.42;turretShot(wp,t,1300,10,e.side,12)}else tu.cool=.3}}
+    if(t){tu.cool=.42;turretShot(wp,t,1300,10,e.side,12,'pd');if(W.t-(e.pdSnd||0)>.22){e.pdSnd=W.t;const v=vAt(e);if(v>.04)SFX.pd(Math.min(1,v*1.4))}}else tu.cool=.3}}
 function frigateThink(e,dt){const t=e.tok;if(!t||!S.frigates.includes(t)){e.role='leave';return}t.hull=e.hull;t.shield=e.shield;const C=fOwn(t)?fctl(t):null;
   frigTurrets(e,dt);
   const nx=frigHop(t);
-  if(nx){if(!t.spin||t.spin.to!==nx)t.spin={to:nx,p:0};t.spin.p+=dt/JUMP_TIME*pmul(t,'eng');e.charging=t.spin.p;if(Math.random()<.3)fxSpark({x:e.x+rnd(-80,80),y:e.y+rnd(-40,40),z:e.z+rnd(-80,80)},'#bfe0ff',2);
-    if(t.spin.p>=1){t.spin=null;t.jumpTo=null;e.charging=0;fxWarp(e,sideCol(e.side));fxBoom(e,220,'#bfe0ff');
+  if(nx){if(!t.spin||t.spin.to!==nx)t.spin={to:nx,p:0};t.spin.p+=dt/JUMP_TIME*pmul(t,'eng');e.charging=t.spin.p;drumTick(e,t.spin.p,dt);if(Math.random()<.3)fxSpark({x:e.x+rnd(-80,80),y:e.y+rnd(-40,40),z:e.z+rnd(-80,80)},'#bfe0ff',2);
+    if(t.spin.p>=1){t.spin=null;t.jumpTo=null;e.charging=0;e.drumT=0;{const v=vAt(e);if(v>.03)SFX.fjump(Math.min(1,v*1.4))}fxWarp(e,sideCol(e.side));fxBoom(e,220,'#bfe0ff');
       if(W.bridge&&W.bridge.f===e){W.pendingFJump={tok:t,to:nx};return}
       t.sector=nx;t.hold=0;t.moveT=0;despawnFrigate(e);if(fOwn(t))feedTo(t.owner,`${t.name} jumped to ${DEF[nx].name}.`,'info');if(t.owner&&NET.host&&!WORLDS[nx]&&Object.values(S.pilots||{}).some(P=>P.docked==='bridge'&&P.bridgeId===t.id))openWorld(nx);else if(WORLDS[nx])inW(WORLDS[nx],()=>spawnFrigate(t,true));return}}
   else{t.spin=null;e.charging=0}
   let T=null;
   if(C&&C.lanceMode==='target'&&C.tgt){const g=C.tgt;if(g.type==='station'?W.stationEnt===g:(g.alive&&W.ents.includes(g)))T=g;else C.tgt=null}
   if(!T&&(!C||C.lanceMode==='auto')){const SE=W.stationEnt;if(SE&&hostile(e.side,SE.fac))T=SE;let bd=2600;for(const o of W.ents)if(o.role==='frigate'&&o.alive&&o!==e&&hostile(e.side,o.side)){const d=d3(o,e);if(d<bd){bd=d;T=o}}}
-  if(C){const m=C.throttle*Math.min(1.6,pmul(t,'eng'));if(C.movePt&&m>0){const d=steer(e,C.movePt.x,C.movePt.y,C.movePt.z,dt,true,m*.9);faceTo(e,C.movePt,dt);e.thrusting=d>80;if(d<70)C.movePt=null}else{brake(e,dt*.6);if(T)faceTo(e,T,dt*.5)}}
+  if(C&&C.helm==='manual'){const mi=C.man&&performance.now()-C.man.at<800?C.man:{y:0,p:0},m=C.throttle*Math.min(1.6,pmul(t,'eng'));qRot(e.q,0,0,1,_f);qRot(e.q,1,0,0,_r);qRot(e.q,0,1,0,_u);
+    if(mi.y||mi.p)faceDir(e,_f.x+_r.x*mi.y*.9+_u.x*mi.p*.7,_f.y+_r.y*mi.y*.9+_u.y*mi.p*.7,_f.z+_r.z*mi.y*.9+_u.z*mi.p*.7,dt);
+    if(m>0.01){steer(e,e.x+_f.x*3000,e.y+_f.y*3000,e.z+_f.z*3000,dt,true,m*.9);e.thrusting=true}else brake(e,dt*.6)}
+  else if(C){const m=C.throttle*Math.min(1.6,pmul(t,'eng'));if(C.movePt&&m>0){const d=steer(e,C.movePt.x,C.movePt.y,C.movePt.z,dt,true,m*.9);faceTo(e,C.movePt,dt);e.thrusting=d>80;if(d<70)C.movePt=null}else{brake(e,dt*.6);if(T)faceTo(e,T,dt*.5)}}
   else if(T){const d=d3(T,e)||1,want=T.type==='station'?1500:1200;if(Math.abs(d-want)>150){const dx=T.x-e.x,dy=T.y-e.y,dz=T.z-e.z;steer(e,T.x-dx/d*want,T.y-dy/d*want,T.z-dz/d*want,dt,true,.8)}else brake(e,dt*.5);faceTo(e,T,dt)}
   else{const OE=W.outpostEnt,A=OE?{x:OE.x+520,y:OE.y+160,z:OE.z+520}:{x:650,y:120,z:650};steer(e,A.x,A.y,A.z,dt,true,.6);if(hyp(e.vx,e.vy,e.vz)>8)faceDir(e,e.vx,e.vy,e.vz,dt)}
-  if(T&&!(C&&C.lanceMode==='hold')){const d=d3(T,e),lm=pmul(t,'lance');e.lanceCd-=dt*lm;if(e.lanceCd<=0&&d<2600&&lm>0){e.lanceCd=2.6;fireLance(e,T)}}}
-const BRIDGE={off:[0,.36,.05],cons:[{id:'strat',name:'Strategic map',x:0,z:2,col:'#6fb7ff'},{id:'nav',name:'Helm',x:10,z:11.6,face:[0,-1],col:'#7ad9a7'},{id:'wpn',name:'Weapons',x:-10,z:11.6,face:[0,-1],col:'#ff8a6a'},{id:'eng',name:'Engineering',x:-15,z:-8,col:'#f0b24a'},{id:'hatch',name:'Hatch · back to your fighter',x:15,z:-11,col:'#ece4cf'}]};
+  const lm=pmul(t,'lance');if(e.lanceCd>0)e.lanceCd-=dt*lm;
+  if(C&&C.fire){C.fire=0;if(e.lanceCd<=0&&lm>0){qRot(e.q,0,0,1,_f);const aim=T&&d3(T,e)<2600?T:{x:e.x+_f.x*2400,y:e.y+_f.y*2400,z:e.z+_f.z*2400,vx:0,vy:0,vz:0};e.lanceCd=2.6;fireLance(e,aim)}}
+  else if(T&&!(C&&C.lanceMode==='hold')&&e.lanceCd<=0&&d3(T,e)<2600&&lm>0){e.lanceCd=2.6;fireLance(e,T)}}
+const BRIDGE={off:[0,.36,.05],cons:[{id:'strat',name:'Strategic map',x:0,z:2,col:'#6fb7ff'},{id:'nav',name:'Helm',x:10,z:11.6,face:[0,-1],col:'#7ad9a7'},{id:'wpn',name:'Weapons',x:-10,z:11.6,face:[0,-1],col:'#ff8a6a'},{id:'eng',name:'Engineering',x:-15,z:-8,col:'#f0b24a'},{id:'hatch',name:'Hatch · back to your fighter',x:15,z:-11,col:'#ece4cf'},{id:'cmd',name:'Command chair',x:0,z:-6.2,col:'#f0b24a'}]};
+// furniture you can't walk through (x, z, radius) and the reach for each console
+const BR_SOLID=[[0,2,5.75],[10,11.6,2.3],[-10,11.6,2.3],[10,8.7,1],[-10,8.7,1],[0,-6.2,1.5],[2.9,-5.1,1],[-2.9,-5.1,1],[-15,-8,2.4],[-19.5,-12.5,1.9],[-17,-13.8,1.5]],BR_REACH={strat:7.6,cmd:3.4,hatch:5.5};
 function bridgeMesh(){if(MESH.bridge)return MESH.bridge;const g=new GB(),L=new GB(),FL=[.16,.18,.22],WL=[.24,.26,.31],TR=[.34,.37,.43],DK=[.1,.11,.14];
-  g.set(0,-.2,0).box(44,.4,30,FL);g.set(0,11.2,0).box(44,.4,30,DK);g.set(0,5.5,-15).box(44,11,.4,WL);for(const s of[-1,1]){g.set(22*s,1.25,0).box(.4,2.5,30,WL);g.set(22*s,10.25,0).box(.4,2,30,WL);g.set(22*s,5.5,-10.75).box(.4,11,8.5,WL);g.set(22*s,5.5,13.75).box(.4,11,2.5,WL);g.set(22*s,5.875,3).box(.6,6.75,.6,TR);for(const z of[-6.5,12.5])g.set(21.8*s,5.875,z).box(.5,6.75,.5,TR);g.set(21.3*s,2.55,3).box(1.4,.18,19,TR);g.set(21.6*s,9.2,3).box(.8,.15,19,TR)}
+  g.set(0,-.2,0).box(44,.4,30,[.07,.08,.1]);g.set(0,11.2,0).box(44,.4,30,[.06,.065,.08]);g.set(0,5.5,-15).box(44,11,.4,WL);for(const s of[-1,1]){g.set(22*s,1.25,0).box(.4,2.5,30,WL);g.set(22*s,10.25,0).box(.4,2,30,WL);g.set(22*s,5.5,-10.75).box(.4,11,8.5,WL);g.set(22*s,5.5,13.75).box(.4,11,2.5,WL);g.set(22*s,5.875,3).box(.6,6.75,.6,TR);for(const z of[-6.5,12.5])g.set(21.8*s,5.875,z).box(.5,6.75,.5,TR);g.set(21.3*s,2.55,3).box(1.4,.18,19,TR);g.set(21.6*s,9.2,3).box(.8,.15,19,TR)}
   g.set(0,1.25,15).box(44,2.5,.4,WL);g.set(0,10.25,15).box(44,2,.4,WL);for(const s of[-1,1]){g.set(20*s,5.5,15).box(4,11,.4,WL);g.set(6*s,5.75,15).box(.5,6.5,.5,TR)}
   for(let i=-2;i<=2;i++)g.set(i*8,.05,0).box(.3,.05,26,[.25,.6,.9],.8);g.set(0,11,0).box(30,.1,.6,[1,.95,.85],.9);g.set(0,11,-8).box(30,.1,.6,[1,.95,.85],.9);
-  for(const c of BRIDGE.cons){const col=hexRGB(c.col);if(c.id==='strat'){g.set(c.x,1,c.z).cyl(3.4,3.8,2,16,TR);g.set(c.x,2.05,c.z).cyl(3.1,3.1,.08,16,col,.85);continue}
+  for(const c of BRIDGE.cons){const col=hexRGB(c.col);if(c.id==='cmd')continue;if(c.id==='strat'){g.set(c.x,1,c.z).cyl(3.4,3.8,2,16,TR);g.set(c.x,2.05,c.z).cyl(3.1,3.1,.08,16,col,.85);continue}
     if(c.id==='hatch'){g.set(c.x,4,c.z-3.8).box(5,8,.5,TR);g.set(c.x,4,c.z-3.55).box(4,7,.1,[.2,.22,.26]);g.set(c.x,8.2,c.z-3.5).box(4,.3,.1,col,.9);continue}
     const q=c.face?qLook(c.face[0],0,c.face[1],0,1,0,q0()):qLook(-c.x,0,-c.z+2,0,1,0,q0());g.set(c.x,1.2,c.z,q).box(4.2,2.4,1.6,TR);const q2=qMul(q,qAxis(1,0,0,-.55,q0()),q0());g.set(c.x,2.8,c.z,q2).box(3.8,2.2,.15,col,.9)}
   bridgeDetail(g,FL,WL,TR,DK);
   return MESH.bridge=g.upload()}
 // fit-out: command dais and captain's chair, crew seats, a railed holo table, ceiling structure, wall screens, conduits, reactor column, hatch markings
-function bridgeDetail(g,FL,WL,TR,DK){const D2=[.13,.14,.17],MT=[.42,.45,.5],GL=[.25,.6,.9],AM=[1,.72,.3],RD=[1,.38,.3],GR=[.45,.9,.6],SC=[.05,.08,.12];const yq=a=>qAxis(0,1,0,a,q0());
+const BR_SUN=[.58,.56,.52],BR_AMB=[.34,.35,.39];
+// panelled skin: floor tiles, wall and ceiling panels with seams, vents and rivets
+function bridgeSkin(g,FL,WL,TR,DK){const v=(c,a,b)=>scaleC(c,a+Math.random()*(b-a));
+  for(let x=-20;x<20;x+=4)for(let z=-13;z<13;z+=4){g.set(x+2,.012,z+2).box(3.9,.024,3.9,v(FL,.9,1.12));g.set(x+2,.03,z+2).box(.5,.012,.5,[.09,.1,.12])}
+  for(let x=-20;x<20;x+=4){g.set(x+2,1.3,-14.76).box(3.9,2.45,.06,v(WL,.88,1.1));g.set(x+2,9.9,-14.76).box(3.9,1.7,.06,v(WL,.88,1.1));for(let i=0;i<4;i++)g.set(x+1.2+i*.5,.55,-14.71).box(.32,.05,.04,[.08,.09,.11])}
+  for(const s of[-1,1]){for(let z=-12.5;z<14;z+=4){g.set(21.76*s,1.3,z+1.5).box(.06,2.45,3.9,v(WL,.88,1.1))}for(let z=-14;z<-7;z+=3.4)g.set(21.76*s,5.6,z+1.7).box(.06,5.4,3.3,v(WL,.88,1.1))}
+  for(let x=-20;x<20;x+=4)for(let z=-15;z<15;z+=6){const lit=(Math.abs(x+2)===6&&(z===-3||z===3));g.set(x+2,10.97,z+3).box(3.88,.04,5.6,lit?[1,.96,.88]:v(DK,1.2,1.5),lit?.75:0)}
+  for(const x of[-20,-12,-4,4,12,20])for(const y of[2.3,8.95])g.set(x,y,-14.72).box(.12,.12,.05,[.5,.52,.56])}
+function bridgeDetail(g,FL,WL,TR,DK){bridgeSkin(g,FL,WL,TR,DK);const D2=[.13,.14,.17],MT=[.42,.45,.5],GL=[.25,.6,.9],AM=[1,.72,.3],RD=[1,.38,.3],GR=[.45,.9,.6],SC=[.05,.08,.12];const yq=a=>qAxis(0,1,0,a,q0());
   // floor: walkway plates and wall-edge light strips
   for(const[x,z,w,d]of[[0,9,30,5],[0,-6,12,8],[-15,-8,9,7],[15,-10,8,7]])g.set(x,.03,z).box(w,.04,d,D2);
   for(const s of[-1,1])g.set(21.4*s,.07,0).box(.16,.07,29,GL,.8);g.set(0,.07,-14.6).box(43,.07,.16,GL,.8);
@@ -1342,7 +1378,7 @@ function bridgeDetail(g,FL,WL,TR,DK){const D2=[.13,.14,.17],MT=[.42,.45,.5],GL=[
   for(const s of[-1,1]){const x=10*s;g.set(x,.45,8.7).cyl(.3,.55,.9,10,MT);g.set(x,1.05,8.7).box(1.9,.32,1.8,DK);g.set(x,2.3,7.85).box(1.9,2.3,.32,DK);g.set(x,2.3,7.7).box(1.5,1.8,.05,GL,.35);for(const a of[-1,1])g.set(x+a*1.05,1.55,8.6).box(.22,.18,1.4,MT)}
   // command dais and captain's chair at the back, looking over the table
   g.set(0,.28,-6.5).box(11,.56,6.5,D2);g.set(0,.14,-2.9).box(6,.28,.9,D2);g.set(0,.57,-3.3).box(11,.04,.12,AM,.9);
-  g.set(0,1.05,-6.2).cyl(.45,.7,1,12,MT);g.set(0,1.75,-6.2).box(2.6,.45,2.4,DK);g.set(0,2.75,-7.35).box(2.6,2,.45,DK);g.set(0,3.85,-7.35).box(1.6,.35,.4,DK);
+  g.set(0,1.05,-6.2).cyl(.45,.7,1,12,MT);g.set(0,1.75,-6.2).box(2.6,.45,2.4,[.2,.17,.15]);g.set(0,2.75,-7.35).box(2.6,2,.45,[.2,.17,.15]);g.set(0,3.85,-7.35).box(1.6,.35,.4,[.2,.17,.15]);g.set(0,2.75,-7.6).box(2.7,2.1,.08,MT);g.set(0,3.8,-7.62).box(2.2,.06,.06,AM,.8);
   for(const a of[-1,1]){g.set(a*1.45,2.3,-6.1).box(.35,.25,2,MT);g.set(a*1.45,2.45,-5.4).box(.3,.04,.6,a<0?GL:AM,.9);
     g.set(a*2.9,1.5,-5.1,yq(-a*.5)).box(1.4,1.9,.9,TR);g.set(a*2.9,2.6,-5.1,qMul(yq(-a*.5),qAxis(1,0,0,-.6,q0()),q0())).box(1.25,1,.1,a<0?GL:GR,.85)}
   // railing around the strategic table, open towards the dais
@@ -1364,19 +1400,48 @@ function bridgeDetail(g,FL,WL,TR,DK){const D2=[.13,.14,.17],MT=[.42,.45,.5],GL=[
   for(const s of[-1,1])g.set(15+s*2.75,4,-14.55).box(.35,8,.08,AM,.5)}
 function bridgeOrigin(F){const k=F.st.radius*1.25;qRot(F.q,BRIDGE.off[0]*k,BRIDGE.off[1]*k,BRIDGE.off[2]*k,_u);return{x:F.x+_u.x,y:F.y+_u.y,z:F.z+_u.z}}
 function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id});W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};cam.snap=true;closeConsole();SFX.clunk();flash(`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok)}
-function exitBridge(){const B=W.bridge;if(!B)return;const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q);cam.snap=true;SFX.clunk();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
-function bridgeNear(){const B=W.bridge;if(!B)return null;let best=null,bd=5.5;for(const c of BRIDGE.cons){const d=Math.hypot(c.x-B.x,(c.id==='hatch'?c.z-3:c.z)-B.z);if(d<bd){bd=d;best=c}}return best}
-function bridgeUpdate(dt){const B=W.bridge,F=B.f,p=W.player;if(NET.cl&&(!F.alive||!W.ents.includes(F))){MP.fjB={id:F.tokId,keep:{x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch},at:performance.now()};closeConsole();W.bridge=null;return}
+function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q);cam.snap=true;SFX.clunk();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
+function bridgeNear(){const B=W.bridge;if(!B||B.seat)return null;let best=null,bd=1e9;for(const c of BRIDGE.cons){const d=Math.hypot(c.x-B.x,(c.id==='hatch'?c.z-3:c.z)-B.z);if(d<(BR_REACH[c.id]||5.5)&&d<bd){bd=d;best=c}}return best}
+function bridgeUpdate(dt){const B=W.bridge,F=B.f,p=W.player;if(NET.cl&&(!F.alive||!W.ents.includes(F))){MP.fjB={id:F.tokId,keep:{x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch,seat:B.seat,fy:B.fy},at:performance.now()};closeConsole();W.bridge=null;return}
   if(!F.alive||!W.ents.includes(F)){W.bridge=null;S.player.docked=null;closeConsole();flash('The frigate is gone. Your fighter is adrift.',true);return}
   p.x=F.x;p.y=F.y-F.st.radius*.5;p.z=F.z;p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;p.shield=p.st.sCap;
-  if(B.panel)return;const si=steerInput();B.yaw+=si.yaw*1.8*dt;B.pitch=clamp(B.pitch-si.pitch*1.4*dt,-1,1);
-  const fx=Math.sin(B.yaw),fz=Math.cos(B.yaw),sp=9*dt;let mx=0,mz=0;if(keys.KeyW){mx+=fx;mz+=fz}if(keys.KeyS){mx-=fx;mz-=fz}if(keys.KeyA){mx+=fz;mz-=fx}if(keys.KeyD){mx-=fz;mz+=fx}
-  const l=Math.hypot(mx,mz);if(l>0){B.x=clamp(B.x+mx/l*sp,-20,20);B.z=clamp(B.z+mz/l*sp,-13.5,13)}}
-function bridgeJump(t,to){const B=W.bridge,keep={x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch};t.sector=to;t.hold=0;t.moveT=0;exitSector();S.player.sector=to;S.player.docked='bridge';S.player.x=0;S.player.y=0;S.player.z=0;enterSector(to);
+  bridgeAmb(dt,F);if(NET.cl){const T=F.tok;if(T&&T.spin){if(B.spinRef!==T.spin){B.spinRef=T.spin;B.spinP=T.spin.p}else B.spinP+=dt/JUMP_TIME*pmul(T,'eng');drumTick(F,B.spinP,dt)}}
+  if(B.panel){B.vx=B.vz=0;return}
+  const lk=lookLocked(),si=lk?keyLook():steerInput();B.yaw+=si.yaw*1.8*dt;B.pitch=clamp(B.pitch-si.pitch*1.4*dt,-1.2,1.2);
+  if(B.seat){chairUpdate(B,F,dt);return}
+  const fx=Math.sin(B.yaw),fz=Math.cos(B.yaw);let mx=0,mz=0;if(keys.KeyW){mx+=fx;mz+=fz}if(keys.KeyS){mx-=fx;mz-=fz}if(keys.KeyA){mx+=fz;mz-=fx}if(keys.KeyD){mx-=fz;mz+=fx}
+  const l=Math.hypot(mx,mz),run=keys.ShiftLeft||keys.ShiftRight?1.45:1,tv=l>0?7.5*run:0,tx=l>0?mx/l*tv:0,tz=l>0?mz/l*tv:0,k=Math.min(1,dt*(l>0?11:14));
+  B.vx=(B.vx||0)+(tx-(B.vx||0))*k;B.vz=(B.vz||0)+(tz-(B.vz||0))*k;B.x=clamp(B.x+B.vx*dt,-20.4,20.4);B.z=clamp(B.z+B.vz*dt,-13.6,13.2);
+  for(const[ox,oz,r]of BR_SOLID){const dx=B.x-ox,dz=B.z-oz,d=Math.hypot(dx,dz),R=r+.7;if(d<R){const n=d||1;B.x=ox+dx/n*R;B.z=oz+dz/n*R}}
+  const fl=Math.abs(B.x)<5.5&&B.z>-9.75&&B.z<-3.25?.56:Math.abs(B.x)<3&&B.z>=-3.35&&B.z<-2.45?.28:0;B.fy=(B.fy||0)+(fl-(B.fy||0))*Math.min(1,dt*12);
+  const sp=Math.hypot(B.vx,B.vz),ph=B.bob||0;B.bob=ph+sp*dt*1.15;B.bobA=(B.bobA||0)+((sp>1?1:0)-(B.bobA||0))*Math.min(1,dt*8);if(Math.floor(B.bob/Math.PI)!==Math.floor(ph/Math.PI)&&sp>1)SFX.step(run>1?1.2:1)}
+// mouse look: click the view to capture the pointer (Esc releases); without capture the old edge-steering still works
+function lookLocked(){return document.pointerLockElement===$('gl')}
+function keyLook(){let yaw=0,pitch=0;if(keys.ArrowLeft)yaw+=1;if(keys.ArrowRight)yaw-=1;if(keys.ArrowUp)pitch-=1;if(keys.ArrowDown)pitch+=1;return{yaw,pitch}}
+function freeLook(){if(lookLocked())try{document.exitPointerLock()}catch(e){}}
+// ---- the command chair: fly the frigate, fight it, and reach every console from one seat
+function sitChair(){const B=W.bridge;if(!B)return;B.seat=true;B.x=0;B.z=-5.9;B.yaw=0;B.pitch=-.12;B.vx=B.vz=0;closeConsole();fconSend(B.f.tok,'helm:manual',null);SFX.clunk();
+  flash('In the command chair. W/S throttle · A/D turn · R/F climb and dive · Space or click fires the battery · T targets · 1–4 consoles · E stands up.')}
+function standChair(){const B=W.bridge;if(!B||!B.seat)return;B.seat=false;B.x=0;B.z=-2.3;B.yaw=0;fconSend(B.f.tok,'helm:auto',null);fconSend(B.f.tok,'man:0:0',null);SFX.clunk()}
+function chairUpdate(B,F,dt){const t=F.tok,C=fctl(t);B.fy=.56;B.bobA=0;
+  const y=(keys.KeyA?1:0)-(keys.KeyD?1:0),pi=(keys.KeyR?1:0)-(keys.KeyF?1:0),th=(keys.KeyW?1:0)-(keys.KeyS?1:0);
+  if(th){C.throttle=clamp(C.throttle+th*dt*.5,0,1);B.thrDirty=1}
+  B.netT=(B.netT||0)-dt;const sendNow=B.netT<=0;if(sendNow)B.netT=.1;
+  if(!NET.cl){C.helm='manual';C.man={y,p:pi,at:performance.now()}}else if(sendNow){netSend({t:'fcon',id:t.id,a:`man:${y}:${pi}`,e:0},true);if(B.thrDirty){B.thrDirty=0;netSend({t:'fcon',id:t.id,a:'thrset:'+C.throttle.toFixed(2),e:0})}}
+  if((keys.Space||mouse.l)&&!B.panel&&(B.fireT||0)<=0){B.fireT=.4;fconSend(t,'fire',null)}B.fireT=(B.fireT||0)-dt}
+function chairTarget(){const B=W.bridge;if(!B)return;const F=B.f;let best=null,bd=2600;for(const o of W.ents){if(o.type!=='ship'||!o.alive||!hostile('player',o.side))continue;const d=d3(o,F);if(d<bd){bd=d;best=o}}if(!best&&W.stationEnt&&hostile('player',W.stationEnt.fac)&&d3(W.stationEnt,F)<3200)best=W.stationEnt;
+  if(best){fconSend(F.tok,'tgt',best);flash(`Battery locked on ${best.type==='station'?best.name:shipLabel(best)}.`)}else flash('No hostiles within battery range (2.6 km).',true)}
+function drawChairHud(c,B,F,C,T){const cx=VW/2,by=VH-232,w=Math.min(520,VW-40),x0=cx-w/2;c.globalAlpha=1;c.fillStyle='rgba(8,12,22,.78)';c.fillRect(x0,by,w,74);c.strokeStyle='rgba(240,178,74,.6)';c.strokeRect(x0+.5,by+.5,w-1,73);
+  const v=Math.round(hyp(F.vx,F.vy,F.vz));qRot(F.q,0,0,1,_f);const brg=Math.round((Math.atan2(_f.x,_f.z)*180/Math.PI+360)%360),lc=Math.max(0,F.lanceCd||0),tg=C.tgt,
+    cells=[['THROTTLE',Math.round(C.throttle*100)+'%'],['SPEED',v+' m/s'],['HEADING',brg+'°'],['BATTERY',lc>0?'charging '+lc.toFixed(1)+'s':'READY'],['TARGET',tg?(tg.type==='station'?tg.name:shipLabel(tg)).slice(0,18):'—'],['DRIVE',T.spin?'JUMP '+Math.round(T.spin.p*100)+'%':T.dest&&T.dest!==T.sector?'COURSE SET':'IDLE']];
+  const cw=w/cells.length;c.textAlign='center';cells.forEach(([a,b],i)=>{c.font='600 10px "Saira Semi Condensed",sans-serif';c.fillStyle='#8c91a5';c.fillText(a,x0+cw*(i+.5),by+20);c.font='600 14px "JetBrains Mono",monospace';c.fillStyle=a==='BATTERY'&&lc<=0?'#7ad9a7':'#ece4cf';c.fillText(b,x0+cw*(i+.5),by+40)});
+  c.fillStyle='#f0b24a';c.fillRect(x0+10,by+56,(w-20)*C.throttle,4);c.strokeStyle='rgba(240,178,74,.4)';c.strokeRect(x0+10,by+56,w-20,4);
+  c.font='500 11px "Saira Semi Condensed",sans-serif';c.fillStyle='#cfd6e4';c.fillText('W/S throttle · A/D turn · R/F climb/dive · Space fire · T target · 1 map · 2 helm · 3 weapons · 4 engineering · E stand',cx,by+70)}
+function bridgeJump(t,to){const B=W.bridge,keep={x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch,seat:B.seat,fy:B.fy};t.sector=to;t.hold=0;t.moveT=0;exitSector();S.player.sector=to;S.player.docked='bridge';S.player.x=0;S.player.y=0;S.player.z=0;enterSector(to);
   const F=W.ents.find(e=>e.tok===t);if(F){W.bridge={f:F,...keep,panel:null};cam.snap=true}else S.player.docked=null;SFX.jump();feed(`${t.name} jumped to ${DEF[to].name}.`,'info')}
 // ---- bridge consoles: strategic map, navigation, weapons, engineering
 const FC_TABS=[['strat','Strategic'],['nav','Helm'],['wpn','Weapons'],['eng','Engineering']];let fcT=0;
-function openConsole(id){if(!W||!W.bridge)return;W.bridge.panel=id;$('fcon').hidden=false;$('fcErr').textContent='';renderConsole(true)}
+function openConsole(id){if(!W||!W.bridge)return;freeLook();W.bridge.panel=id;$('fcon').hidden=false;$('fcErr').textContent='';renderConsole(true)}
 function closeConsole(){if(W&&W.bridge)W.bridge.panel=null;const el=$('fcon');if(el)el.hidden=true}
 function fcPip(n){return`<span class="pips">${[1,2,3,4,5,6].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>`}
 function renderConsole(full){const B=W&&W.bridge;if(!B||!B.panel)return;const F=B.f,t=F.tok,C=fctl(t),id=B.panel,pw=C.power;
@@ -1430,6 +1495,7 @@ function drawStrat(){const B=W&&W.bridge;if(!B||B.panel!=='strat')return;const c
     g.strokeStyle='rgba(255,93,79,.25)';g.setLineDash([2,4]);g.beginPath();g.arc(x,y,2600*sc,0,TAU);g.stroke();g.strokeStyle='rgba(111,183,255,.25)';g.beginPath();g.arc(x,y,1150*sc,0,TAU);g.stroke();g.setLineDash([])}
   g.textAlign='left';g.fillStyle='#5a647c';g.fillText('red ring: battery range · blue ring: point defence',10,h-10)}
 function fconApply(t,a,ent){const C=fctl(t);const[k,v,w]=String(a).split(':');if((k==='jump'||k==='course')&&!DEF[v])return;
+  if(k==='helm'){C.helm=v==='manual'?'manual':null;if(C.helm)C.movePt=null;return}if(k==='man'){C.man={y:clamp(+v||0,-1,1),p:clamp(+w||0,-1,1),at:performance.now()};return}if(k==='thrset'){C.throttle=clamp(+v||0,0,1);return}if(k==='fire'){C.fire=1;return}
   if(k==='move'){C.movePt={x:clamp(+v||0,-3000,3000),y:+(a.split(':')[3])||0,z:clamp(+w||0,-3000,3000)};return}
   if(k==='stop')C.movePt=null;if(k==='thr')C.throttle=clamp(C.throttle+ +v,0,1);
   if(k==='jump'){t.jumpTo=v;t.dest=null;feed(`${t.name}: jump drive spinning up for ${DEF[v].name}.`,'info')}if(k==='course'){t.dest=v;t.jumpTo=null;feed(`${t.name}: course plotted to ${DEF[v].name}.`,'info')}if(k==='abort'){t.jumpTo=null;t.dest=null;t.spin=null}
@@ -1465,7 +1531,8 @@ function bridgeScreens(c,B,F,O,C,T){const at=(x,y,z)=>{qRot(F.q,x,y,z,_u);return
   c.globalAlpha=1}
 const _bx={};function _axis(F,k){if(_bx.q!==F.q||_bx.t!==W.t){_bx.q=F.q;_bx.t=W.t;qRot(F.q,1,0,0,_u);_bx.r=[_u.x,_u.y,_u.z];qRot(F.q,0,1,0,_u);_bx.u=[_u.x,_u.y,_u.z];qRot(F.q,0,0,1,_u);_bx.f=[_u.x,_u.y,_u.z]}return _bx[k]}
 function _r0(F,i){return _axis(F,'r')[i]}function _u0(F,i){return _axis(F,'u')[i]}function _f0(F,i){return _axis(F,'f')[i]}
-function drawBridgeOverlay(c,t){const B=W.bridge,F=B.f,O=bridgeOrigin(F),near=bridgeNear(),T=F.tok,C=fctl(T);bridgeScreens(c,B,F,O,C,T);
+function drawBridgeOverlay(c,t){const B=W.bridge,F=B.f,O=bridgeOrigin(F),near=bridgeNear(),T=F.tok,C=fctl(T);bridgeScreens(c,B,F,O,C,T);if(B.seat&&!B.panel)drawChairHud(c,B,F,C,T);
+  if(!B.panel&&!lookLocked()){c.textAlign='center';c.font='500 12px "Saira Semi Condensed",sans-serif';c.fillStyle='rgba(207,214,228,.75)';c.fillText('Click the view to look around with the mouse · Esc releases',VW/2,B.seat?VH-242:VH-130)}
   c.font='600 12px "Saira Semi Condensed",sans-serif';c.textAlign='center';
   for(const k of BRIDGE.cons){qRot(F.q,k.x,k.id==='hatch'?8.8:(k.id==='strat'?4.6:4.8),k.id==='hatch'?k.z-3.5:k.z,_u);const P=proj(O.x+_u.x,O.y+_u.y,O.z+_u.z);if(P.behind)continue;c.fillStyle=near===k?'#f0b24a':hexA(k.col,.85);c.fillText(k.name.toUpperCase(),P.x,P.y)}
   if(C.tgt&&C.lanceMode==='target'){const P=proj(C.tgt.x,C.tgt.y,C.tgt.z);if(!P.behind){c.strokeStyle='#ff5d4f';c.lineWidth=2;c.beginPath();c.arc(P.x,P.y,18,0,TAU);c.stroke();c.fillStyle='#ff5d4f';c.fillText('BATTERY TARGET',P.x,P.y-26)}}
@@ -1473,7 +1540,7 @@ function drawBridgeOverlay(c,t){const B=W.bridge,F=B.f,O=bridgeOrigin(F),near=br
   c.fillStyle='rgba(236,228,207,.7)';c.beginPath();c.arc(VW/2,VH/2,2.5,0,TAU);c.fill();
   c.font='700 15px "Big Shoulders Display",sans-serif';c.fillStyle='#ece4cf';c.fillText(`${T.name} · HULL ${Math.round(F.hull/F.st.hull*100)}% · SHIELD ${Math.round(F.shield/F.st.sCap*100)}%${T.spin?` · JUMP ${Math.round(T.spin.p*100)}% → ${DEF[T.spin.to].name.toUpperCase()}`:''}`,VW/2,64);
   const inc=W.missiles.filter(m=>m.kind==='torpedo'&&m.tgt===F).length;if(inc){c.fillStyle=Math.floor(t*4)%2?'#ff5d4f':'#ffb3aa';c.fillText(`${inc} TORPEDO${inc>1?'ES':''} INBOUND`,VW/2,86)}
-  c.font='600 14px "Saira Semi Condensed",sans-serif';c.fillStyle=near?'#f0b24a':'rgba(236,228,207,.6)';c.fillText(near?`E · ${near.name}`:'WASD walk · mouse or arrows look · E at a console',VW/2,VH-150)}
+  c.font='600 14px "Saira Semi Condensed",sans-serif';c.fillStyle=near?'#f0b24a':'rgba(236,228,207,.6)';if(!B.seat)c.fillText(near?`E · ${near.name}`:'WASD walk · Shift to hurry · E at a console',VW/2,VH-150)}
 function launchPlayerDrones(){if(!W||S.player.docked||W.dead||NET.cl)return;const P=S.player,p=W.player,n=(P.bay&&P.bay.drone)||0;p.drones=(p.drones||[]).filter(d=>d.alive&&W.ents.includes(d));
   for(let i=p.drones.length;i<n+p.drones.length&&P.bay.drone>0;i++){inv.take(P.bay,'drone',1);const d=makeNPC('drone','player','drone',1,{drone:1},'pbay');d.fac=P.faction;d.st=shipStats(P.faction,'drone',P.tiers.weapon);d.hull=d.st.hull;d.shield=d.st.sCap;d.wpn='kinetic';d.mom=p;d.ai.orb=i/Math.max(1,n)*TAU;
     const o=rdir();d.x=p.x+o.x*50;d.y=p.y+o.y*50;d.z=p.z+o.z*50;qCopy(d.q,p.q);d.vx=p.vx;d.vy=p.vy;d.vz=p.vz;p.drones.push(d);W.ents.push(d)}}
@@ -1522,7 +1589,8 @@ addEventListener('keydown',e=>{
   if(c==='KeyH'||c==='Slash'){toggleSheet('help');return}
   if(!$('map').hidden||!$('help').hidden)return;
   if(W&&W.gunseat){if(c==='KeyE'){leaveSeat();return}if(c==='KeyC'){if(NET.cl)netSend({t:'gmsl'});else W.gunseat.msl=1;return}}
-  if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else openConsole(n.id)}return}if(S.player.docked)undock();else tryDock();return}
+  if(W&&W.bridge&&W.bridge.seat&&!W.bridge.panel){const i=['Digit1','Digit2','Digit3','Digit4'].indexOf(c);if(i>=0){openConsole(['strat','nav','wpn','eng'][i]);return}if(c==='KeyT'){chairTarget();return}if(c==='Space'){e.preventDefault();const B=W.bridge;if((B.fireT||0)<=0){B.fireT=.4;fconSend(B.f.tok,'fire',null)}keys.Space=true;return}}
+  if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd')sitChair();else openConsole(n.id)}return}if(S.player.docked)undock();else tryDock();return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
   if(commsOpen()&&(c==='Digit1'||c==='Digit2'||c==='Digit3')){commsPick(c==='Digit1'?'guard':c==='Digit2'?'escort':'build');return}
@@ -1547,9 +1615,9 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false});
 const glc=$('gl');
-glc.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});
+glc.addEventListener('mousemove',e=>{if(lookLocked()&&W){const k=.0024;if(W.bridge&&!W.bridge.panel){W.bridge.yaw-=e.movementX*k;W.bridge.pitch=clamp(W.bridge.pitch-e.movementY*k,-1.2,1.2);return}if(W.gunseat){W.gunseat.yaw=wrapA(W.gunseat.yaw-e.movementX*k);W.gunseat.pitch=clamp(W.gunseat.pitch-e.movementY*k,GT_MINP,GT_MAXP);return}}mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});
 glc.addEventListener('mouseleave',()=>{mouse.in=false});
-glc.addEventListener('mousedown',e=>{mouse.x=e.clientX;mouse.y=e.clientY;mouse.in=true;if(e.button===0){mouse.l=true;clickTarget()}if(e.button===2)mouse.r=true;if(e.button===1){e.preventDefault();fireMissile()}});
+glc.addEventListener('mousedown',e=>{if(W&&((W.bridge&&!W.bridge.panel)||W.gunseat)&&!lookLocked()&&glc.requestPointerLock){try{glc.requestPointerLock()}catch(er){}if(W.bridge&&!W.bridge.seat)return}if(lookLocked()&&W&&(W.bridge||W.gunseat)){if(e.button===0)mouse.l=true;return}mouse.x=e.clientX;mouse.y=e.clientY;mouse.in=true;if(e.button===0){mouse.l=true;clickTarget()}if(e.button===2)mouse.r=true;if(e.button===1){e.preventDefault();fireMissile()}});
 addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;if(e.button===2)mouse.r=false});
 glc.addEventListener('contextmenu',e=>e.preventDefault());
 glc.addEventListener('wheel',e=>{e.preventDefault();cam.dist=clamp(cam.dist*Math.exp(e.deltaY*.0012),.6,3)},{passive:false});
@@ -1667,7 +1735,7 @@ function enterSeat(e){const p=W.player;if(hyp(p.vx-e.vx,p.vy-e.vy,p.vz-e.vz)>140
   const T=turretOf(e);W.gunseat={ent:e,id:e.id,yaw:T.yaw,pitch:T.pitch,msl:0};S.player.docked='turret';recallPlayerDrones();cam.snap=true;SFX.clunk();
   if(NET.cl)netSend({t:'gseat',id:e.id});else{T.gunner='local';if(e.npc&&e.order&&e.order.tgt===W.player){e.order=null;e.ai.tgt=null}}
   flash(`In the turret of ${e.pname?e.pname+'\'s gunboat':shipLabel(e)}. Mouse aims, click or Space fires, C launches a missile, E climbs out.`);return true}
-function leaveSeat(quiet){const G=W.gunseat;if(!G)return;const e=gsEnt(),p=W.player;W.gunseat=null;S.player.docked=null;
+function leaveSeat(quiet){const G=W.gunseat;if(!G)return;freeLook();const e=gsEnt(),p=W.player;W.gunseat=null;S.player.docked=null;
   if(e){if(e.tur&&e.tur.gunner==='local')e.tur.gunner=null;qRot(e.q,0,1,0,_u);qRot(e.q,1,0,0,_r);const k=e.st.radius*1.25+40;p.x=e.x+_u.x*k*.6+_r.x*k;p.y=e.y+_u.y*k*.6+_r.y*k;p.z=e.z+_u.z*k*.6+_r.z*k;p.vx=e.vx+_r.x*40;p.vy=e.vy+_r.y*40;p.vz=e.vz+_r.z*40;qCopy(p.q,e.q)}
   p.alive=true;cam.snap=true;if(!quiet)SFX.clunk();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
 function gunseatUpdate(dt){const G=W.gunseat,e=gsEnt(),p=W.player;
@@ -1675,7 +1743,7 @@ function gunseatUpdate(dt){const G=W.gunseat,e=gsEnt(),p=W.player;
     if(P2&&!P2.docked){if(!G.lost)G.lost=performance.now();if(performance.now()-G.lost<3000)return}}
   if(!e){if(NET.cl){if(!G.lost)G.lost=performance.now();if(performance.now()-G.lost>8000){leaveSeat(true);flash('Lost the gunboat. Your fighter is adrift.',true)}return}leaveSeat(true);flash('The gunboat is gone. Your fighter is adrift.',true);return}
   G.lost=0;p.x=e.x;p.y=e.y-e.st.radius*.6;p.z=e.z;p.vx=e.vx;p.vy=e.vy;p.vz=e.vz;p.shield=p.st.sCap;
-  const si=steerInput();G.yaw=wrapA(G.yaw+si.yaw*1.9*dt);G.pitch=clamp(G.pitch-si.pitch*1.5*dt,GT_MINP,GT_MAXP);
+  const si=lookLocked()?keyLook():steerInput();G.yaw=wrapA(G.yaw+si.yaw*1.9*dt);G.pitch=clamp(G.pitch-si.pitch*1.5*dt,GT_MINP,GT_MAXP);
   if(NET.cl&&e.tur){e.tur.yaw=G.yaw;e.tur.pitch=G.pitch}}
 function drawGunnerOverlay(c,t){const G=W.gunseat,e=gsEnt();if(!e)return;const cx=VW/2,cy=VH/2,T=e.tur||{},bl=turretBlocked(G);
   c.strokeStyle=bl?'rgba(255,93,79,.8)':'rgba(240,178,74,.95)';c.lineWidth=1.5;c.beginPath();c.arc(cx,cy,22,0,TAU);c.stroke();for(const[a,b]of[[1,0],[-1,0],[0,1],[0,-1]]){c.beginPath();c.moveTo(cx+a*30,cy+b*30);c.lineTo(cx+a*44,cy+b*44);c.stroke()}
@@ -2143,8 +2211,8 @@ function physics(e,dt){if(e.inJump)return;
   for(const a of s.ast){const ar=astR(a),dx=e.x-a.x,dy=e.y-a.y,dz=e.z-a.z,d=hyp(dx,dy,dz);if(d<ar+R&&d>0){const nx=dx/d,ny=dy/d,nz=dz/d,vn=e.vx*nx+e.vy*ny+e.vz*nz;e.x=a.x+nx*(ar+R);e.y=a.y+ny*(ar+R);e.z=a.z+nz*(ar+R);if(vn<0){e.vx-=1.5*vn*nx;e.vy-=1.5*vn*ny;e.vz-=1.5*vn*nz;if(-vn>160)damageShip(e,(-vn-160)*.06,null)}}}
   for(const E of[W.stationEnt,W.outpostEnt]){if(!E)continue;const dx=e.x-E.x,dy=e.y-E.y,dz=e.z-E.z,d=hyp(dx,dy,dz),rr=E.type==='station'?55:72;if(d<rr+R&&d>0){e.x=E.x+dx/d*(rr+R);e.y=E.y+dy/d*(rr+R);e.z=E.z+dz/d*(rr+R);const vn=(e.vx*dx+e.vy*dy+e.vz*dz)/d;if(vn<0){e.vx-=1.3*vn*dx/d;e.vy-=1.3*vn*dy/d;e.vz-=1.3*vn*dz/d}}}
 }
-function turretShot(from,t,spd,dmg,side,len){{const v=vAt(from);if(v>.08&&W.t-(W.turSnd||0)>.14){W.turSnd=W.t;SFX.turret(v*.8)}}const lp=leadPoint({x:from.x,y:from.y,z:from.z,vx:0,vy:0,vz:0},t,spd);let dx=lp.x-from.x+rnd(-.03,.03)*d3(lp,from),dy=lp.y-from.y,dz=lp.z-from.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
-  W.shots.push({x:from.x+dx*len,y:from.y+dy*len,z:from.z+dz*len,vx:dx*spd,vy:dy*spd,vz:dz*spd,dmg,side,src:null,ttl:1,col:sideCol(side),sty:'turret'});return{x:dx,y:dy,z:dz}}
+function turretShot(from,t,spd,dmg,side,len,snd){if(!snd){const v=vAt(from);if(v>.08&&W.t-(W.turSnd||0)>.14){W.turSnd=W.t;SFX.turret(v*.8)}}const lp=leadPoint({x:from.x,y:from.y,z:from.z,vx:0,vy:0,vz:0},t,spd);let dx=lp.x-from.x+rnd(-.03,.03)*d3(lp,from),dy=lp.y-from.y,dz=lp.z-from.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
+  W.shots.push({x:from.x+dx*len,y:from.y+dy*len,z:from.z+dz*len,vx:dx*spd,vy:dy*spd,vz:dz*spd,dmg,side,src:null,ttl:1,col:sideCol(side),sty:'turret',snd});return{x:dx,y:dy,z:dz}}
 function structUpdate(dt){
   const SE=W.stationEnt;
   if(SE&&SE.rec){SE.rec.shield=SE.shield;if(!SE.offline&&W.t-SE.lastHit>8)SE.rec.hull=Math.min(SE.rec.hMax,SE.rec.hull+SE.rec.hMax*.004*dt)}
@@ -2553,7 +2621,7 @@ function updateCamera(dt){
   const p=W.player,r=p.st.radius,spd=hyp(p.vx,p.vy,p.vz);
   cam.fov+=(((cam.fovBase||62)+(p.boosting&&!S.player.docked?9:0)+Math.min(6,spd/90))-cam.fov)*Math.min(1,dt*4);
   if(W.gunseat){const e=gsEnt();if(e){const G=W.gunseat,M=turretMount(e),sc=e.st.radius*1.25;turretQ(e,G,cam.q);qRot(cam.q,0,sc*.16,-sc*.05,_u);cam.x=M.x+_u.x;cam.y=M.y+_u.y;cam.z=M.z+_u.z;cam.fov=(cam.fovBase||62)+4;return}}
-  if(W.bridge){const B=W.bridge,F=B.f,O=bridgeOrigin(F);qRot(F.q,B.x,4.2,B.z,_u);const sh=(W.shake||0)*.4;cam.x=O.x+_u.x+rnd(-sh,sh);cam.y=O.y+_u.y+rnd(-sh,sh);cam.z=O.z+_u.z+rnd(-sh,sh);qMul(F.q,qAxis(0,1,0,B.yaw,_qa),_tq);qMul(_tq,qAxis(1,0,0,-B.pitch,_qa),cam.q);cam.fov=cam.fovBase||62;return}
+  if(W.bridge){const B=W.bridge,F=B.f,O=bridgeOrigin(F),bob=(B.bobA||0)*Math.sin((B.bob||0)*2)*.07;qRot(F.q,B.x+(B.bobA||0)*Math.cos(B.bob||0)*.04,(B.seat?3.75:4.2)+(B.fy||0)+bob,B.z,_u);const sh=(W.shake||0)*.4;cam.x=O.x+_u.x+rnd(-sh,sh);cam.y=O.y+_u.y+rnd(-sh,sh);cam.z=O.z+_u.z+rnd(-sh,sh);qMul(F.q,qAxis(0,1,0,B.yaw,_qa),_tq);qMul(_tq,qAxis(1,0,0,-B.pitch,_qa),cam.q);cam.fov=cam.fovBase||62;return}
   if(S.player.docked){const E=S.player.docked==='station'?W.stationEnt:W.outpostEnt;if(E){const a=W.t*.12;cam.x=E.x+Math.cos(a)*480;cam.y=E.y+170;cam.z=E.z+Math.sin(a)*480;qLook(E.x-cam.x,E.y-cam.y,E.z-cam.z,0,1,0,cam.q)}return}
   qRot(p.q,0,0,1,_f);qRot(p.q,0,1,0,_u);
   if(W.dead){qLook(p.x-cam.x,p.y-cam.y,p.z-cam.z,_u.x,_u.y,_u.z,_tq);qSlerp(cam.q,_tq,1-Math.exp(-dt*4));return}
@@ -2623,7 +2691,7 @@ function draw3D(){
   for(const a of sec.ast){const R=astR(a);if(!inView(a.x,a.y,a.z,R))continue;const sd=a.seed||a.id;qAxis(((sd>>3)%7-3)/4,((sd>>6)%5-2)/2.5,1,(sd%628)/100+t*(((sd>>9)%7)-3)*.03,_qs);qNorm(_qs);mModel(MM,a.x,a.y,a.z,_qs,R,R*(.85+(sd%13)/40),R);drawMesh(astMesh(sd%8,a.comet?'comet':mainOre(a)||'fe'),MM)}
   for(const c of sec.crates){if(!inView(c.x,c.y,c.z,20))continue;qAxis(.3,1,.2,t*1.1+c.id,_qs);qNorm(_qs);mModel(MM,c.x,c.y,c.z,_qs,16,16,16);drawMesh(GEN.crate,MM);drawMesh(GEN.crateL,MM,c.derelict?rgb(PLAYER_COL):[.9,.88,.8])}
   const hideP=cam.mode==='cockpit'||S.player.docked||W.dead;
-  if(W.bridge){const F=W.bridge.f,O=bridgeOrigin(F);mModel(MM,O.x,O.y,O.z,F.q,1,1,1);drawMesh(bridgeMesh(),MM)}
+  if(W.bridge){const F=W.bridge.f,O=bridgeOrigin(F);mModel(MM,O.x,O.y,O.z,F.q,1,1,1);qRot(F.q,.22,1,.3,_u);const l=hyp(_u.x,_u.y,_u.z);G.uniform3f(PM.u.uL,_u.x/l,_u.y/l,_u.z/l);G.uniform3fv(PM.u.uSun,BR_SUN);G.uniform3fv(PM.u.uAmb,BR_AMB);drawMesh(bridgeMesh(),MM);useMesh()}
   for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f)continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=e.side==='pirate'?'pirate':e.fac,m=shipMesh(fac,e.cls);
     mModel(MM,e.x,e.y,e.z,e.q,sc,sc,sc);const hurt=W.t-e.lastHit<.08;drawMesh(m.hull,MM,ONE3,hurt?[.35,.25,.15]:ZERO3);drawMesh(m.rim,MM);
     if(e.cls==='gunboat'&&!(W.gunseat&&gsEnt()===e)){const T=e.tur||{yaw:Math.PI,pitch:.1};turretQ(e,T,_gq3);qRot(e.q,0,.4*sc,-.38*sc,_u);mModel(MM,e.x+_u.x,e.y+_u.y,e.z+_u.z,_gq3,sc,sc,sc);const tm=gturretMesh(fac);drawMesh(tm.hull,MM,ONE3,ZERO3);drawMesh(tm.rim,MM)}}
@@ -3521,7 +3589,7 @@ function shipRow(e,full){const id=e.isPlayer?'p_'+NET.me:e.id,fl=(e.thrusting?1:
 function netTick(dt){if(NET.cl){clientTick(dt);return}if(!NET.host||!running||!S||!S.player)return;
   MP.snT-=dt;if(MP.snT<=0){MP.snT=1/15;const cls=readyCl(),by={};for(const c of cls){const P=S.pilots[c.pid];(by[P.sector]=by[P.sector]||[]).push(c)}
     for(const sid in by){const w=WORLDS[sid];if(!w)continue;inW(w,()=>{const ships=W.ents.filter(e=>e.type==='ship'&&e.alive&&!(e.isPlayer&&(S.player.docked||W.dead))),ev=W.netEv||[];W.netEv=[];
-      for(const b of W.shots)if(!b._n){b._n=1;ev.push(['s',r1(b.x),r1(b.y),r1(b.z),Math.round(b.vx),Math.round(b.vy),Math.round(b.vz),Math.round(b.ttl*100),b.sty||'',b.col,b.side==='player'?S.player.faction:b.side,b.src?(b.src.isPlayer?'p_'+NET.me:b.src.id):0,b.tur?1:0])}
+      for(const b of W.shots)if(!b._n){b._n=1;ev.push(['s',r1(b.x),r1(b.y),r1(b.z),Math.round(b.vx),Math.round(b.vy),Math.round(b.vz),Math.round(b.ttl*100),b.sty||'',b.col,b.side==='player'?S.player.faction:b.side,b.src?(b.src.isPlayer?'p_'+NET.me:b.src.id):0,b.tur?1:0,b.snd||0])}
       for(const b of W.beams)if(!b._n){b._n=1;ev.push(['b',b.src.isPlayer?'p_'+NET.me:b.src.id,r1(b.x),r1(b.y),r1(b.z),b.col])}
       for(const m of W.missiles)if(!m.nid)m.nid=++MP.mid;
       const ms=W.missiles.map(m=>[m.nid,m.kind,m.side==='player'?S.player.faction:m.side,r1(m.x),r1(m.y),r1(m.z),Math.round(m.vx),Math.round(m.vy),Math.round(m.vz),m.tgt?(m.tgt.decoy?'D':m.tgt.type==='station'?'S':m.tgt.type==='outpost'?'O':m.tgt.isPlayer?'p_'+NET.me:m.tgt.id||0):0,m.col]);
@@ -3555,7 +3623,7 @@ function clientRecv(m){
     case 'pr':applyPR(m);break;
     case 'sync':applySync(m.s);relinkFrigs();break;
     case 'ftok':{const mine=new Map((m.f||[]).map(t=>[t.id,t]));S.frigates=(S.frigates||[]).filter(t=>t.owner!==MP.pid&&!mine.has(t.id)).concat(m.f||[]);relinkFrigs();if(W&&W.bridge&&W.bridge.panel)renderConsole(false);break}
-    case 'fjump':{if(S.player.docked!=='bridge')break;const B=W&&W.bridge,keep=B?{x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch}:{x:-5,z:-6,yaw:.25,pitch:0};closeConsole();if(W)W.bridge=null;exitSector();S.player.sector=m.to;enterSector(m.to);S.player.docked='bridge';MP.fjB={id:m.id,keep,at:performance.now()};SFX.jump();feed(`Jumped to ${DEF[m.to].name}.`,'info');break}
+    case 'fjump':{if(S.player.docked!=='bridge')break;SFX.fjump(1);const B=W&&W.bridge,keep=B?{x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch,seat:B.seat,fy:B.fy}:{x:-5,z:-6,yaw:.25,pitch:0};closeConsole();if(W)W.bridge=null;exitSector();S.player.sector=m.to;enterSector(m.to);S.player.docked='bridge';MP.fjB={id:m.id,keep,at:performance.now()};SFX.jump();feed(`Jumped to ${DEF[m.to].name}.`,'info');break}
     case 'gseatok':break;
     case 'gseatno':{if(W&&W.gunseat)leaveSeat(true);else if(S.player.docked==='turret')S.player.docked=null;flash(m.busy?'That turret is already manned.':m.out?'Your gunboat is gone. Your fighter is adrift.':'Could not board that turret. Pull alongside a friendly gunboat.',true);break}
     case 'gjump':{if(S.player.docked!=='turret')break;const G=W&&W.gunseat,keep=G?{id:G.id,yaw:G.yaw,pitch:G.pitch,msl:0}:{id:m.id,yaw:Math.PI,pitch:.1,msl:0};exitSector();S.player.sector=m.to;enterSector(m.to);S.player.docked='turret';W.gunseat={...keep,ent:null,lost:performance.now()};SFX.jump();feed(`Jumped to ${DEF[m.to].name} with the gunboat.`,'info');break}
@@ -3621,7 +3689,9 @@ function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.p
   w.scaffold=m.sc?{x:m.sc[0],y:m.sc[1],z:m.sc[2],owner:m.sc[3],prog:m.sc[4]}:null;
   for(const v of m.ev){
     if(v[0]==='s'){if(v[11]===me&&!v[12])continue;const src=v[11]?w.pup[v[11]]||null:null;w.shots.push({x:v[1],y:v[2],z:v[3],vx:v[4],vy:v[5],vz:v[6],ttl:v[7]/100,sty:v[8]||undefined,col:v[9],side:v[10],src,dmg:0});
-      if(src&&w.t-(src.sndT||0)>.3){src.sndT=w.t;if(v[8]==='turret')SFX.turret(vAt(src)*.8);else SFX.kinetic(vAt(src)*.7)}}
+      if(v[13]==='pd'){if(w.t-(w.pdT||0)>.22){w.pdT=w.t;const vv=vAt({x:v[1],y:v[2],z:v[3]});if(vv>.04)SFX.pd(Math.min(1,vv*1.4))}}
+      else if(v[8]==='capital'){const vv=vAt({x:v[1],y:v[2],z:v[3]});if(vv>.04)SFX.lance(Math.min(1,vv*1.3))}
+      else if(src&&w.t-(src.sndT||0)>.3){src.sndT=w.t;if(v[8]==='turret')SFX.turret(vAt(src)*.8);else SFX.kinetic(vAt(src)*.7)}}
     else if(v[0]==='b'){if(v[1]===me)continue;const src=w.pup[v[1]];if(src){w.beams.push({src,x:v[2],y:v[3],z:v[4],ttl:.11,col:v[5]});if(w.t-(src.sndT||0)>.45){src.sndT=w.t;SFX.laserNpc(vAt(src))}}}
     else if(v[0]==='x')fxBoom({x:v[1],y:v[2],z:v[3]},v[4],v[5]);
     else if(v[0]==='w')fxWarp({x:v[1],y:v[2],z:v[3]},v[4]);
