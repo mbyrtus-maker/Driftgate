@@ -615,7 +615,7 @@ function shipStats(fac,cls,T,U){const B=shipStatsBase(fac,cls,T);if(!U)return B;
 function shipStatsBase(fac,cls,T){
   const t=s=>typeof T==='number'?T:T[s];
   const C=CLASSES[cls],F=(FACTIONS[fac]&&FACTIONS[fac].trait)||{},tr=k=>F[k]||1;
-  return{thrust:225*(C.acc||1)*(1+.16*(t('engine')-1)),maxSpd:285*C.speed*(1+.11*(t('engine')-1)),turn:C.turn*(1+.06*(t('engine')-1)),
+  return{thrust:225*SPEED_K*(C.acc||1)*(1+.16*(t('engine')-1)),maxSpd:285*SPEED_K*C.speed*(1+.11*(t('engine')-1)),turn:C.turn*(1+.06*(t('engine')-1)),
     eCap:110*(1+.25*(t('power')-1))*tr('energy'),eRegen:22*(1+.22*(t('power')-1))*tr('energy'),
     sCap:172*C.shield*(1+.32*(t('shield')-1))*tr('shield'),hull:2*C.hull*(1+.22*(t('armor')-1))*tr('hull'),dr:.05*(t('armor')-1),
     dmg:8*C.weapon*(1+.26*(t('weapon')-1)),rof:5.5,shotCost:3.2*(1+.12*(t('weapon')-1)),
@@ -626,7 +626,8 @@ const LASER_ROF=10,LASER_RANGE=820;
 const MISSILE_SPD=780,MISSILE_RANGE=2400,LOCK_CONE=.24;
 const TORP_SPD=440,TORP_RANGE=2700;
 const missileDmg=t=>80*(1+.2*(t-1)),torpDmg=t=>160*(1+.2*(t-1)),swarmDmg=t=>24*(1+.2*(t-1)),SWARM_N=8,BARE_MUL=1.8,TORP_STATION=5,
-  MK={missile:{spd:780,acc:520,turn:3,ttl:8,k:1},torpedo:{spd:440,acc:220,turn:1.25,ttl:13,k:2.2},swarm:{spd:950,acc:700,turn:4.6,ttl:5,k:.6}},lockTime=(t,torp)=>(torp?2.6:1.5)*(1-.07*(t-1));
+  SPEED_K=.75, // every ship and missile flies at three quarters of the original pace (missiles keep their range)
+  MK={missile:{spd:780*SPEED_K,acc:520*SPEED_K,turn:3,ttl:8/SPEED_K,k:1},torpedo:{spd:440*SPEED_K,acc:220*SPEED_K,turn:1.25,ttl:13/SPEED_K,k:2.2},swarm:{spd:950*SPEED_K,acc:700*SPEED_K,turn:4.6,ttl:5/SPEED_K,k:.6}},lockTime=(t,torp)=>(torp?2.6:1.5)*(1-.07*(t-1));
 const rackItem=cls=>CLASSES[cls].torp?'torpedo':'missile';
 const rackCapC=(cls,t)=>CLASSES[cls].torp?2+t:Math.round((4+2*(t-1))*CLASSES[cls].rack);
 // missiles, torpedoes and swarm pods are magazines now: a hull carries a set number of shots, and once the magazine
