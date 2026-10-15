@@ -303,6 +303,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
           <p>Three powers, an alien Brood, fifteen sectors and one closed economy. Every plate, coil and crystal was mined from a rock that already existed. Mine it, forge it, bolt it to your ship, and fight over the stations and outposts that make the best parts possible.</p>
         </div>
         <div class="note snote" id="legacy" style="padding-top:8px"></div>
+        <div class="note snote" id="ver" style="padding-top:2px;opacity:.55;font-size:11px"></div>
         <div class="mpbox" id="mpBox"><div class="step"><i>✦</i><span>Play with friends <small style="color:var(--faint);font-weight:400">(optional)</small></span></div>
           <div class="mprow"><button class="btn pri" id="bNewGal" type="button">Create a galaxy for friends</button><span class="mpor">or enter a friend's code</span><input id="mpCode" class="mpin" placeholder="e.g. amber-falcon-42" maxlength="24" autocomplete="off" spellcheck="false"><button class="btn" id="bMp" type="button">Join</button></div>
           <div class="mpinv" id="mpInv" hidden><span>Invite link</span><code id="mpLink"></code><button class="btn sm" id="bCopy" type="button">Copy link</button></div>
@@ -3387,6 +3388,7 @@ function boot(data){
   if(!G){$('glErr').hidden=false;return}
   try{initGL();genMeshes()}catch(e){$('glErr').hidden=false;$('glErr').textContent='WebGL failed to start: '+e.message;return}
   resize();buildSectorScene(null);auApply();
+  try{const d=new Date(document.lastModified);if(/github\.io$/.test(location.hostname)&&!isNaN(d))$('ver').textContent='Game updated '+d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'. If you are missing something new, reload with Ctrl+Shift+R (Cmd+Shift+R on Mac).'}catch(e){}
   mpConfig();{const q=new URLSearchParams(location.search);let n='',c='';try{n=localStorage.getItem('driftgate.mpname')||'';c=localStorage.getItem('driftgate.mpcode')||''}catch(e){}$('mpName').value=q.get('name')||n;$('mpCode').value=q.get('galaxy')||c;showInvite();if(q.get('galaxy')&&!q.get('auto'))mpStatus(`You've been invited to the galaxy <b>${esc(q.get('galaxy'))}</b>. Choose a callsign, faction and ship, then press <b>Launch</b> to join your friends.`);if(!mpOK())$('mpBox').hidden=true;if(window.claude&&!q.get('sig')){$('mpBox').querySelector('.mprow').hidden=true;mpStatus(`Multiplayer runs from the shareable copy at <a href="${MP_HOME}" target="_blank" rel="noopener" style="color:var(--amber)">${MP_HOME.replace('https://','')}</a>. Open it there, then you and up to three friends type the same galaxy code.`)}if(q.get('auto')&&mpOK())setTimeout(mpJoin,50)}
   const saved=data&&data.save;
   if(saved&&saved.v===2)startWith(saved);else showStart();
