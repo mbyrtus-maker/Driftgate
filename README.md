@@ -26,7 +26,7 @@ Your pilot is tied to your browser. Playing from a different browser or computer
 
 ## Controls
 
-Mouse steers (offset from centre) · **W** thrust · **S** brake · **A/D** roll · **Shift** afterburner · click or **Space** fires · **1/2** kinetic or laser · **T/Q** target hostiles · **C** missile when locked · **B** flares · **F** mines · **I** friendly target and comms (guard, escort, request construction) · **E** docks or boards · **V** camera · **M** map · **H** full manual
+Mouse steers (offset from centre) · **W** thrust · **S** brake · **A/D** roll · **Shift** afterburner · click or **Space** fires · **1/2** kinetic or laser · **T/Q** target hostiles · **C** missile when locked (missiles, torpedoes and swarm pods reload on their own) · **B** flares · **F** mines · **I** friendly target and comms (guard, escort, request construction) · **E** docks or boards · **V** camera · **M** map · **H** full manual
 
 ## How it's built
 
