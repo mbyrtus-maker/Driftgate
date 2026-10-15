@@ -2988,13 +2988,33 @@ function showInvite(){const c=($('mpCode').value||'').trim();const box=$('mpInv'
 const mpSlug=c=>String(c||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24);
 function mpConfig(){const q=new URLSearchParams(location.search);let c={host:'0.peerjs.com',port:443,path:'/',key:'peerjs',secure:true};
   const sg=q.get('sig');if(sg){try{const u=new URL(sg);c={host:u.hostname,port:+u.port||(u.protocol==='wss:'?443:80),path:u.pathname.endsWith('/')?u.pathname:u.pathname+'/',key:q.get('key')||'peerjs',secure:u.protocol==='wss:'}}catch(e){}}
-  MP.sigCfg=c;MP.ice=q.get('ice')==='none'?[]:[{urls:'stun:stun.l.google.com:19302'},{urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}];
+  MP.sigCfg=c;MP.mqURLs=(q.get('mqtt')||'wss://broker.emqx.io:8084/mqtt,wss://broker.hivemq.com:8884/mqtt').split(',').filter(Boolean);MP.ice=q.get('ice')==='none'?[]:[{urls:'stun:stun.l.google.com:19302'},{urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}];
   try{MP.pid=localStorage.getItem('driftgate.pid')||'';if(!MP.pid){MP.pid=rid(12);localStorage.setItem('driftgate.pid',MP.pid)}}catch(e){MP.pid=MP.pid||rid(12)}
   if(q.get('pid'))MP.pid=q.get('pid')}
 const mpOK=()=>typeof RTCPeerConnection!=='undefined'&&typeof WebSocket!=='undefined';
 const ckKey=()=>'driftgate.mp.'+mpSlug(MP.code);
 function mpStatus(t,bad){const el=$('mpStat');if(el){el.innerHTML=t;el.style.color=bad?'var(--danger)':''}}
 
+// ---- backup relay: a tiny MQTT 3.1.1 client over WebSocket. Each browser listens on a topic named after its id;
+// connection offers/answers/candidates are published to the other side's topic as well as sent through PeerJS.
+function mqttOpen(url){let ws;try{ws=new WebSocket(url,'mqtt')}catch(e){return null}ws.binaryType='arraybuffer';
+  const enc=new TextEncoder(),dec=new TextDecoder(),str=x=>{const b=enc.encode(x);return[b.length>>8,b.length&255,...b]},
+    rl=n=>{const o=[];do{let d=n%128;n=Math.floor(n/128);if(n>0)d|=128;o.push(d)}while(n>0);return o},pkt=(h,body)=>new Uint8Array([h,...rl(body.length),...body]);
+  const api={url,ok:false,q:[],subs:new Set(),pid:1,
+    send(b){if(ws.readyState===1&&api.ok)ws.send(b);else if(api.q.length<200)api.q.push(b)},
+    sub(t){if(api.subs.has(t))return;api.subs.add(t);api.pid=(api.pid%60000)+1;api.send(pkt(0x82,[api.pid>>8,api.pid&255,...str(t),0]))},
+    pub(t,x){api.send(pkt(0x30,[...str(t),...enc.encode(x)]))},
+    close(){clearInterval(api.pi);api.dead=true;try{ws.close()}catch(e){}}};
+  ws.onopen=()=>{ws.send(pkt(0x10,[...str('MQTT'),4,2,0,60,...str('dg'+rid(14))]))};
+  ws.onmessage=e=>{const d=new Uint8Array(e.data);let i=0;while(i<d.length){const t=d[i]>>4,qos=(d[i]>>1)&3;let m=1,len=0,j=i+1,b;do{b=d[j++];len+=(b&127)*m;m*=128}while(b&128&&j<d.length);const body=d.subarray(j,j+len);
+    if(t===2){api.ok=true;for(const x of api.q)ws.send(x);api.q=[];clearInterval(api.pi);api.pi=setInterval(()=>{if(ws.readyState===1)ws.send(new Uint8Array([0xC0,0]))},25000)}
+    else if(t===3){const tl=(body[0]<<8)|body[1],topic=dec.decode(body.subarray(2,2+tl));let msg;try{msg=JSON.parse(dec.decode(body.subarray(2+tl+(qos?2:0))))}catch(er){msg=null}if(msg&&msg.dst===MP.myId&&topic==='driftgate1/'+MP.myId)sigMsg(msg)}
+    i=j+len}};
+  ws.onclose=()=>{api.ok=false;clearInterval(api.pi);if(!api.dead&&NET.on)setTimeout(()=>{if(NET.on&&MP.mq&&MP.mq.includes(api)){const n=mqttOpen(url);if(n){for(const t of api.subs)n.sub(t);MP.mq[MP.mq.indexOf(api)]=n}}},5000)};
+  return api}
+function mqStart(){if(MP.mq&&MP.mq.length)return;MP.mq=MP.mqURLs.map(mqttOpen).filter(Boolean)}
+function mqInbox(){for(const q of MP.mq||[])q.sub('driftgate1/'+MP.myId)}
+function sigSend(o){if(MP.sig)MP.sig.send(o);const m=JSON.stringify({...o,src:MP.myId});for(const q of MP.mq||[])q.pub('driftgate1/'+o.dst,m)}
 // ---- matchmaking socket (speaks the PeerJS server protocol: it only relays offers, answers and candidates)
 function sigOpen(id){return new Promise(res=>{let done=false;const c=MP.sigCfg;let ws;
   try{ws=new WebSocket(`${c.secure?'wss':'ws'}://${c.host}:${c.port}${c.path}peerjs?key=${encodeURIComponent(c.key)}&id=${encodeURIComponent(id)}&token=${rid(10)}&version=1.5.4`)}catch(e){res({err:'Could not reach the matchmaking server.'});return}
@@ -3013,20 +3033,20 @@ function sigOpen(id){return new Promise(res=>{let done=false;const c=MP.sigCfg;l
 function sigLost(){if(!NET.host)return;setTimeout(async()=>{if(!NET.host||MP.sig)return;const r=await sigOpen(MP.hostId);if(r.ok&&NET.host){MP.sig=r}else sigLost()},4000)}
 async function sigMsg(m){const src=m.src;
   try{
-  if(m.type==='OFFER'){if(!NET.host)return;if(performance.now()-(MP.offT||0)>4000){MP.offT=performance.now();feed('A pilot is connecting…','info')}let L=MP.links[src];if(L)linkClose(L,true);L=mkLink(src,false);await L.pc.setRemoteDescription(m.payload.sdp);const a=await L.pc.createAnswer();await L.pc.setLocalDescription(a);MP.sig&&MP.sig.send({type:'ANSWER',dst:src,payload:{sdp:L.pc.localDescription}});flushCands(L)}
-  else if(m.type==='ANSWER'){const L=MP.links[src];if(L&&!L.pc.remoteDescription){await L.pc.setRemoteDescription(m.payload.sdp);flushCands(L);if(NET.cl){MP.stage='The host answered. Linking your browsers…';if(!running)mpStatus(MP.stage)}}}
-  else if(m.type==='CANDIDATE'){const L=MP.links[src];if(!L)return;if(L.pc.remoteDescription)L.pc.addIceCandidate(m.payload.c).catch(()=>{});else(L.cq=L.cq||[]).push(m.payload.c)}
+  if(m.type==='OFFER'){if(!NET.host)return;if(performance.now()-(MP.offT||0)>4000){MP.offT=performance.now();feed('A pilot is connecting…','info')}let L=MP.links[src];if(L&&L.n&&L.n===m.payload.n)return;if(L)linkClose(L,true);L=mkLink(src,false);L.n=m.payload.n;await L.pc.setRemoteDescription(m.payload.sdp);const a=await L.pc.createAnswer();await L.pc.setLocalDescription(a);sigSend({type:'ANSWER',dst:src,payload:{sdp:L.pc.localDescription,n:L.n}});flushCands(L)}
+  else if(m.type==='ANSWER'){const L=MP.links[src];if(L&&!L.pc.remoteDescription&&(!m.payload.n||m.payload.n===L.n)){await L.pc.setRemoteDescription(m.payload.sdp);flushCands(L);if(NET.cl){MP.stage='The host answered. Linking your browsers…';if(!running)mpStatus(MP.stage)}}}
+  else if(m.type==='CANDIDATE'){const L=MP.links[src];if(!L||(m.payload.n&&L.n&&m.payload.n!==L.n))return;if(L.pc.remoteDescription)L.pc.addIceCandidate(m.payload.c).catch(()=>{});else(L.cq=L.cq||[]).push(m.payload.c)}
   else if(m.type==='EXPIRE'){if(NET.cl&&src===MP.hostId&&!(MP.host&&MP.host.open)){if(!running)mpStatus('The host did not answer (they may have just left). Retrying…',true);hostGone()}}
   }catch(e){console.warn('signal',e)}}
 function flushCands(L){for(const c of L.cq||[])L.pc.addIceCandidate(c).catch(()=>{});L.cq=[]}
 
 // ---- browser-to-browser link: 'r' is reliable and ordered (requests, saves), 'u' is fire-and-forget (snapshots, flight input)
-function mkLink(peer,init){const pc=new RTCPeerConnection({iceServers:MP.ice}),L={peer,pc,r:null,u:null,open:false,parts:{},dead:false};
-  pc.onicecandidate=e=>{if(e.candidate&&MP.sig)MP.sig.send({type:'CANDIDATE',dst:peer,payload:{c:e.candidate.toJSON?e.candidate.toJSON():e.candidate}})};
+function mkLink(peer,init){const pc=new RTCPeerConnection({iceServers:MP.ice}),L={peer,pc,r:null,u:null,open:false,parts:{},dead:false,n:init?rid(8):''};
+  pc.onicecandidate=e=>{if(e.candidate)sigSend({type:'CANDIDATE',dst:peer,payload:{c:e.candidate.toJSON?e.candidate.toJSON():e.candidate,n:L.n}})};
   pc.onconnectionstatechange=()=>{const s=pc.connectionState;if(NET.cl&&L===MP.host&&!running){MP.stage=s==='connecting'?'Linking your browsers (finding a network path)…':s==='connected'?'Linked. Loading the galaxy…':s==='failed'?'Your browsers could not find a network path to each other.':MP.stage;mpStatus(MP.stage,s==='failed')}if(s==='failed'||s==='closed')linkDown(L);else if(s==='disconnected'){clearTimeout(L.dT);L.dT=setTimeout(()=>{if(pc.connectionState!=='connected')linkDown(L)},5000)}};
   const wire=ch=>{ch.onopen=()=>{if(!L.open&&L.r&&L.r.readyState==='open'&&L.u&&L.u.readyState==='open'){L.open=true;linkUp(L)}};ch.onmessage=e=>linkRecv(L,e.data);ch.onclose=()=>linkDown(L)};
   if(init){L.r=pc.createDataChannel('r',{ordered:true});L.u=pc.createDataChannel('u',{ordered:false,maxRetransmits:0});wire(L.r);wire(L.u);
-    pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>{MP.sig&&MP.sig.send({type:'OFFER',dst:peer,payload:{sdp:pc.localDescription,v:MPV}})}).catch(e=>console.warn(e))}
+    pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>{sigSend({type:'OFFER',dst:peer,payload:{sdp:pc.localDescription,v:MPV,n:L.n}})}).catch(e=>console.warn(e))}
   else pc.ondatachannel=e=>{if(e.channel.label==='r')L.r=e.channel;else L.u=e.channel;wire(e.channel)};
   MP.links[peer]=L;return L}
 function linkClose(L,quiet){L.dead=true;if(quiet)L.quiet=true;try{L.pc.close()}catch(e){}if(MP.links[L.peer]===L)delete MP.links[L.peer]}
@@ -3049,15 +3069,15 @@ async function mpJoin(){if(!mpOK()){mpStatus('This browser cannot do peer-to-pee
   MP.name=cleanCall($('mpName').value);$('mpName').value=MP.name;MP.code=($('mpCode').value||'').trim().slice(0,24);
   if(MP.name.length<2){mpStatus('Choose a callsign first (step 1, at least 2 letters).',true);$('mpName').focus();return}if(!mpSlug(MP.code)){mpStatus('Enter a galaxy code (letters and numbers).',true);return}
   try{localStorage.setItem('driftgate.mpname',MP.name);localStorage.setItem('driftgate.mpcode',MP.code)}catch(e){}
-  MP.hostId='driftgate1-'+mpSlug(MP.code)+'-host';$('bMp').disabled=true;mpStatus('Contacting the matchmaking server…');
+  MP.hostId='driftgate1-'+mpSlug(MP.code)+'-host';mqStart();$('bMp').disabled=true;mpStatus('Contacting the matchmaking server…');
   try{const t=localStorage.getItem(ckKey());if(t){const ck=JSON.parse(t);MP.ckpt=ck;MP.ckMeta={gid:ck.gid,T:ck.T}}}catch(e){}
   await mpElect(true)}
 async function mpElect(first){if(MP.sig){MP.sig.close();MP.sig=null}
   const r=await sigOpen(MP.hostId);
-  if(r.ok){MP.sig=r;MP.myId=MP.hostId;hostBegin(first);return}
+  if(r.ok){MP.sig=r;MP.myId=MP.hostId;mqInbox();hostBegin(first);return}
   if(r.taken){const me='driftgate1-'+mpSlug(MP.code)+'-'+MP.pid.slice(0,8)+'-'+rid(4);const r2=await sigOpen(me);
     if(!r2.ok){mpFail(r2.err||'Could not register with the matchmaking server.');return}
-    MP.sig=r2;MP.myId=me;NET.on=true;NET.cl=true;NET.host=false;NET.me=MP.pid;MP.st='connecting';holdLock();
+    MP.sig=r2;MP.myId=me;mqInbox();NET.on=true;NET.cl=true;NET.host=false;NET.me=MP.pid;MP.st='connecting';holdLock();
 
     MP.stage='Found the host. Opening a direct connection…';if(first||!running)mpStatus(MP.stage);
     clientDial(0);return}
@@ -3331,8 +3351,8 @@ async function hostGone(){if(MP.elect)return;MP.elect=1;const banner=$('netBanne
   if(MP.host){linkClose(MP.host,true);MP.host=null}
   for(let tries=0;tries<20&&NET.on;tries++){await new Promise(r=>setTimeout(r,300+Math.random()*1200+tries*400));
     if(MP.sig){MP.sig.close();MP.sig=null}const r=await sigOpen(MP.hostId);
-    if(r.ok){MP.sig=r;MP.myId=MP.hostId;takeOver();break}
-    if(r.taken){const me='driftgate1-'+mpSlug(MP.code)+'-'+MP.pid.slice(0,8)+'-'+rid(4);const r2=await sigOpen(me);if(!r2.ok)continue;MP.sig=r2;MP.myId=me;
+    if(r.ok){MP.sig=r;MP.myId=MP.hostId;mqInbox();takeOver();break}
+    if(r.taken){const me='driftgate1-'+mpSlug(MP.code)+'-'+MP.pid.slice(0,8)+'-'+rid(4);const r2=await sigOpen(me);if(!r2.ok)continue;MP.sig=r2;MP.myId=me;mqInbox();
       const L=MP.host=mkLink(MP.hostId,true);const ok=await new Promise(res=>{const t0=performance.now(),iv=setInterval(()=>{if(L.open){clearInterval(iv);res(true)}else if(L.dead||performance.now()-t0>12000){clearInterval(iv);res(false)}},200)});
       if(ok)break;linkClose(L,true);MP.host=null}}
   MP.elect=0;if(banner)banner.hidden=true}
@@ -3368,7 +3388,7 @@ function quitGame(){if(!S||!running)return;const wasNet=NET.on,code=MP.code;
   setTimeout(()=>{try{closeSheets()}catch(e){}mpShutdown();if(W)exitSector();WORLDS={};LW=null;W=null;S=null;running=false;apOn=false;$('hud').hidden=true;$('dock').hidden=true;$('deathMsg').hidden=true;$('start').hidden=false;buildSectorScene(null);showStart();
     mpStatus(wasNet?`Saved and left “${esc(code)}”. Join again any time to pick up where you left off.`:'To play together, one of you presses <b>Create a galaxy for friends</b> and sends the invite link (or the code) to the others. Everyone who uses the same code shares one galaxy, up to four pilots. Leave it empty to play solo.');
     if(!wasNet)$('ssum').innerHTML='<b>Saved.</b> Press <b>Continue saved pilot</b> to fly again.'},wasNet?250:30)}
-function mpShutdown(){if(MP.sig){MP.sig.close();MP.sig=null}for(const L of Object.values(MP.links))linkClose(L,true);MP.links={};MP.host=null;MP.cl={};MP.rp={};MP.inp={};MP.elect=0;MP.st='off';MP.roster=[];NET.on=false;NET.host=false;NET.cl=false;const b=$('bMp');if(b)b.disabled=false}
+function mpShutdown(){if(MP.sig){MP.sig.close();MP.sig=null}for(const q of MP.mq||[])q.close();MP.mq=[];for(const L of Object.values(MP.links))linkClose(L,true);MP.links={};MP.host=null;MP.cl={};MP.rp={};MP.inp={};MP.elect=0;MP.st='off';MP.roster=[];NET.on=false;NET.host=false;NET.cl=false;const b=$('bMp');if(b)b.disabled=false}
 // ============================================================ main loop
 let last=performance.now(),hudT=0,saveT=0,mapT=0;
 function step(dt){if(S&&S.won)return;
