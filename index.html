@@ -2802,7 +2802,7 @@ $('bContinue').addEventListener('click',()=>{auInit();auApply();const s=loadSave
 // trigger state 20 times a second. Trades, docking, jumps and missile launches are requests the host carries out.
 // Every pilot's browser keeps the latest galaxy checkpoint, so anyone can host the next session, and if the host leaves
 // mid-session the next browser takes over from the last checkpoint. With nobody online the galaxy simply waits.
-const MP_HOME='https://mbyrtus-maker.github.io/driftgate/';
+const MP_HOME='https://mbyrtus-maker.github.io/Driftgate/';
 const MPV=1,MP={st:'off',code:'',name:'',pid:'',hostId:'',myId:'',sig:null,sigCfg:null,ice:null,links:{},host:null,cl:{},inp:{},rp:{},
   seenEv:new Set(),snT:0,syT:0,prT:0,ckT:0,uT:0,since:0,ckpt:null,hostPid:null,roster:[],mid:0,pend:[],needPilot:false,elect:0,ckMeta:null};
 const rid=n=>{let s='';const a='abcdefghijkmnpqrstuvwxyz23456789';for(let i=0;i<n;i++)s+=a[Math.floor(Math.random()*a.length)];return s};

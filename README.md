@@ -2,7 +2,7 @@
 
 A 3D space game you play in the browser: three rival factions and an alien Brood fight over fifteen star systems in a closed economy where every plate, coil and crystal was mined from a rock that already existed. Mine, haul, trade, upgrade your ship, claim outposts, and fly with up to three friends.
 
-**Play:** https://mbyrtus-maker.github.io/driftgate/
+**Play:** https://mbyrtus-maker.github.io/Driftgate/
 
 ## Playing with friends
 
