@@ -3000,7 +3000,7 @@ function sigOpen(id){return new Promise(res=>{let done=false;const c=MP.sigCfg;l
   try{ws=new WebSocket(`${c.secure?'wss':'ws'}://${c.host}:${c.port}${c.path}peerjs?key=${encodeURIComponent(c.key)}&id=${encodeURIComponent(id)}&token=${rid(10)}&version=1.5.4`)}catch(e){res({err:'Could not reach the matchmaking server.'});return}
   const hb=setInterval(()=>{if(ws.readyState===1)ws.send('{"type":"HEARTBEAT"}')},5000);
   const fin=r=>{if(!done){done=true;res(r)}};
-  const api={ok:true,id,send:o=>{if(ws.readyState===1)ws.send(JSON.stringify(o))},close:()=>{clearInterval(hb);ws.onclose=null;try{ws.close()}catch(e){}}};
+  const api={ok:true,id,lastHB:0,hb:()=>{if(ws.readyState===1&&performance.now()-api.lastHB>4500){api.lastHB=performance.now();ws.send('{"type":"HEARTBEAT"}')}},send:o=>{if(ws.readyState===1)ws.send(JSON.stringify(o))},close:()=>{clearInterval(hb);ws.onclose=null;try{ws.close()}catch(e){}}};
   ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
     if(m.type==='OPEN')fin(api);
     else if(m.type==='ID-TAKEN'){clearInterval(hb);fin({taken:true});try{ws.close()}catch(e){}}
@@ -3013,7 +3013,7 @@ function sigOpen(id){return new Promise(res=>{let done=false;const c=MP.sigCfg;l
 function sigLost(){if(!NET.host)return;setTimeout(async()=>{if(!NET.host||MP.sig)return;const r=await sigOpen(MP.hostId);if(r.ok&&NET.host){MP.sig=r}else sigLost()},4000)}
 async function sigMsg(m){const src=m.src;
   try{
-  if(m.type==='OFFER'){if(!NET.host)return;let L=MP.links[src];if(L)linkClose(L,true);L=mkLink(src,false);await L.pc.setRemoteDescription(m.payload.sdp);const a=await L.pc.createAnswer();await L.pc.setLocalDescription(a);MP.sig&&MP.sig.send({type:'ANSWER',dst:src,payload:{sdp:L.pc.localDescription}});flushCands(L)}
+  if(m.type==='OFFER'){if(!NET.host)return;if(performance.now()-(MP.offT||0)>4000){MP.offT=performance.now();feed('A pilot is connecting…','info')}let L=MP.links[src];if(L)linkClose(L,true);L=mkLink(src,false);await L.pc.setRemoteDescription(m.payload.sdp);const a=await L.pc.createAnswer();await L.pc.setLocalDescription(a);MP.sig&&MP.sig.send({type:'ANSWER',dst:src,payload:{sdp:L.pc.localDescription}});flushCands(L)}
   else if(m.type==='ANSWER'){const L=MP.links[src];if(L&&!L.pc.remoteDescription){await L.pc.setRemoteDescription(m.payload.sdp);flushCands(L);if(NET.cl){MP.stage='The host answered. Linking your browsers…';if(!running)mpStatus(MP.stage)}}}
   else if(m.type==='CANDIDATE'){const L=MP.links[src];if(!L)return;if(L.pc.remoteDescription)L.pc.addIceCandidate(m.payload.c).catch(()=>{});else(L.cq=L.cq||[]).push(m.payload.c)}
   else if(m.type==='EXPIRE'){if(NET.cl&&src===MP.hostId&&!(MP.host&&MP.host.open)){if(!running)mpStatus('The host did not answer (they may have just left). Retrying…',true);hostGone()}}
@@ -3057,14 +3057,24 @@ async function mpElect(first){if(MP.sig){MP.sig.close();MP.sig=null}
   if(r.ok){MP.sig=r;MP.myId=MP.hostId;hostBegin(first);return}
   if(r.taken){const me='driftgate1-'+mpSlug(MP.code)+'-'+MP.pid.slice(0,8)+'-'+rid(4);const r2=await sigOpen(me);
     if(!r2.ok){mpFail(r2.err||'Could not register with the matchmaking server.');return}
-    MP.sig=r2;MP.myId=me;NET.on=true;NET.cl=true;NET.host=false;NET.me=MP.pid;MP.st='connecting';
+    MP.sig=r2;MP.myId=me;NET.on=true;NET.cl=true;NET.host=false;NET.me=MP.pid;MP.st='connecting';holdLock();
+
     MP.stage='Found the host. Opening a direct connection…';if(first||!running)mpStatus(MP.stage);
-    MP.host=mkLink(MP.hostId,true);clearTimeout(MP.cT);MP.cT=setTimeout(()=>{if(NET.cl&&MP.host&&!MP.host.open){const st=MP.stage;linkClose(MP.host,true);MP.host=null;if(!running)mpStatus(`Couldn't connect to the host. It stopped at: <i>${esc(st)}</i> Retrying… If this keeps happening, one of your networks is blocking direct browser connections.`,true);hostGone()}},15000);return}
+    clientDial(0);return}
   mpFail(r.err)}
+// dial the host; if it hasn't answered in 9 s ask once more, and give up on this attempt after ~22 s
+function clientDial(n){MP.host=mkLink(MP.hostId,true);const L=MP.host;clearTimeout(MP.cT);
+  MP.cT=setTimeout(()=>{if(!NET.cl||MP.host!==L||L.open)return;const noAns=!L.pc.remoteDescription;
+    if(noAns&&n<1){linkClose(L,true);MP.stage='The host has not answered yet. Asking again…';if(!running)mpStatus(MP.stage);clientDial(n+1);return}
+    if(!noAns&&n<2&&L.pc.connectionState==='connecting'){MP.cT=setTimeout(()=>{if(MP.host===L&&!L.open){linkClose(L,true);MP.host=null;hostGone()}},10000);return}
+    const st=MP.stage;linkClose(L,true);MP.host=null;
+    if(!running)mpStatus(noAns?`The host's game isn't answering. On the host's computer, make sure the Driftgate tab is open in front (not minimised or in a background tab) and that Driftgate is open in only one tab. Retrying…`:`Couldn't connect to the host. It stopped at: <i>${esc(st)}</i> Retrying… If this keeps happening, one of your networks is blocking direct browser connections.`,true);
+    hostGone()},n?13000:9000)}
 function mpFail(msg){mpStatus(esc(msg)+(/github\.io$|^localhost$|^127\./.test(location.hostname)?' Check your connection and try again.':` Multiplayer runs from <a href="${MP_HOME}" target="_blank" rel="noopener" style="color:var(--amber)">${MP_HOME.replace('https://','')}</a>.`),true);$('bMp').disabled=false;NET.on=false;NET.cl=false;NET.host=false;MP.st='off'}
 
 // ---- hosting
-function hostBegin(first){NET.on=true;NET.host=true;NET.cl=false;NET.me=MP.pid;MP.since=performance.now();MP.st='host';MP.hostPid=MP.pid;
+function holdLock(){try{if(MP.lockHeld||!navigator.locks)return;MP.lockHeld=true;navigator.locks.request('driftgate-tab-'+rid(8),()=>new Promise(r=>{MP.lockRel=r}))}catch(e){}}
+function hostBegin(first){holdLock();NET.on=true;NET.host=true;NET.cl=false;NET.me=MP.pid;MP.since=performance.now();MP.st='host';MP.hostPid=MP.pid;
   if(first){
     if(MP.ckpt&&MP.ckpt.S){mpAdoptState(MP.ckpt.S)}
     if(S&&S.player){mpRun();feed(`You are hosting “${MP.code}”. Friends who enter the same galaxy code join you.`,'info')}
@@ -3380,7 +3390,7 @@ function resize(){DPR=Math.min(2,devicePixelRatio||1);VW=glc.clientWidth;VH=glc.
 addEventListener('resize',()=>{resize();if(!$('map').hidden)drawMap()});
 let hidT=0;function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;hidT=performance.now();if(S&&running&&W)step(dt);updateCamera(dt);draw3D();drawOverlay();if(W&&W.bridge&&W.bridge.panel){drawStrat();fcT-=dt;if(fcT<=0){fcT=.4;renderConsole(false)}}auFrame();requestAnimationFrame(frame)}
 addEventListener('beforeunload',save);
-try{const wk=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),33)'],{type:'text/javascript'})));wk.onmessage=()=>{if(!document.hidden||!NET.on||!S||!running)return;const now=performance.now(),dt=Math.min(.1,(now-(hidT||now))/1000);hidT=now;if(dt>0)step(dt)}}catch(e){}
+try{const wk=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),33)'],{type:'text/javascript'})));wk.onmessage=()=>{if(MP.sig&&MP.sig.hb)MP.sig.hb();if(!document.hidden||!NET.on||!S||!running)return;const now=performance.now(),dt=Math.min(.1,(now-(hidT||now))/1000);hidT=now;if(dt>0)step(dt)}}catch(e){}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
 window.__dg={NET,MP,ev:c=>eval(c),get WORLDS(){return WORLDS},get LW(){return LW},runAs:(a,b)=>runAs(a,b),hostSave:()=>hostSave(),shipStats:(a,b,c)=>shipStats(a,b,c),launchMissile:(a,b,c,d)=>launchMissile(a,b,c,d),fctl:t=>fctl(t),consoleAct:a=>consoleAct(a),victoryTick:()=>victoryTick(),controlCounts:()=>controlCounts(),makeFrigate:(a,b,c)=>makeFrigate(a,b,c),FRIGATE_COST,setHull:k=>{S.player.cls=k;refreshPlayerStats();if(W&&W.player){W.player.hull=W.player.st.hull;W.player.shield=W.player.st.sCap}},planBuild:f=>planBuild(f),covered:x=>covered(x),addStationEnt:r=>addStationEnt(r),razeStation:(a,b)=>razeStation(a,b),spawnHauler:(sd)=>spawnHauler(sd,false),ops:()=>friendlyOps(),joinOp:o=>joinOp(o),planOffensive:f=>planOffensive(f),get ap(){return apOn},set ap(v){apOn=v},routeNext:()=>routeNext(),au:AU,spawnWing:(r,sd,n)=>spawnWing(r,sd,n,false),get S(){return S},get W(){return W},ledger:()=>S&&ledger(),step:d=>step(d),enterSector,exitSector,cam,render:()=>{updateCamera(.016);draw3D();drawOverlay()}};
 
@@ -3389,6 +3399,7 @@ function boot(data){
   try{initGL();genMeshes()}catch(e){$('glErr').hidden=false;$('glErr').textContent='WebGL failed to start: '+e.message;return}
   resize();buildSectorScene(null);auApply();
   try{const d=new Date(document.lastModified);if(/github\.io$/.test(location.hostname)&&!isNaN(d))$('ver').textContent='Game updated '+d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'. If you are missing something new, reload with Ctrl+Shift+R (Cmd+Shift+R on Mac).'}catch(e){}
+  try{const bc=new BroadcastChannel('driftgate');MP.bc=bc;bc.onmessage=e=>{const m=e.data||{};if(m.t==='hello'&&running)bc.postMessage({t:'here',code:NET.on?MP.code:'',host:NET.host});if(m.t==='here'&&!running){const el=$('ver');if(el){el.style.opacity=1;el.style.color='var(--amber)';el.textContent=`Driftgate is already open in another tab of this browser${m.code?` (${m.host?'hosting':'in'} galaxy “${m.code}”)`:''}. Close that tab first, or use it instead: two tabs in one browser share the same pilot.`}}};bc.postMessage({t:'hello'})}catch(e){}
   mpConfig();{const q=new URLSearchParams(location.search);let n='',c='';try{n=localStorage.getItem('driftgate.mpname')||'';c=localStorage.getItem('driftgate.mpcode')||''}catch(e){}$('mpName').value=q.get('name')||n;$('mpCode').value=q.get('galaxy')||c;showInvite();if(q.get('galaxy')&&!q.get('auto'))mpStatus(`You've been invited to the galaxy <b>${esc(q.get('galaxy'))}</b>. Choose a callsign, faction and ship, then press <b>Launch</b> to join your friends.`);if(!mpOK())$('mpBox').hidden=true;if(window.claude&&!q.get('sig')){$('mpBox').querySelector('.mprow').hidden=true;mpStatus(`Multiplayer runs from the shareable copy at <a href="${MP_HOME}" target="_blank" rel="noopener" style="color:var(--amber)">${MP_HOME.replace('https://','')}</a>. Open it there, then you and up to three friends type the same galaxy code.`)}if(q.get('auto')&&mpOK())setTimeout(mpJoin,50)}
   const saved=data&&data.save;
   if(saved&&saved.v===2)startWith(saved);else showStart();
