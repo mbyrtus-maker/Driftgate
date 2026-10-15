@@ -15,7 +15,8 @@ A 3D space game you play in the browser: three rival factions and an alien Brood
 - **Frozen while empty.** When nobody is online, nothing happens in the galaxy.
 - **Chat:** press **Enter** in flight.
 - **Quit:** the **Quit** button (top right, press twice) or **Save & quit** when docked saves your pilot and returns you to the title screen. If you were hosting, another pilot takes over within a few seconds.
-- Up to four pilots per galaxy. Capital shipyards and frigates are single-player only for now.
+- Up to four pilots per galaxy. Each pilot can build or commission their own frigates, board them from their own browser, and ride them through jumps.
+- **Gunboats** seat two: one pilot flies, a friend pulls alongside and presses **E** to take the rear turret. An AI gunner takes the turret when nobody is in it.
 
 ### If friends can't connect
 
@@ -25,7 +26,7 @@ Your pilot is tied to your browser. Playing from a different browser or computer
 
 ## Controls
 
-Mouse steers (offset from centre) · **W** thrust · **S** brake · **A/D** roll · **Shift** afterburner · click or **Space** fires · **1/2** kinetic or laser · **T/Q** target hostiles · **C** missile when locked · **B** flares · **F** mines · **E** docks · **V** camera · **M** map · **H** full manual
+Mouse steers (offset from centre) · **W** thrust · **S** brake · **A/D** roll · **Shift** afterburner · click or **Space** fires · **1/2** kinetic or laser · **T/Q** target hostiles · **C** missile when locked · **B** flares · **F** mines · **I** friendly target and comms (guard, escort, request construction) · **E** docks or boards · **V** camera · **M** map · **H** full manual
 
 ## How it's built
 
