@@ -2727,7 +2727,7 @@ function renderMapSide(){
   for(const b of $('mapSide').querySelectorAll('[data-mop]'))b.onclick=()=>{joinOp(friendlyOps().filter(o=>o.kind!=='local')[+b.dataset.mop]);drawMap();renderMapSide()};
   if($('bCourse'))$('bCourse').onclick=()=>{S.player.route=mapSel;feed(`Course set for ${DEF[mapSel].name}. Press J in flight to engage autopilot.`,'info');drawMap();renderMapSide()};
   if($('bClear'))$('bClear').onclick=()=>{S.player.route=null;apOn=false;drawMap();renderMapSide()};
-  $('bReset').onclick=()=>{if(!resetArm){resetArm=true;renderMapSide();return}resetArm=false;try{localStorage.removeItem(SAVE_KEY)}catch(e){}if(W)exitSector();W=null;S=null;running=false;$('map').hidden=true;$('hud').hidden=true;$('dock').hidden=true;buildSectorScene(null);showStart()};
+  if($('bReset'))$('bReset').onclick=()=>{if(!resetArm){resetArm=true;renderMapSide();return}resetArm=false;try{localStorage.removeItem(SAVE_KEY)}catch(e){}if(W)exitSector();W=null;S=null;running=false;$('map').hidden=true;$('hud').hidden=true;$('dock').hidden=true;buildSectorScene(null);showStart()};
 }
 function allPilots(){if(!S.pilots)return[S.player];const a=Object.values(S.pilots);if(S.player&&!a.includes(S.player))a.push(S.player);return a}
 function ledger(){
