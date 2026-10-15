@@ -265,7 +265,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     <div class="hud" id="hTR">
       <div class="cr"><small>CREDITS</small><span id="hCr">0</span></div>
       <div class="holdline">Hold <b id="hHold">0/0</b></div>
-      <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button></div>
+      <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button><button class="hbtn" id="bQuit" type="button" aria-label="Save and quit">Quit</button></div>
     </div>
     <div class="hud" id="hBL">
       <canvas id="radar" width="340" height="300" aria-label="Radar"></canvas>
@@ -304,13 +304,15 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
         </div>
         <div class="note snote" id="legacy" style="padding-top:8px"></div>
         <div class="mpbox" id="mpBox"><div class="step"><i>✦</i><span>Play with friends <small style="color:var(--faint);font-weight:400">(optional)</small></span></div>
-          <div class="mprow"><input id="mpName" class="mpin" placeholder="Your callsign" maxlength="16" autocomplete="off" spellcheck="false"><input id="mpCode" class="mpin" placeholder="Galaxy code" maxlength="24" autocomplete="off" spellcheck="false"><button class="btn" id="bMp" type="button">Join galaxy</button></div>
-          <div class="note snote" id="mpStat">Up to four pilots share one galaxy. Everyone types the same galaxy code: the first one in hosts, and the galaxy waits, frozen, while nobody is online. Leave this blank to play solo.</div></div>
-        <div class="step"><i>1</i><span>Choose your faction</span></div>
+          <div class="mprow"><input id="mpCode" class="mpin" placeholder="Galaxy code" maxlength="24" autocomplete="off" spellcheck="false"><button class="btn" id="bMp" type="button">Join galaxy</button></div>
+          <div class="note snote" id="mpStat">Up to four pilots share one galaxy. Everyone types the same galaxy code: the first one in hosts, and the galaxy waits, frozen, while nobody is online. Other pilots see your callsign over your ship. Leave this blank to play solo.</div></div>
+        <div class="step"><i>1</i><span>Your callsign</span></div>
+        <div class="mprow" style="margin:0 0 4px"><input id="mpName" class="mpin" placeholder="Callsign (required)" maxlength="16" autocomplete="off" spellcheck="false" style="flex:0 1 320px"></div>
+        <div class="step"><i>2</i><span>Choose your faction</span></div>
         <div class="facs" id="facs"></div>
-        <div class="step"><i>2</i><span>Choose your role</span></div>
+        <div class="step"><i>3</i><span>Choose your role</span></div>
         <div class="roles" id="roles"></div>
-        <div class="step"><i>3</i><span>Choose your ship</span></div>
+        <div class="step"><i>4</i><span>Choose your ship</span></div>
         <div class="shippick"><div class="ships" id="clsrow"></div><div class="shipcard" id="shipcard"></div></div>
         <div class="note snote">Mouse steers (offset from centre) · W thrust · S brake · A/D roll · Shift afterburner · Click or Space fires · 1/2 kinetic or laser · T/Q target hostiles · C missile when locked · B flares · F mines · E docks · V camera · M map · H full manual. You can change hull later at any core station.</div>
       </div>
@@ -340,7 +342,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       <div class="c-head"><div><div class="c-title" id="dTitle"></div><div class="c-sub" id="dSub"></div></div><div class="c-meta" id="dMeta"></div></div>
       <div class="tabs" role="tablist" id="dTabs"></div>
       <div class="c-body" id="dBody"></div>
-      <div class="c-foot"><div class="err" id="dErr"></div><div id="dRep" class="rep"></div><button class="btn pri" data-act="launch" type="button">Launch <kbd style="color:inherit;border-color:currentColor">E</kbd></button></div>
+      <div class="c-foot"><div class="err" id="dErr"></div><div id="dRep" class="rep"></div><button class="btn" data-act="quit" type="button" title="Save your pilot and return to the title screen">Save &amp; quit</button><button class="btn pri" data-act="launch" type="button">Launch <kbd style="color:inherit;border-color:currentColor">E</kbd></button></div>
     </div>
   </section>
 
@@ -2444,6 +2446,7 @@ function drawOverlay(){
     c.strokeStyle=hexA(col,h?.85:.45);c.beginPath();if(h){c.moveTo(P.x-r,P.y-r+4);c.lineTo(P.x-r,P.y-r);c.lineTo(P.x-r+4,P.y-r);c.moveTo(P.x+r-4,P.y-r);c.lineTo(P.x+r,P.y-r);c.lineTo(P.x+r,P.y-r+4);c.moveTo(P.x-r,P.y+r-4);c.lineTo(P.x-r,P.y+r);c.lineTo(P.x-r+4,P.y+r);c.moveTo(P.x+r-4,P.y+r);c.lineTo(P.x+r,P.y+r);c.lineTo(P.x+r,P.y+r-4)}else{c.moveTo(P.x,P.y-r-2);c.lineTo(P.x+4,P.y-r-7);c.lineTo(P.x-4,P.y-r-7);c.closePath()}c.stroke()}
   const marks=[],nxg=routeNext();for(const g of GATES[W.sid]){const nx=nxg&&nxg.to===g.to;marks.push({o:g,l:(nx?'NEXT JUMP ':'')+'→ '+DEF[g.to].name,c:S.gateDown[gateKey(W.sid,g.to)]?'#ff5d4f':nx?'#f0b24a':'#dfe8ff',r:120})}
   const SE=W.stationEnt,OE=W.outpostEnt,blk=Math.floor(t*4)%2===0;if(SE){const ua=friendSide(SE.fac)&&W.t-SE.lastHit<4;marks.push({o:SE,l:SE.name,c:ua&&blk?'#ff5d4f':sideCol(SE.fac),r:130,sub:ua?'UNDER ATTACK':''})}if(OE){const ua=friendSide(OE.o.owner)&&W.t-OE.lastHit<4;marks.push({o:OE,l:OE.o.name,c:ua&&blk?'#ff5d4f':sideCol(OE.o.owner),r:140,sub:(ua?'UNDER ATTACK · ':'')+(OE.o.breached?'BREACHED · ':'')+(OE.o.owner?sideName(OE.o.owner).toUpperCase():'UNCLAIMED')+' · LEVEL '+OE.o.level})}
+  for(const e of W.ents)if(e.pname&&e.alive&&e!==p&&e.type==='ship')marks.push({o:e,l:e.pname,c:sideCol(e.side),r:e.st.radius*1.25,sub:(hostile('player',e.side)?'HOSTILE PILOT · ':'PILOT · ')+hullName(e.fac,e.cls).toUpperCase()});
   for(const a of sec.ast)if(a.comet)marks.push({o:a,l:'Comet',c:'#c99cff',r:astR(a)});
   for(const cr of sec.crates)if(cr.derelict)marks.push({o:cr,l:'Derelict cargo',c:'#f0b24a',r:16});
   for(const m of marks){const P=proj(m.o.x,m.o.y,m.o.z),d=Math.round(d3(m.o,p)/10)*10,on=!P.behind&&P.x>20&&P.y>20&&P.x<VW-20&&P.y<VH-20;
@@ -2790,6 +2793,7 @@ function renderDock(){
 $('dock').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const act=b.dataset.act,arg=b.dataset.arg||'';dockErr='';
   if(act==='launch'){undock();return}
+  if(act==='quit'){quitGame();return}
   if(act==='tab'){dockTab=arg;renderDock();return}
   if(NET.cl){netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
   dockAction(act,arg);renderDock()});
@@ -2821,6 +2825,7 @@ function toggleMap(){if(!$('map').hidden){$('map').hidden=true;return}$('help').
 function toggleSheet(id){const el=$(id);el.hidden=!el.hidden;if(!el.hidden&&id==='help')$('map').hidden=true}
 function closeSheets(){if(!$('help').hidden){$('help').hidden=true;return}if(!$('map').hidden){$('map').hidden=true;return}if(S.player.docked)undock()}
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{$(b.dataset.close).hidden=true}));
+let quitArm=0;$('bQuit').addEventListener('click',()=>{if(!running)return;const b=$('bQuit');if(performance.now()-quitArm>3000){quitArm=performance.now();b.textContent='Save & quit?';b.style.color='var(--amber)';setTimeout(()=>{if(performance.now()-quitArm>=2900){b.textContent='Quit';b.style.color=''}},3000);return}b.textContent='Quit';b.style.color='';quitGame()});
 $('bMap').addEventListener('click',toggleMap);$('bHelp').addEventListener('click',()=>toggleSheet('help'));
 const mcv=$('mapCv'),mctx=mcv.getContext('2d');
 function mapXY(d,w,h){const pad=46,sz=Math.min(w,h)-pad*2,ox=(w-sz)/2,oy=(h-sz)/2;return[ox+d.x*sz,oy+d.y*sz]}
@@ -2954,7 +2959,8 @@ $('clsrow').addEventListener('click',e=>{const b=e.target.closest('[data-cls]');
 $('roles').addEventListener('click',e=>{const b=e.target.closest('[data-role]');if(!b)return;selRole=b.dataset.role;if(!ROLES[selRole].ships.includes(selCls))selCls=ROLES[selRole].ships[0];showStart()});
 $('bSnd').addEventListener('click',()=>{auInit();auToggle()});addEventListener('pointerdown',()=>{if(running)auInit()});
 $('bNext').addEventListener('click',()=>{if(NET.host){mpNewGalaxy();return}if(NET.cl){$('win').hidden=true;flash('Waiting for the host to start the next galaxy.');return}$('win').hidden=true;if(W)exitSector();W=null;S=null;running=false;$('hud').hidden=true;$('dock').hidden=true;buildSectorScene(null);showStart()});
-$('bLaunch').addEventListener('click',()=>{if(NET.on){auInit();auApply();mpLaunch(selFac,ROLES[selRole].ships.find(k=>START_HULLS.includes(k)));return}auInit();auApply();FEED.length=0;newGame(selFac,ROLES[selRole].ships.find(k=>START_HULLS.includes(k)));startWith(S);feed(`Welcome aboard, pilot of the ${FACTIONS[selFac].name}. Your vault holds a few plates and conduit: check the Shipyard tab for your first upgrade.`,'info');feed('Launch with E. Steer with the mouse, thrust with W. Hold F near an asteroid to mine.','info');save()});
+$('bLaunch').addEventListener('click',()=>{const cs=cleanCall($('mpName').value);$('mpName').value=cs;if(cs.length<2){$('ssum').innerHTML='<b style="color:var(--danger)">Choose a callsign first (step 1).</b>';$('mpName').focus();return}MP.name=MP.name||cs;try{localStorage.setItem('driftgate.mpname',cs)}catch(e){}
+  if(NET.on){auInit();auApply();mpLaunch(selFac,ROLES[selRole].ships.find(k=>START_HULLS.includes(k)));return}auInit();auApply();FEED.length=0;newGame(selFac,ROLES[selRole].ships.find(k=>START_HULLS.includes(k)));S.player.name=cs;startWith(S);feed(`Welcome aboard, ${cs}, pilot of the ${FACTIONS[selFac].name}. Your vault holds a few plates and conduit: check the Shipyard tab for your first upgrade.`,'info');feed('Launch with E. Steer with the mouse, thrust with W. Hold F near an asteroid to mine.','info');save()});
 $('bContinue').addEventListener('click',()=>{auInit();auApply();const s=loadSave();if(s){FEED.length=0;startWith(s);feed('Welcome back, pilot.','info')}});
 
 // ============================================================ multiplayer
@@ -2968,6 +2974,7 @@ const MP_HOME='https://mbyrtus-maker.github.io/Driftgate/';
 const MPV=1,MP={st:'off',code:'',name:'',pid:'',hostId:'',myId:'',sig:null,sigCfg:null,ice:null,links:{},host:null,cl:{},inp:{},rp:{},
   seenEv:new Set(),snT:0,syT:0,prT:0,ckT:0,uT:0,since:0,ckpt:null,hostPid:null,roster:[],mid:0,pend:[],needPilot:false,elect:0,ckMeta:null};
 const rid=n=>{let s='';const a='abcdefghijkmnpqrstuvwxyz23456789';for(let i=0;i<n;i++)s+=a[Math.floor(Math.random()*a.length)];return s};
+const cleanCall=n=>String(n||'').replace(/[^A-Za-z0-9 _.\-']/g,'').replace(/\s+/g,' ').trim().slice(0,16);
 const mpSlug=c=>String(c||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24);
 function mpConfig(){const q=new URLSearchParams(location.search);let c={host:'0.peerjs.com',port:443,path:'/',key:'peerjs',secure:true};
   const sg=q.get('sig');if(sg){try{const u=new URL(sg);c={host:u.hostname,port:+u.port||(u.protocol==='wss:'?443:80),path:u.pathname.endsWith('/')?u.pathname:u.pathname+'/',key:q.get('key')||'peerjs',secure:u.protocol==='wss:'}}catch(e){}}
@@ -3029,8 +3036,8 @@ function linkDown(L){if(L.downDone)return;L.downDone=true;const quiet=L.quiet;li
 
 // ---- joining: try to claim the galaxy's host name; if someone has it, connect to them
 async function mpJoin(){if(!mpOK()){mpStatus('This browser cannot do peer-to-peer connections.',true);return}
-  MP.name=($('mpName').value||'').trim().slice(0,16);MP.code=($('mpCode').value||'').trim().slice(0,24);
-  if(!MP.name||!mpSlug(MP.code)){mpStatus('Enter a callsign and a galaxy code (letters and numbers).',true);return}
+  MP.name=cleanCall($('mpName').value);$('mpName').value=MP.name;MP.code=($('mpCode').value||'').trim().slice(0,24);
+  if(MP.name.length<2){mpStatus('Choose a callsign first (step 1, at least 2 letters).',true);$('mpName').focus();return}if(!mpSlug(MP.code)){mpStatus('Enter a galaxy code (letters and numbers).',true);return}
   try{localStorage.setItem('driftgate.mpname',MP.name);localStorage.setItem('driftgate.mpcode',MP.code)}catch(e){}
   MP.hostId='driftgate1-'+mpSlug(MP.code)+'-host';$('bMp').disabled=true;mpStatus('Contacting the matchmaking server…');
   try{const t=localStorage.getItem(ckKey());if(t){const ck=JSON.parse(t);MP.ckpt=ck;MP.ckMeta={gid:ck.gid,T:ck.T}}}catch(e){}
@@ -3075,6 +3082,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
   if(m.t==='hello'){c=MP.cl[L.peer]={L,pid:String(m.pid||'').slice(0,24),name:String(m.name||'Pilot').slice(0,16),known:new Set(),ready:false,hello:true,ck:m.ck,lastPR:''};
     if(m.v!==MPV){send(L,{t:'msg',k:'flash',a:['This galaxy is running a different version of Driftgate. Reload the page.',true]});return}
     for(const o of Object.values(MP.cl))if(o!==c&&o.pid===c.pid&&o.ready){linkClose(o.L,true);delete MP.cl[o.L.peer];pilotLeft(o)}
+    if(S&&S.pilots&&Object.entries(S.pilots).some(([id,P])=>id!==c.pid&&String(P.name||'').toLowerCase()===c.name.toLowerCase())||(c.pid!==NET.me&&String(MP.name).toLowerCase()===c.name.toLowerCase())){send(L,{t:'msg',k:'taken',a:[c.name]});setTimeout(()=>{linkClose(L,true);delete MP.cl[L.peer]},300);return}
     if(m.ck&&S&&m.ck.T>S.T+20&&performance.now()-MP.since<120000&&!readyCl().length){c.adopt=true;send(L,{t:'ckreq'});return}
     if(running&&S.player)hJoin(c);else send(L,{t:'msg',k:'stat',a:['The host is choosing their ship. You will join as soon as they launch.']});return}
   if(!c)return;
@@ -3092,6 +3100,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'build':{const e=MP.rp[pid];if(e)runAs(pid,()=>{const had=W.pbuild;startPlayerBuild();if(W.pbuild&&W.pbuild!==had)W.pbuild.pid=pid});break}
     case 'hold':{const ev=S.events.find(v=>v.id===m.id);if(ev)ev.hold=Math.max(ev.hold||0,Math.min(+m.hold||0,S.T+240));break}
     case 'chat':{const t=String(m.m||'').slice(0,160);if(t)netChat(P.name,t,pid);break}
+    case 'bye':{if(!P.docked)poseFrom(P,m);delete MP.cl[L.peer];pilotLeft(c);setTimeout(()=>linkClose(L,true),200);break}
   }}
 function hJoin(c){const P=S.pilots[c.pid];c.hello=true;
   if(!P){send(c.L,{t:'needpilot'});return}
@@ -3213,10 +3222,11 @@ function clientRecv(m){
     case 'pr':applyPR(m);break;
     case 'sync':applySync(m.s);break;
     case 'ckpt':MP.ckpt=m.ck;MP.ckMeta={gid:m.ck.gid,T:m.ck.T};try{localStorage.setItem(ckKey(),JSON.stringify(m.ck))}catch(e){}break;
-    case 'msg':if(m.k==='feed')feed(...m.a);else if(m.k==='flash')flash(...m.a);else if(m.k==='stat')mpStatus(m.a[0]);break;
+    case 'msg':if(m.k==='taken'){mpShutdown();running=false;$('hud').hidden=true;$('start').hidden=false;showStart();mpStatus(`The callsign <b>${esc(m.a[0])}</b> is already taken in this galaxy. Pick another one and join again.`,true);$('mpName').focus();break}if(m.k==='feed')feed(...m.a);else if(m.k==='flash')flash(...m.a);else if(m.k==='stat')mpStatus(m.a[0]);break;
     case 'actr':dockErr=m.err||'';if(!$('dock').hidden&&S.player.docked)renderDock();break;
     case 'dead':if(W){W.dead=W.t;$('deathMsg').hidden=false;W.tgt=null;if(W.player)W.player.alive=false}break;
     case 'roster':MP.roster=m.r;break;
+    case 'hostquit':if(MP.host){linkClose(MP.host,true);MP.host=null}hostGone();break;
     case 'ckreq':send(MP.host,{t:'ckup',ck:MP.ckpt});break;
     case 'nodock':case 'kick':if(S.player.docked){S.player.docked=null;$('dock').hidden=true}if(m.t==='nodock')flash('Docking refused by the station.',true);break;
     case 'chat':feed(`${m.n}: ${m.m}`,'chat');break;
@@ -3321,6 +3331,15 @@ function mpNewGalaxy(){const f=S.player.faction,cls=START_HULLS.find(k=>roleOf(k
   fxBoom=function(p,r,col){if(NET.host&&W)(W.netEv=W.netEv||[]).push(['x',r1(p.x),r1(p.y),r1(p.z),r,col]);return fB(p,r,col)};
   fxWarp=function(p,col){if(NET.host&&W)(W.netEv=W.netEv||[]).push(['w',r1(p.x),r1(p.y),r1(p.z),col]);return fW(p,col)}}
 addEventListener('beforeunload',()=>{if(NET.host){const ck=hostSave();if(ck)for(const c of readyCl())send(c.L,{t:'ckpt',ck})}});
+// save everything and drop back to the title screen; in a shared galaxy the others carry on (another pilot takes over hosting)
+function quitGame(){if(!S||!running)return;const wasNet=NET.on,code=MP.code;
+  if(NET.host){const ck=hostSave();for(const c of readyCl()){if(ck)send(c.L,{t:'ckpt',ck});send(c.L,{t:'hostquit'})}}
+  else if(NET.cl){const p=W&&W.player;netSend({t:'bye',...(p&&!S.player.docked?{x:p.x,y:p.y,z:p.z,vx:0,vy:0,vz:0,q:[p.q.x,p.q.y,p.q.z,p.q.w]}:{})})}
+  else save();
+  setTimeout(()=>{try{closeSheets()}catch(e){}mpShutdown();if(W)exitSector();WORLDS={};LW=null;W=null;S=null;running=false;apOn=false;$('hud').hidden=true;$('dock').hidden=true;$('deathMsg').hidden=true;$('start').hidden=false;buildSectorScene(null);showStart();
+    mpStatus(wasNet?`Saved and left “${esc(code)}”. Join again any time to pick up where you left off.`:'Up to four pilots share one galaxy. Everyone types the same galaxy code: the first one in hosts, and the galaxy waits, frozen, while nobody is online. Other pilots see your callsign over your ship. Leave this blank to play solo.');
+    if(!wasNet)$('ssum').innerHTML='<b>Saved.</b> Press <b>Continue saved pilot</b> to fly again.'},wasNet?250:30)}
+function mpShutdown(){if(MP.sig){MP.sig.close();MP.sig=null}for(const L of Object.values(MP.links))linkClose(L,true);MP.links={};MP.host=null;MP.cl={};MP.rp={};MP.inp={};MP.elect=0;MP.st='off';MP.roster=[];NET.on=false;NET.host=false;NET.cl=false;const b=$('bMp');if(b)b.disabled=false}
 // ============================================================ main loop
 let last=performance.now(),hudT=0,saveT=0,mapT=0;
 function step(dt){if(S&&S.won)return;

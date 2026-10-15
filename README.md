@@ -7,13 +7,14 @@ A 3D space game you play in the browser: three rival factions and an alien Brood
 ## Playing with friends
 
 1. Everyone opens the link above.
-2. On the start screen, type a callsign and the **same galaxy code** (any word you agree on, e.g. `thursday-crew`), then press **Join galaxy**.
+2. On the start screen, choose a callsign (every pilot needs one; it's shown over your ship to other pilots and must be unique in the galaxy), then type the **same galaxy code** as your friends (any word you agree on, e.g. `thursday-crew`) and press **Join galaxy**.
 3. The first pilot in hosts the galaxy. Everyone else joins them. Each pilot picks their own faction and ship, so you can fly together or fight each other.
 
 - **Drop in and out.** Your ship, cargo and position are saved. Come back with the same browser and you pick up where you left off.
 - **Anyone can host.** Every pilot's browser keeps the latest save, so whoever opens the galaxy first next time hosts it. If the host leaves mid-game, another pilot takes over within a few seconds.
 - **Frozen while empty.** When nobody is online, nothing happens in the galaxy.
 - **Chat:** press **Enter** in flight.
+- **Quit:** the **Quit** button (top right, press twice) or **Save & quit** when docked saves your pilot and returns you to the title screen. If you were hosting, another pilot takes over within a few seconds.
 - Up to four pilots per galaxy. Capital shipyards and frigates are single-player only for now.
 
 ### If friends can't connect
