@@ -97,6 +97,10 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 #deathMsg small{display:block;font-family:var(--f-ui);font-weight:400;font-size:14px;color:var(--ivory);letter-spacing:.02em;margin-top:10px;text-transform:none}
 #glErr{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--ivory);font-size:16px}
 
+#dev{position:absolute;top:calc(118px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:8;width:min(340px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;padding:12px 14px 14px;background:var(--sheet);border:1px solid var(--amber);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#dev[hidden]{display:none}#dev .btn{max-width:none;width:100%;text-align:left;white-space:normal;font-size:13px;letter-spacing:.08em}#dev .btn:hover{border-color:var(--amber);color:var(--amber)}
+.dv-h{display:flex;justify-content:space-between;align-items:center;font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.dv-x{background:none;border:0;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:0 2px}.dv-m{font-size:12px;color:var(--dim);min-height:1.3em}
 .sheet{position:absolute;inset:0;background:rgba(2,3,7,.72);display:grid;place-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));z-index:5}
 .console{width:min(1000px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--sheet);border:1px solid var(--line-hi);clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px));min-height:0}
 .c-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:16px 22px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -355,6 +359,12 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     </div>
   </section>
 
+  <div id="dev" hidden role="dialog" aria-label="Developer tools">
+    <div class="dv-h"><span>Developer</span><button type="button" class="dv-x" data-dev="close" aria-label="Close">×</button></div>
+    <button type="button" class="btn" data-dev="res">Vault: +10 of each resource</button>
+    <button type="button" class="btn" data-dev="frig">Spawn friendly frigate</button>
+    <div class="dv-m" id="devMsg">Ctrl+Alt+D toggles this panel.</div>
+  </div>
   <section class="sheet" id="help" hidden>
     <div class="console">
       <div class="c-head"><div><div class="c-title">Pilot's Manual</div><div class="c-sub">Controls, and how the economy holds together.</div></div><button class="btn" data-close="help" type="button">Close <kbd>Esc</kbd></button></div>
@@ -1418,6 +1428,7 @@ let coarse=matchMedia('(pointer:coarse)').matches;
 addEventListener('keydown',e=>{
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;
   const c=e.code;if(running)auInit();
+  if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();return}
   if(c==='Enter'&&running&&NET.on&&!S.player.docked){e.preventDefault();openChat();return}
   if(c==='KeyN'&&running&&!keys[c]){keys[c]=true;auToggle();return}
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(c)&&running)e.preventDefault();
@@ -3161,6 +3172,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'jump':hJump(pid,m);break;
     case 'dock':hDock(c,m);break;
     case 'undock':hUndock(pid,m);break;
+    case 'dev':{if(m.k==='res'){runAs(pid,()=>devRes(P));sendPR(c,false,true);send(L,syncMsg(c));if(P.docked)send(L,{t:'actr',err:''});netMsg(pid,'flash','Developer: added 10 of every resource to your vault.')}break}
     case 'act':{if(!P.docked)break;const err=runAs(pid,()=>{dockErr='';dockAction(m.act,String(m.arg||''));return dockErr});send(L,{t:'actr',err});sendPR(c,false,true);send(L,syncMsg(c));break}
     case 'build':{const e=MP.rp[pid];if(e)runAs(pid,()=>{const had=W.pbuild;startPlayerBuild();if(W.pbuild&&W.pbuild!==had)W.pbuild.pid=pid});break}
     case 'hold':{const ev=S.events.find(v=>v.id===m.id);if(ev)ev.hold=Math.max(ev.hold||0,Math.min(+m.hold||0,S.T+240));break}
@@ -3405,6 +3417,22 @@ function mpNewGalaxy(){const f=S.player.faction,cls=START_HULLS.find(k=>roleOf(k
   fxWarp=function(p,col){if(NET.host&&W)(W.netEv=W.netEv||[]).push(['w',r1(p.x),r1(p.y),r1(p.z),col]);return fW(p,col)}}
 addEventListener('beforeunload',()=>{if(NET.host){const ck=hostSave();if(ck)for(const c of readyCl())send(c.L,{t:'ckpt',ck})}});
 // save everything and drop back to the title screen; in a shared galaxy the others carry on (another pilot takes over hosting)
+// ============================================================ developer tools (Ctrl+Alt+D)
+// Both actions create matter out of nothing, so they move the zero-sum baseline by exactly what they add: the economy audit stays balanced.
+function devToggle(){const d=$('dev');d.hidden=!d.hidden;if(!d.hidden)$('devMsg').textContent=NET.cl?'Requests go to the host.':'Ctrl+Alt+D toggles this panel.'}
+function devLedger(fn){const L0=ledger(),r=fn(),L1=ledger();for(const e of RAWS)S.ledger0.tot[e]=(S.ledger0.tot[e]||0)+L1.tot[e]-L0.tot[e];S.ledger0.credits+=L1.credits-L0.credits;return r}
+function devRes(P){P=P||S.player;devLedger(()=>{for(const k of ITEM_ORDER)inv.add(P.vault,k,10)});return `Added 10 of each of ${ITEM_ORDER.length} resources to the vault.`}
+function devFrig(){if(NET.on)return 'Frigates are single-player only for now.';if(!W||!W.player)return 'Not in a system.';
+  const t=devLedger(()=>makeFrigate('player',W.sid,{...FRIGATE_COST})),e=W.ents.find(x=>x.alive&&x.tok===t);
+  if(e){const p=W.player;qRot(p.q,0,0,1,_f);qRot(p.q,1,0,0,_r);const d=420+e.st.radius;e.x=p.x+_f.x*d+_r.x*160;e.y=p.y+_f.y*d+_r.y*160+60;e.z=p.z+_f.z*d+_r.z*160;e.vx=e.vy=e.vz=0;qCopy(e.q,p.q);
+    for(const k of e.pickets||[]){const o=rdir();k.x=e.x+o.x*170;k.y=e.y+o.y*170;k.z=e.z+o.z*170}fxWarp(e,sideCol('player'))}
+  feed(`Frigate ${t.name} has joined you in ${DEF[W.sid].name}. Order it from the galaxy map (M).`,'good');return `Spawned frigate ${t.name}.`}
+function devDo(k){if(!running||!S)return;let msg='';
+  if(k==='close'){$('dev').hidden=true;return}
+  if(k==='res'){if(NET.cl){netSend({t:'dev',k:'res'});msg='Asked the host for resources…'}else{msg=devRes()}}
+  else if(k==='frig')msg=devFrig();
+  $('devMsg').textContent=msg;SFX.clunk();if(S.player.docked&&typeof renderDock==='function')renderDock();save()}
+$('dev').addEventListener('click',e=>{const b=e.target.closest('[data-dev]');if(b)devDo(b.dataset.dev)});
 function quitGame(){if(!S||!running)return;const wasNet=NET.on,code=MP.code;
   if(NET.host){const ck=hostSave();for(const c of readyCl()){if(ck)send(c.L,{t:'ckpt',ck});send(c.L,{t:'hostquit'})}}
   else if(NET.cl){const p=W&&W.player;netSend({t:'bye',...(p&&!S.player.docked?{x:p.x,y:p.y,z:p.z,vx:0,vy:0,vz:0,q:[p.q.x,p.q.y,p.q.z,p.q.w]}:{})})}
