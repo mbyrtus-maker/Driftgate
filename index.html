@@ -2882,7 +2882,7 @@ async function mpElect(first){if(MP.sig){MP.sig.close();MP.sig=null}
     if(first)mpStatus('A friend is hosting this galaxy. Connecting…');
     MP.host=mkLink(MP.hostId,true);clearTimeout(MP.cT);MP.cT=setTimeout(()=>{if(NET.cl&&MP.host&&!MP.host.open){linkClose(MP.host,true);MP.host=null;hostGone()}},15000);return}
   mpFail(r.err)}
-function mpFail(msg){mpStatus(esc(msg)+' Check your connection and try again.',true);$('bMp').disabled=false;NET.on=false;NET.cl=false;NET.host=false;MP.st='off'}
+function mpFail(msg){mpStatus(esc(msg)+(/github\.io$|^localhost$|^127\./.test(location.hostname)?' Check your connection and try again.':` Multiplayer runs from <a href="${MP_HOME}" target="_blank" rel="noopener" style="color:var(--amber)">${MP_HOME.replace('https://','')}</a>.`),true);$('bMp').disabled=false;NET.on=false;NET.cl=false;NET.host=false;MP.st='off'}
 
 // ---- hosting
 function hostBegin(first){NET.on=true;NET.host=true;NET.cl=false;NET.me=MP.pid;MP.since=performance.now();MP.st='host';MP.hostPid=MP.pid;
