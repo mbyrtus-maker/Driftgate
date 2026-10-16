@@ -1169,6 +1169,17 @@ function voice(dur){if(AU.voices>26)return false;AU.voices++;setTimeout(()=>AU.v
 function envG(g,t,a,peak,dec){g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dec)}
 function thump(f0,f1,dur,vol,type){if(!auOK()||!AU.on.sfx||vol<.015||!voice(dur))return;const c=AU.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);o.connect(g);g.connect(AU.sfx);envG(g,t,.006,vol,dur);o.start(t);o.stop(t+dur+.08)}
 function rumble(fc,dur,vol,q,to){if(!auOK()||!AU.on.sfx||vol<.015||!voice(dur))return;const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;f.type='lowpass';f.frequency.setValueAtTime(fc,t);if(to)f.frequency.exponentialRampToValueAtTime(to,t+dur);f.Q.value=q||.7;src.connect(f);f.connect(g);g.connect(AU.sfx);envG(g,t,.012,vol,dur);src.start(t,Math.random()*1.4);src.stop(t+dur+.12)}
+// air-brake hiss: high-passed noise
+function hiss(dur,vol){if(MUTE||!auOK()||!AU.on.sfx||!voice(dur))return;const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;src.loop=true;f.type='highpass';f.frequency.setValueAtTime(2600,t);f.frequency.linearRampToValueAtTime(1500,t+dur);src.connect(f);f.connect(g);g.connect(AU.sfx);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+dur);src.start(t,Math.random());src.stop(t+dur+.05)}
+// hangar lift: a labouring hydraulic drone, a servo whine and a low mechanical rumble that all sink as the ship is lowered
+function dockHyd(dur){dockHydStop();if(MUTE||!auOK()||!AU.on.sfx)return;const c=AU.ctx,t=c.currentTime,N=[],G=[];
+  const mk=(node,filt,vol)=>{const g=c.createGain();(filt||node).connect(g);if(filt)node.connect(filt);g.connect(AU.sfx);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.3);g.gain.setValueAtTime(vol,t+dur-.35);g.gain.linearRampToValueAtTime(.0001,t+dur);node.start(t);node.stop(t+dur+.1);N.push(node);G.push(g)};
+  const o=c.createOscillator(),of=c.createBiquadFilter();o.type='sawtooth';o.frequency.setValueAtTime(64,t);o.frequency.linearRampToValueAtTime(43,t+dur);of.type='lowpass';of.frequency.setValueAtTime(280,t);of.frequency.linearRampToValueAtTime(150,t+dur);of.Q.value=2.2;mk(o,of,.075);
+  const l=c.createOscillator(),lg=c.createGain();l.frequency.value=5.5;lg.gain.value=9;l.connect(lg);lg.connect(o.frequency);l.start(t);l.stop(t+dur+.1);N.push(l);
+  const w=c.createOscillator();w.type='sine';w.frequency.setValueAtTime(540,t);w.frequency.linearRampToValueAtTime(360,t+dur);mk(w,null,.013);
+  const n=c.createBufferSource(),nf=c.createBiquadFilter();n.buffer=AU.noise;n.loop=true;nf.type='lowpass';nf.frequency.setValueAtTime(340,t);nf.frequency.linearRampToValueAtTime(130,t+dur);mk(n,nf,.1);
+  AU.dockHyd={N,G}}
+function dockHydStop(){const H=AU.dockHyd;if(!H)return;AU.dockHyd=null;try{const t=AU.ctx.currentTime;for(const g of H.G){g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(Math.max(.0001,g.gain.value),t);g.gain.linearRampToValueAtTime(.0001,t+.12)}for(const n of H.N)n.stop(t+.15)}catch(e){}}
 const SFX0={
   kinetic(v){thump(135,46,.12,.15*v);rumble(380,.09,.1*v)},
   laserNpc(v){thump(72,66,.2,.06*v,'sawtooth')},
@@ -1197,6 +1208,11 @@ const SFX0={
   mineOn(){thump(180,420,.18,.07,'square');rumble(700,.12,.06,2)},
   mineOff(){thump(400,140,.2,.06,'square')},
   ore(n){const f=[740,880,988,1175][n%4];thump(f,f*.98,.09,.06,'triangle');setTimeout(()=>thump(f*1.5,f*1.48,.07,.03,'sine'),35)},
+  dockGrab(){thump(88,48,.22,.17,'triangle');rumble(230,.18,.12);thump(48,96,1.7,.09,'triangle');[250,420].forEach(d=>setTimeout(()=>thump(1046,1040,.09,.045,'sine'),d))},
+  dockClamp(){thump(70,28,.55,.28);rumble(320,.35,.2,.9,90);thump(180,120,.09,.08,'square');setTimeout(()=>hiss(.7,.07),120)},
+  dockClank(i){thump(250+20*(i%2),180,.06,.05,'square');thump(78,42,.16,.1);rumble(500,.06,.05,1.6)},
+  dockSeal(){thump(54,22,.85,.32);rumble(200,.75,.26,.8,55);setTimeout(()=>hiss(1.2,.09),160);setTimeout(()=>{thump(784,780,.1,.05,'sine');setTimeout(()=>thump(1046,1042,.16,.05,'sine'),110)},700)},
+  dockAbort(){thump(330,160,.25,.07,'triangle');setTimeout(()=>thump(220,110,.3,.07,'triangle'),180)},
   crack(){thump(150,40,.5,.24);rumble(900,.35,.22,1,180);setTimeout(()=>rumble(400,.6,.16,.8,90),90)},
 };
 const SFX={};for(const k in SFX0)SFX[k]=(...a)=>{if(!MUTE)return SFX0[k](...a)};
@@ -1248,7 +1264,7 @@ function openWorld(sid){const o=W;
   const w=W;W=o;return w}
 function enterSector(sid){
   W=WORLDS[sid]||openWorld(sid);LW=W;
-  Object.assign(W,{lock:{p:0,locked:false,ref:null},flareCd:0,mslCd:0,tgt:null,jump:null,dead:0,capMsgT:0,hitDirs:[],bridge:null,hurt:0,shHit:0,shake:0});
+  Object.assign(W,{lock:{p:0,locked:false,ref:null},flareCd:0,mslCd:0,tgt:null,jump:null,dead:0,capMsgT:0,hitDirs:[],bridge:null,docking:null,hurt:0,shHit:0,shake:0});
   const P=S.player,st=shipStats(P.faction,P.cls,P.tiers,P.tune),q=q0();if(P.q){q.x=P.q[0];q.y=P.q[1];q.z=P.q[2];q.w=P.q[3]}
   W.player={type:'ship',isPlayer:true,id:'player',side:'player',fac:P.faction,cls:P.cls,st,x:P.x,y:P.y,z:P.z||0,vx:P.vx,vy:P.vy,vz:P.vz||0,q,hull:Math.min(P.hull,st.hull),shield:Math.min(P.shield,st.sCap),energy:Math.min(P.energy,st.eCap),cool:0,lastHit:-99,mineAcc:0,alive:true};
   W.ents.push(W.player);
@@ -1260,7 +1276,7 @@ function enterSector(sid){
 function addStationEnt(R){const k=STN[R.kind],TUR=[[0,104,0],[0,-104,0],[0,0,50],[0,0,-50],[50,0,0],[-50,0,0]],tr=W.tilt||(()=>q0());
   const e={type:'station',rec:R,q:tr(),sMax:R.sMax,shield:R.shield,offline:0,lastHit:-99,range:k.range,turrets:TUR.slice(0,k.tur).map(p=>({p,aim:{x:0,y:0,z:1},cool:rnd(.6)})),x:R.x,y:R.y,z:R.z,fac:R.owner,name:R.name,r:120,cool:0,core:R.kind!=='depot',kind:R.kind,sc:R.owner==='brood'&&R.kind==='depot'?.65:1};
   W.ents.push(e);W.stationEnt=e;return e}
-function exitSector(){
+function exitSector(){if(W&&W.docking){W.docking=null;dockHydStop()}
   if(!W)return;if(LW)W=LW;syncPlayer();const w=W;
   if(w.player){for(const d of w.player.drones||[])if(d.alive&&w.ents.includes(d))despawn(d);const i=w.ents.indexOf(w.player);if(i>=0)w.ents.splice(i,1);w.player.alive=false;w.player=null}
   w.bridge=null;w.gunseat=null;w.tgt=null;LW=null;
@@ -1930,7 +1946,7 @@ function updateLock(dt){const L=W.lock,P=S.player,p=W.player,T=lockable(W.tgt);
   if(ok){if(!L.locked){L.p+=dt/lockTime(P.tiers.weapon,CLASSES[P.cls].torp);if(L.p>=1){L.p=1;L.locked=true;SFX.beep(220,1.4);setTimeout(()=>SFX.beep(220,1.4),140);flash(CLASSES[P.cls].torp?'Torpedo lock. Press C to launch.':'Missile lock. Press C or middle-click to launch.')}}}
   else{L.locked=false;L.p=Math.max(0,L.p-dt*.5)}
   L.d=d}
-function fireMissile(){if(!W||!running||S.player.docked||W.dead)return;const P=S.player,L=W.lock;
+function fireMissile(){if(!W||!running||S.player.docked||W.dead||W.docking)return;const P=S.player,L=W.lock;
   if(P.rack<=0){flash(`${CLASSES[P.cls].torp?'Torpedoes':'Missiles'} reloading: ready in ${Math.ceil(P.mslT||0)} s.`,true);return}
   if(!L.locked||!L.ref){flash(lockable(W.tgt)?'No lock yet. Keep the target inside the lock ring.':'Target a hostile first (T, Q or G).',true);return}
   if(W.mslCd>0)return;W.mslCd=CLASSES[P.cls].torp?1.2:.5;P.rack--;if(NET.cl){netSend({t:'msl',tg:netTid(L.ref),k:'m'});SFX.missile(1,!!CLASSES[P.cls].torp)}else launchMissile(W.player,L.ref,P.tiers.weapon,CLASSES[P.cls].torp?'torpedo':'missile')}
@@ -2255,13 +2271,43 @@ function doJump(to){
 }
 function dockTarget(){const p=W.player;for(const e of W.ents){if((e.type==='station'||e.type==='outpost')&&d3(e,p)<290)return e}return null}
 function canDock(E){if(E.type==='station')return E.fac===S.player.faction||E.fac==='player';const o=E.o;return!o.breached&&(o.owner==='player'||o.owner===S.player.faction)}
-function tryDock(){if(!S.player.docked&&W&&W.player&&!W.dead){const gb=seatCandidate();if(gb&&!dockTarget())return enterSeat(gb)}
-  {const p=W.player,F=W.ents.find(e=>e.role==='frigate'&&e.tok&&fMine(e.tok)&&e.alive&&d3(e,p)<e.st.radius*1.25+320);if(F&&!dockTarget()){if(hyp(p.vx-F.vx,p.vy-F.vy,p.vz-F.vz)>140){flash('Match speed with the frigate to dock (under 140 m/s relative).');return false}enterBridge(F);return true}}
+function tryDock(){if(W&&W.docking){abortDocking('Docking aborted.');return false}
+  if(!S.player.docked&&W&&W.player&&!W.dead){const gb=seatCandidate();if(gb&&!dockTarget()){if(!seatOk(gb))return false;return startDocking(gb,'turret')}}
+  {const p=W.player,F=W.ents.find(e=>e.role==='frigate'&&e.tok&&fMine(e.tok)&&e.alive&&d3(e,p)<e.st.radius*1.25+320);if(F&&!dockTarget()){if(hyp(p.vx-F.vx,p.vy-F.vy,p.vz-F.vz)>140){flash('Match speed with the frigate to dock (under 140 m/s relative).');return false}return startDocking(F,'frigate')}}
   const E=dockTarget(),p=W.player;if(!E){flash('Nothing to dock with nearby.');return false}
   if(!canDock(E)){flash(E.type==='station'?'Hostile station. Docking refused.':E.o.owner?'This outpost is not yours or your faction\'s.':'Unclaimed outpost. Hold its ring with a Claim Beacon to claim it.',true);return false}
   if(hyp(p.vx,p.vy,p.vz)>180){flash('Too fast to dock. Slow below 180 m/s.');return false}
-  SFX.clunk();recallPlayerDrones();S.player.docked=E.type==='station'?'station':E.o.id;p.vx=p.vy=p.vz=0;p.x=E.x;p.y=E.y-E.r-40;p.z=E.z;W.tgt=null;ghostSync();if(NET.cl)netSend({t:'dock',d:S.player.docked});openDock();save();return true;
+  return startDocking(E,E.type);
 }
+function finishDock(E){const p=W.player;SFX.clunk();recallPlayerDrones();S.player.docked=E.type==='station'?'station':E.o.id;p.vx=p.vy=p.vz=0;p.x=E.x;p.y=E.y-E.r-40;p.z=E.z;W.tgt=null;ghostSync();if(NET.cl)netSend({t:'dock',d:S.player.docked});openDock();save();return true}
+function seatOk(e){const p=W.player;if(hyp(p.vx-e.vx,p.vy-e.vy,p.vz-e.vz)>140){flash('Match speed with the gunboat to board its turret (under 140 m/s relative).');return false}
+  if(e.tur&&e.tur.gunner&&e.tur.gunner!=='local'){flash('That turret is already manned.',true);return false}return true}
+// docking takes DOCK_T seconds: the ship is drawn up over the hangar, then lowered into it. You stay in space, and shootable, until it seals.
+const DOCK_T=window.__fastDock?.05:5,_dk={x:0,y:0,z:0};
+function dockUp(E){if(E.q)qRot(E.q,0,1,0,_dk);else{_dk.x=0;_dk.y=1;_dk.z=0}return _dk}
+function dockR(D){const E=D.E;return D.kind==='station'||D.kind==='outpost'?(E.r||95):E.st.radius*1.25}
+function dockValid(D){const E=D.E;if(D.kind==='station')return W.stationEnt===E&&canDock(E);if(D.kind==='outpost')return W.outpostEnt===E&&canDock(E);
+  if(!E.alive||!W.ents.includes(E))return false;if(D.kind==='turret')return!(E.tur&&E.tur.gunner&&E.tur.gunner!=='local');return true}
+function startDocking(E,kind){const p=W.player;apOn=false;W.docking={E,kind,t:0,st:0,ox:p.x-E.x,oy:p.y-E.y,oz:p.z-E.z};SFX.dockGrab();
+  flash(kind==='frigate'?`Docking with ${E.tok.name}: hangar lift in ${DOCK_T} s. E to abort.`:kind==='turret'?`Boarding the gunboat turret in ${DOCK_T} s. E to abort.`:`Docking clamps engaged: ${DOCK_T} s to the hangar. E to abort.`);return true}
+function abortDocking(msg){const D=W&&W.docking;if(!D)return;W.docking=null;dockHydStop();const p=W.player,E=D.E;p.vx=E.vx||0;p.vy=E.vy||0;p.vz=E.vz||0;SFX.dockAbort();if(msg)flash(msg,true)}
+function dockingUpdate(dt){const D=W.docking,p=W.player,E=D.E;pbuildTick(dt);
+  if(W.dead||!p.alive){W.docking=null;dockHydStop();return}
+  if(!dockValid(D)){abortDocking(D.kind==='frigate'?'Docking aborted: the frigate is gone.':D.kind==='turret'?'Boarding aborted.':'Docking aborted: clearance withdrawn.');return}
+  D.t+=dt;const R=dockR(D),u=dockUp(E),hA=R+(D.kind==='turret'?45:D.kind==='frigate'?90:130),hB=D.kind==='turret'?0:R*(D.kind==='frigate'?.12:.3);
+  const ax=E.x+u.x*hA,ay=E.y+u.y*hA,az=E.z+u.z*hA,bx=E.x+u.x*hB,by=E.y+u.y*hB,bz=E.z+u.z*hB,sm=k=>k*k*(3-2*k);let x,y,z;
+  if(D.t<2){const k=sm(D.t/2);x=E.x+D.ox+(ax-E.x-D.ox)*k;y=E.y+D.oy+(ay-E.y-D.oy)*k;z=E.z+D.oz+(az-E.z-D.oz)*k}
+  else{const k=sm(Math.min(1,(D.t-2)/(DOCK_T-2)));x=ax+(bx-ax)*k;y=ay+(by-ay)*k;z=az+(bz-az)*k}
+  p.x=x;p.y=y;p.z=z;p.vx=E.vx||0;p.vy=E.vy||0;p.vz=E.vz||0;p.thrusting=false;p.boosting=false;p.mining=null;
+  if(E.q)qSlerp(p.q,E.q,Math.min(1,dt*(D.t<2?1.6:4)));else levelRoll(p,dt);
+  if(D.st===0&&D.t>=2){D.st=1;SFX.dockClamp();dockHyd(DOCK_T-2)}
+  if(D.st>=1&&D.st<5&&D.t>=2+.65*D.st){D.st++;SFX.dockClank(D.st)}
+  if(D.t>=DOCK_T){W.docking=null;dockHydStop(true);SFX.dockSeal();
+    if(D.kind==='frigate')enterBridge(E);else if(D.kind==='turret'){if(!enterSeat(E))flash('Boarding failed.',true)}else finishDock(E)}}
+function drawDocking(c){const D=W.docking;if(!D)return;const k=Math.min(1,D.t/DOCK_T),w=Math.min(320,VW*.6),x=VW/2-w/2,y=VH*.72;
+  c.fillStyle='rgba(4,10,18,.65)';c.fillRect(x-10,y-26,w+20,46);c.fillStyle='rgba(111,183,255,.25)';c.fillRect(x,y,w,8);c.fillStyle='#6fb7ff';c.fillRect(x,y,w*k,8);
+  c.font='700 13px "Big Shoulders Display",sans-serif';c.textAlign='center';c.fillStyle='#cfe6ff';
+  c.fillText(`${D.kind==='turret'?'BOARDING TURRET':D.t<2?'DOCKING · ALIGNING OVER HANGAR':'DOCKING · LOWERING INTO HANGAR'}  ${Math.max(0,DOCK_T-D.t).toFixed(1)} s  ·  E TO ABORT`,VW/2,y-9)}
 function undock(){const P=S.player;if(!P.docked)return;setTimeout(launchPlayerDrones,0);SFX.clunk();const E=P.docked==='station'?W.stationEnt:W.outpostEnt;P.docked=null;const p=W.player;const o=rdir(.8);p.x=E.x+o.x*(E.r+90);p.y=E.y+o.y*(E.r+90);p.z=E.z+o.z*(E.r+90);p.vx=o.x*120;p.vy=o.y*120;p.vz=o.z*120;faceInstant(p,o.x,o.y,o.z);cam.snap=true;$('dock').hidden=true;p.alive=true;if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]});save()}
 let flashMsg=null;
 function flash(m,alert){if(CTX&&NET.host&&CTX!==NET.me){netMsg(CTX,'flash',m,alert);return}if(MUTE&&!CTX)return;flashMsg={m,alert,t:performance.now()}}
@@ -2340,13 +2386,13 @@ function worldUpdate(dt){
   if(W.pendingFJump){const J=W.pendingFJump;W.pendingFJump=null;bridgeJump(J.tok,J.to);return}
   if(W.bridge)bridgeUpdate(dt);
   if(W.gunseat)gunseatUpdate(dt);
-  if(JIN.t<JIN.d)JIN.t+=dt;if(!W.jump&&JIN.t>=.45)playerUpdate(dt);else if(!W.jump)levelRoll(W.player,dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}}
+  if(JIN.t<JIN.d)JIN.t+=dt;if(W.docking&&!W.jump)dockingUpdate(dt);else if(!W.jump&&JIN.t>=.45)playerUpdate(dt);else if(!W.jump)levelRoll(W.player,dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}}
   if(NET.cl){clientWorld(dt);return}
   if(NET.host)netWorld(dt);
   groupsUpdate();
   for(const e of W.ents.slice()){if(e.npc&&e.alive)npcThink(e,dt)}
   for(const e of gunboatsIn())tickTurret(e,dt);
-  for(const e of W.ents.slice()){if(e.type==='ship'&&e.alive&&!(e.isPlayer&&(S.player.docked||W.dead)))physics(e,dt)}
+  for(const e of W.ents.slice()){if(e.type==='ship'&&e.alive&&!(e.isPlayer&&(S.player.docked||W.dead||W.docking)))physics(e,dt)}
   structUpdate(dt);shotsUpdate(dt);missilesUpdate(dt);
   for(let i=W.fx.length-1;i>=0;i--){const f=W.fx[i];f.life-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.z+=f.vz*dt;f.vx*=.985;f.vy*=.985;f.vz*=.985;if(f.life<=0)W.fx.splice(i,1)}
   W.popT-=dt;if(W.popT<=0){W.popT=3.5;populate(false)}
@@ -2824,6 +2870,7 @@ function drawOverlay(){
   if(W.bridge){drawBridgeOverlay(c,t);return}
   if(W.gunseat){drawGunnerOverlay(c,t);return}
   if(S.player.docked||W.dead)return;
+  drawDocking(c);
   if(W.shHit)vignette(c,'111,183,255',W.shHit*1.3);
   const crit=p.hull<p.st.hull*.35;
   if(p.shield<=.5||crit)vignette(c,'255,93,79',(crit?.55:.36)+(crit?.22:.16)*Math.sin(t*(crit?9:6)));
@@ -3091,6 +3138,7 @@ function hudUpdate(){
   $('hBR').innerHTML=th;
   let pr='',alert=false;
   if(flashMsg&&performance.now()-flashMsg.t<2600){pr=flashMsg.m;alert=flashMsg.alert}
+  else if(W.docking)pr='';
   else if(!P.docked&&!W.dead){const E=dockTarget();if(E){if(canDock(E))pr=`${coarse?'Act':'E'} — dock at ${E.type==='station'?E.name:E.o.name}`;else if(E.type==='outpost'&&(!E.o.owner||E.o.breached))pr=(P.cargo.beacon?'Hold the ring to claim this outpost.':'You need a Claim Beacon in your hold to claim this outpost.')}}
   $('hPrompt').innerHTML=pr?`<span class="${alert?'alert':''}">${esc(pr)}</span>`:'';
   renderFeed();drawRadar();
@@ -3785,7 +3833,7 @@ function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.p
     p.hull=h;p.shield=sh}}
 // between snapshots: glide every remote ship along its velocity and ease it onto the host's position
 function clientWorld(dt){const w=W,p=w.player;
-  if(p&&p.alive&&!S.player.docked&&!w.dead)physics(p,dt);
+  if(p&&p.alive&&!S.player.docked&&!w.dead&&!w.docking)physics(p,dt);
   for(const id in w.pup||{}){const e=w.pup[id];const age=w.t-(e.snapAt||w.t),tx=e.tx+e.vx*age,ty=e.ty+e.vy*age,tz=e.tz+e.vz*age,k=Math.min(1,9*dt);
     e.x+=e.vx*dt;e.y+=e.vy*dt;e.z+=e.vz*dt;e.x+=(tx-e.x)*k;e.y+=(ty-e.y)*k;e.z+=(tz-e.z)*k;if(e.tq)qSlerp(e.q,e.tq,Math.min(1,12*dt))}
   shotsUpdate(dt);
