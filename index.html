@@ -1162,7 +1162,8 @@ function chatterRun(){if(!auOK()||!AU.on.sfx||!voice(3))return;const c=AU.ctx;le
 function bridgeAmb(dt,F){W.ambT=(W.ambT===undefined?2:W.ambT)-dt;if(W.ambT>0)return;const r=Math.random();if(r<.55)SFX.cbeep();else SFX.chatter();W.ambT=r<.55?1.6+Math.random()*4:3.5+Math.random()*6;
   const T=F.tok;if(NET.cl&&T&&T.spin){const B=W.bridge;if(B)B.spinRef=B.spinRef}}
 // jump-drive countdown: a low drum that quickens and swells from spin-up to the jump
-function drumTick(e,p,dt){if(MUTE)return;const v=vAt(e);if(v<.03)return;if(!AU.whirIn||v>AU.whirIn.v)AU.whirIn={p,v}}
+// the jump-drive whir is only for your own frigates: the one you're aboard, or one of yours close by (AI frigates spin up often and would drone on)
+function drumTick(e,p,dt){if(MUTE)return;const aboard=W&&W.bridge&&W.bridge.f===e;if(!aboard&&!(e.tok&&fMine(e.tok)))return;const v=aboard?1:vAt(e);if(v<.15)return;if(!AU.whirIn||v>AU.whirIn.v)AU.whirIn={p,v}}
 function vAt(p){if(!W||!p)return 1;const d=hyp(p.x-cam.x,p.y-cam.y,p.z-cam.z);return 1/(1+Math.pow(d/450,1.5))}
 function voice(dur){if(AU.voices>26)return false;AU.voices++;setTimeout(()=>AU.voices--,dur*1000+60);return true}
 function envG(g,t,a,peak,dec){g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dec)}
