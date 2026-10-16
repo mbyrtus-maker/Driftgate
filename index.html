@@ -1439,7 +1439,7 @@ function bridgeDetail(g,FL,WL,TR,DK){bridgeSkin(g,FL,WL,TR,DK);const D2=[.13,.14
   for(let i=0;i<7;i++)g.set(12.2+i*.8,.5,-14.55,qAxis(0,0,1,.7,q0())).box(.35,1,.06,i%2?[.1,.1,.1]:AM,i%2?0:.6);
   for(const s of[-1,1])g.set(15+s*2.75,4,-14.55).box(.35,8,.08,AM,.5)}
 function bridgeOrigin(F){const k=F.st.radius*1.25;qRot(F.q,BRIDGE.off[0]*k,BRIDGE.off[1]*k,BRIDGE.off[2]*k,_u);return{x:F.x+_u.x,y:F.y+_u.y,z:F.z+_u.z}}
-function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id});W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};cam.snap=true;closeConsole();SFX.clunk();flash(`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok)}
+function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id});W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();flash(`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok)}
 function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q);cam.snap=true;SFX.clunk();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
 function bridgeNear(){const B=W.bridge;if(!B||B.seat)return null;let best=null,bd=1e9;for(const c of BRIDGE.cons){const d=Math.hypot(c.x-B.x,(c.id==='hatch'?c.z-3:c.z)-B.z);if(d<(BR_REACH[c.id]||5.5)&&d<bd){bd=d;best=c}}return best}
 function bridgeUpdate(dt){const B=W.bridge,F=B.f,p=W.player;if(NET.cl&&(!F.alive||!W.ents.includes(F))){MP.fjB={id:F.tokId,keep:{x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch,seat:B.seat,fy:B.fy},at:performance.now()};closeConsole();W.bridge=null;return}
@@ -1778,7 +1778,7 @@ function gsEnt(){const G=W&&W.gunseat;if(!G)return null;if(G.ent&&G.ent.alive&&(
 function seatCandidate(){if(!W||!W.player)return null;const p=W.player;let best=null,bd=1e9;for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.cls!=='gunboat'||e===p||e.isPlayer)continue;if(hostile('player',e.side))continue;const d=d3(e,p);if(d<e.st.radius*1.25+260&&d<bd){bd=d;best=e}}return best}
 function enterSeat(e){const p=W.player;if(hyp(p.vx-e.vx,p.vy-e.vy,p.vz-e.vz)>140){flash('Match speed with the gunboat to board its turret (under 140 m/s relative).');return false}
   if(e.tur&&e.tur.gunner&&e.tur.gunner!=='local'){flash('That turret is already manned.',true);return false}
-  const T=turretOf(e);W.gunseat={ent:e,id:e.id,yaw:T.yaw,pitch:T.pitch,msl:0};S.player.docked='turret';recallPlayerDrones();cam.snap=true;SFX.clunk();
+  const T=turretOf(e);W.gunseat={ent:e,id:e.id,yaw:T.yaw,pitch:T.pitch,msl:0};S.player.docked='turret';ghostSync();recallPlayerDrones();cam.snap=true;SFX.clunk();
   if(NET.cl)netSend({t:'gseat',id:e.id});else{T.gunner='local';if(e.npc&&e.order&&e.order.tgt===W.player){e.order=null;e.ai.tgt=null}}
   flash(`In the turret of ${e.pname?e.pname+'\'s gunboat':shipLabel(e)}. Mouse aims, click or Space fires, C launches a missile, E climbs out.`);return true}
 function leaveSeat(quiet){const G=W.gunseat;if(!G)return;freeLook();const e=gsEnt(),p=W.player;W.gunseat=null;S.player.docked=null;
@@ -1821,7 +1821,7 @@ function fireLaser(e){if(e.cool>0)return;const cost=e.st.shotCost*1.6;
   if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg,e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1,e.side,'laser');if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
-  if(!e.alive||e.inJump)return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;
+  if(!e.alive||e.inJump||e.ghost)return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;
   if(e.cls==='frigate'){const k=kind||(at&&at.kind);if(k==='torpedo'){dmg*=4;stat('torpHit');stat('torpDmg',dmg)}else if(k!=='capital'){if(e.shield>0){e.shield=Math.max(0,e.shield-dmg*.6);e.shHitT=W.t;e.shHitA=.5;fxSpark(at||e,'#8fc8ff',3)}else{fxSpark(at||e,'#ffd9a0',2);if(srcSide==='player'&&W.t-(W.capT||-99)>8){W.capT=W.t;flash('Frigate armour shrugs off fighter weapons: guns drain its shield, only torpedoes break the hull.',true)}}return}}
   if(e.isPlayer&&at&&srcSide){let dx,dy,dz;if(at.src&&at.src.x!==undefined&&at.vx===undefined){dx=at.src.x-e.x;dy=at.src.y-e.y;dz=at.src.z-e.z}else if(at.vx!==undefined){dx=-at.vx;dy=-at.vy;dz=-at.vz}else{dx=at.x-e.x;dy=at.y-e.y;dz=at.z-e.z}
     const l=hyp(dx,dy,dz)||1;W.hitDirs=(W.hitDirs||[]).filter(h=>W.t-h.t<1.3);W.hitDirs.push({x:dx/l,y:dy/l,z:dz/l,t:W.t})}
@@ -1846,7 +1846,7 @@ function killShip(e,src,at){
   const crate={};for(const k in e.load){const m=Math.min(e.load[k],Math.floor(e.load[k]*.5+Math.random()*.6));if(m)crate[k]=m;const rest=e.load[k]-m;if(rest>0)toDebris(s,{[k]:rest})}
   inv.addAll(crate,e.cargo);e.load={};e.cargo={};
   if(Object.keys(crate).length)s.crates.push({id:S.nextId++,x:Math.round(e.x),y:Math.round(e.y),z:Math.round(e.z),inv:crate,until:S.T+300});
-  W.ents.splice(W.ents.indexOf(e),1);if(W.tgt&&W.tgt.ref===e)W.tgt=null;
+  {const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null;
   const kp=at&&at.src&&at.src.rp;if(src==='player'||kp)runAs(kp,()=>{S.player.kills++;const b=transfer(S.player.faction,'player',e.role==='drone'?10:e.role==='frigate'?600:25+20*e.tier);feed(`${e.side==='pirate'?'Unbound':FACTIONS[e.side].short} ${e.role==='miner'?'miner':e.role==='hauler'?'hauler':e.role==='builder'?'constructor':e.role==='drone'?'drone':e.role==='frigate'?'FRIGATE':'fighter'} destroyed.${b?` Bounty +${b} cr.`:''}`,'good')})
 }
 function playerDeath(p0){
@@ -1994,7 +1994,7 @@ function npcGateJump(e,g,dt,urgency){const d=gateAxis(g);
 function nearestGate(e){let b=null,bd=1e9;for(const g of GATES[W.sid]){const d=d3(g,e);if(d<bd){bd=d;b=g}}return b}
 function despawn(e){if(e.drones)for(const d of e.drones)if(d.alive&&W.ents.includes(d)){fxWarp(d,sideCol(d.side));d.mom=null;despawn(d)}
   if(e.escortG){e.escortG.escort=null;for(const m of grpAlive(e.escortG))if(m.role==='escort'){m.role='patrol';m.ai.retireAt=W.t+25}}
-  returnHome(e);e.alive=false;W.ents.splice(W.ents.indexOf(e),1);if(W.tgt&&W.tgt.ref===e)W.tgt=null}
+  returnHome(e);e.alive=false;{const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null}
 function npcThink(e,dt){
   const ai=e.ai,s=S.sectors[W.sid];ai.t-=dt;e.life+=dt;e.mining=null;e.thrusting=false;
   if(e.role==='drone'){droneThink(e,dt);return}
@@ -2260,7 +2260,7 @@ function tryDock(){if(!S.player.docked&&W&&W.player&&!W.dead){const gb=seatCandi
   const E=dockTarget(),p=W.player;if(!E){flash('Nothing to dock with nearby.');return false}
   if(!canDock(E)){flash(E.type==='station'?'Hostile station. Docking refused.':E.o.owner?'This outpost is not yours or your faction\'s.':'Unclaimed outpost. Hold its ring with a Claim Beacon to claim it.',true);return false}
   if(hyp(p.vx,p.vy,p.vz)>180){flash('Too fast to dock. Slow below 180 m/s.');return false}
-  SFX.clunk();recallPlayerDrones();S.player.docked=E.type==='station'?'station':E.o.id;p.vx=p.vy=p.vz=0;p.x=E.x;p.y=E.y-E.r-40;p.z=E.z;W.tgt=null;if(NET.cl)netSend({t:'dock',d:S.player.docked});openDock();save();return true;
+  SFX.clunk();recallPlayerDrones();S.player.docked=E.type==='station'?'station':E.o.id;p.vx=p.vy=p.vz=0;p.x=E.x;p.y=E.y-E.r-40;p.z=E.z;W.tgt=null;ghostSync();if(NET.cl)netSend({t:'dock',d:S.player.docked});openDock();save();return true;
 }
 function undock(){const P=S.player;if(!P.docked)return;setTimeout(launchPlayerDrones,0);SFX.clunk();const E=P.docked==='station'?W.stationEnt:W.outpostEnt;P.docked=null;const p=W.player;const o=rdir(.8);p.x=E.x+o.x*(E.r+90);p.y=E.y+o.y*(E.r+90);p.z=E.z+o.z*(E.r+90);p.vx=o.x*120;p.vy=o.y*120;p.vz=o.z*120;faceInstant(p,o.x,o.y,o.z);cam.snap=true;$('dock').hidden=true;p.alive=true;if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]});save()}
 let flashMsg=null;
@@ -2324,9 +2324,17 @@ function shotsUpdate(dt){
     if(!hit)for(const a of s.ast){if(d3(a,b)<astR(a)){fxSpark(b,'#b9ab96',2);hit=true;break}}
     if(hit)W.shots.splice(i,1)}
 }
+// while docked (station, outpost, frigate bridge or gunboat turret) the player's fighter is taken out of space entirely:
+// nothing can see, target, hit or render it, and every AI that had it locked drops the lock at once
+function ghostSync(){const p=W&&W.player;if(!p)return;const i=W.ents.indexOf(p);
+  if(S.player.docked){p.ghost=true;if(i>=0){W.ents.splice(i,1);unTargetPlayer(p)}}
+  else{p.ghost=false;if(i<0&&p.alive&&!W.dead)W.ents.push(p)}}
+function unTargetPlayer(p){for(const e of W.ents){if(e.ai&&e.ai.tgt===p){e.ai.tgt=null;e.ai.t=0;e.ai.lock=0}if(e.ai&&e.ai.hunt===p)e.ai.hunt=null;if(e.tur&&e.tur.ai&&e.tur.ai.tgt===p)e.tur.ai.tgt=null}
+  for(const m of W.missiles)if(m.tgt===p)m.tgt=null;if(W.hitDirs)W.hitDirs.length=0}
 function worldUpdate(dt){
   W.t+=dt;W.fdt=dt;const loc=W===LW&&W.player;
   if(loc){
+  ghostSync();
   if(W.dead){if(W.t-W.dead>3.2){respawn();return}}
   if(W.jump){const J=W.jump;J.t+=dt;gateTransit(J,dt);if(J.t>JUMP_OUT){const to=J.to;W.jump=null;$('fade').style.opacity=1;doJump(to);JIN.t=0;SFX.jump();return}}
   if(W.pendingFJump){const J=W.pendingFJump;W.pendingFJump=null;bridgeJump(J.tok,J.to);return}
