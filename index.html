@@ -1871,8 +1871,10 @@ function bridgeLight(d){const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return
       f=wall*flo*cei*pool;
     d[i+6]*=f;d[i+7]*=f;d[i+8]*=f}}
 function bridgeOrigin(F){const k=F.st.radius*1.25;qRot(F.q,BRIDGE.off[0]*k,BRIDGE.off[1]*k,BRIDGE.off[2]*k,_u);return{x:F.x+_u.x,y:F.y+_u.y,z:F.z+_u.z}}
-function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id});W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok)}
-function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q);cam.snap=true;SFX.clunk();SFX.hatch();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
+function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id,slot:S.player.bslot|0});if(NET.host)S.hostAtt={id:F.tok&&F.tok.id,slot:S.player.bslot|0,cls:S.player.cls,fac:S.player.faction};W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok)}
+function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;if(NET.host)S.hostAtt=null;const bp=F.alive?berthPose(F,S.player.bslot|0,S.player.cls,_bp):null;
+  if(bp){p.x=bp.x;p.y=bp.y;p.z=bp.z;qCopy(p.q,bp.q);p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;W.detach={F,slot:S.player.bslot|0,t:0};flash('Releasing the hull clamps…')}
+  else{qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q)}cam.snap=true;SFX.clunk();SFX.hatch();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
 function bridgeNear(){const B=W.bridge;if(!B||B.seat)return null;let best=null,bd=1e9;for(const c of BRIDGE.cons){const d=Math.hypot(c.x-B.x,(c.id==='hatch'?c.z-3:c.z)-B.z);if(d<(BR_REACH[c.id]||5.5)&&d<bd){bd=d;best=c}}return best}
 function bridgeUpdate(dt){const B=W.bridge,F=B.f,p=W.player;if(NET.cl&&(!F.alive||!W.ents.includes(F))){MP.fjB={id:F.tokId,keep:{x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch,seat:B.seat,fy:B.fy},at:performance.now()};closeConsole();W.bridge=null;return}
   if(!F.alive||!W.ents.includes(F)){W.bridge=null;S.player.docked=null;closeConsole();flash('The frigate is gone. Your fighter is adrift.',true);return}
@@ -2283,7 +2285,7 @@ function fireLaser(e){if(e.cool>0)return;const cost=e.st.shotCost*1.6;
   if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg,e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1,e.side,'laser');if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
-  if(!e.alive||e.inJump||e.ghost)return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;
+  if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&W.detach))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;
   if(e.cls==='frigate'){const k=kind||(at&&at.kind);if(k==='torpedo'){dmg*=4;stat('torpHit');stat('torpDmg',dmg)}else if(k!=='capital'){if(e.shield>0){e.shield=Math.max(0,e.shield-dmg*.6);e.shHitT=W.t;e.shHitA=.5;fxSpark(at||e,'#8fc8ff',3)}else{fxSpark(at||e,'#ffd9a0',2);if(srcSide==='player'&&W.t-(W.capT||-99)>8){W.capT=W.t;flash('Frigate armour shrugs off fighter weapons: guns drain its shield, only torpedoes break the hull.',true)}}return}}
   if(e.isPlayer&&at&&srcSide){let dx,dy,dz;if(at.src&&at.src.x!==undefined&&at.vx===undefined){dx=at.src.x-e.x;dy=at.src.y-e.y;dz=at.src.z-e.z}else if(at.vx!==undefined){dx=-at.vx;dy=-at.vy;dz=-at.vz}else{dx=at.x-e.x;dy=at.y-e.y;dz=at.z-e.z}
     const l=hyp(dx,dy,dz)||1;W.hitDirs=(W.hitDirs||[]).filter(h=>W.t-h.t<1.3);W.hitDirs.push({x:dx/l,y:dy/l,z:dz/l,t:W.t})}
@@ -2746,13 +2748,36 @@ function portsW(E){const nm=portName(E),P=nm&&mdlPorts(nm);if(!P)return null;con
   const q=isSt?(E.q||q0()):qMul(E.q||q0(),qAxis(0,1,0,W.t*.03,_dpq2),_dpq);
   return P.map(v=>{qRot(q,v[0]*k,v[1]*k,v[2]*k,_dpv);const x=E.x+_dpv.x,y=E.y+_dpv.y,z=E.z+_dpv.z;qRot(q,v[0],0,v[2],_dpv);const l=hyp(_dpv.x,_dpv.y,_dpv.z)||1;return{x,y,z,dx:_dpv.x/l,dy:_dpv.y/l,dz:_dpv.z/l}})}
 function nearestPort(E,pos){const L=portsW(E);if(!L)return-1;let b=0,bd=1e18;L.forEach((p,i)=>{const d=(p.x-pos.x)**2+(p.y-pos.y)**2+(p.z-pos.z)**2;if(d<bd){bd=d;b=i}});return b}
+// ---- frigate hull berths: a pilot's ship docks flush against an open stretch of the frigate's bow (right, left, belly or
+// top), belly to the plating. While its pilot is on the bridge the ship is drawn as part of the frigate (no hit box, so it
+// can't be harmed); leaving the bridge releases the clamps and the ship drifts clear before the pilot takes the stick.
+const BERTHS=[[1,0,0],[-1,0,0],[0,-1,0],[0,1,0]],BERTH_Z=.6,BERTH_LIFT=[.05,.06,.07],_bv1={x:0,y:0,z:0},_bq1=q0(),_bp={x:0,y:0,z:0,q:q0()},_bp2={x:0,y:0,z:0,q:q0()};let BERTH_C=null;
+function frigBerths(){if(BERTH_C)return BERTH_C;const M=MDL.ready&&MDL.i.frigate;if(!M)return null;const P=new Int16Array(MDL.b,M.o,M.n*9);
+  BERTH_C=BERTHS.map(n=>{let m=0;for(let i=0;i<M.n*3;i++){const x=P[i*3]/32767,y=P[i*3+1]/32767,z=P[i*3+2]/32767;if(Math.abs(z-BERTH_Z)>.16||(n[0]?Math.abs(y):Math.abs(x))>.07)continue;const d=x*n[0]+y*n[1];if(d>m)m=d}return{n,s:m}});return BERTH_C}
+// where berth i puts a ship of class cls on frigate F right now: position, orientation and the outward normal
+function berthPose(F,i,cls,out){const B=frigBerths();if(!B)return null;const b=B[i&3],k=F.st.radius*1.25,sc=(CLASSES[cls]||CLASSES.interceptor).radius*1.25,g=b.s*k+sc*.34;
+  qRot(F.q,b.n[0]*g,b.n[1]*g,BERTH_Z*k,_bv1);out.x=F.x+_bv1.x;out.y=F.y+_bv1.y;out.z=F.z+_bv1.z;
+  qLook(0,0,1,b.n[0],b.n[1],b.n[2],_bq1);qMul(F.q,_bq1,out.q);qRot(F.q,b.n[0],b.n[1],b.n[2],_bv1);out.nx=_bv1.x;out.ny=_bv1.y;out.nz=_bv1.z;return out}
+function nearestBerth(F,pos,cls){if(!frigBerths())return null;let b=0,bd=1e18;for(let i=0;i<4;i++){const o=berthPose(F,i,cls,_bp2),d=(o.x-pos.x)**2+(o.y-pos.y)**2+(o.z-pos.z)**2;if(d<bd){bd=d;b=i}}return b}
+// every ship berthed on a frigate in this sector: yours, other pilots' (synced from the host), and the host's own
+function drawBerthed(){const fr=W.ents.filter(e=>e.role==='frigate'&&e.alive&&e.tok);if(!fr.length||!frigBerths())return;const list=[];
+  if(W.bridge&&W.bridge.f.alive)list.push([W.bridge.f,S.player.bslot|0,S.player.cls,S.player.faction]);
+  if(NET.on){const me=NET.cl?MP.pid:NET.me;for(const pid in S.pilots||{}){if(pid===me)continue;const P=S.pilots[pid];if(P.docked!=='bridge'||P.bridgeId==null)continue;const F=fr.find(e=>e.tok.id===P.bridgeId);if(F)list.push([F,P.bslot|0,P.cls,P.faction])}
+    const H=S.hostAtt;if(NET.cl&&H){const F=fr.find(e=>e.tok.id===H.id);if(F)list.push([F,H.slot|0,H.cls,H.fac])}}
+  for(const[F,i,cls,fac]of list){const bp=berthPose(F,i,cls,_bp2);if(!bp||!inView(bp.x,bp.y,bp.z,80))continue;const sc=CLASSES[cls].radius*1.25,m=shipMesh(fac,cls);mModel(MM,bp.x,bp.y,bp.z,bp.q,sc,sc,sc);drawMesh(m.hull,MM,ONE3,BERTH_LIFT);drawMesh(m.rim,MM)}}
+function detachUpdate(dt){const D=W.detach,p=W.player,F=D.F;D.t+=dt;if(!F.alive||!W.ents.includes(F)){W.detach=null;return}
+  const bp=berthPose(F,D.slot,S.player.cls,_bp);if(!bp){W.detach=null;return}const sc=p.st.radius*1.25,T=1.8,k=Math.min(1,D.t/T),e=k*k*(3-2*k),dist=sc*2.4+40;
+  p.x=bp.x+bp.nx*dist*e;p.y=bp.y+bp.ny*dist*e;p.z=bp.z+bp.nz*dist*e;p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;p.thrusting=false;p.boosting=false;p.mining=null;
+  if(D.t<.45)qCopy(p.q,bp.q);else qSlerp(p.q,F.q,Math.min(1,dt*2.4));
+  if(!D.st&&D.t>.05){D.st=1;SFX.dockClamp()}
+  if(k>=1){W.detach=null;p.vx=F.vx+bp.nx*70;p.vy=F.vy+bp.ny*70;p.vz=F.vz+bp.nz*70;flash('Clear of the frigate. You have the stick.')}}
 // docking takes DOCK_T seconds: the ship is drawn up over the hangar, then lowered into it. You stay in space, and shootable, until it seals.
 const DOCK_T=window.__fastDock?.05:5,_dk={x:0,y:0,z:0},_dkq=q0();
 function dockUp(E){if(E.q)qRot(E.q,0,1,0,_dk);else{_dk.x=0;_dk.y=1;_dk.z=0}return _dk}
 function dockR(D){const E=D.E;return D.kind==='station'||D.kind==='outpost'?(E.r||95):E.st.radius*1.25}
 function dockValid(D){const E=D.E;if(D.kind==='station')return W.stationEnt===E&&canDock(E);if(D.kind==='outpost')return W.outpostEnt===E&&canDock(E);
   if(!E.alive||!W.ents.includes(E))return false;if(D.kind==='turret')return!(E.tur&&E.tur.gunner&&E.tur.gunner!=='local');return true}
-function startDocking(E,kind){const p=W.player;apOn=false;W.docking={E,kind,t:0,st:0,ox:p.x-E.x,oy:p.y-E.y,oz:p.z-E.z,port:null};if(kind==='station'||kind==='outpost'){const pi=nearestPort(E,p);if(pi>=0)W.docking.port=pi}SFX.dockGrab();
+function startDocking(E,kind){const p=W.player;apOn=false;W.docking={E,kind,t:0,st:0,ox:p.x-E.x,oy:p.y-E.y,oz:p.z-E.z,port:null};if(kind==='station'||kind==='outpost'){const pi=nearestPort(E,p);if(pi>=0)W.docking.port=pi}if(kind==='frigate')W.docking.berth=nearestBerth(E,p,S.player.cls);SFX.dockGrab();
   flash(kind==='frigate'?`Docking with ${E.tok.name}: hangar lift in ${DOCK_T} s. E to abort.`:kind==='turret'?`Boarding the gunboat turret in ${DOCK_T} s. E to abort.`:`Docking clamps engaged: ${DOCK_T} s to the hangar. E to abort.`);return true}
 function abortDocking(msg){const D=W&&W.docking;if(!D)return;W.docking=null;dockHydStop();const p=W.player,E=D.E;p.vx=E.vx||0;p.vy=E.vy||0;p.vz=E.vz||0;SFX.dockAbort();if(msg)flash(msg,true)}
 function dockingUpdate(dt){const D=W.docking,p=W.player,E=D.E;pbuildTick(dt);
@@ -2760,7 +2785,10 @@ function dockingUpdate(dt){const D=W.docking,p=W.player,E=D.E;pbuildTick(dt);
   if(!dockValid(D)){abortDocking(D.kind==='frigate'?'Docking aborted: the frigate is gone.':D.kind==='turret'?'Boarding aborted.':'Docking aborted: clearance withdrawn.');return}
   D.t+=dt;const R=dockR(D),u=dockUp(E),pt=D.port!=null?(portsW(E)||[])[D.port]:null,sm=k=>k*k*(3-2*k);let ax,ay,az,bx,by,bz,tq=null,x,y,z;
   // stations and outposts: hold off the tip of the nearest arm, turn nose-in, then slide onto the tip and lock
-  if(pt){const sc=p.st.radius*1.25,fa=sc*2.4+40,fb=sc*1.05;ax=pt.x+pt.dx*fa;ay=pt.y+pt.dy*fa;az=pt.z+pt.dz*fa;bx=pt.x+pt.dx*fb;by=pt.y+pt.dy*fb;bz=pt.z+pt.dz*fb;tq=qLook(-pt.dx,-pt.dy,-pt.dz,u.x,u.y,u.z,_dkq)}
+  const bF=D.kind==='frigate'&&D.berth!=null?berthPose(E,D.berth,S.player.cls,_bp):null;
+  // frigates: hold off an open stretch of the bow, roll belly-to-hull, then the clamps draw the ship flush against the plating
+  if(bF){const fa=p.st.radius*1.25*2.6+50;ax=bF.x+bF.nx*fa;ay=bF.y+bF.ny*fa;az=bF.z+bF.nz*fa;bx=bF.x;by=bF.y;bz=bF.z;tq=bF.q}
+  else if(pt){const sc=p.st.radius*1.25,fa=sc*2.4+40,fb=sc*1.05;ax=pt.x+pt.dx*fa;ay=pt.y+pt.dy*fa;az=pt.z+pt.dz*fa;bx=pt.x+pt.dx*fb;by=pt.y+pt.dy*fb;bz=pt.z+pt.dz*fb;tq=qLook(-pt.dx,-pt.dy,-pt.dz,u.x,u.y,u.z,_dkq)}
   else{const hA=R+(D.kind==='turret'?45:D.kind==='frigate'?90:130),hB=D.kind==='turret'?0:R*(D.kind==='frigate'?.12:.3);ax=E.x+u.x*hA;ay=E.y+u.y*hA;az=E.z+u.z*hA;bx=E.x+u.x*hB;by=E.y+u.y*hB;bz=E.z+u.z*hB}
   if(D.t<2){const k=sm(D.t/2);x=E.x+D.ox+(ax-E.x-D.ox)*k;y=E.y+D.oy+(ay-E.y-D.oy)*k;z=E.z+D.oz+(az-E.z-D.oz)*k}
   else{const k=sm(Math.min(1,(D.t-2)/(DOCK_T-2)));x=ax+(bx-ax)*k;y=ay+(by-ay)*k;z=az+(bz-az)*k}
@@ -2769,11 +2797,11 @@ function dockingUpdate(dt){const D=W.docking,p=W.player,E=D.E;pbuildTick(dt);
   if(D.st===0&&D.t>=2){D.st=1;SFX.dockClamp();dockHyd(DOCK_T-2)}
   if(D.st>=1&&D.st<5&&D.t>=2+.65*D.st){D.st++;SFX.dockClank(D.st)}
   if(D.t>=DOCK_T){W.docking=null;dockHydStop(true);SFX.dockSeal();
-    if(D.port!=null)W.dockPort=D.port;if(D.kind==='frigate')enterBridge(E);else if(D.kind==='turret'){if(!enterSeat(E))flash('Boarding failed.',true)}else finishDock(E)}}
+    if(D.port!=null)W.dockPort=D.port;if(D.berth!=null)S.player.bslot=D.berth;if(D.kind==='frigate')enterBridge(E);else if(D.kind==='turret'){if(!enterSeat(E))flash('Boarding failed.',true)}else finishDock(E)}}
 function drawDocking(c){const D=W.docking;if(!D)return;const k=Math.min(1,D.t/DOCK_T),w=Math.min(320,VW*.6),x=VW/2-w/2,y=VH*.72;
   c.fillStyle='rgba(4,10,18,.65)';c.fillRect(x-10,y-26,w+20,46);c.fillStyle='rgba(111,183,255,.25)';c.fillRect(x,y,w,8);c.fillStyle='#6fb7ff';c.fillRect(x,y,w*k,8);
   c.font='700 13px "Big Shoulders Display",sans-serif';c.textAlign='center';c.fillStyle='#cfe6ff';
-  c.fillText(`${D.kind==='turret'?'BOARDING TURRET':D.port!=null?(D.t<2?'DOCKING · LINING UP ON THE ARM':'DOCKING · ARM CLAMPS DRAWING YOU IN'):D.t<2?'DOCKING · ALIGNING OVER HANGAR':'DOCKING · LOWERING INTO HANGAR'}  ${Math.max(0,DOCK_T-D.t).toFixed(1)} s  ·  E TO ABORT`,VW/2,y-9)}
+  c.fillText(`${D.kind==='turret'?'BOARDING TURRET':D.berth!=null?(D.t<2?'DOCKING · LINING UP ON THE HULL':'DOCKING · HULL CLAMPS DRAWING YOU IN'):D.port!=null?(D.t<2?'DOCKING · LINING UP ON THE ARM':'DOCKING · ARM CLAMPS DRAWING YOU IN'):D.t<2?'DOCKING · ALIGNING OVER HANGAR':'DOCKING · LOWERING INTO HANGAR'}  ${Math.max(0,DOCK_T-D.t).toFixed(1)} s  ·  E TO ABORT`,VW/2,y-9)}
 function undock(){const P=S.player;if(!P.docked)return;setTimeout(launchPlayerDrones,0);SFX.clunk();const E=P.docked==='station'?W.stationEnt:W.outpostEnt;P.docked=null;const p=W.player;const L=portsW(E);
   if(L&&L.length){const pt=L[W.dockPort!=null&&L[W.dockPort]?W.dockPort:Math.floor(Math.random()*L.length)],sc=p.st.radius*1.25,f=sc*1.3+25,u=dockUp(E);p.x=pt.x+pt.dx*f;p.y=pt.y+pt.dy*f;p.z=pt.z+pt.dz*f;p.vx=pt.dx*110+(E.vx||0);p.vy=pt.dy*110;p.vz=pt.dz*110+(E.vz||0);qLook(pt.dx,pt.dy,pt.dz,u.x,u.y,u.z,p.q)}
   else{const o=rdir(.8);p.x=E.x+o.x*(E.r+90);p.y=E.y+o.y*(E.r+90);p.z=E.z+o.z*(E.r+90);p.vx=o.x*120;p.vy=o.y*120;p.vz=o.z*120;faceInstant(p,o.x,o.y,o.z)}W.dockPort=null;cam.snap=true;$('dock').hidden=true;p.alive=true;if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]});save()}
@@ -2854,7 +2882,7 @@ function worldUpdate(dt){
   if(W.pendingFJump){const J=W.pendingFJump;W.pendingFJump=null;bridgeJump(J.tok,J.to);return}
   if(W.bridge)bridgeUpdate(dt);
   if(W.gunseat)gunseatUpdate(dt);
-  if(JIN.t<JIN.d)JIN.t+=dt;if(W.docking&&!W.jump)dockingUpdate(dt);else if(!W.jump&&JIN.t>=.45)playerUpdate(dt);else if(!W.jump)levelRoll(W.player,dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}}
+  if(JIN.t<JIN.d)JIN.t+=dt;if(W.docking&&!W.jump)dockingUpdate(dt);else if(W.detach&&!W.jump)detachUpdate(dt);else if(!W.jump&&JIN.t>=.45)playerUpdate(dt);else if(!W.jump)levelRoll(W.player,dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}}
   if(NET.cl){clientWorld(dt);return}
   if(NET.host)netWorld(dt);
   groupsUpdate();
@@ -3311,6 +3339,7 @@ function draw3D(){
   for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f&&!mdlHas('frigate'))continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=e.side==='pirate'?'pirate':e.fac,m=shipMesh(fac,e.cls);
     mModel(MM,e.x,e.y,e.z,e.q,sc,sc,sc);const hurt=W.t-e.lastHit<.08;drawMesh(m.hull,MM,ONE3,hurt?[.35,.25,.15]:ZERO3);drawMesh(m.rim,MM);
     if(e.cls==='gunboat'&&!(W.gunseat&&gsEnt()===e)){const T=e.tur||{yaw:Math.PI,pitch:.1};turretQ(e,T,_gq3);qRot(e.q,0,.4*sc,-.38*sc,_u);mModel(MM,e.x+_u.x,e.y+_u.y,e.z+_u.z,_gq3,sc,sc,sc);const tm=gturretMesh(fac);drawMesh(tm.hull,MM,ONE3,ZERO3);drawMesh(tm.rim,MM)}}
+  drawBerthed();
   G.enable(G.BLEND);G.blendFunc(G.ONE,G.ONE);G.depthMask(false);useMesh();
   // ship shield bubbles: flash on hit, burst outward when they collapse, pulse when they come back
   for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead||cam.mode==='cockpit'))continue;if(W.bridge&&e===W.bridge.f)continue;const R=e.st.radius*1.25*1.5;
@@ -4171,7 +4200,7 @@ function entInWorld(w,id){if(!w||!id)return null;if(id==='S')return w.stationEnt
 function frigEnt(t){const w=WORLDS[t.sector];return w?w.ents.find(e=>e.alive&&e.tok===t):null}
 function hBridge(c,m){const pid=c.pid,P=S.pilots[pid],e=MP.rp[pid],t=(S.frigates||[]).find(x=>x.id===m.id);
   const F=t&&t.owner===pid&&t.sector===P.sector?frigEnt(t):null;if(!e||!F||d3(e,F)>F.st.radius*1.25+700){send(c.L,{t:'nobridge'});return}
-  despawnRP(pid,true);P.docked='bridge';P.bridgeId=t.id;P.vx=P.vy=P.vz=0;delete MP.inp[pid];netRoster()}
+  despawnRP(pid,true);P.docked='bridge';P.bridgeId=t.id;P.bslot=(+m.slot|0)&3;P.vx=P.vy=P.vz=0;delete MP.inp[pid];netRoster()}
 function hBridgeTick(){for(const pid in S.pilots||{}){const P=S.pilots[pid];if(P.docked!=='bridge'||pid===NET.me)continue;const c=Object.values(MP.cl).find(x=>x.pid===pid&&x.ready);if(!c)continue;
     const t=(S.frigates||[]).find(x=>x.id===P.bridgeId);
     if(!t){P.docked=null;delete P.bridgeId;if(!WORLDS[P.sector])openWorld(P.sector);spawnRP(pid);send(c.L,{t:'nobridge',gone:1});netRoster();continue}
