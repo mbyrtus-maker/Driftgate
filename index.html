@@ -1208,6 +1208,7 @@ function campEnd(f,P,ok,why){const m=P.mv;P.mv=null;P.gap=S.T+rnd(20,40);if(ok)P
   if(m.kind==='mine'||m.kind==='haul')P.boost=ok?1:0;
   const keys=Object.keys(m.help).filter(k=>m.help[k]>0),tot=keys.reduce((a,k)=>a+m.help[k],0);
   facFeed(f,ok?`✓ ${FACTIONS[f].short} command: "${m.title}" succeeded.${m.kind==='mine'||m.kind==='haul'?` The strike on ${DEF[m.obj].name} will go in reinforced.`:''}`:`✗ ${FACTIONS[f].short} command: "${m.title}" failed${why?': '+why:''}.${m.kind==='mine'||m.kind==='haul'?' The strike goes ahead without the extra supplies.':''}`,ok?'good':'warn');
+  for(const k in m.cons||{}){const c=m.cons[k];if(c>0){const add=R=>{R.bought=R.bought||{};R.bought[m.item]=(R.bought[m.item]||0)+c};if(isMe(k)||!NET.on)add(S.player);else if(S.pilots&&S.pilots[k])add(S.pilots[k])}}
   for(const k of keys){P.crew[k]=(P.crew[k]||0)+1;if(!ok)continue;const n=Math.round(CAMP_PAY[m.kind]*Math.max(.4,m.help[k]/tot)),got=payKey(k,f,n);
     keyFeed(k,`★ Campaign bonus for your part in "${m.title}": +${fmt(got)} cr from the ${FACTIONS[f].short} treasury.`,'good');if(isMe(k))SFX.count(true)}}
 // the goal: hold VIC_NEED systems. Every pilot who served the campaign (helped at least one move) is paid once.
@@ -1241,18 +1242,18 @@ function campDockHtml(c,P,srcs){const C=myCamp(),f=P.faction,m=C&&C.mv,n=control
   h+=`<div class="opr assist" style="display:block"><b>${esc(m.title)}</b><br><span>${m.stage==='brief'?`Opens in ${left} s`:m.kind==='mine'||m.kind==='haul'?`${Math.floor(m.prog)} / ${m.need} delivered · ${fmtT(left)} left`:'Strike under way'} · ${signed?'you are signed on':'press P to sign on'}${m.help[k]?` · your part so far: ${Math.round(m.help[k])}${m.kind==='take'||m.kind==='build'?' s':''}`:''}</span></div>`;
   if(m.stage!=='active'||(m.kind!=='mine'&&m.kind!=='haul'))return h+`<p class="note">${esc(campHow(m))}</p>`;
   const it=m.item,nm=ITEMS[it].name,rest=Math.max(0,Math.ceil(m.need-m.prog));
-  if(m.kind==='mine'){const have=countIn(it,srcs),nn=Math.min(have,rest);h+=`<div class="act" style="margin-top:8px"><button class="btn" type="button" data-act="cmine" ${nn>0?'':'disabled'}>Deliver ${nn} ${esc(nm)} · +${fmt(Math.round(baseValue(it)*1.3*nn))} cr</button></div><p class="note">You have ${have} ${esc(nm)} in your hold and vault.</p>`}
+  if(m.kind==='mine'){const have=deliverable(P,it,srcs),bo=boughtOf(P,it),nn=Math.min(have,rest);h+=`<div class="act" style="margin-top:8px"><button class="btn" type="button" data-act="cmine" ${nn>0?'':'disabled'}>Deliver ${nn} ${esc(nm)} · +${fmt(Math.round(baseValue(it)*1.3*nn))} cr</button></div><p class="note">You have ${have} ${esc(nm)} you mined or salvaged in your hold and vault${bo?` (${bo} bought on a market don't count)`:''}.</p>`}
   else{const p=W.player,free=Math.max(0,p.st.cargo-invMass(P.cargo)),stock=S.econ.stock[f][it]||0;
     if(sid===m.from){const nn=Math.min(rest,Math.floor(free/mass(it)),stock),dep=baseValue(it)*nn;h+=`<div class="act" style="margin-top:8px"><button class="btn" type="button" data-act="cload" ${nn>0&&P.credits>=dep?'':'disabled'}>Load ${nn} ${esc(nm)} · deposit ${fmt(dep)} cr</button></div><p class="note">${nn?`Fills ${nn*mass(it)} t of your hold. Deliver at ${esc(S.stations[m.to].name)} for the deposit back plus a ${fmt(Math.round(baseValue(it)*.35))} cr fee a unit.`:free<mass(it)?'Your hold is full.':'Nothing left to load.'}</p>`}
-    else if(sid===m.to){const have=P.cargo[it]||0,nn=Math.min(have,rest);h+=`<div class="act" style="margin-top:8px"><button class="btn" type="button" data-act="chaul" ${nn>0?'':'disabled'}>Deliver ${nn} ${esc(nm)} from your hold</button></div><p class="note">${have?'':'Bring the consignment in your hold (not your vault).'}</p>`}
+    else if(sid===m.to){const cn0=m.cons[k]||0,have=Math.min(P.cargo[it]||0,cn0+deliverable(P,it,[P.cargo],cn0)),nn=Math.min(have,rest);h+=`<div class="act" style="margin-top:8px"><button class="btn" type="button" data-act="chaul" ${nn>0?'':'disabled'}>Deliver ${nn} ${esc(nm)} from your hold</button></div><p class="note">${have?'':'Bring the consignment in your hold (not your vault). Goods bought on a market don\'t count.'}</p>`}
     else h+=`<p class="note">Load at ${esc(S.stations[m.from].name)} (${esc(DEF[m.from].name)}), deliver at ${esc(S.stations[m.to].name)} (${esc(DEF[m.to].name)}).</p>`}
   return h}
 function campAct(act,c,P,srcs){const C=myCamp(),m=C&&C.mv,f=P.faction,k=pkey();if(!m||m.stage!=='active'){dockErr='That drive is closed.';return}
   const it=m.item,rest=Math.max(0,Math.ceil(m.need-m.prog)),add=n=>{m.prog+=n;m.help[k]=(m.help[k]||0)+n;if(!m.acc.includes(k))m.acc.push(k)};
-  if(act==='cmine'&&m.kind==='mine'){const n=Math.min(countIn(it,srcs),rest);if(n<=0)return;takeFrom({[it]:n},srcs);inv.add(S.econ.stock[f],it,n);const got=transfer(f,'player',Math.round(baseValue(it)*1.3*n));add(n);dockErr=`✓ Delivered ${n} ${ITEMS[it].name}: +${fmt(got)} cr. Drive ${Math.floor(m.prog)}/${m.need}.`}
+  if(act==='cmine'&&m.kind==='mine'){const n=Math.min(deliverable(P,it,srcs),rest);if(n<=0&&boughtOf(P,it)){dockErr='Ore bought on a market can\'t go to the drive: mine it yourself.';return}if(n<=0)return;takeFrom({[it]:n},srcs);inv.add(S.econ.stock[f],it,n);const got=transfer(f,'player',Math.round(baseValue(it)*1.3*n));add(n);dockErr=`✓ Delivered ${n} ${ITEMS[it].name}: +${fmt(got)} cr. Drive ${Math.floor(m.prog)}/${m.need}.`}
   else if(act==='cload'&&m.kind==='haul'&&P.sector===m.from){const p=W.player,n=Math.min(rest,Math.floor(Math.max(0,p.st.cargo-invMass(P.cargo))/mass(it)),S.econ.stock[f][it]||0),dep=baseValue(it)*n;if(n<=0||P.credits<dep)return;
     transfer('player',f,dep);inv.add(P.cargo,it,inv.take(S.econ.stock[f],it,n));m.cons[k]=(m.cons[k]||0)+n;if(!m.acc.includes(k))m.acc.push(k);dockErr=`✓ Loaded ${n} ${ITEMS[it].name} (deposit ${fmt(dep)} cr). Fly them to ${S.stations[m.to].name}.`}
-  else if(act==='chaul'&&m.kind==='haul'&&P.sector===m.to){const n=Math.min(P.cargo[it]||0,rest);if(n<=0)return;inv.take(P.cargo,it,n);inv.add(S.econ.stock[f],it,n);
+  else if(act==='chaul'&&m.kind==='haul'&&P.sector===m.to){const cn0=m.cons[k]||0,n=Math.min(P.cargo[it]||0,rest,cn0+deliverable(P,it,[P.cargo],cn0));if(n<=0&&(P.cargo[it]||0)>0){dockErr='Goods bought on a market can\'t go to the drive. Load a consignment, or bring goods you made.';return}if(n<=0)return;inv.take(P.cargo,it,n);inv.add(S.econ.stock[f],it,n);
     const cn=Math.min(n,m.cons[k]||0);m.cons[k]=(m.cons[k]||0)-cn;const pay=Math.round(baseValue(it)*(cn*1.35+(n-cn)*1.15)),got=transfer(f,'player',pay);add(n);dockErr=`✓ Delivered ${n} ${ITEMS[it].name}: +${fmt(got)} cr${cn?' (deposit back plus fee)':''}. Drive ${Math.floor(m.prog)}/${m.need}.`}
   if(m.prog>=m.need&&!NET.cl&&!CTX){const P2=campOf(f);if(P2.mv===m)campEnd(f,P2,true)}}
 // HUD card under the system name
@@ -3709,6 +3710,13 @@ function hudUpdate(){
   renderFeed();drawRadar();
 }
 
+// ---- goods bought on a market can't fill supply contracts or campaign drives: every pilot keeps a tally of what they bought.
+// Selling clears bought units first; the tally never exceeds what the pilot still owns. Undelivered campaign consignments are
+// reserved too (they were loaded on a deposit), so the only goods that count are ones you mined, salvaged or made.
+function ownedOf(P,k){let n=(P.cargo[k]||0)+(P.vault[k]||0);if(!NET.on){for(const id in S.stations){const R=S.stations[id];if(R.owner==='player'&&R.stock)n+=R.stock[k]||0}for(const id in S.outposts){const o=S.outposts[id];if(o.owner==='player')n+=o.stock[k]||0}}return n}
+function boughtOf(P,k){const B=P.bought||(P.bought={}),b=B[k]||0;if(!b)return 0;const v=Math.min(b,ownedOf(P,k));if(v!==b){if(v)B[k]=v;else delete B[k]}return v}
+function consOf(P,k){const C=S.plans&&S.plans[P.faction],m=C&&C.mv;return m&&m.kind==='haul'&&m.item===k?(m.cons[pkey()]||0):0}
+function deliverable(P,k,srcs,res){return Math.max(0,Math.min(countIn(k,srcs),ownedOf(P,k)-boughtOf(P,k)-(res===undefined?consOf(P,k):res)))}
 // ============================================================ dock UI
 let dockTab='market',dockErr='';
 const byName=(a,b)=>ITEMS[a].name.localeCompare(ITEMS[b].name);
@@ -3788,10 +3796,10 @@ function renderDock(){
   }else if(dockTab==='orders'){h+=campDockHtml(c,P,srcs);
   }else if(dockTab==='contracts'){
     const list=S.contracts.filter(k=>k.fac===P.faction);
-    h+=`<p class="note" style="margin:0 0 12px">${FACTIONS[P.faction].name} pays from its treasury for deliveries to any of its docks. Delivered goods join the faction's stores.</p>`;
+    h+=`<p class="note" style="margin:0 0 12px">${FACTIONS[P.faction].name} pays from its treasury for deliveries to any of its docks. Delivered goods join the faction's stores. Only goods you mined, salvaged or made count: market purchases can't fill a contract.</p>`;
     if(!list.length)h+=`<div class="empty">No open contracts. New ones are posted every minute or so.</div>`;
     else{h+=`<div class="tblw"><table class="t"><thead><tr><th>Deliver</th><th class="r">Reward</th><th class="r">Time left</th><th></th></tr></thead><tbody>`;
-      for(const k of list){const have=countIn(k.item,srcs);h+=`<tr><td>${chip(k.item,k.n,have)}</td><td class="r num">${fmt(k.reward)} cr</td><td class="r num">${Math.max(0,Math.round((k.until-S.T)/60))} min</td><td><div class="act"><button class="btn sm" data-act="deliver" data-arg="${k.id}" ${have>=k.n?'':'disabled'}>Deliver</button></div></td></tr>`}h+=`</tbody></table></div>`}
+      for(const k of list){const have=deliverable(P,k.item,srcs),bo=boughtOf(P,k.item);h+=`<tr><td>${chip(k.item,k.n,have)}${bo?`<span class="mass">${bo} bought on a market don't count</span>`:''}</td><td class="r num">${fmt(k.reward)} cr</td><td class="r num">${Math.max(0,Math.round((k.until-S.T)/60))} min</td><td><div class="act"><button class="btn sm" data-act="deliver" data-arg="${k.id}" ${have>=k.n?'':'disabled'}>Deliver</button></div></td></tr>`}h+=`</tbody></table></div>`}
   }else if(dockTab==='outpost'){
     const o=c.o,os=oStats(o);
     h+=`<div class="grid2"><div><div class="h3">${esc(o.name)} · Level ${o.level}</div><div class="kv"><span>Shield</span><b>${Math.round(o.shield)} / ${os.sMax}</b><span>Hull</span><b>${Math.round(o.hull)} / ${os.hMax}</b><span>Turret</span><b>${os.dmg} dmg · ${os.rof.toFixed(1)}/s</b><span>Ore skimmed per cycle</span><b>${o.type==='yard'?(2+o.level)+' t of each debris type':(2+o.level)+' t'}</b>${o.type==='relay'?`<span>Toll income per cycle</span><b>up to 66 cr</b>`:''}</div>
@@ -3810,8 +3818,8 @@ $('dock').addEventListener('click',e=>{
   if(NET.cl){netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
   dockAction(act,arg);renderDock()});
 function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.cargo,c.storage];
-  if(act==='buy'){const[k,n]=arg.split(':');let got=0,spent=0;for(let i=0;i<+n;i++){const pr=buyPrice(c.market,k);if(!(c.market[k]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k,1);inv.add(c.storage,k,1);got++;spent+=pr}if(got)dockErr=`✓ Bought ${got} ${ITEMS[k].name} for ${fmt(spent)} cr.`}
-  else if(act==='sell'){const[k,n]=arg.split(':');const max=n==='all'?countIn(k,srcs):1;let sold=0,earn=0;for(let i=0;i<max;i++){const pr=sellPrice(c.market,k);if(S.econ.treasury[c.wallet]<pr){dockErr=`The ${sideName(c.wallet)} treasury can't afford more.`;break}if(!takeFrom({[k]:1},srcs))break;inv.add(c.market,k,1);transfer(c.wallet,'player',pr);sold++;earn+=pr}if(sold)dockErr=`✓ Sold ${sold} ${ITEMS[k].name} for ${fmt(earn)} cr.`}
+  if(act==='buy'){const[k,n]=arg.split(':');let got=0,spent=0;for(let i=0;i<+n;i++){const pr=buyPrice(c.market,k);if(!(c.market[k]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k,1);inv.add(c.storage,k,1);got++;spent+=pr}if(got){P.bought=P.bought||{};P.bought[k]=(P.bought[k]||0)+got}if(got)dockErr=`✓ Bought ${got} ${ITEMS[k].name} for ${fmt(spent)} cr.`}
+  else if(act==='sell'){const[k,n]=arg.split(':');const max=n==='all'?countIn(k,srcs):1;let sold=0,earn=0;for(let i=0;i<max;i++){const pr=sellPrice(c.market,k);if(S.econ.treasury[c.wallet]<pr){dockErr=`The ${sideName(c.wallet)} treasury can't afford more.`;break}if(!takeFrom({[k]:1},srcs))break;inv.add(c.market,k,1);transfer(c.wallet,'player',pr);sold++;earn+=pr}if(sold&&P.bought&&P.bought[k]){P.bought[k]=Math.max(0,P.bought[k]-sold);if(!P.bought[k])delete P.bought[k]}if(sold)dockErr=`✓ Sold ${sold} ${ITEMS[k].name} for ${fmt(earn)} cr.`}
   else if(act==='make'&&ITEMS[arg.split(':')[0]].forge&&!c.forge&&!c.fab)dockErr='Crystal Lattice and Resonance Cores need a Forge or a faction home station.';
   else if(act==='make'){const[k,n]=arg.split(':');const r=ITEMS[k].recipe,fee=c.fee?Math.ceil(baseValue(k)*.06):0;let made=0;const lim=n==='max'?999:1;
     while(made<lim&&haveIn(r,srcs)&&P.credits>=fee){takeFrom(r,srcs);inv.add(c.storage,k,1);if(fee)transfer('player',c.wallet,fee);made++}
@@ -3828,7 +3836,7 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
   else if(act==='mv'){const[k,dir,n]=arg.split(':');if(dir==='in'){const m=n==='all'?P.cargo[k]:1;inv.add(c.storage,k,inv.take(P.cargo,k,m))}else{const room=p.st.cargo-invMass(P.cargo);let m=n==='all'?(c.storage[k]||0):1;m=Math.min(m,Math.floor(room/mass(k)));if(m<=0)dockErr='Not enough hold space.';else inv.add(P.cargo,k,inv.take(c.storage,k,m))}}
   else if(act==='stashall'){inv.addAll(c.storage,P.cargo);P.cargo={}}
   else if(act==='cmine'||act==='cload'||act==='chaul')campAct(act,c,P,srcs);
-  else if(act==='deliver'){const k=S.contracts.find(x=>String(x.id)===arg);if(k&&takeFrom({[k.item]:k.n},srcs)){inv.add(S.econ.stock[k.fac],k.item,k.n);const got=transfer(k.fac,'player',k.reward);S.contracts.splice(S.contracts.indexOf(k),1);dockErr=`✓ Contract complete. +${fmt(got)} cr.`;feed(`Contract delivered: +${fmt(got)} cr.`,'good')}}
+  else if(act==='deliver'){const k=S.contracts.find(x=>String(x.id)===arg);if(k&&deliverable(P,k.item,srcs)<k.n){const b=boughtOf(P,k.item);dockErr=`Contracts take goods you mined, salvaged or made. ${b?b+' '+ITEMS[k.item].name+' you bought on a market':'Consigned goods'} can't fill it.`}else if(k&&takeFrom({[k.item]:k.n},srcs)){inv.add(S.econ.stock[k.fac],k.item,k.n);const got=transfer(k.fac,'player',k.reward);S.contracts.splice(S.contracts.indexOf(k),1);dockErr=`✓ Contract complete. +${fmt(got)} cr.`;feed(`Contract delivered: +${fmt(got)} cr.`,'good')}}
   else if(act==='fort'){const o=c.o,r=fortRecipe(o.level+1);if(takeFrom(r,srcs)){const v=invVec(r);for(const e2 of RAWS)o.fort[e2]+=v[e2];o.level++;const os=oStats(o);o.shield=os.sMax;o.hull=os.hMax;dockErr=`✓ ${o.name} fortified to level ${o.level}.`}}
 }
 
