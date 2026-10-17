@@ -1545,52 +1545,136 @@ function frigateThink(e,dt){const t=e.tok;if(!t||!S.frigates.includes(t)){e.role
 const BRIDGE={off:[0,.36,.05],cons:[{id:'strat',name:'Strategic map',x:0,z:2,col:'#6fb7ff'},{id:'nav',name:'Helm',x:10,z:11.6,face:[0,-1],col:'#7ad9a7'},{id:'wpn',name:'Weapons',x:-10,z:11.6,face:[0,-1],col:'#ff8a6a'},{id:'eng',name:'Engineering',x:-15,z:-8,col:'#f0b24a'},{id:'hatch',name:'Hatch · back to your fighter',x:15,z:-11,col:'#ece4cf'},{id:'cmd',name:'Command chair',x:0,z:-6.2,col:'#f0b24a'},{id:'comms',name:'Comms',x:16,z:-1,col:'#c99cff'}]};
 // furniture you can't walk through (x, z, radius) and the reach for each console
 const BR_SOLID=[[0,2,3.9],[16,-1,2.3],[10,11.6,2.3],[-10,11.6,2.3],[10,8.7,1],[-10,8.7,1],[0,-6.2,1.5],[2.9,-5.1,1],[-2.9,-5.1,1],[-15,-8,2.4],[-19.5,-12.5,1.9],[-17,-13.8,1.5]],BR_REACH={strat:6,cmd:3.4,hatch:5.5};
-function bridgeMesh(){if(MESH.bridge)return MESH.bridge;const g=new GB(),L=new GB(),FL=[.16,.18,.22],WL=[.24,.26,.31],TR=[.34,.37,.43],DK=[.1,.11,.14];
-  g.set(0,-.2,0).box(44,.4,30,[.07,.08,.1]);g.set(0,11.2,0).box(44,.4,30,[.06,.065,.08]);g.set(0,5.5,-15).box(44,11,.4,WL);for(const s of[-1,1]){g.set(22*s,1.25,0).box(.4,2.5,30,WL);g.set(22*s,10.25,0).box(.4,2,30,WL);g.set(22*s,5.5,-10.75).box(.4,11,8.5,WL);g.set(22*s,5.5,13.75).box(.4,11,2.5,WL);g.set(22*s,5.875,3).box(.6,6.75,.6,TR);for(const z of[-6.5,12.5])g.set(21.8*s,5.875,z).box(.5,6.75,.5,TR);g.set(21.3*s,2.55,3).box(1.4,.18,19,TR);g.set(21.6*s,9.2,3).box(.8,.15,19,TR)}
-  g.set(0,1.25,15).box(44,2.5,.4,WL);g.set(0,10.25,15).box(44,2,.4,WL);for(const s of[-1,1]){g.set(20*s,5.5,15).box(4,11,.4,WL);g.set(6*s,5.75,15).box(.5,6.5,.5,TR)}
-  for(let i=-2;i<=2;i++)g.set(i*8,.05,0).box(.3,.05,26,[.25,.6,.9],.8);g.set(0,11,0).box(30,.1,.6,[1,.95,.85],.9);g.set(0,11,-8).box(30,.1,.6,[1,.95,.85],.9);
-  for(const c of BRIDGE.cons){const col=hexRGB(c.col);if(c.id==='cmd')continue;if(c.id==='strat'){g.set(c.x,1,c.z).cyl(3.4,3.8,2,16,TR);g.set(c.x,2.05,c.z).cyl(3.1,3.1,.08,16,col,.85);continue}
-    if(c.id==='hatch'){g.set(c.x,4,c.z-3.8).box(5,8,.5,TR);g.set(c.x,4,c.z-3.55).box(4,7,.1,[.2,.22,.26]);g.set(c.x,8.2,c.z-3.5).box(4,.3,.1,col,.9);continue}
-    const q=c.face?qLook(c.face[0],0,c.face[1],0,1,0,q0()):qLook(-c.x,0,-c.z+2,0,1,0,q0());g.set(c.x,1.2,c.z,q).box(4.2,2.4,1.6,TR);const q2=qMul(q,qAxis(1,0,0,-.55,q0()),q0());g.set(c.x,2.8,c.z,q2).box(3.8,2.2,.15,col,.9)}
-  bridgeDetail(g,FL,WL,TR,DK);
-  return MESH.bridge=g.upload()}
-// fit-out: command dais and captain's chair, crew seats, a railed holo table, ceiling structure, wall screens, conduits, reactor column, hatch markings
-const BR_SUN=[.58,.56,.52],BR_AMB=[.34,.35,.39];
-// panelled skin: floor tiles, wall and ceiling panels with seams, vents and rivets
-function bridgeSkin(g,FL,WL,TR,DK){const v=(c,a,b)=>scaleC(c,a+Math.random()*(b-a));
-  for(let x=-20;x<20;x+=4)for(let z=-13;z<13;z+=4){g.set(x+2,.012,z+2).box(3.9,.024,3.9,v(FL,.9,1.12));g.set(x+2,.03,z+2).box(.5,.012,.5,[.09,.1,.12])}
-  for(let x=-20;x<20;x+=4){g.set(x+2,1.3,-14.76).box(3.9,2.45,.06,v(WL,.88,1.1));g.set(x+2,9.9,-14.76).box(3.9,1.7,.06,v(WL,.88,1.1));for(let i=0;i<4;i++)g.set(x+1.2+i*.5,.55,-14.71).box(.32,.05,.04,[.08,.09,.11])}
-  for(const s of[-1,1]){for(let z=-12.5;z<14;z+=4){g.set(21.76*s,1.3,z+1.5).box(.06,2.45,3.9,v(WL,.88,1.1))}for(let z=-14;z<-7;z+=3.4)g.set(21.76*s,5.6,z+1.7).box(.06,5.4,3.3,v(WL,.88,1.1))}
-  for(let x=-20;x<20;x+=4)for(let z=-15;z<15;z+=6){const lit=(Math.abs(x+2)===6&&(z===-3||z===3));g.set(x+2,10.97,z+3).box(3.88,.04,5.6,lit?[1,.96,.88]:v(DK,1.2,1.5),lit?.75:0)}
-  for(const x of[-20,-12,-4,4,12,20])for(const y of[2.3,8.95])g.set(x,y,-14.72).box(.12,.12,.05,[.5,.52,.56])}
-function bridgeDetail(g,FL,WL,TR,DK){bridgeSkin(g,FL,WL,TR,DK);const D2=[.13,.14,.17],MT=[.42,.45,.5],GL=[.25,.6,.9],AM=[1,.72,.3],RD=[1,.38,.3],GR=[.45,.9,.6],SC=[.05,.08,.12];const yq=a=>qAxis(0,1,0,a,q0());
-  // floor: walkway plates and wall-edge light strips
-  for(const[x,z,w,d]of[[0,9,30,5],[0,-6,12,8],[-15,-8,9,7],[15,-10,8,7]])g.set(x,.03,z).box(w,.04,d,D2);
-  for(const s of[-1,1])g.set(21.4*s,.07,0).box(.16,.07,29,GL,.8);g.set(0,.07,-14.6).box(43,.07,.16,GL,.8);
-  // forward dashboard under the main window, with indicator lights
-  g.set(0,1.9,14.1).box(36,.22,1.5,TR);g.set(0,1,14.6).box(36,1.8,.5,DK);
-  for(let x=-17;x<=17;x+=1.5){if(Math.abs(Math.abs(x)-10)<2.6)continue;const c=[GL,AM,GR,GL,RD][(Math.round(x*2)+40)%5];g.set(x,2.04,14.2).box(.45,.06,.35,c,.95)}
-  // crew seats behind helm and weapons, facing the window
-  for(const s of[-1,1]){const x=10*s;g.set(x,.45,8.7).cyl(.3,.55,.9,10,MT);g.set(x,1.05,8.7).box(1.9,.32,1.8,DK);g.set(x,2.3,7.85).box(1.9,2.3,.32,DK);g.set(x,2.3,7.7).box(1.5,1.8,.05,GL,.35);for(const a of[-1,1])g.set(x+a*1.05,1.55,8.6).box(.22,.18,1.4,MT)}
-  // command dais and captain's chair at the back, looking over the table
-  g.set(0,.28,-6.5).box(11,.56,6.5,D2);g.set(0,.14,-2.9).box(6,.28,.9,D2);g.set(0,.57,-3.3).box(11,.04,.12,AM,.9);
-  g.set(0,1.05,-6.2).cyl(.45,.7,1,12,MT);g.set(0,1.75,-6.2).box(2.6,.45,2.4,[.2,.17,.15]);g.set(0,2.75,-7.35).box(2.6,2,.45,[.2,.17,.15]);g.set(0,3.85,-7.35).box(1.6,.35,.4,[.2,.17,.15]);g.set(0,2.75,-7.6).box(2.7,2.1,.08,MT);g.set(0,3.8,-7.62).box(2.2,.06,.06,AM,.8);
-  for(const a of[-1,1]){g.set(a*1.45,2.3,-6.1).box(.35,.25,2,MT);g.set(a*1.45,2.45,-5.4).box(.3,.04,.6,a<0?GL:AM,.9);
-    g.set(a*2.9,1.5,-5.1,yq(-a*.5)).box(1.4,1.9,.9,TR);g.set(a*2.9,2.6,-5.1,qMul(yq(-a*.5),qAxis(1,0,0,-.6,q0()),q0())).box(1.25,1,.1,a<0?GL:GR,.85)}
-  g.set(0,2.15,2).cyl(.6,.6,.1,12,[.6,.85,1],.9);
-  // ceiling: cross beams, two spines, a light ring over the table
-  for(const z of[-12,-6,0,6,12])g.set(0,10.65,z).box(43.6,.7,.9,TR);for(const s of[-1,1])g.set(12*s,10.55,0).box(.9,.6,29.6,TR);
-  for(let i=0;i<12;i++){const a=i/12*Math.PI*2;g.set(Math.sin(a)*4,10.9,2+Math.cos(a)*4,yq(a)).box(1.8,.08,.4,[1,.95,.85],.9)}
-  // back wall: three status screens in lit frames
-  for(const x of[-9,0,9]){g.set(x,6.6,-14.65).box(7.4,4,.2,TR);g.set(x,6.6,-14.5).box(6.8,3.4,.06,SC);g.set(x,8.7,-14.5).box(6.8,.12,.06,x?GL:AM,.9)}
-  // conduits along the side walls under the windows, and ribs between panes
-  for(const s of[-1,1]){g.set(21.55*s,1.9,0).box(.3,.3,29,MT);g.set(21.55*s,1.3,0).box(.22,.22,29,TR);g.set(21.55*s,.75,0).box(.3,.3,29,[.35,.3,.22])}
-  // engineering: reactor column with a glowing core and clamp rings
-  g.set(-19.5,5.5,-12.5).cyl(1.5,1.5,11,14,TR);g.set(-19.5,5.5,-12.5).cyl(.9,.9,11.1,14,AM,.75);for(const y of[1.5,4,7,9.5])g.set(-19.5,y,-12.5).cyl(1.75,1.75,.4,14,MT);
-  g.set(-17,1.2,-14.2).box(4,2.4,1.2,TR);for(let i=0;i<5;i++)g.set(-18.4+i*.7,2.45,-13.7).box(.35,.06,.35,[AM,GR,AM,RD,GR][i],.95);
-  // hatch: hazard stripes on the frame
-  for(let i=0;i<7;i++)g.set(12.2+i*.8,.5,-14.55,qAxis(0,0,1,.7,q0())).box(.35,1,.06,i%2?[.1,.1,.1]:AM,i%2?0:.6);
-  for(const s of[-1,1])g.set(15+s*2.75,4,-14.55).box(.35,8,.08,AM,.5)}
+// Frigate bridge interior, in the same finish as the ship models: light grey panelling, dark metal trim and the
+// faction's colour on the accent strips. Room is 44 x 30 x 11 (x across, z forward to the main viewport, y up).
+// Console, seat and table positions match BRIDGE.cons / BR_SOLID, so walking, reach and the overlay labels are unchanged.
+function bridgeMesh(fac){fac=fac||'halcyon';const key='bridge_'+fac;if(MESH[key])return MESH[key];
+  const F=hexRGB(sideCol(fac)),P=bridgePal(F),g=new GB();
+  bridgeShell(g,P);bridgeFloorCeil(g,P);bridgeTable(g,P);
+  for(const c of BRIDGE.cons)if(c.id!=='cmd'&&c.id!=='strat'&&c.id!=='hatch')bridgeConsole(g,P,c);
+  bridgeFurniture(g,P);bridgeLight(g.d);
+  return MESH[key]=g.upload()}
+const BR_SUN=[.62,.6,.56],BR_AMB=[.42,.43,.47];
+function bridgePal(F){return{F,
+  PN:mixC([.6,.61,.63],F,.05),  // light wall panel
+  MD:[.33,.35,.39],              // mid grey
+  DK:[.12,.13,.15],              // dark metal
+  TR:[.23,.24,.28],              // trim and frames
+  MT:[.47,.49,.53],              // bare metal
+  FL:[.24,.25,.28],               // floor tile
+  SC:[.025,.04,.055],            // screen glass
+  LT:[1,.95,.86],                // ceiling light
+  AC:scaleC(F,.75),              // faction accent
+  HO:mixC([.45,.78,1],F,.3),     // hologram blue, tinted to the faction
+  AM:[1,.72,.3],RD:[1,.4,.32],GR:[.45,.9,.6],GL:[.35,.7,.95],
+  LE:[.21,.19,.18]}}             // seat upholstery
+const _bq=(ax,ay,az,a)=>qAxis(ax,ay,az,a,q0()),_bv={x:0,y:0,z:0};
+// walls, windows, frames and chamfers
+function bridgeShell(g,P){const v=(c,a,b)=>scaleC(c,a+Math.random()*(b-a)),Q4=Math.PI/4;
+  // back wall: lower band, panelled middle, dark top
+  g.set(0,5.5,-15.2).box(44,11,.4,P.MD);
+  for(let x=-20;x<20;x+=4){g.set(x+2,1.5,-14.97).box(3.9,2.9,.06,v(P.MD,.9,1.08));g.set(x+2,6.2,-14.97).box(3.9,6.2,.06,v(P.PN,.9,1.06));g.set(x+2,9.95,-14.97).box(3.9,1.2,.06,v(P.TR,.9,1.1))}
+  g.set(0,3.05,-14.9).box(44,.1,.1,P.AC,.4);g.set(0,9.3,-14.9).box(44,.1,.1,P.TR);
+  // side walls: solid lower and upper bands, solid fore and aft sections, window between z -6.5 and 12.5
+  for(const s of[-1,1]){const X=22*s;
+    g.set(X+.2*s,1.25,0).box(.4,2.5,30,P.MD);g.set(X+.2*s,10.25,0).box(.4,2,30,P.TR);
+    g.set(X+.2*s,5.5,-10.75).box(.4,11,8.5,P.MD);g.set(X+.2*s,5.5,13.75).box(.4,11,2.5,P.MD);
+    for(let z=-14;z<14;z+=4)g.set(X-.03*s,1.3,z+2).box(.06,2.4,3.9,v(P.MD,.9,1.08));
+    for(let z=-14.5;z<-7;z+=4)g.set(X-.03*s,5.9,z+2).box(.06,6.6,3.9,v(P.PN,.9,1.06));
+    // window frame: sill, header, posts and ribs between panes, accent line on the sill
+    g.set(X-.35*s,2.45,3).box(.9,.3,19.4,P.TR);g.set(X-.35*s,9.3,3).box(.9,.3,19.4,P.TR);g.set(X-.75*s,2.62,3).box(.08,.05,19,P.AC,.4);
+    for(const z of[-6.5,12.5])g.set(X-.35*s,5.875,z).box(.9,7.2,.7,P.TR);
+    for(const z of[-1.75,3,7.75])g.set(X-.25*s,5.875,z).box(.5,6.8,.35,P.DK);
+    // chamfers: floor to wall and wall to ceiling
+    g.set(21.35*s,.62,0,_bq(0,0,1,-s*Q4)).box(.22,1.75,29.6,P.TR);g.set(21.3*s,.98,0,_bq(0,0,1,-s*Q4)).box(.06,.5,29.6,P.DK);
+    g.set(21.35*s,10.4,0,_bq(0,0,1,s*Q4)).box(.22,1.75,29.6,P.TR);
+    // conduits run along the lower wall
+    g.set(21.55*s,1.95,0).box(.28,.28,29,P.MT);g.set(21.55*s,1.6,0).box(.18,.18,29,P.DK);
+    // floor light strip along the wall
+    g.set(20.4*s,.06,0).box(.08,.04,28.6,P.AC,.35)}
+  // front wall: big viewport from 1.6 to 9.6 with two mullions and corner posts
+  g.set(0,.8,15.2).box(44,1.6,.4,P.MD);g.set(0,10.4,15.2).box(44,1.6,.4,P.TR);
+  for(const s of[-1,1]){g.set(20*s,5.5,15.2).box(4,11,.4,P.MD);g.set(18.1*s,5.6,14.8).box(.7,8.4,.9,P.TR);g.set(6*s,5.6,14.85).box(.6,8.2,.6,P.TR);g.set(12*s,5.6,14.9).box(.25,8,.3,P.DK)}
+  g.set(0,1.6,14.75).box(36.6,.35,.9,P.TR);g.set(0,9.6,14.75).box(36.6,.35,.9,P.TR);
+  // ceiling chamfers fore and aft, floor chamfer aft (clear of the hatch)
+  g.set(0,10.4,14.35,_bq(1,0,0,-Q4)).box(43,1.75,.22,P.TR);g.set(0,10.4,-14.35,_bq(1,0,0,Q4)).box(43,1.75,.22,P.TR);
+  for(const[a,b]of[[-21.6,11.8],[18.2,21.6]])g.set((a+b)/2,.62,-14.35,_bq(1,0,0,-Q4)).box(b-a,1.75,.22,P.TR)}
+// floor tiles, walkways, ceiling beams and lights
+function bridgeFloorCeil(g,P){const v=(c,a,b)=>scaleC(c,a+Math.random()*(b-a));
+  g.set(0,-.2,0).box(44,.4,30,P.DK);g.set(0,11.2,0).box(44,.4,30,[.07,.075,.09]);
+  for(let x=-22;x<22;x+=4)for(let z=-15;z<15;z+=4){const w=Math.min(4,22-x),d=Math.min(4,15-z);g.set(x+w/2,.012,z+d/2).box(w-.08,.024,d-.08,v(P.FL,.9,1.08))}
+  // walkways: centre aisle to the viewport, crew row, dais approach, engineering and hatch bays
+  for(const[x,z,w,d]of[[0,6,5,14],[0,9.6,31,4.4],[-15,-8.5,9,7],[15,-10,8,7],[15,-1,6,5]]){g.set(x,.03,z).box(w,.04,d,[.15,.16,.19]);for(let i=-w/2+.6;i<w/2;i+=1.2)g.set(x+i,.055,z).box(.06,.01,d-.4,[.11,.12,.14])}
+  for(const s of[-1,1])g.set(2.55*s,.07,6).box(.07,.04,14,P.AC,.35);
+  // contact shadows under furniture
+  for(const[x,z,r]of BR_SOLID)g.set(x,.065,z).cyl(r+.45,r+.45,.005,18,[.075,.08,.095],0,true);
+  // ceiling: dark panels, beams, two spines with light strips, ring light over the table
+  for(let x=-22;x<22;x+=4)for(let z=-15;z<15;z+=6)g.set(x+2,10.97,z+3).box(3.88,.04,5.88,v([.14,.15,.18],.85,1.15));
+  for(const z of[-12,-6,0,6,12]){g.set(0,10.62,z).box(43.6,.7,.8,P.TR);g.set(0,10.25,z).box(43.6,.06,.2,P.DK)}
+  for(const s of[-1,1]){g.set(12*s,10.5,0).box(1.2,.8,29.6,P.TR);g.set(12*s,10.08,0).box(.45,.05,28.5,P.LT,.45);g.set(20*s,10.9,0).box(.35,.05,27,P.LT,.4)}
+  for(let i=0;i<24;i++){const a=i/24*TAU;g.set(Math.sin(a)*4.4,10.6,2+Math.cos(a)*4.4,_bq(0,1,0,a)).box(1.2,.1,.3,mixC(P.LT,P.HO,.35),.6)}
+  g.set(0,10.75,2).cyl(4.9,4.9,.25,24,P.TR,0,false);
+  // pipes along the ceiling edges
+  for(const s of[-1,1])for(const[o,c]of[[0,P.MT],[.45,[.35,.3,.22]]]){g.set(17*s+o*s,10.4,0,_bq(1,0,0,Math.PI/2)).cyl(.16,.16,29,8,c)}}
+// holo table: dark glass top with range rings, lit rim, projector
+function bridgeTable(g,P){const x=0,z=2,H=P.HO;
+  g.set(x,.75,z).cyl(2.3,2.9,1.5,20,P.TR);g.set(x,1.55,z).cyl(3.6,3.9,.35,24,P.DK);g.set(x,1.85,z).cyl(3.8,3.6,.3,24,P.MT);
+  g.set(x,2.02,z).cyl(3.25,3.25,.06,32,mixC(P.SC,H,.12),.3);
+  g.set(x,2.06,z).torus(3.42,.07,40,4,H,.85);
+  for(const R of[1.05,2.1])g.set(x,2.07,z).torus(R,.025,R>1.5?36:24,3,H,.75);
+  for(let i=0;i<4;i++)g.set(x,2.07,z,_bq(0,1,0,i*Math.PI/4)).box(6.2,.012,.04,scaleC(H,.7),.6);
+  g.set(x,2.12,z).cyl(.35,.45,.1,12,P.MT);g.set(x,2.18,z).cyl(.22,.22,.05,12,[.85,.95,1],.9);
+  // grab rail around the base
+  for(let i=0;i<8;i++){const a=i/8*TAU;g.set(x+Math.sin(a)*3.75,1.98,z+Math.cos(a)*3.75).box(.12,.08,.12,P.AC,.5)}}
+// station console: plinth, body, angled desk with keys, tilted screen in a bezel with a lit header and bars
+function bridgeConsole(g,P,c){const col=hexRGB(c.col),q=c.face?qLook(c.face[0],0,c.face[1],0,1,0,q0()):qLook(-c.x,0,-c.z+2,0,1,0,q0());
+  const at=(lx,ly,lz,qq,sx)=>{qRot(q,lx,ly,lz,_u);return g.set(c.x+_u.x,ly,c.z+_u.z,qq||q,sx)};
+  at(0,.15,0).box(3.4,.3,1.3,P.DK);at(0,1.15,-.15).box(4.2,1.7,1.3,P.MD);at(0,.55,.52).box(3.8,.5,.06,P.DK);
+  for(const s of[-1,1])at(2.12*s,2.45,-.25).box(.16,2.4,1.25,P.TR);
+  const qd=qMul(q,_bq(1,0,0,.3),q0()),dk=(lx,ly,lz)=>{qRot(qd,lx,ly,lz,_bv);qRot(q,0,2.05,.3,_u);return g.set(c.x+_u.x+_bv.x,2.05+_bv.y,c.z+_u.z+_bv.z,qd)};
+  dk(0,0,0).box(4.3,.18,1.5,P.TR);dk(0,.1,-.05).box(3.9,.03,1.1,P.SC,.15);
+  for(let r=0;r<3;r++)for(let k=0;k<8;k++)dk(-1.6+k*.46,.13,-.38+r*.32).box(.3,.03,.2,r===0&&k%3===0?col:k%5===2?P.AM:[.32,.36,.42],r===0&&k%3===0?.9:k%5===2?.7:.25);
+  dk(0,.1,.7).box(4.3,.05,.06,col,.8);
+  const qs=qMul(q,_bq(1,0,0,-.2),q0()),sv=(lx,ly,lz,sx)=>{qRot(qs,lx,ly,lz,_bv);qRot(q,0,3.35,-.5,_u);return g.set(c.x+_u.x+_bv.x,3.35+_bv.y,c.z+_u.z+_bv.z,qs,sx)};
+  sv(0,0,0).box(4,2.05,.2,P.TR);sv(0,0,.11).box(3.7,1.78,.04,mixC(P.SC,col,.1),.4);
+  sv(0,.8,.14).box(3.7,.1,.04,col,.95);
+  for(let i=0;i<4;i++){const w=.4+((i*7+c.x*3)%5)/5*1.1;sv(-1.75+w/2,-.5-i*.1,.14).box(w,.05,.03,scaleC(col,.8),.85)}
+  sv(1.45,-.6,.14).box(.5,.4,.03,scaleC(col,.5),.5);
+  sv(0,-1.05,.05).box(4,.08,.3,P.DK)}
+// command dais and chair, crew seats, back-wall screens and cabinets, engineering, hatch
+function bridgeFurniture(g,P){const yq=a=>_bq(0,1,0,a);
+  // crew seats behind helm and weapons
+  for(const s of[-1,1]){const x=10*s;g.set(x,.45,8.7).cyl(.3,.55,.9,10,P.MT);g.set(x,1.05,8.7).box(1.9,.32,1.8,P.LE);g.set(x,1.25,8.7).box(1.6,.1,1.5,scaleC(P.LE,1.25));g.set(x,2.3,7.85).box(1.9,2.3,.32,P.LE);g.set(x,2.3,7.68).box(1.6,1.9,.06,P.DK);g.set(x,3.3,7.68).box(1.2,.08,.08,P.AC,.6);
+    for(const a of[-1,1])g.set(x+a*1.05,1.55,8.6).box(.22,.18,1.4,P.MT)}
+  // dais: two steps, accent nosing, chair, arm panels and side consoles
+  g.set(0,.28,-6.5).box(11,.56,6.5,P.TR);g.set(0,.14,-2.9).box(6,.28,.9,P.TR);g.set(0,.58,-3.27).box(11,.04,.1,P.AC,.75);g.set(0,.3,-2.47).box(6,.04,.08,P.AC,.6);
+  for(const s of[-1,1])g.set(5.5*s,.58,-6.5).box(.1,.04,6.5,P.AC,.5);
+  g.set(0,1.05,-6.2).cyl(.45,.7,1,12,P.MT);g.set(0,1.75,-6.2).box(2.6,.45,2.4,P.LE);g.set(0,2.02,-6.1).box(2.2,.1,2,scaleC(P.LE,1.25));g.set(0,2.75,-7.35).box(2.6,2,.45,P.LE);g.set(0,3.85,-7.35).box(1.6,.35,.4,P.LE);g.set(0,2.75,-7.6).box(2.7,2.1,.08,P.TR);g.set(0,2.75,-7.66).box(2.3,1.7,.04,P.DK);for(const k of[-1,1])g.set(k*1.2,2.75,-7.67).box(.06,1.7,.04,P.AC,.45);g.set(0,3.8,-7.62).box(2.2,.06,.06,P.AC,.8);
+  for(const a of[-1,1]){g.set(a*1.45,2.3,-6.1).box(.35,.25,2,P.MT);g.set(a*1.45,2.45,-5.4).box(.3,.04,.6,a<0?P.GL:P.AM,.8);
+    g.set(a*2.9,1.5,-5.1,yq(-a*.5)).box(1.4,1.9,.9,P.MD);const qs=qMul(yq(-a*.5),_bq(1,0,0,-.6),q0());g.set(a*2.9,2.6,-5.1,qs).box(1.3,1.05,.12,P.TR);
+    qRot(qs,0,0,.07,_u);g.set(a*2.9+_u.x,2.6+_u.y,-5.1+_u.z,qs).box(1.15,.9,.03,mixC(P.SC,a<0?P.GL:P.GR,.15),.4);qRot(qs,0,.38,.09,_u);g.set(a*2.9+_u.x,2.6+_u.y,-5.1+_u.z,qs).box(1.15,.07,.03,a<0?P.GL:P.GR,.9)}
+  // back wall: three status screens in bezels
+  for(const x of[-9,0,9]){g.set(x,6.6,-14.75).box(7.6,4.2,.25,P.TR);g.set(x,6.6,-14.6).box(7,3.6,.05,mixC(P.SC,x?P.GL:P.AM,.08),.35);g.set(x,8.3,-14.56).box(7,.12,.05,x?P.GL:P.AM,.9);
+    for(let i=0;i<3;i++)g.set(x-2.6+i*.5,5,-14.56).box(.3,.3,.03,[P.GR,P.AM,P.GL][i],.8)}
+  // equipment cabinets under the screens
+  for(let x=-12.5;x<=9;x+=2.5){if(Math.abs(x)<5.6)continue;g.set(x,1.4,-14.55).box(2.35,2.8,.8,P.MD);g.set(x,1.4,-14.13).box(2.1,2.55,.04,scaleC(P.MD,1.12));g.set(x,1.4,-14.1).box(.04,2.5,.03,P.DK);g.set(x+.7,2.4,-14.1).box(.25,.08,.03,[P.GR,P.AM,P.GL][Math.round(x/2.5+6)%3],.85)}
+  // engineering: reactor column with glowing core and clamp rings, control bank
+  g.set(-19.5,5.5,-12.5).cyl(1.6,1.6,11,16,P.TR);g.set(-19.5,5.5,-12.5).cyl(.95,.95,11.1,16,P.AM,.8);for(const y of[1.2,3.6,6,8.4,10.2])g.set(-19.5,y,-12.5).cyl(1.85,1.85,.45,16,P.MT);
+  for(let i=0;i<6;i++){const a=i/6*TAU;g.set(-19.5+Math.cos(a)*1.62,5.5,-12.5+Math.sin(a)*1.62,yq(-a)).box(.12,9.6,.4,P.DK)}
+  g.set(-17,1.2,-14.2).box(4,2.4,1.2,P.MD);g.set(-17,2.45,-14.1).box(3.8,.1,1,P.TR);for(let i=0;i<5;i++)g.set(-18.4+i*.7,2.53,-13.8).box(.35,.06,.35,[P.AM,P.GR,P.AM,P.RD,P.GR][i],.9);
+  // hatch: door in a heavy frame, hazard stripes, lit header
+  g.set(15,4,-14.8).box(5.6,8.4,.5,P.TR);g.set(15,4,-14.52).box(4.2,7.2,.1,[.22,.235,.27]);g.set(15,4,-14.45).box(.06,7,.05,P.DK);for(const y of[2,6])g.set(15,y,-14.45).box(4,.06,.05,P.DK);
+  g.set(15,8.2,-14.45).box(4,.3,.1,[.93,.89,.8],.85);
+  for(let i=0;i<7;i++)g.set(12.6+i*.8,.5,-14.5,_bq(0,0,1,.7)).box(.35,1,.06,i%2?[.1,.1,.1]:P.AM,i%2?0:.55);
+  for(const s of[-1,1])g.set(15+s*2.8,4,-14.5).box(.3,8,.08,P.AM,.45)}
+// baked lighting: corners and floor edges fall into shadow, pools of light under the ceiling strips and the table ring
+function bridgeLight(d){const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+  for(let i=0;i<d.length;i+=10){if(d[i+9]>.3)continue;const x=d[i],y=d[i+1],z=d[i+2];
+    const dw=Math.min(22-Math.abs(x),15-Math.abs(z)),wall=1-.32*(1-sm(0,3.5,dw)),
+      flo=1-.22*(1-sm(0,1.6,y))*(1-sm(0,6,dw)),cei=1-.3*sm(8.5,11,y),
+      pool=y<4.5?1+.22*Math.exp(-((Math.abs(x)-12)**2)/18)+.28*Math.exp(-(x*x+(z-2)**2)/26)+.12*Math.exp(-(x*x+(z+6)**2)/20):1,
+      f=wall*flo*cei*pool;
+    d[i+6]*=f;d[i+7]*=f;d[i+8]*=f}}
 function bridgeOrigin(F){const k=F.st.radius*1.25;qRot(F.q,BRIDGE.off[0]*k,BRIDGE.off[1]*k,BRIDGE.off[2]*k,_u);return{x:F.x+_u.x,y:F.y+_u.y,z:F.z+_u.z}}
 function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id});W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();flash(`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok)}
 function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q);cam.snap=true;SFX.clunk();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
@@ -1722,6 +1806,8 @@ function bridgeScreens(c,B,F,O,C,T){const at=(x,y,z)=>{qRot(F.q,x,y,z,_u);return
   const sc=3.2/2600;for(const e of W.ents){if(e.type!=='ship'||!e.alive||e===F)continue;const dx=e.x-F.x,dy=e.y-F.y,dz=e.z-F.z;if(hyp(dx,dy,dz)>2600)continue;
     const lx=dx*_r0(F,0)+dy*_r0(F,1)+dz*_r0(F,2),ly=dx*_u0(F,0)+dy*_u0(F,1)+dz*_u0(F,2),lz=dx*_f0(F,0)+dy*_f0(F,1)+dz*_f0(F,2);
     const P=at(lx*sc,2.9+ly*sc*.6,2+lz*sc);if(P.behind)continue;c.globalAlpha=.9;c.fillStyle=e.isPlayer||e.rp?'#f0b24a':hostile('player',e.side)?'#ff5d4f':'#7ad9a7';c.beginPath();c.arc(P.x,P.y,Math.max(1.5,40/P.d),0,Math.PI*2);c.fill()}
+  {c.lineWidth=1;for(const[R,al]of[[3.25,.32],[1.6,.2]]){c.beginPath();let pen=false;for(let i=0;i<=40;i++){const a=i/40*TAU,P=at(Math.sin(a)*R,2.9,2+Math.cos(a)*R);if(P.behind){pen=false;continue}pen?c.lineTo(P.x,P.y):c.moveTo(P.x,P.y);pen=true}c.globalAlpha=al;c.strokeStyle='#8fd0ff';c.stroke()}
+   const A=at(0,2.15,2),Bp=at(0,3.3,2);if(!A.behind&&!Bp.behind){c.globalAlpha=.25;c.strokeStyle='#bfe0ff';c.lineWidth=Math.max(1,30/A.d);c.beginPath();c.moveTo(A.x,A.y);c.lineTo(Bp.x,Bp.y);c.stroke()}}
   {const P=at(0,2.9,2);if(!P.behind){c.globalAlpha=.9;c.fillStyle='#bfe0ff';c.beginPath();c.arc(P.x,P.y,Math.max(2,60/P.d),0,Math.PI*2);c.fill()}}
   c.globalAlpha=1}
 const _bx={};function _axis(F,k){if(_bx.q!==F.q||_bx.t!==W.t){_bx.q=F.q;_bx.t=W.t;qRot(F.q,1,0,0,_u);_bx.r=[_u.x,_u.y,_u.z];qRot(F.q,0,1,0,_u);_bx.u=[_u.x,_u.y,_u.z];qRot(F.q,0,0,1,_u);_bx.f=[_u.x,_u.y,_u.z]}return _bx[k]}
@@ -3004,8 +3090,8 @@ function draw3D(){
   for(const a of sec.ast){const R=astR(a);if(!inView(a.x,a.y,a.z,R))continue;const sd=a.seed||a.id;qAxis(((sd>>3)%7-3)/4,((sd>>6)%5-2)/2.5,1,(sd%628)/100+t*(((sd>>9)%7)-3)*.03,_qs);qNorm(_qs);mModel(MM,a.x,a.y,a.z,_qs,R,R*(.85+(sd%13)/40),R);drawMesh(astMesh(sd%8,a.comet?'comet':mainOre(a)||'fe'),MM)}
   for(const c of sec.crates){if(!inView(c.x,c.y,c.z,20))continue;qAxis(.3,1,.2,t*1.1+c.id,_qs);qNorm(_qs);mModel(MM,c.x,c.y,c.z,_qs,16,16,16);drawMesh(GEN.crate,MM);drawMesh(GEN.crateL,MM,c.derelict?rgb(PLAYER_COL):[.9,.88,.8])}
   const hideP=cam.mode==='cockpit'||S.player.docked||W.dead;
-  if(W.bridge){const F=W.bridge.f,O=bridgeOrigin(F);mModel(MM,O.x,O.y,O.z,F.q,1,1,1);qRot(F.q,.22,1,.3,_u);const l=hyp(_u.x,_u.y,_u.z);G.uniform3f(PM.u.uL,_u.x/l,_u.y/l,_u.z/l);G.uniform3fv(PM.u.uSun,BR_SUN);G.uniform3fv(PM.u.uAmb,BR_AMB);drawMesh(bridgeMesh(),MM);useMesh()}
-  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f)continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=e.side==='pirate'?'pirate':e.fac,m=shipMesh(fac,e.cls);
+  if(W.bridge){const F=W.bridge.f,O=bridgeOrigin(F);mModel(MM,O.x,O.y,O.z,F.q,1,1,1);qRot(F.q,.22,1,.3,_u);const l=hyp(_u.x,_u.y,_u.z);G.uniform3f(PM.u.uL,_u.x/l,_u.y/l,_u.z/l);G.uniform3fv(PM.u.uSun,BR_SUN);G.uniform3fv(PM.u.uAmb,BR_AMB);drawMesh(bridgeMesh(F.fac),MM);useMesh()}
+  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f&&!mdlHas('frigate'))continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=e.side==='pirate'?'pirate':e.fac,m=shipMesh(fac,e.cls);
     mModel(MM,e.x,e.y,e.z,e.q,sc,sc,sc);const hurt=W.t-e.lastHit<.08;drawMesh(m.hull,MM,ONE3,hurt?[.35,.25,.15]:ZERO3);drawMesh(m.rim,MM);
     if(e.cls==='gunboat'&&!(W.gunseat&&gsEnt()===e)){const T=e.tur||{yaw:Math.PI,pitch:.1};turretQ(e,T,_gq3);qRot(e.q,0,.4*sc,-.38*sc,_u);mModel(MM,e.x+_u.x,e.y+_u.y,e.z+_u.z,_gq3,sc,sc,sc);const tm=gturretMesh(fac);drawMesh(tm.hull,MM,ONE3,ZERO3);drawMesh(tm.rim,MM)}}
   G.enable(G.BLEND);G.blendFunc(G.ONE,G.ONE);G.depthMask(false);useMesh();
