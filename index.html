@@ -693,7 +693,8 @@ const TYPE_TEXT={forge:'Forge · Lattice, Cores, Mk IV–V fitting',relay:'Relay
 function oStats(o){const L=o.level;return{sMax:400+350*L,hMax:900+450*L,dmg:7+3*L,rof:1.6+.3*L,range:950}}
 function sideCol(s){return s==='player'?PLAYER_COL:s==='pirate'?PIRATE.col:FACTIONS[s]?FACTIONS[s].col:'#7f8aa3'}
 function sideName(s){return s==='player'?'You':s==='pirate'?'The Unbound':FACTIONS[s]?FACTIONS[s].short:'Unclaimed'}
-function hostile(a,b){if(!a||!b||a===b)return false;const pf=S.player.faction;if((a==='player'&&b===pf)||(b==='player'&&a===pf))return false;return true}
+function hostile(a,b){if(!a||!b||a===b)return false;const pf=S.player.faction;if((a==='player'&&b===pf)||(b==='player'&&a===pf))return false;
+  const C=S.coal;if(C){const A=a==='player'?pf:a,B=b==='player'?pf:b;if(A!==B&&C.mem.includes(A)&&C.mem.includes(B))return false}return true}
 
 // ============================================================ state
 let S=null,W=null,running=false;
@@ -814,7 +815,7 @@ function strategicTick(){
     for(let i=s.crates.length-1;i>=0;i--){const c=s.crates[i];if(T>c.until){toDebris(s,c.inv);s.crates.splice(i,1)}}
     for(let i=s.ast.length-1;i>=0;i--){const a=s.ast[i];if(a.comet&&T>a.until){toDebris(s,a.ore);s.ast.splice(i,1);if(W&&W.tgt&&W.tgt.ref===a)W.tgt=null}}
   }
-  diffuse();seamTick(2);scoutsTick();threatTick();capitalTick();victoryTick();for(const ev of S.events)announce(ev);
+  diffuse();seamTick(2);scoutsTick();coalTick();threatTick();capitalTick();victoryTick();for(const ev of S.events)announce(ev);
   for(const f of FAC_IDS)factionIndustry(f);factionIndustry('brood');
   pirateIndustry();
   const h=S.outposts.hollow;
@@ -928,10 +929,23 @@ function frigOrders(t){let best=t.sector,bs=-1e9;for(const d of SECTOR_DEFS){con
     if(frigatesIn(d.id).some(o=>hostile(t.side,o.side)))sc+=3;
     if(!Rs&&d.kind!=='hive'&&d.kind!=='den'&&d.kind!=='core'&&frigControl(d.id)!==t.side){sc+=2.5;const oid=OUT_BY_SECTOR[d.id];if(oid&&S.outposts[oid].owner!==t.side)sc+=2}
     if(territory(t.side).has(d.id)&&frigatesIn(d.id).some(o=>hostile(t.side,o.side)))sc+=4;
-    if(frigatesIn(d.id).some(o=>o!==t&&o.side===t.side))sc-=3;if(sc>bs){bs=sc;best=d.id}}return best}
+    if(frigatesIn(d.id).some(o=>o!==t&&o.side===t.side))sc-=3;
+    {const C=S.coal;if(C&&t.side!=='brood'){const ow=sideNorm(sectorOwner(d.id));if(C.mem.includes(t.side)){if(ow===C.lead)sc+=5;if(frigatesIn(d.id).some(o=>sideNorm(o.side)===C.lead))sc+=4}else if(t.side===C.lead){if(ow===t.side&&frigatesIn(d.id).some(o=>hostile(t.side,o.side)))sc+=4;if(ow!==t.side)sc-=2.5}}}
+    if(sc>bs){bs=sc;best=d.id}}return best}
 const WIN_TIME=1800;
 function controlCounts(){const n={};for(const d of SECTOR_DEFS){let o=sectorOwner(d.id);if(o==='player')o=S.player.faction;if(o&&o!=='pirate')n[o]=(n[o]||0)+1}return n}
 const VIC_NEED=Math.floor(SECTOR_DEFS.filter(d=>d.kind!=='void').length/2)+1;
+// ============================================================ the coalition: when one side nears galaxy control, the other factions call a truce and
+// turn on it. The Brood never joins: it keeps playing for its own dominance, and if the Brood is the one winning, all three factions unite against it.
+function sideNorm(sd){return sd==='player'?S.player.faction:sd}
+function coalNames(m){const n=m.map(f=>FACTIONS[f].short);return n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]:n[0]}
+function coalTick(){const n=controlCounts();let lead=null,best=0;for(const k in n){if(k==='pirate')continue;if(n[k]>best){best=n[k];lead=k}}
+  const C=S.coal,pf=S.player.faction;
+  if(C){const m=n[C.lead]||0;if(m<=VIC_NEED-3){S.coal=null;feed(`The truce against ${C.lead==='brood'?'the Brood':FACTIONS[C.lead].short} has collapsed: ${m} systems is no longer a threat. ${coalNames(C.mem)} go back to their own wars.`,'news')}
+    else if(!(lead&&lead!==C.lead&&best>=VIC_NEED-1&&best>m))return}
+  if(!lead||best<VIC_NEED-1)return;const mem=FAC_IDS.filter(f=>f!==lead);if(!mem.length)return;S.coal={lead,mem,since:S.T};
+  if(lead==='brood')feed(`⚠ The Brood holds ${best} systems. ${coalNames(mem)} have set aside their war to stop the Bloom: their fleets hold fire on each other and turn on the Brood.`,'bad');
+  else feed(`${coalNames(mem)} have called a truce to stop ${FACTIONS[lead].name} (${best} of ${VIC_NEED} systems). Their fleets now hold fire on each other and go after ${FACTIONS[lead].short}.${lead===pf?' The galaxy is coming for you.':mem.includes(pf)?` ${FACTIONS[pf].short} is in the truce: their ships won't fire on you and your guns won't touch theirs.`:''}`,lead===pf?'bad':'warn')}
 function victoryTick(){const n=controlCounts(),need=VIC_NEED;let lead=null;for(const k in n)if(n[k]>=need)lead=k;
   if(!lead){if(S.victory)feed(`${sideName(S.victory.side)} has lost its grip on the galaxy.`,'news');S.victory=null;return}
   if(!S.victory||S.victory.side!==lead){S.victory={side:lead,since:S.T};feed(`${lead==='brood'?'⚠ The Brood':sideName(lead)} now controls ${n[lead]} of ${SECTOR_DEFS.length} systems. Hold ${VIC_NEED} for 30 minutes and the galaxy is ${lead===S.player.faction?'yours':'theirs'}.`,lead===S.player.faction?'good':'bad');return}
@@ -955,6 +969,10 @@ function planOffensive(f){
     if(f==='brood')w=R.kind==='core'?(adj?.5:0):2.6*bw(sid);
     else if(R.kind==='depot'){if(f==='pirate')w=R.owner==='player'?1.4:DEF[sid].home?0:.5;else w=(R.owner==='brood'?3.6:R.owner==='player'?1.2:DEF[sid].home?.15:.9)*(adj?1.4:.2)}
     if(w>0)c.push([{st:sid},w])}
+  {const C=S.coal;if(C&&f!=='pirate'&&f!=='brood'){const own=x=>{const o=x[0].out?S.outposts[x[0].out]:null;return sideNorm(o?o.owner:S.stations[x[0].st].owner)};
+    if(C.mem.includes(f)){for(const x of c){const ow=own(x);x[1]*=ow===C.lead?4.5:C.mem.includes(ow)?0:1}}
+    else if(f===C.lead){for(const x of c){const sec=x[0].st||S.outposts[x[0].out].sector;if(!adjOf(sec))x[1]*=.15}S.ai[f].next+=35}
+    for(let i=c.length-1;i>=0;i--)if(c[i][1]<=0)c.splice(i,1)}}
   if(!c.length)return;if(FACTIONS[f]&&f!=='brood'){const see=covOf(f);for(const x of c){const sec=x[0].st||S.outposts[x[0].out].sector;if(see.has(sec))x[1]*=1.4}}
   const pk=wpickArr(c),isSt=!!pk.st,Rr=isSt?S.stations[pk.st]:null,o=isSt?null:S.outposts[pk.out];
   const lvl=isSt?(Rr.kind==='core'?4:2):o.level,sector=isSt?pk.st:o.sector,owner=isSt?Rr.owner:o.owner,name=isSt?Rr.name:o.name;
@@ -997,14 +1015,14 @@ function finishOffensive(ev){ev.stage='done';inv.addAll(S.econ.stock[ev.att],ev.
 // A faction that sees hostile capital ships in its space goes on a war footing: it makes torpedoes, musters bombers into a
 // hunter group over a few strategic ticks, then sends it after the frigate. Each failed hunt makes the next one bigger.
 // The same machinery sends response wings to stations calling for help, and to pilots who call for help.
-function capThreats(f){const terr=territory(f),out=[];for(const t of S.frigates||[]){if(t.hull<=0||!hostile(f,t.side))continue;
-    const near=terr.has(t.sector)||Object.keys(S.stations).some(sid=>S.stations[sid].owner===f&&HOP[sid][t.sector]<=1);if(!near)continue;
+function capThreats(f){const terr=territory(f),out=[],C=S.coal;for(const t of S.frigates||[]){if(t.hull<=0||!hostile(f,t.side))continue;
+    const lead=C&&C.mem.includes(f)&&sideNorm(t.side)===C.lead;const near=lead||terr.has(t.sector)||Object.keys(S.stations).some(sid=>S.stations[sid].owner===f&&HOP[sid][t.sector]<=1);if(!near)continue;
     out.push({t,w:t.side==='brood'?1.5:1,home:terr.has(t.sector)})}return out.sort((a,b)=>(b.home-a.home)||(b.w-a.w))}
 function ownerFeed(t,msg,k){if(!fOwn(t))return;feedTo(t.owner||null,msg,k)}
 function respSource(f,sid){let best=null,bh=99;for(const id in S.stations){const R=S.stations[id];if(R.owner!==f||R.kind==='hive')continue;const h=HOP[id][sid];if(h<bh){bh=h;best=id}}return best?{sid:best,h:bh}:null}
 function huntActive(f,tokId){return S.events.some(e=>e.type==='response'&&e.kind==='hunt'&&e.att===f&&e.tok===tokId&&e.stage!=='done')}
 function threatTick(){const T=S.T;for(const f of FAC_IDS){const A=S.ai[f];if(!A)continue;const th=capThreats(f),F=FACTIONS[f].short;
-    A.threat=th.reduce((a,x)=>a+x.w,0)+(A.huntFail||0)*.5;
+    A.threat=th.reduce((a,x)=>a+x.w,0)+(A.huntFail||0)*.5;if(S.coal&&S.coal.lead===f)A.war=Math.max(A.war||0,T+120);
     if(th.length){if(!(A.war>T)&&(friendSide(f)||th.some(x=>fOwn(x.t))))feed(`${F} command is on a war footing: hostile capital ships in ${F} space. Torpedo lines and bomber crews are being raised.`,friendSide(f)?'info':'warn');A.war=T+300}
     const hm=A.hm;
     if(hm){const t=(S.frigates||[]).find(x=>x.id===hm.tok&&x.hull>0),st0=S.econ.stock[f],need=capNeed(f),srcs=[S.econ.fleet[f]].concat(!need||((st0.plate||0)>40&&(st0.coil||0)>12)?[st0]:[]),tier=factionTier(f);
@@ -1020,7 +1038,7 @@ function threatTick(){const T=S.T;for(const f of FAC_IDS){const A=S.ai[f];if(!A)
     if(th.length){const x=th.find(x=>!huntActive(f,x.t.id));if(x){A.hm={tok:x.t.id,start:T,force:{},cls:[],need:clamp(Math.round(4+2*A.threat),4,10)};
       ownerFeed(x.t,`Intel: ${F} is massing bombers to hunt ${x.t.name} in ${DEF[x.t.sector].name}.`,'warn')}}}}
 // send a wing from the nearest station of faction f to sector sid. kind: 'distress' (a station under attack) or 'pilot' (a pilot asked for help)
-function dispatchResponse(f,sid,kind,o){o=o||{};if(!FACTIONS[f])return null;const src=respSource(f,sid);if(!src||src.h>(kind==='pilot'?4:3))return null;
+function dispatchResponse(f,sid,kind,o){o=o||{};if(!FACTIONS[f])return null;const src=respSource(f,sid);if(!src||src.h>(kind==='pilot'?4:S.coal&&S.coal.lead===f?5:3))return null;
   if(S.events.some(e=>e.type==='response'&&e.att===f&&e.sector===sid&&e.kind===kind&&e.stage!=='done'&&(kind!=='pilot'||e.pid===o.pid)))return null;
   const capHere=frigatesIn(sid).some(t=>hostile(f,t.side)),n=kind==='pilot'?4:capHere?5:4,nb=capHere?2:0,tier=factionTier(f),srcs=[S.econ.fleet[f],S.econ.stock[f]],force={},cls=[];
   for(let i=0;i<n;i++){let cl=i<nb?'bomber':pickFighter('patrol'),ld=loadout('patrol',tier,cl);if(!haveIn(ld,srcs)){cl='striker';ld=loadout('patrol',tier,cl)}if(takeFrom(ld,srcs)){inv.addAll(force,ld);cls.push(cl)}else break}
@@ -2161,6 +2179,7 @@ function npcThink(e,dt){
   if(e.role==='picket'){droneThink(e,dt);return}
   if(e.role==='scout'){scoutThink(e,dt);return}
   if(e.role==='builder'){if(W.t-e.lastHit<3)e.boosting=false;builderThink(e,dt);return}
+  if(ai.tgt&&ai.tgt.type==='ship'&&!hostile(e.side,ai.tgt.side))ai.tgt=null;
   if(e.order&&orderThink(e,dt))return;
   const combat=e.role==='patrol'||e.role==='raider'||e.role==='pirate'||e.role==='strike'||e.role==='escort'||e.role==='screen';
   if(e.role==='screen'&&ai.tgt){const F=e.grp&&e.grp.screen;if(F&&(ai.tgt.type!=='ship'||d3(ai.tgt,F)>(ai.tgt.cls==='bomber'?4200:3200)))ai.tgt=null}
@@ -3293,7 +3312,7 @@ function hudUpdate(){
   const P=S.player,p=W.player,d=DEF[W.sid],oid=OUT_BY_SECTOR[W.sid],o=oid&&S.outposts[oid];
   $('hSec').textContent=d.name;
   {const Rs=S.stations[W.sid];$('hSub').textContent=(d.home?`${FACTIONS[d.home].short} ${d.kind==='core'?'core space':'frontier'}`:d.kind==='den'?'Unbound territory':d.kind==='hub'?'Junction':d.kind==='hive'?'Brood hive':d.kind==='deep'?'Deep space':d.kind==='void'?'Quiet space':'Contested')+(Rs?` · ${Rs.name}`:'')+(o?` · ${o.name}: ${o.owner?sideName(o.owner):'unclaimed'}`:'')+(!Rs&&!o?' · no station':'')}
-  const chips=[];if(S.victory){const n=controlCounts()[S.victory.side]||0;chips.push([`${S.victory.side==='brood'?'Brood':sideName(S.victory.side)} holds ${n}/${SECTOR_DEFS.length} systems · galaxy falls in ${fmtT(Math.max(0,WIN_TIME-(S.T-S.victory.since)))}`,S.victory.side===S.player.faction?'good':'bad'])}if(W.pbuild)chips.push([`Building depot ${Math.round(W.pbuild.prog*100)}%${d3(W.pbuild,p)>350?' · return to the site':''}`,'good']);if(W.scaffold)chips.push([`${sideName(W.scaffold.owner)} construction ${Math.round(W.scaffold.prog*100)}%`,friendSide(W.scaffold.owner)?'good':'bad']);if(apOn)chips.push(['Autopilot · J to cancel','good']);if(S.player.route)chips.push([`Course: ${DEF[S.player.route].name}`,'warn']);if(S.player.level===false)chips.push(['Auto-level off','warn']);if(S.sectors[W.sid].storm>S.T)chips.push(['Ion storm','warn']);
+  const chips=[];if(S.coal)chips.push([`Truce vs ${S.coal.lead==='brood'?'the Brood':FACTIONS[S.coal.lead].short}`,S.coal.lead===S.player.faction?'bad':'warn']);if(S.victory){const n=controlCounts()[S.victory.side]||0;chips.push([`${S.victory.side==='brood'?'Brood':sideName(S.victory.side)} holds ${n}/${SECTOR_DEFS.length} systems · galaxy falls in ${fmtT(Math.max(0,WIN_TIME-(S.T-S.victory.since)))}`,S.victory.side===S.player.faction?'good':'bad'])}if(W.pbuild)chips.push([`Building depot ${Math.round(W.pbuild.prog*100)}%${d3(W.pbuild,p)>350?' · return to the site':''}`,'good']);if(W.scaffold)chips.push([`${sideName(W.scaffold.owner)} construction ${Math.round(W.scaffold.prog*100)}%`,friendSide(W.scaffold.owner)?'good':'bad']);if(apOn)chips.push(['Autopilot · J to cancel','good']);if(S.player.route)chips.push([`Course: ${DEF[S.player.route].name}`,'warn']);if(S.player.level===false)chips.push(['Auto-level off','warn']);if(S.sectors[W.sid].storm>S.T)chips.push(['Ion storm','warn']);
   for(const g of GATES[W.sid])if(S.gateDown[gateKey(W.sid,g.to)])chips.push(['Gate to '+DEF[g.to].name+' down','bad']);
   for(const ev of S.events){if(ev.sector!==W.sid)continue;if(ev.type==='comet')chips.push(['Comet in sector','good']);if(ev.type==='derelict')chips.push(['Derelict cargo','good']);if(ev.type==='offensive'){if(ev.stage==='engaged')chips.push([`${sideName(ev.att)} assault in progress`,'bad']);else if(evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'swarm':'strike'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,'warn'])}if(ev.type==='build'&&ev.stage==='inbound'&&evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'Seeder':'constructor'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,friendSide(ev.att)?'good':'warn'])}
   if(o&&o.cap.p>0)chips.push([`${sideName(o.cap.side)} claiming ${Math.round(o.cap.p*100)}%`,o.cap.side==='player'?'good':'warn']);
@@ -3513,7 +3532,7 @@ function renderMapSide(){
   for(const k in L.L){const v=L.L[k];h+=`<tr><td>${k}</td>${RAWS.map(e=>`<td class="r num">${fmt(v[e])}</td>`).join('')}</tr>`}
   h+=`<tr><td><b>Total</b></td>${RAWS.map(e=>`<td class="r num"><b>${fmt(L.tot[e])}</b></td>`).join('')}</tr></tbody></table></div><div class="kv" style="margin-top:8px"><span>Total mass</span><b>${fmt(tm)} t (Δ ${tm-t0})</b><span>Total credits</span><b>${fmt(L.credits)} (Δ ${L.credits-S.ledger0.credits})</b></div></div>`;
   h+=`<div><div class="h3">Recent</div><div class="log">${FEED.slice(-30).reverse().map(f=>`<div><b>${fmtT(f.t)}</b>${esc(f.msg)}</div>`).join('')||'<div>Quiet so far.</div>'}</div></div>`;
-  {const n=controlCounts(),need=VIC_NEED;h=`<div><div class="h3">Galaxy control · ${need} of ${SECTOR_DEFS.length} systems for 30 min wins</div><div class="kv">${[...FAC_IDS,'brood'].map(k=>`<span style="color:${sideCol(k)}">${sideName(k)}</span><b>${n[k]||0}${S.victory&&S.victory.side===k?` · wins in ${fmtT(Math.max(0,WIN_TIME-(S.T-S.victory.since)))}`:''}</b>`).join('')}</div></div>`+h}
+  {const n=controlCounts(),need=VIC_NEED;h=`<div><div class="h3">Galaxy control · ${need} of ${SECTOR_DEFS.length} systems for 30 min wins</div><div class="kv">${[...FAC_IDS,'brood'].map(k=>`<span style="color:${sideCol(k)}">${sideName(k)}</span><b>${n[k]||0}${S.victory&&S.victory.side===k?` · wins in ${fmtT(Math.max(0,WIN_TIME-(S.T-S.victory.since)))}`:''}</b>`).join('')}</div>${S.coal?`<p class="note" style="margin-top:6px">${S.coal.lead==='brood'?'⚠ ':''}Truce: ${coalNames(S.coal.mem)} against ${S.coal.lead==='brood'?'the Brood':FACTIONS[S.coal.lead].short}. They hold fire on each other until it falls below ${VIC_NEED-2} systems.</p>`:''}</div>`+h}
   {const mine=(S.frigates||[]).filter(fMine),yb=S.events.find(e=>e.type==='yardbuild'&&e.att===yk()),fb=S.events.find(e=>e.type==='frigbuild'&&e.att===yk());
     if(mine.length||S.yards[yk()]||yb){h=`<div><div class="h3">Your capital fleet</div>${!S.yards[yk()]?`<p class="note" style="margin:0 0 6px">Shipyard ${yb?'under construction':'not built'}.</p>`:fb?`<p class="note" style="margin:0 0 6px">Frigate in the slip: ${Math.round((1-(fb.until-S.T)/FRIGATE_TIME)*100)}%.</p>`:''}
       ${mine.map(t=>`<div class="opr assist"><div><b>${esc(t.name)}</b> · ${esc(DEF[t.sector].name)}${t.dest&&t.dest!==t.sector?` → ${esc(DEF[t.dest].name)}`:''}<br><span>hull ${Math.round(t.hull/FRIG_HULL*100)}% · ${frigControl(t.sector)==='player'?'holding this system':S.stations[t.sector]?(friendSide(S.stations[t.sector].owner)?'at a friendly station':'besieging '+esc(S.stations[t.sector].name)):t.dest&&t.dest!==t.sector?'under way':'contested'}</span></div>${mapSel!==t.sector&&mapSel!==t.dest?`<button class="btn" type="button" data-fsend="${t.id}">Send to ${esc(DEF[mapSel].name)}</button>`:''}</div>`).join('')}
