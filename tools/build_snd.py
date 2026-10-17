@@ -36,6 +36,8 @@ C={
  'err':(IF,'error_006.ogg',0,.5,.15,.1),'warn':(IF,'error_008.ogg',0,.14,.05,.1),'alarm':(DG,'lowThreeTone.mp3',0,.96,.2,.12),
  'dist':(DG,'threeTone2.mp3',0,1.13,.3,.1),
  'cb1':(IF,'glass_002.ogg',0,.12,.04,.06),'cb2':(IF,'glass_003.ogg',0,.12,.04,.06),'cb3':(IF,'glass_006.ogg',0,.13,.04,.06),'cb4':(IF,'select_001.ogg',0,.04,.01,.06),'cb5':(IF,'tick_004.ogg',0,.06,.02,.06),'cb6':(IF,'pluck_002.ogg',0,.16,.05,.06),
+ # docking: thruster puffs, tractor lock, magnetic settle, servo chirps
+ 'rcs1':(SF,'thrusterFire_002.ogg',.3,.24,.16,.12),'rcs2':(SF,'thrusterFire_004.ogg',.5,.22,.15,.12),'lockon':(DG,'zapThreeToneUp.mp3',0,.9,.3,.1),'settle':(DG,'phaserDown3.mp3',0,.43,.15,.12),'chirp':(DG,'pepSound3.mp3',0,.38,.12,.08),'chirp2':(DG,'pepSound1.mp3',0,.46,.12,.08),
  'click':(IF,'click_002.ogg',0,.05,.01,.08),'click2':(IF,'select_002.ogg',0,.04,.01,.08),
  'swOn':(IF,'switch_003.ogg',0,.3,.1,.1),'swOff':(IF,'switch_005.ogg',0,.3,.1,.1),
  'ore1':(IF,'drop_002.ogg',0,.19,.06,.1),'ore2':(IF,'drop_003.ogg',0,.19,.06,.1),'ore3':(IF,'drop_004.ogg',0,.28,.08,.1),
