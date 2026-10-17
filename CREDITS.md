@@ -5,4 +5,11 @@ All ship and structure models are CC0 (public domain). They were recoloured into
 - **Kenney Space Kit** and **Kenney Space Station Kit** by Kenney (kenney.nl), CC0. These supply the work ships, stations, depots, outposts and the frigate.
 - **Lowpoly Spaceships (Jan 2018)** by Quaternius (quaternius.com), CC0. These supply the fighters.
 
-`tools/` holds the scripts that build the model pack (`build_models.py`).
+# Sound credits
+
+All recorded sound effects are CC0 or free for any use with no credit required. They were trimmed, levelled and packed into the game file.
+
+- **Sci-Fi Sounds**, **Interface Sounds** and **Digital SFX Set** by Kenney (kenney.nl).
+- **SpaceSFX1** by messersm (OpenGameArt), CC0.
+
+`tools/` holds the scripts that build the model pack (`build_models.py`) and the sound pack (`build_snd.py`).
