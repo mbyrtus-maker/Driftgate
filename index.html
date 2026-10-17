@@ -1599,15 +1599,23 @@ function rumble(fc,dur,vol,q,to){if(!auOK()||!AU.on.sfx||vol<.015||!voice(dur))r
 // air-brake hiss: high-passed noise
 function hiss(dur,vol){if(MUTE||!auOK()||!AU.on.sfx||!voice(dur))return;const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;src.loop=true;f.type='highpass';f.frequency.setValueAtTime(2600,t);f.frequency.linearRampToValueAtTime(1500,t+dur);src.connect(f);f.connect(g);g.connect(AU.sfx);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+dur);src.start(t,Math.random());src.stop(t+dur+.05)}
 // hangar lift: a labouring hydraulic drone, a servo whine and a low mechanical rumble that all sink as the ship is lowered
-// docking tractor field: two humming tones a fifth apart that drift down as the ship is drawn in, a shimmering high band of
-// filtered noise that sweeps slowly, and a soft pulsing telemetry tone; runs from lock-on until the seal (or an abort)
-function dockHyd(dur){dockHydStop();if(MUTE||!auOK()||!AU.on.sfx)return;const c=AU.ctx,t=c.currentTime,N=[],G=[],bus=AU.sx||AU.sfx;
-  const mk=(node,filt,vol)=>{const g=c.createGain();(filt||node).connect(g);if(filt)node.connect(filt);g.connect(bus);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.5);g.gain.setValueAtTime(vol,t+dur-.4);g.gain.linearRampToValueAtTime(.0001,t+dur);node.start(t);node.stop(t+dur+.1);N.push(node);G.push(g)};
-  for(const[f,v]of[[82,.05],[123.8,.032]]){const o=c.createOscillator();o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.linearRampToValueAtTime(f*.86,t+dur);mk(o,null,v)}
-  const n=c.createBufferSource(),bp=c.createBiquadFilter();n.buffer=AU.noise;n.loop=true;bp.type='bandpass';bp.frequency.value=2100;bp.Q.value=9;mk(n,bp,.05);
-  const l=c.createOscillator(),lg=c.createGain();l.frequency.value=.7;lg.gain.value=700;l.connect(lg);lg.connect(bp.frequency);l.start(t);l.stop(t+dur+.1);N.push(l);
-  const p=c.createOscillator(),pt=c.createGain(),pl=c.createOscillator(),plg=c.createGain();p.type='sine';p.frequency.value=880;pl.frequency.value=5;plg.gain.value=.5;pl.connect(plg);plg.connect(pt.gain);pt.gain.value=.5;pl.start(t);pl.stop(t+dur+.1);N.push(pl);mk(p,pt,.006);
+// hangar lift: a labouring motor drone, a servo whine and a gear rattle that sink together as the ship is lowered in
+function dockHyd(dur){dockHydStop();if(MUTE||!auOK()||!AU.on.sfx||dur<=.2)return;const c=AU.ctx,t=c.currentTime,N=[],G=[],bus=AU.sx||AU.sfx;
+  const mk=(node,filt,vol,to)=>{const g=c.createGain();(filt||node).connect(g);if(filt)node.connect(filt);g.connect(to||bus);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.25);g.gain.setValueAtTime(vol,t+dur-.3);g.gain.linearRampToValueAtTime(.0001,t+dur);node.start(t);node.stop(t+dur+.1);N.push(node);G.push(g)};
+  const o=c.createOscillator(),of=c.createBiquadFilter();o.type='sawtooth';o.frequency.setValueAtTime(118,t);o.frequency.linearRampToValueAtTime(78,t+dur);of.type='lowpass';of.frequency.setValueAtTime(520,t);of.frequency.linearRampToValueAtTime(300,t+dur);of.Q.value=3;mk(o,of,.1);
+  const l=c.createOscillator(),lg=c.createGain();l.frequency.value=7;lg.gain.value=6;l.connect(lg);lg.connect(o.frequency);l.start(t);l.stop(t+dur+.1);N.push(l);
+  const w=c.createOscillator();w.type='triangle';w.frequency.setValueAtTime(640,t);w.frequency.linearRampToValueAtTime(430,t+dur);mk(w,null,.018);
+  const n=c.createBufferSource(),bp=c.createBiquadFilter(),ra=c.createGain(),rl=c.createOscillator(),rlg=c.createGain();n.buffer=AU.noise;n.loop=true;bp.type='bandpass';bp.frequency.value=1600;bp.Q.value=3;
+  rl.type='square';rl.frequency.value=11;rlg.gain.value=.5;ra.gain.value=.5;rl.connect(rlg);rlg.connect(ra.gain);bp.connect(ra);rl.start(t);rl.stop(t+dur+.1);N.push(rl);mk(n,bp,.0,null);G[G.length-1].disconnect();G.pop();
+  {const g=c.createGain();ra.connect(g);g.connect(bus);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.09,t+.25);g.gain.setValueAtTime(.09,t+dur-.3);g.gain.linearRampToValueAtTime(.0001,t+dur);G.push(g)}
+  const lo=c.createBufferSource(),lf=c.createBiquadFilter();lo.buffer=AU.noise;lo.loop=true;lf.type='lowpass';lf.frequency.setValueAtTime(380,t);lf.frequency.linearRampToValueAtTime(160,t+dur);mk(lo,lf,.14,AU.sfx);
   AU.dockHyd={N,G}}
+// a grinding metal door: low resonant noise swept with the travel, under the door sample
+function doorGrind(dur,up){if(MUTE||!auOK()||!AU.on.sfx||!voice(dur))return;const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;src.loop=true;f.type='bandpass';f.Q.value=5;f.frequency.setValueAtTime(up?240:520,t);f.frequency.linearRampToValueAtTime(up?520:240,t+dur);src.connect(f);f.connect(g);g.connect(AU.sx||AU.sfx);envG(g,t,.08,.07,dur);src.start(t);src.stop(t+dur+.1)}
+// the docking scanner: a pulsing tone that sweeps up and back down the ship, then a chirp when it's done
+function scanSweep(){if(MUTE||!auOK()||!AU.on.sfx||!voice(1.2))return;const c=AU.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain(),am=c.createGain(),l=c.createOscillator(),lg=c.createGain();
+  o.type='triangle';o.frequency.setValueAtTime(620,t);o.frequency.exponentialRampToValueAtTime(2300,t+.5);o.frequency.exponentialRampToValueAtTime(620,t+1);l.type='square';l.frequency.value=16;lg.gain.value=.5;am.gain.value=.5;l.connect(lg);lg.connect(am.gain);
+  o.connect(am);am.connect(g);g.connect(AU.sx||AU.sfx);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.035,t+.06);g.gain.setValueAtTime(.035,t+.92);g.gain.linearRampToValueAtTime(.0001,t+1.02);o.start(t);o.stop(t+1.1);l.start(t);l.stop(t+1.1)}
 function dockHydStop(){const H=AU.dockHyd;if(!H)return;AU.dockHyd=null;try{const t=AU.ctx.currentTime;for(const g of H.G){g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(Math.max(.0001,g.gain.value),t);g.gain.linearRampToValueAtTime(.0001,t+.12)}for(const n of H.N)n.stop(t+.15)}catch(e){}}
 // ============================================================ recorded sound effects
 // Clips from Kenney's Sci-Fi Sounds, Interface Sounds and Digital SFX Set, and messersm's SpaceSFX1 (all CC0), packed into
@@ -1657,14 +1665,16 @@ const SFX0={
   mineOn(){if(!smp('swOn',.3,1)){thump(180,420,.18,.07,'square');rumble(700,.12,.06,2)}},
   mineOff(){if(!smp('swOff',.28,1))thump(400,140,.2,.06,'square')},
   ore(n){if(!smp(['ore1','ore2','ore3'][n%3],.3,1+.06*(n%4),0,0)){const f=[740,880,988,1175][n%4];thump(f,f*.98,.09,.06,'triangle');setTimeout(()=>thump(f*1.5,f*1.48,.07,.03,'sine'),35)}},
-  dockGrab(){dockHyd(DOCK_T);if(smp('lockon',.8,1,0,.02)){smp('chirp',.5,1,.55,0)}else{thump(88,48,.22,.17,'triangle');rumble(230,.18,.12);thump(48,96,1.7,.09,'triangle');[250,420].forEach(d=>setTimeout(()=>thump(1046,1040,.09,.045,'sine'),d))}},
-  dockClamp(){if(smp('clk2',.5,.9)){smp('settle',.45,1,.05);setTimeout(()=>hiss(.5,.05),90)}else{thump(70,28,.55,.28);rumble(320,.35,.2,.9,90);thump(180,120,.09,.08,'square');setTimeout(()=>hiss(.7,.07),120)}},
-  dockClank(i){if(!smp(i%2?'chirp':'chirp2',.4,1+.05*i,0,.03)){thump(250+20*(i%2),180,.06,.05,'square');thump(78,42,.16,.1);rumble(500,.06,.05,1.6)}},
-  dockSeal(){if(smp('doorO',.6,.75)){smp('clk1',.35,.6,.05);setTimeout(()=>hiss(1,.07),150);smp('ok',.45,1,.65,0)}else{thump(54,22,.85,.32);rumble(200,.75,.26,.8,55);setTimeout(()=>hiss(1.2,.09),160);setTimeout(()=>{thump(784,780,.1,.05,'sine');setTimeout(()=>thump(1046,1042,.16,.05,'sine'),110)},700)}},
+  dockGrab(){if(smp('doorO',.7,.62,0,.02)){doorGrind(.85,true);smp('clk1',.4,.85,.8)}else{thump(88,48,.22,.17,'triangle');rumble(230,.18,.12);thump(48,96,1.7,.09,'triangle');[250,420].forEach(d=>setTimeout(()=>thump(1046,1040,.09,.045,'sine'),d))}},
+  dockClamp(){dockHyd(DOCK_T-2.45);if(smp('clk2',.5,.9)){setTimeout(()=>hiss(.4,.05),90)}else{thump(70,28,.55,.28);rumble(320,.35,.2,.9,90);thump(180,120,.09,.08,'square');setTimeout(()=>hiss(.7,.07),120)}},
+  dockClank(i){if(!smp('hul2',.22,1.7+.08*(i%2),0,.03)){thump(250+20*(i%2),180,.06,.05,'square');thump(78,42,.16,.1);rumble(500,.06,.05,1.6)}},
+  dockSeal(){if(smp('clk2',.75,.7)){setTimeout(()=>hiss(1,.08),120);smp('ok',.45,1,.6,0)}else{thump(54,22,.85,.32);rumble(200,.75,.26,.8,55);setTimeout(()=>hiss(1.2,.09),160);setTimeout(()=>{thump(784,780,.1,.05,'sine');setTimeout(()=>thump(1046,1042,.16,.05,'sine'),110)},700)}},
   dockAbort(){if(!smp('err',.4,1,0,0)){thump(330,160,.25,.07,'triangle');setTimeout(()=>thump(220,110,.3,.07,'triangle'),180)}},
   crack(){if(smp('exB',.8,.8)){smp('sub1',.8,1);thump(150,40,.5,.15)}else{thump(150,40,.5,.24);rumble(900,.35,.22,1,180);setTimeout(()=>rumble(400,.6,.16,.8,90),90)}},
   hatch(){smp('doorO',.4,.9)},
   rcs(){smp(['rcs1','rcs2'],.32,1,0,.12)},
+  dockScan(){scanSweep();smp('chirp',.5,1.05,1.05,0)},
+  dockDoor(){if(smp('door',.35,.6,0,.02))doorGrind(.7,false)},
   ui(){smp(['click','click2'],.2,1,0,.05)},
   uiErr(){const t=performance.now();if(t-(AU.errT||0)<450)return;AU.errT=t;smp('err',.22,1.1,0,0)},
 };
@@ -2926,7 +2936,7 @@ function dockingUpdate(dt){const D=W.docking,p=W.player,E=D.E;pbuildTick(dt);
   p.x=x;p.y=y;p.z=z;p.vx=E.vx||0;p.vy=E.vy||0;p.vz=E.vz||0;p.thrusting=false;p.boosting=false;p.mining=null;
   if(tq)qSlerp(p.q,tq,Math.min(1,dt*(D.t<2?1.8:4)));else if(E.q)qSlerp(p.q,E.q,Math.min(1,dt*(D.t<2?1.6:4)));else levelRoll(p,dt);
   if(D.st===0&&D.t>=2){D.st=1;SFX.dockClamp()}
-  if(D.t<DOCK_T-.6&&D.t>=(D.rcsT||.15)){D.rcsT=D.t+(D.t<2?rnd(.18,.45):rnd(.4,.9));SFX.rcs()}
+  if(!D.sc&&D.t>=.6){D.sc=1;SFX.dockScan()}if(D.t>=1.1&&D.t<2.1&&D.t>=(D.rcsT||1.1)){D.rcsT=D.t+rnd(.25,.45);SFX.rcs()}if(!D.dd&&D.t>=DOCK_T-.6){D.dd=1;SFX.dockDoor()}
   if(D.st>=1&&D.st<5&&D.t>=2+.65*D.st){D.st++;SFX.dockClank(D.st)}
   if(D.t>=DOCK_T){W.docking=null;dockHydStop(true);SFX.dockSeal();
     if(D.port!=null)W.dockPort=D.port;if(D.berth!=null)S.player.bslot=D.berth;if(D.kind==='frigate')enterBridge(E);else if(D.kind==='turret'){if(!enterSeat(E))flash('Boarding failed.',true)}else finishDock(E)}}
