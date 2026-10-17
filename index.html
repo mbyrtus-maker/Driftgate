@@ -739,7 +739,7 @@ const hullFee=(P,k)=>START_HULLS.includes(k)&&P.docked==='station'&&P.sector===F
 function stationName(owner,kind,sid){if(owner==='player')return`${DEF[sid].name} Depot`;if(owner==='neutral')return`${DEF[sid].name.split(' ')[0]} Freeport`;const F=FACTIONS[owner];if(kind==='core'||kind==='hive')return F.station;if(DEF[sid].home===owner)return F.depot;return owner==='brood'?`Bloom Node · ${DEF[sid].name}`:`${F.short} Depot · ${DEF[sid].name}`}
 function makeStation(sid,owner,kind,pos,fort){const k=STN[kind];return S.stations[sid]={sid,owner,kind,name:stationName(owner,kind,sid),x:pos.x,y:pos.y,z:pos.z,sMax:k.sMax,shield:k.sMax,hMax:k.hMax,hull:k.hMax,fort:fort||{},stock:{},built:S.T}}
 function stationSite(sid){const gs=GATES[sid];for(let k=0;k<40;k++){const d=rdir(.5),r=rnd(800,1400),p={x:Math.round(d.x*r),y:Math.round(d.y*r),z:Math.round(d.z*r)};if(gs.some(g=>d3(g,p)<900))continue;if(S.sectors[sid].ast.some(a=>d3(a,p)<astR(a)+200))continue;return p}return{x:900,y:0,z:0}}
-function canBuildIn(sid,side){const d=DEF[sid];if(S.stations[sid]||d.kind==='hive')return false;if(d.home&&d.home!==side)return false;const oid=OUT_BY_SECTOR[sid];if(oid&&side!=='brood'){const ow=S.outposts[oid].owner;if(ow&&ow!==side&&hostile(side,ow)&&!(side==='player'&&ow===S.player.faction))return false}return true}
+function canBuildIn(sid,side){const d=DEF[sid];if(S.stations[sid]||d.kind==='hive')return false;if(side!=='brood'&&FREEPORTS.some(f=>f.sid===sid))return false;if(d.home&&d.home!==side)return false;const oid=OUT_BY_SECTOR[sid];if(oid&&side!=='brood'){const ow=S.outposts[oid].owner;if(ow&&ow!==side&&hostile(side,ow)&&!(side==='player'&&ow===S.player.faction))return false}return true}
 function FAC_HOME(f){return SECTOR_DEFS.find(d=>d.home===f&&d.kind==='core').id}
 function newGame(fac,cls){
   S={v:2,T:0,nextId:1,sectors:{},outposts:{},econ:{stock:{},treasury:{},fleet:{}},events:[],contracts:[],gateDown:{},ai:{},timers:{tick:2,event:35,contract:12},tollAcc:0,
@@ -926,8 +926,8 @@ function capitalTick(){const T=S.T;S.frigates=S.frigates||[];
   // abstract fighting away from the player
   for(const t of S.frigates.slice()){if(t.live||t.hull<=0)continue;const sid=t.sector;let hit=0;
     for(const o of frigatesIn(sid))if(o!==t&&!o.live&&hostile(t.side,o.side))hit+=rnd(250,420);
-    const Rs=S.stations[sid];if(Rs&&Rs.owner!=='neutral'&&hostile(t.side,Rs.owner)){hit+=Rs.kind==='core'?150:Rs.kind==='hive'?200:90;distressCall(sid,Rs.name,Rs.owner,t.side);
-      if(!WORLDS[sid]){if(Rs.shield>0)Rs.shield=Math.max(0,Rs.shield-700);else Rs.hull-=rnd(320,420);if(Rs.hull<=0){if(Rs.kind==='depot'){if(Rs.owner!=='brood'&&t.side!=='brood')captureDepot(sid,t.side);else razeStation(sid,t.side)}else Rs.hull=1}}}
+    const Rs=S.stations[sid];if(Rs&&(Rs.owner!=='neutral'||t.side==='brood')&&hostile(t.side,Rs.owner)){hit+=Rs.kind==='core'?150:Rs.kind==='hive'?200:90;distressCall(sid,Rs.name,Rs.owner,t.side);
+      if(!WORLDS[sid]){if(Rs.shield>0)Rs.shield=Math.max(0,Rs.shield-700);else Rs.hull-=rnd(320,420);if(Rs.hull<=0){if(Rs.kind==='depot'){if(Rs.owner!=='brood'&&t.side!=='brood')captureDepot(sid,t.side);else razeStation(sid,t.side)}else if(Rs.kind==='free')razeStation(sid,'brood');else Rs.hull=1}}}
     if(hit){t.hull-=hit;if(t.hull<=0)killFrigateToken(t,'in battle')}else t.hull=Math.min(FRIG_HULL*(t.side==='brood'?1.5:1),t.hull+FRIG_HULL*.03)}
   // control: an uncontested frigate holds the system, mines it, and takes its outpost after a minute
   for(const t of S.frigates){const own=t.side==='player'?'player':t.side;if(frigControl(t.sector)!==own){t.hold=0;continue}t.hold=(t.hold||0)+1;
@@ -935,7 +935,7 @@ function capitalTick(){const T=S.T;S.frigates=S.frigates||[];
     const oid=OUT_BY_SECTOR[t.sector];if(oid&&t.hold>=6){const o=S.outposts[oid];if(o.owner!==own&&!(own==='player'&&o.owner===S.player.faction)&&!(o.owner==='player'&&own===S.player.faction))capture(o,own)}}}
 function killFrigateToken(t,how){toDebris(S.sectors[t.sector],t.load);t.load={};S.frigates=S.frigates.filter(x=>x!==t);if(friendSide(t.side)||covered(t.sector))feed(`${t.side==='player'?'Your frigate':t.owner&&S.pilots&&S.pilots[t.owner]?S.pilots[t.owner].name+'\'s frigate':t.side==='brood'?'A Brood Leviathan':sideName(t.side)+' frigate'} ${t.side==='brood'?'':t.name+' '}was destroyed ${how} in ${DEF[t.sector].name}.`,friendSide(t.side)?'bad':'good')}
 function frigOrders(t){let best=t.sector,bs=-1e9;for(const d of SECTOR_DEFS){const h=HOP[d.id][t.sector];if(h>3)continue;let sc=-.8*h+rnd(0,1);const Rs=S.stations[d.id];
-    if(Rs&&hostile(t.side,Rs.owner)&&Rs.kind==='depot')sc+=Rs.owner==='brood'?7:t.side==='brood'?5:3;else if(Rs&&Rs.owner!==t.side)sc-=4;
+    if(Rs&&hostile(t.side,Rs.owner)&&(Rs.kind==='depot'||Rs.kind==='free'&&t.side==='brood'))sc+=Rs.owner==='brood'?7:t.side==='brood'?5:3;else if(Rs&&Rs.owner!==t.side)sc-=4;
     if(frigatesIn(d.id).some(o=>hostile(t.side,o.side)))sc+=3;
     if(!Rs&&d.kind!=='hive'&&d.kind!=='den'&&d.kind!=='core'&&frigControl(d.id)!==t.side){sc+=2.5;const oid=OUT_BY_SECTOR[d.id];if(oid&&S.outposts[oid].owner!==t.side)sc+=2}
     if(territory(t.side).has(d.id)&&frigatesIn(d.id).some(o=>hostile(t.side,o.side)))sc+=4;
@@ -975,8 +975,8 @@ function planOffensive(f){if(FACTIONS[f]&&f!=='brood'&&campBusy(f)){S.ai[f].next
     else if(f==='brood')w=(o.owner?1.6:2.2)*bw(o.sector);
     else{w=!o.owner?3:o.owner==='player'?2:o.owner==='brood'?3.4:o.owner==='pirate'?(id==='wrack'?.8:2):1.4;w*=adjOf(o.sector)?1.6:.3}
     c.push([{out:id},w])}
-  for(const sid in S.stations){const R=S.stations[sid];if(R.owner===f||R.owner==='neutral'||busy.has('st:'+sid)||R.kind==='hive'||!hostile(f,R.owner))continue;const adj=adjOf(sid);let w=0;
-    if(f==='brood')w=R.kind==='core'?(adj?.5:0):2.6*bw(sid);
+  for(const sid in S.stations){const R=S.stations[sid];if(R.owner===f||(R.owner==='neutral'&&f!=='brood')||busy.has('st:'+sid)||R.kind==='hive'||!hostile(f,R.owner))continue;const adj=adjOf(sid);let w=0;
+    if(f==='brood')w=R.kind==='core'?(adj?.5:0):R.kind==='free'?1.8*bw(sid):2.6*bw(sid);
     else if(R.kind==='depot'){if(f==='pirate')w=R.owner==='player'?1.4:DEF[sid].home?0:.5;else w=(R.owner==='brood'?3.6:R.owner==='player'?1.2:DEF[sid].home?.15:.9)*(adj?1.4:.2)}
     if(w>0)c.push([{st:sid},w])}
   {const C=S.coal;if(C&&f!=='pirate'&&f!=='brood'){const own=x=>{const o=x[0].out?S.outposts[x[0].out]:null;return sideNorm(o?o.owner:S.stations[x[0].st].owner)};
@@ -1011,12 +1011,12 @@ function resolveAbstract(ev){
   finishOffensive(ev);
 }
 function resolveSiege(ev){const Rr=S.stations[ev.st],s=S.sectors[ev.sector];if(!Rr||!hostile(ev.att,Rr.owner)){finishOffensive(ev);return}
-  const att=invValue(ev.force);let def=Rr.kind==='core'?2600:1300,dforce=null;
+  const att=invValue(ev.force);let def=(Rr.kind==='core'?2600:Rr.kind==='free'?2000:1300)*(1+.2*(devOf(Rr).def+devOf(Rr).armor)),dforce=null;
   if(FACTIONS[Rr.owner]){dforce={};const fl=S.econ.fleet[Rr.owner],warned=covOf(Rr.owner,true).has(ev.sector);for(let i=0;i<(Rr.kind==='core'?3:2)+(warned?1:0);i++){const ld=loadout('patrol',factionTier(Rr.owner));if(takeFrom(ld,[fl,S.econ.stock[Rr.owner]]))inv.addAll(dforce,ld)}def+=invValue(dforce)}
   const tor=ev.force.torpedo||0,win=Math.random()<att/(att+def*1.15)*Math.min(1,tor/8),loud=friendSide(Rr.owner)||covered(ev.sector);
   loseInv(ev.force,win?rnd(.2,.45):rnd(.45,.8),s);
   if(dforce){loseInv(dforce,win?rnd(.5,.9):rnd(.2,.45),s);inv.addAll(S.econ.fleet[Rr.owner],dforce)}
-  if(win){if(Rr.kind==='depot')razeStation(ev.st,ev.att);else{const st=S.econ.stock[Rr.owner]||{},got={};for(const k in st){const m=Math.floor(st[k]*.1);if(m>0)got[k]=inv.take(st,k,m)}inv.addAll(S.econ.stock[ev.att]||S.econ.stock.pirate,got);Rr.hull=Math.max(1,Rr.hull*.4);
+  if(win){if(Rr.kind==='depot'||Rr.kind==='free')razeStation(ev.st,ev.att);else{const st=S.econ.stock[Rr.owner]||{},got={};for(const k in st){const m=Math.floor(st[k]*.1);if(m>0)got[k]=inv.take(st,k,m)}inv.addAll(S.econ.stock[ev.att]||S.econ.stock.pirate,got);Rr.hull=Math.max(1,Rr.hull*.4);
       if(loud)feed(`${Rr.name} was battered by ${ev.att==='brood'?'the Brood':sideName(ev.att)}: ${invMass(got)} t of stores ${ev.att==='brood'?'devoured':'carried off'}.`,friendSide(Rr.owner)?'bad':'warn')}}
   else if(loud)feed(`${Rr.name} held off ${ev.att==='brood'?'a Brood swarm':art(sideAdj(ev.att)).toLowerCase()+' '+sideAdj(ev.att)+' assault'}.`,friendSide(Rr.owner)?'good':'news');
   finishOffensive(ev)}
@@ -1048,7 +1048,7 @@ function threatTick(){const T=S.T;for(const f of FAC_IDS){const A=S.ai[f];if(!A)
     if(th.length){const x=th.find(x=>!huntActive(f,x.t.id));if(x){A.hm={tok:x.t.id,start:T,force:{},cls:[],need:clamp(Math.round(4+2*A.threat),4,10)};
       ownerFeed(x.t,`Intel: ${F} is massing bombers to hunt ${x.t.name} in ${DEF[x.t.sector].name}.`,'warn')}}}}
 // send a wing from the nearest station of faction f to sector sid. kind: 'distress' (a station under attack) or 'pilot' (a pilot asked for help)
-function dispatchResponse(f,sid,kind,o){o=o||{};if(!FACTIONS[f])return null;const src=respSource(f,sid);if(!src||src.h>(kind==='pilot'?4:S.coal&&S.coal.lead===f?5:3))return null;
+function dispatchResponse(f,sid,kind,o){o=o||{};if(!FACTIONS[f])return null;const src=respSource(f,sid);if(!src||src.h>(kind==='pilot'?4:o.far?6:S.coal&&S.coal.lead===f?5:3))return null;
   if(S.events.some(e=>e.type==='response'&&e.att===f&&e.sector===sid&&e.kind===kind&&e.stage!=='done'&&(kind!=='pilot'||e.pid===o.pid)))return null;
   const capHere=frigatesIn(sid).some(t=>hostile(f,t.side)),n=kind==='pilot'?4:capHere?5:4,nb=capHere?2:0,tier=factionTier(f),srcs=[S.econ.fleet[f],S.econ.stock[f]],force={},cls=[];
   for(let i=0;i<n;i++){let cl=i<nb?'bomber':pickFighter('patrol'),ld=loadout('patrol',tier,cl);if(!haveIn(ld,srcs)){cl='striker';ld=loadout('patrol',tier,cl)}if(takeFrom(ld,srcs)){inv.addAll(force,ld);cls.push(cl)}else break}
@@ -1200,7 +1200,11 @@ function fpContracts(){const st=S.econ.stock.neutral;if(!st)return;for(const F o
     const item=wpickArr(c),n=item==='fe'||item==='cu'||item==='ir'?ri(24,48):item==='plate'||item==='wire'?ri(10,20):item==='lattice'?ri(2,4):ri(5,10),reward=Math.ceil(baseValue(item)*n*rnd(2.6,3.4)/10)*10;
     S.contracts.push({id:S.nextId++,fac:'neutral',st:F.sid,item,n,reward,until:S.T+rnd(600,900)});
     allFeed(`📦 Freeport request · ${R.name} (${DEF[F.sid].name}, out in the void): ${n} ${ITEMS[item].name} for ${fmt(reward)} cr. Deliver there in person.`,'info')}}
-function neutralIndustry(){const st=S.econ.stock.neutral;if(!st)return;craftAbstract(st,'plate',3,60);craftAbstract(st,'wire',3,60);craftAbstract(st,'coil',1,20);craftAbstract(st,'missile',1,16)}
+const FP_REBUILD={plate:40,wire:30,coil:10};
+function fpRebuild(){const D=S.fpDown||{},st=S.econ.stock.neutral;if(!st)return;for(const sid in D){if(S.stations[sid]){delete D[sid];continue}if(S.T-D[sid]<1200||!haveIn(FP_REBUILD,[st])||frigatesIn(sid).some(t=>t.side==='brood'))continue;
+    takeFrom(FP_REBUILD,[st]);const R=makeStation(sid,'neutral','free',{x:0,y:0,z:0},{...FP_REBUILD});R.dev={life:1,def:0,store:0,prod:0,armor:0};applyDev(R);R.hull=R.hMax*.5;delete D[sid];
+    if(WORLDS[sid])inW(WORLDS[sid],()=>{if(!W.stationEnt)addStationEnt(R)});allFeed(`The Freeport Compact has rebuilt ${R.name} in ${DEF[sid].name}. It's open for trade again.`,'good')}}
+function neutralIndustry(){fpRebuild();const st=S.econ.stock.neutral;if(!st)return;craftAbstract(st,'plate',3,60);craftAbstract(st,'wire',3,60);craftAbstract(st,'coil',1,20);craftAbstract(st,'missile',1,16)}
 // station missile battery (defence level 2+): one missile at a time at the nearest hostile, drawn from the owner's stores
 function stMissiles(SE,dt){const R=SE.rec;if(!R||SE.offline)return;const d=devOf(R);if(d.def<2||starving(R))return;SE.mcd=(SE.mcd||rnd(2,5))-dt;if(SE.mcd>0)return;SE.mcd=Math.max(3.5,8-d.def*1.5);
   let t=null,bd=1600;for(const e of W.ents){if(e.type!=='ship'||!e.alive||(e.isPlayer&&(S.player.docked||W.dead)))continue;if(!stHostile(SE,e))continue;const dd=d3(e,SE);if(dd<bd){bd=dd;t=e}}if(!t||NET.cl)return;
@@ -1434,8 +1438,9 @@ function scheduleContract(){
 // ---- distress calls: friendly stations, depots and outposts radio every pilot of their faction when attacked, wherever they are
 function distressCall(sid,name,owner,by){if(NET.cl||!owner||!S)return;S.distress=S.distress||[];const key=sid+':'+name,now=S.T;let d=S.distress.find(x=>x.key===key);
   if(d){d.T2=now;if(by)d.by=by;if(now-d.T<60)return;d.T=now}else{d={key,sid,name,fac:owner,by:by||null,T:now,T2:now};S.distress.push(d)}
+  if(owner==='neutral'&&(!d.respT||now-d.respT>150)){d.respT=now;const sent=FAC_IDS.map(f=>[f,dispatchResponse(f,sid,'distress',{far:1})]).filter(x=>x[1]);if(sent.length)allFeed(`${name}: ${sent.map(([f,r])=>`${FACTIONS[f].short} wing of ${r.n}`).join(', ')} answering the call.`,'info')}
   if(FACTIONS[owner]&&(!d.respT||now-d.respT>150)){const rv=dispatchResponse(owner,sid,'distress');if(rv){d.respT=now;if(friendSide(owner))feed(`${FACTIONS[owner].short} command: response wing of ${rv.n} launching from ${S.stations[rv.from].name} to ${name}, about ${Math.round(rv.eta-now)} s out.`,'info')}}
-  const send=(pid,P)=>{const fac=P?P.faction:S.player.faction,mine=owner===fac||(owner==='player'&&!NET.on);if(!mine)return;const here=P?P.sector:S.player.sector,h=HOP[sid][here];
+  const send=(pid,P)=>{const fac=P?P.faction:S.player.faction,mine=owner===fac||owner==='neutral'||(owner==='player'&&!NET.on);if(!mine)return;const here=P?P.sector:S.player.sector,h=HOP[sid][here];
     const msg=`📡 Distress call from ${name} in ${DEF[sid].name}: under attack${d.by&&d.by!==owner?' by '+(d.by==='player'?'a pilot':sideName(d.by)):''}. ${h?h+' jump'+(h>1?'s':'')+' away':'You are in that system'}. Press O to respond.`;
     if(!pid||pid===NET.me){feed(msg,'bad');SFX.distress()}else netMsg(pid,'distress',msg)};
   if(NET.host){for(const pid in S.pilots)send(pid,S.pilots[pid])}else send(null,null)}
@@ -2441,11 +2446,12 @@ function respawn(){if(NET.cl){clientRespawn();return}
   const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';
   enterSector(P.sector);openDock();save();
 }
-function damageStation(E,dmg,by,kind){if(NET.cl||E.fac==='neutral')return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only scratch station armour. Torpedoes are needed: bring a Bomber.',true)}return}
+function damageStation(E,dmg,by,kind){if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only scratch station armour. Torpedoes are needed: bring a Bomber.',true)}return}
   E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
   if(!E.offline){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.offline=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! Its turrets are offline and the hull is exposed.`:`${E.name}'s shield collapsed. Its turrets are offline and the hull is exposed.`,mine?'bad':'warn')}
   if(!R||dmg<=0)return;R.hull-=dmg;if(Math.random()<.3)fxSpark({x:E.x+rnd(-60,60),y:E.y+rnd(-60,60),z:E.z+rnd(-60,60)},'#ffcf8a',3);
   if(R.hull<=0&&R.kind==='depot'&&R.owner!=='brood'&&E.lastHitBy&&E.lastHitBy!=='brood'&&frigateAt(R.sid,E.lastHitBy)){captureDepot(R.sid,E.lastHitBy);return}
+  if(R.hull<=0&&R.kind==='free'){razeStation(R.sid,'brood');return}
   if(R.hull<=0){if(R.kind!=='depot'){R.hull=1;if(W.t+40>E.offline){E.offline=W.t+40;feed(`${E.name} is crippled: dark for 40 s.`,friendSide(E.fac)?'bad':'warn')}}else razeStation(R.sid,E.lastHitBy)}}
 // a razed depot leaves its frames as drifting debris; anything stored in it spills out as salvage
 // a frigate that breaks a faction depot takes it over: new flag, a third of its hull back, half its store to the captor
@@ -2455,10 +2461,10 @@ function captureDepot(sid,side){const R=S.stations[sid];if(!R||R.owner==='neutra
   if(S.distress)S.distress=S.distress.filter(d=>d.sid!==sid);
   const pf=S.player.faction;if(side===pf||prev===pf||covered(sid))feed(side===pf?`Our frigates have taken the depot in ${DEF[sid].name}. It flies the ${FACTIONS[side].short} flag now.`:prev===pf?`The depot in ${DEF[sid].name} has been captured by ${sideName(side)} frigates.`:`${sideName(side)} frigates captured the depot in ${DEF[sid].name}.`,side===pf?'good':prev===pf?'bad':'news');
   const w=WORLDS[sid];if(w)inW(w,()=>{const E=W.stationEnt;if(E&&E.rec===R){if(W===LW&&S.player.docked==='station')undock();if(NET.host)netKickDocked(sid,'station',side);fxBoom(E,200,sideCol(side));const i=W.ents.indexOf(E);if(i>=0)W.ents.splice(i,1);W.stationEnt=null;const N=addStationEnt(R);N.shield=0;N.offline=W.t+20}})}
-function razeStation(sid,by){const R=S.stations[sid];if(!R||R.owner==='neutral')return;const s=S.sectors[sid];toDebris(s,R.fort);R.fort={};
+function razeStation(sid,by){const R=S.stations[sid];if(!R||(R.owner==='neutral'&&by!=='brood'))return;const s=S.sectors[sid];if(R.owner==='neutral'){S.fpDown=S.fpDown||{};S.fpDown[sid]=S.T;S.contracts=S.contracts.filter(c=>c.st!==sid)}toDebris(s,R.fort);R.fort={};
   if(Object.keys(R.stock).length){s.crates.push({id:S.nextId++,x:Math.round(R.x),y:Math.round(R.y),z:Math.round(R.z),inv:R.stock,until:S.T+400});R.stock={}}
   delete S.stations[sid];
-  const who=by?sideName(by):'attackers',mine=friendSide(R.owner);if(mine||covered(sid))feed(by==='brood'?`${R.name} has been devoured by the Brood.`:`${R.name} was destroyed by ${who}.`,mine?'bad':R.owner==='brood'?'good':'news');
+  const who=by?sideName(by):'attackers',mine=friendSide(R.owner);if(R.owner==='neutral')allFeed(`⚠ ${R.name} has been devoured by the Brood. Its market, requests and refits are gone until the Compact can rebuild.`,'bad');else if(mine||covered(sid))feed(by==='brood'?`${R.name} has been devoured by the Brood.`:`${R.name} was destroyed by ${who}.`,mine?'bad':R.owner==='brood'?'good':'news');
   if(WORLDS[sid]&&WORLDS[sid]!==W)return inW(WORLDS[sid],()=>razeStationFx(sid,R));razeStationFx(sid,R)}
 function razeStationFx(sid,R){if(W&&W.sid===sid&&W.stationEnt&&W.stationEnt.rec===R){const E=W.stationEnt;if(W===LW&&S.player.docked==='station')undock();if(NET.host)netKickDocked(sid,'station');fxBoom(E,260,sideCol(R.owner));fxBoom(E,160,'#ffe2b0');const i=W.ents.indexOf(E);if(i>=0)W.ents.splice(i,1);W.stationEnt=null;if(W.tgt&&W.tgt.ref===E)W.tgt=null;
     for(const e of W.ents)if(e.npc&&e.role==='strike'&&e.ai.siege)e.role='leave'}}
