@@ -1544,10 +1544,10 @@ function auInit(){
   if(AU.ctx){if(AU.ctx.state==='suspended')AU.ctx.resume().catch(()=>{});return}
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;let c;try{c=new AC()}catch(e){return}AU.ctx=c;
   const comp=c.createDynamicsCompressor();comp.threshold.value=-20;comp.ratio.value=4;{const lim2=c.createDynamicsCompressor();lim2.threshold.value=-2;lim2.knee.value=0;lim2.ratio.value=20;lim2.attack.value=.001;lim2.release.value=.12;comp.connect(lim2);lim2.connect(c.destination)}
-  const tone=c.createBiquadFilter();tone.type='lowpass';tone.frequency.value=1600;tone.Q.value=.5;tone.connect(comp);
+  const tone=c.createBiquadFilter();tone.type='lowpass';tone.frequency.value=1350;tone.Q.value=.5;tone.connect(comp);
   AU.master=c.createGain();AU.master.gain.value=.8;AU.master.connect(tone);
   AU.sfx=c.createGain();AU.sfx.gain.value=AU.on.sfx?1:0;AU.sfx.connect(AU.master);
-  {const air=c.createBiquadFilter();air.type='lowpass';air.frequency.value=7500;air.Q.value=.4;air.connect(comp);const lim=c.createDynamicsCompressor();lim.threshold.value=-6;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.002;lim.release.value=.15;lim.connect(air);AU.sx=c.createGain();AU.sx.gain.value=AU.on.sfx?.75:0;AU.sx.connect(lim);sndLoad()}
+  {const air=c.createBiquadFilter();air.type='lowpass';air.frequency.value=4800;air.Q.value=.4;air.connect(comp);const lim=c.createDynamicsCompressor();lim.threshold.value=-6;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.002;lim.release.value=.15;lim.connect(air);AU.sx=c.createGain();AU.sx.gain.value=AU.on.sfx?.75:0;AU.sx.connect(lim);sndLoad()}
   AU.mus=c.createGain();AU.mus.gain.value=AU.on.music?.25:0;AU.mus.connect(AU.master);
   const nb=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=nb.getChannelData(0);let b=0;for(let i=0;i<d.length;i++){b=(b+.02*(Math.random()*2-1))/1.02;d[i]=b*3.5}AU.noise=nb; // brown noise: weighted to the lows
   // engine bed: detuned low saw + triangle through a resonant low-pass, plus filtered noise for thrust and boost
@@ -1570,19 +1570,19 @@ function auInit(){
    const wn=c.createBufferSource();wn.buffer=nb;wn.loop=true;const wnf=c.createBiquadFilter();wnf.type='bandpass';wnf.frequency.value=220;wnf.Q.value=2;const wng=c.createGain();wng.gain.value=.5;wn.connect(wnf);wnf.connect(wng);wng.connect(wf);wn.start();
    const lfo=c.createOscillator();lfo.frequency.value=3;const lg2=c.createGain();lg2.gain.value=60;lfo.connect(lg2);lg2.connect(wf.frequency);lfo.start();AU.whir={g:wg,f:wf,o1:w1,o2:w2,nf:wnf,lfo,lg:lg2}}
   // mining beam: a buzzing square pair through a resonant band-pass that wobbles, plus gritty filtered noise for the rock being cut
-  const mg=c.createGain();mg.gain.value=0;mg.connect(AU.sfx);const mbp=c.createBiquadFilter();mbp.type='bandpass';mbp.frequency.value=520;mbp.Q.value=4;mbp.connect(mg);
-  const mos=[];for(const f of[110,110.9]){const o=c.createOscillator();o.type='square';o.frequency.value=f;const og=c.createGain();og.gain.value=.5;o.connect(og);og.connect(mbp);o.start();mos.push(o)}
-  const wob=c.createOscillator();wob.frequency.value=7.5;const wg=c.createGain();wg.gain.value=140;wob.connect(wg);wg.connect(mbp.frequency);wob.start();
-  const mn=c.createBufferSource();mn.buffer=nb;mn.loop=true;const mnf=c.createBiquadFilter();mnf.type='bandpass';mnf.frequency.value=900;mnf.Q.value=1.4;const mng=c.createGain();mng.gain.value=.9;mn.connect(mnf);mnf.connect(mng);mng.connect(mg);mn.start();
+  const mg=c.createGain();mg.gain.value=0;mg.connect(AU.sfx);const mbp=c.createBiquadFilter();mbp.type='bandpass';mbp.frequency.value=390;mbp.Q.value=4;mbp.connect(mg);
+  const mos=[];for(const f of[82.4,83.1]){const o=c.createOscillator();o.type='square';o.frequency.value=f;const og=c.createGain();og.gain.value=.5;o.connect(og);og.connect(mbp);o.start();mos.push(o)}
+  const wob=c.createOscillator();wob.frequency.value=7.5;const wg=c.createGain();wg.gain.value=105;wob.connect(wg);wg.connect(mbp.frequency);wob.start();
+  const mn=c.createBufferSource();mn.buffer=nb;mn.loop=true;const mnf=c.createBiquadFilter();mnf.type='bandpass';mnf.frequency.value=680;mnf.Q.value=1.4;const mng=c.createGain();mng.gain.value=.9;mn.connect(mnf);mnf.connect(mng);mng.connect(mg);mn.start();
   AU.mine={g:mg,bp:mbp,os:mos,wob};
   musicStart()}
 // distant radio voices for the bridge: formant-filtered syllables between squelch clicks
-function chatterRun(){if(!auOK()||!AU.on.sfx||!voice(3))return;const c=AU.ctx;let t=c.currentTime+.03;const n=5+Math.floor(Math.random()*9),base=95+Math.random()*85,vol=.026+Math.random()*.014;
-  const bus=c.createGain();bus.gain.value=1;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=300;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1500;hp.connect(lp);lp.connect(bus);bus.connect(AU.sfx);
-  const sq=at=>{const src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;f.type='bandpass';f.frequency.value=1200;f.Q.value=1.5;src.connect(f);f.connect(g);g.connect(bus);g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(vol*1.4,at+.005);g.gain.exponentialRampToValueAtTime(.0001,at+.05);src.start(at,Math.random());src.stop(at+.07)};
+function chatterRun(){if(!auOK()||!AU.on.sfx||!voice(3))return;const c=AU.ctx;let t=c.currentTime+.03;const n=5+Math.floor(Math.random()*9),base=(95+Math.random()*85)*PITCH,vol=.026+Math.random()*.014;
+  const bus=c.createGain();bus.gain.value=1;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=220;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1100;hp.connect(lp);lp.connect(bus);bus.connect(AU.sfx);
+  const sq=at=>{const src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;f.type='bandpass';f.frequency.value=900;f.Q.value=1.5;src.connect(f);f.connect(g);g.connect(bus);g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(vol*1.4,at+.005);g.gain.exponentialRampToValueAtTime(.0001,at+.05);src.start(at,Math.random());src.stop(at+.07)};
   sq(t);t+=.06;
   for(let i=0;i<n;i++){const d=.06+Math.random()*.13,o=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain(),f0=base*(.9+Math.random()*.3);o.type='sawtooth';o.frequency.setValueAtTime(f0,t);o.frequency.linearRampToValueAtTime(f0*(.85+Math.random()*.35),t+d);
-    f.type='bandpass';f.frequency.value=450+Math.random()*800;f.Q.value=3.5;o.connect(f);f.connect(g);g.connect(hp);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.015);g.gain.setValueAtTime(vol,t+d*.7);g.gain.linearRampToValueAtTime(.0001,t+d);o.start(t);o.stop(t+d+.02);
+    f.type='bandpass';f.frequency.value=(450+Math.random()*800)*PITCH;f.Q.value=3.5;o.connect(f);f.connect(g);g.connect(hp);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.015);g.gain.setValueAtTime(vol,t+d*.7);g.gain.linearRampToValueAtTime(.0001,t+d);o.start(t);o.stop(t+d+.02);
     t+=d+(Math.random()<.2?.12+Math.random()*.22:.02+Math.random()*.05)}
   sq(t+.02)}
 // bridge ambience: console beeps and crew radio, quiet and irregular
@@ -1592,12 +1592,14 @@ function bridgeAmb(dt,F){W.ambT=(W.ambT===undefined?2:W.ambT)-dt;if(W.ambT>0)ret
 // the jump-drive whir is only for your own frigates: the one you're aboard, or one of yours close by (AI frigates spin up often and would drone on)
 function drumTick(e,p,dt){if(MUTE)return;const aboard=W&&W.bridge&&W.bridge.f===e;if(!aboard&&!(e.tok&&fMine(e.tok)))return;const v=aboard?1:vAt(e);if(v<.15)return;if(!AU.whirIn||v>AU.whirIn.v)AU.whirIn={p,v}}
 function vAt(p){if(!W||!p)return 1;const d=hyp(p.x-cam.x,p.y-cam.y,p.z-cam.z);return 1/(1+Math.pow(d/450,1.5))}
+// every sound sits about five semitones lower than its source: clips play slower, synth tones above ~100 Hz are scaled down
+const PITCH=.75;function pl(f){return f>100?f*PITCH:f}
 function voice(dur){if(AU.voices>26)return false;AU.voices++;setTimeout(()=>AU.voices--,dur*1000+60);return true}
 function envG(g,t,a,peak,dec){g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dec)}
-function thump(f0,f1,dur,vol,type){if(!auOK()||!AU.on.sfx||vol<.015||!voice(dur))return;const c=AU.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);o.connect(g);g.connect(AU.sfx);envG(g,t,.006,vol,dur);o.start(t);o.stop(t+dur+.08)}
-function rumble(fc,dur,vol,q,to){if(!auOK()||!AU.on.sfx||vol<.015||!voice(dur))return;const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;f.type='lowpass';f.frequency.setValueAtTime(fc,t);if(to)f.frequency.exponentialRampToValueAtTime(to,t+dur);f.Q.value=q||.7;src.connect(f);f.connect(g);g.connect(AU.sfx);envG(g,t,.012,vol,dur);src.start(t,Math.random()*1.4);src.stop(t+dur+.12)}
+function thump(f0,f1,dur,vol,type){if(!auOK()||!AU.on.sfx||vol<.015||!voice(dur))return;const c=AU.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(pl(f0),t);o.frequency.exponentialRampToValueAtTime(Math.max(20,pl(f1)),t+dur);o.connect(g);g.connect(AU.sfx);envG(g,t,.006,vol,dur);o.start(t);o.stop(t+dur+.08)}
+function rumble(fc,dur,vol,q,to){if(!auOK()||!AU.on.sfx||vol<.015||!voice(dur))return;const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;f.type='lowpass';f.frequency.setValueAtTime(pl(fc),t);if(to)f.frequency.exponentialRampToValueAtTime(pl(to),t+dur);f.Q.value=q||.7;src.connect(f);f.connect(g);g.connect(AU.sfx);envG(g,t,.012,vol,dur);src.start(t,Math.random()*1.4);src.stop(t+dur+.12)}
 // air-brake hiss: high-passed noise
-function hiss(dur,vol){if(MUTE||!auOK()||!AU.on.sfx||!voice(dur))return;const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;src.loop=true;f.type='highpass';f.frequency.setValueAtTime(2600,t);f.frequency.linearRampToValueAtTime(1500,t+dur);src.connect(f);f.connect(g);g.connect(AU.sfx);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+dur);src.start(t,Math.random());src.stop(t+dur+.05)}
+function hiss(dur,vol){if(MUTE||!auOK()||!AU.on.sfx||!voice(dur))return;const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;src.loop=true;f.type='highpass';f.frequency.setValueAtTime(1500,t);f.frequency.linearRampToValueAtTime(900,t+dur);src.connect(f);f.connect(g);g.connect(AU.sfx);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+dur);src.start(t,Math.random());src.stop(t+dur+.05)}
 // hangar lift: a labouring hydraulic drone, a servo whine and a low mechanical rumble that all sink as the ship is lowered
 // hangar lift: a smooth, deep motor drone (two slightly detuned saws under a low-pass), a low rumble and a slow servo, all sinking
 function dockHyd(dur){dockHydStop();if(MUTE||!auOK()||!AU.on.sfx||dur<=.2)return;const c=AU.ctx,t=c.currentTime,N=[],G=[];
@@ -1611,10 +1613,10 @@ function lowRumble(dur,f0,f1,vol){if(MUTE||!auOK()||!AU.on.sfx||!voice(dur))retu
 function metalGroan(dur,f0,f1,vol){if(MUTE||!auOK()||!AU.on.sfx||!voice(dur))return;const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();src.buffer=AU.noise;src.loop=true;f.type='bandpass';f.Q.value=5;f.frequency.setValueAtTime(f0,t);f.frequency.linearRampToValueAtTime(f1,t+dur);src.connect(f);f.connect(g);g.connect(AU.sx||AU.sfx);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.2);g.gain.setValueAtTime(vol,t+dur*.75);g.gain.linearRampToValueAtTime(.0001,t+dur);src.start(t);src.stop(t+dur+.1)}
 // docking scan: two slow, low sonar pings under a soft band-limited sweep of the field across the hull
 function scanPass(){if(MUTE||!auOK()||!AU.on.sfx||!voice(2))return;const c=AU.ctx,t=c.currentTime,bus=AU.sx||AU.sfx;
-  for(const[d,f]of[[0,196],[.9,165]]){const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;o.connect(g);g.connect(bus);g.gain.setValueAtTime(.0001,t+d);g.gain.linearRampToValueAtTime(.065,t+d+.03);g.gain.exponentialRampToValueAtTime(.0001,t+d+1.3);o.start(t+d);o.stop(t+d+1.4)}
-  const n=c.createBufferSource(),bp=c.createBiquadFilter(),g=c.createGain();n.buffer=AU.noise;n.loop=true;bp.type='bandpass';bp.Q.value=4;bp.frequency.setValueAtTime(260,t);bp.frequency.exponentialRampToValueAtTime(900,t+.9);bp.frequency.exponentialRampToValueAtTime(260,t+1.8);n.connect(bp);bp.connect(g);g.connect(bus);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.08,t+.3);g.gain.setValueAtTime(.08,t+1.5);g.gain.linearRampToValueAtTime(.0001,t+1.85);n.start(t);n.stop(t+1.9)}
+  for(const[d,f]of[[0,147],[.9,124]]){const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;o.connect(g);g.connect(bus);g.gain.setValueAtTime(.0001,t+d);g.gain.linearRampToValueAtTime(.065,t+d+.03);g.gain.exponentialRampToValueAtTime(.0001,t+d+1.3);o.start(t+d);o.stop(t+d+1.4)}
+  const n=c.createBufferSource(),bp=c.createBiquadFilter(),g=c.createGain();n.buffer=AU.noise;n.loop=true;bp.type='bandpass';bp.Q.value=4;bp.frequency.setValueAtTime(200,t);bp.frequency.exponentialRampToValueAtTime(680,t+.9);bp.frequency.exponentialRampToValueAtTime(200,t+1.8);n.connect(bp);bp.connect(g);g.connect(bus);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.08,t+.3);g.gain.setValueAtTime(.08,t+1.5);g.gain.linearRampToValueAtTime(.0001,t+1.85);n.start(t);n.stop(t+1.9)}
 // a calm, low two-note tone when the bay is sealed
-function sealTone(){if(MUTE||!auOK()||!AU.on.sfx||!voice(1.6))return;const c=AU.ctx,t=c.currentTime;for(const[d,f]of[[0,262],[.28,392]]){const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AU.sx||AU.sfx);g.gain.setValueAtTime(.0001,t+d);g.gain.linearRampToValueAtTime(.022,t+d+.12);g.gain.exponentialRampToValueAtTime(.0001,t+d+1.2);o.start(t+d);o.stop(t+d+1.3)}}
+function sealTone(){if(MUTE||!auOK()||!AU.on.sfx||!voice(1.6))return;const c=AU.ctx,t=c.currentTime;for(const[d,f]of[[0,196],[.28,294]]){const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AU.sx||AU.sfx);g.gain.setValueAtTime(.0001,t+d);g.gain.linearRampToValueAtTime(.022,t+d+.12);g.gain.exponentialRampToValueAtTime(.0001,t+d+1.2);o.start(t+d);o.stop(t+d+1.3)}}
 function dockHydStop(){const H=AU.dockHyd;if(!H)return;AU.dockHyd=null;try{const t=AU.ctx.currentTime;for(const g of H.G){g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(Math.max(.0001,g.gain.value),t);g.gain.linearRampToValueAtTime(.0001,t+.12)}for(const n of H.N)n.stop(t+.15)}catch(e){}}
 // ============================================================ recorded sound effects
 // Clips from Kenney's Sci-Fi Sounds, Interface Sounds and Digital SFX Set, and messersm's SpaceSFX1 (all CC0), packed into
@@ -1629,10 +1631,10 @@ function sndLoad(){if(SND.loading||!AU.ctx)return;SND.loading=true;const el=docu
 function sk(n){return Array.isArray(n)?n[Math.floor(Math.random()*n.length)]:n}
 // play a clip: name (or list to pick from), volume, playback rate, delay in s, pitch jitter. False if it isn't loaded.
 function smp(n,vol,rate,dl,jit){if(!auOK()||!AU.on.sfx||!AU.sx)return false;const b=SND.b[sk(n)];if(!b)return false;vol*=SND.k;if(vol<.004)return true;
-  rate=(rate||1)*(1+(jit===undefined?.06:jit)*(Math.random()*2-1));if(!voice(b.duration/rate+(dl||0)))return true;
+  rate=(rate||1)*PITCH*(1+(jit===undefined?.06:jit)*(Math.random()*2-1));if(!voice(b.duration/rate+(dl||0)))return true;
   const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;s.playbackRate.value=rate;g.gain.value=vol;s.connect(g);g.connect(AU.sx);s.start(c.currentTime+(dl||0));return true}
 // bridge room tone: a quiet looping wash of computers, faded in while you're aboard a frigate
-function bridgeHum(t){const on=running&&W&&W.bridge&&AU.on.sfx&&SND.b.bridgeHum;if(!AU.bh){if(!on)return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain(),m=SND.m.bridgeHum;s.buffer=SND.b.bridgeHum;s.loop=true;s.loopStart=m[1];s.loopEnd=m[2];g.gain.value=0;s.connect(g);g.connect(AU.sx);s.start(t,m[1]);AU.bh={s,g}}
+function bridgeHum(t){const on=running&&W&&W.bridge&&AU.on.sfx&&SND.b.bridgeHum;if(!AU.bh){if(!on)return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain(),m=SND.m.bridgeHum;s.buffer=SND.b.bridgeHum;s.playbackRate.value=PITCH;s.loop=true;s.loopStart=m[1];s.loopEnd=m[2];g.gain.value=0;s.connect(g);g.connect(AU.sx);s.start(t,m[1]);AU.bh={s,g}}
   AU.bh.g.gain.setTargetAtTime(on?.05:0,t,on?.8:.3)}
 const SFX0={
   kinetic(v){if(smp(['kin1','kin2','kin3'],.5*v,.85))thump(120,46,.1,.07*v);else{thump(135,46,.12,.15*v);rumble(380,.09,.1*v)}},
@@ -2008,9 +2010,15 @@ function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)
 function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;if(NET.host)S.hostAtt=null;const bp=F.alive?berthPose(F,S.player.bslot|0,S.player.cls,_bp):null;
   if(bp){p.x=bp.x;p.y=bp.y;p.z=bp.z;qCopy(p.q,bp.q);p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;W.detach={F,slot:S.player.bslot|0,t:0};flash('Releasing the hull clamps…')}
   else{qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q)}cam.snap=true;SFX.clunk();SFX.hatch();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
+// leaving the bridge without walking out (frigate destroyed, lost contact): give the mouse back, stop any turn in progress
+function ejectReset(){freeLook();mouse.aim=false;mouse.l=mouse.r=false;const p=W&&W.player;if(p){p.wx=p.wy=p.wz=0}cam.snap=true}
+// the frigate died under you: thrown clear of the wreck, level, with a few seconds of grace from the blast
+function bridgeEject(F){const B=W.bridge;if(B)B.seat=false;W.bridge=null;const el=$('fcon');if(el)el.hidden=true;S.player.docked=null;if(NET.host)S.hostAtt=null;ejectReset();
+  const p=W.player;qRot(F.q,0,1,0,_u);const k=(F.st?F.st.radius:120)*1.5+60;p.x=F.x+_u.x*k;p.y=F.y+_u.y*k;p.z=F.z+_u.z*k;p.vx=(F.vx||0)+_u.x*90;p.vy=(F.vy||0)+_u.y*90;p.vz=(F.vz||0)+_u.z*90;qCopy(p.q,F.q);
+  p.shield=p.st.sCap;W.ejectT=W.t+3;launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]});SFX.clunk();flash('The frigate is gone. Emergency release: you are clear of the wreck.',true)}
 function bridgeNear(){const B=W.bridge;if(!B||B.seat)return null;let best=null,bd=1e9;for(const c of BRIDGE.cons){const d=Math.hypot(c.x-B.x,(c.id==='hatch'?c.z-3:c.z)-B.z);if(d<(BR_REACH[c.id]||5.5)&&d<bd){bd=d;best=c}}return best}
-function bridgeUpdate(dt){const B=W.bridge,F=B.f,p=W.player;if(NET.cl&&(!F.alive||!W.ents.includes(F))){MP.fjB={id:F.tokId,keep:{x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch,seat:B.seat,fy:B.fy},at:performance.now()};closeConsole();W.bridge=null;return}
-  if(!F.alive||!W.ents.includes(F)){W.bridge=null;S.player.docked=null;closeConsole();flash('The frigate is gone. Your fighter is adrift.',true);return}
+function bridgeUpdate(dt){const B=W.bridge,F=B.f,p=W.player;if(!F.alive){bridgeEject(F);return}if(NET.cl&&!W.ents.includes(F)){freeLook();MP.fjB={id:F.tokId,keep:{x:B.x,z:B.z,yaw:B.yaw,pitch:B.pitch,seat:B.seat,fy:B.fy},at:performance.now()};closeConsole();W.bridge=null;return}
+  if(!W.ents.includes(F)){bridgeEject(F);return}
   p.x=F.x;p.y=F.y-F.st.radius*.5;p.z=F.z;p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;p.shield=p.st.sCap;
   bridgeAmb(dt,F);if(NET.cl){const T=F.tok;if(T&&T.spin){if(B.spinRef!==T.spin){B.spinRef=T.spin;B.spinP=T.spin.p}else B.spinP+=dt/JUMP_TIME*pmul(T,'eng');drumTick(F,B.spinP,dt)}}
   {const T=F.tok,sp=T&&T.spin?(NET.cl?(B.spinP||T.spin.p):T.spin.p):0;if(sp>.88||FJFX){const k=Math.min(1,dt*3);B.yaw+=(Math.round(B.yaw/TAU)*TAU-B.yaw)*k;B.pitch+=(0-B.pitch)*k}}
@@ -2031,7 +2039,7 @@ function bridgeTarget(next){const B=W.bridge;if(!B)return;const L=bridgeTargets(
 function bridgeClickTarget(){const B=W.bridge;if(!B)return;let best=null,bd=1e9;for(const e of bridgeTargets(B.f)){const P=proj(e.x,e.y,e.z);if(P.behind)continue;const r=Math.max(36,projR(P.d,e.type==='ship'?e.st.radius*1.3:e.type==='station'?130:100)+10),d=hyp(P.x-VW/2,P.y-VH/2);if(d<r&&d<bd){bd=d;best=e}}if(best)bridgeSetTgt(best);else flash('Aim the centre dot at a hostile ship, station or outpost, then click (or press T / Q).')}
 function lookLocked(){return document.pointerLockElement===$('gl')}
 function keyLook(){let yaw=0,pitch=0;if(keys.ArrowLeft)yaw+=1;if(keys.ArrowRight)yaw-=1;if(keys.ArrowUp)pitch-=1;if(keys.ArrowDown)pitch+=1;return{yaw,pitch}}
-function freeLook(){if(lookLocked())try{document.exitPointerLock()}catch(e){}}
+function freeLook(){if(lookLocked()){mouse.aim=false;mouse.l=false;try{document.exitPointerLock()}catch(e){}}}
 // ---- the command chair: fly the frigate, fight it, and reach every console from one seat
 function sitChair(){const B=W.bridge;if(!B)return;B.seat=true;B.x=0;B.z=-5.9;B.yaw=0;B.pitch=-.12;B.vx=B.vz=0;SFX.clunk();openConsole('strat');flash('In the command chair: every console is here. 1–5 switch tabs. E or Esc stands up.')}
 function standChair(){const B=W.bridge;if(!B||!B.seat)return;B.seat=false;B.x=0;B.z=-3.3;B.yaw=0;B.pitch=0;B.vx=B.vz=0;B.fy=.28;if(fctl(B.f.tok).helm)fconSend(B.f.tok,'helm:auto',null);SFX.clunk()}
@@ -2255,7 +2263,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false});
 const glc=$('gl');
-glc.addEventListener('mousemove',e=>{if(lookLocked()&&W){const k=.0024;if(W.bridge&&!W.bridge.panel){W.bridge.yaw-=e.movementX*k;W.bridge.pitch=clamp(W.bridge.pitch-e.movementY*k,-1.2,1.2);return}if(W.gunseat){W.gunseat.yaw=wrapA(W.gunseat.yaw-e.movementX*k);W.gunseat.pitch=clamp(W.gunseat.pitch-e.movementY*k,GT_MINP,GT_MAXP);return}}mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});
+glc.addEventListener('mousemove',e=>{if(lookLocked()&&!(W&&(W.bridge||W.gunseat))){freeLook();return}if(lookLocked()&&W){const k=.0024;if(W.bridge&&!W.bridge.panel){W.bridge.yaw-=e.movementX*k;W.bridge.pitch=clamp(W.bridge.pitch-e.movementY*k,-1.2,1.2);return}if(W.gunseat){W.gunseat.yaw=wrapA(W.gunseat.yaw-e.movementX*k);W.gunseat.pitch=clamp(W.gunseat.pitch-e.movementY*k,GT_MINP,GT_MAXP);return}}mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});
 glc.addEventListener('mouseleave',()=>{mouse.in=false});
 glc.addEventListener('mousedown',e=>{if(W&&((W.bridge&&!W.bridge.panel)||W.gunseat)&&!lookLocked()&&glc.requestPointerLock){try{glc.requestPointerLock()}catch(er){}if(W.bridge&&!W.bridge.seat)return}if(lookLocked()&&W&&(W.bridge||W.gunseat)){if(W.bridge&&!W.bridge.panel&&e.button===0){bridgeClickTarget();return}if(e.button===0)mouse.l=true;return}mouse.x=e.clientX;mouse.y=e.clientY;mouse.in=true;if(e.button===0){mouse.l=true;clickTarget()}if(e.button===2)mouse.r=true;if(e.button===1){e.preventDefault();fireMissile()}});
 addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;if(e.button===2)mouse.r=false});
@@ -2418,7 +2426,7 @@ function fireLaser(e){if(e.cool>0)return;const cost=e.st.shotCost*1.6;
   if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg,e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1,e.side,'laser');if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
-  if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&W.detach))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;
+  if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&(W.detach||W.t<(W.ejectT||0))))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;
   if(e.cls==='frigate'){const k=kind||(at&&at.kind);if(k==='torpedo'){dmg*=4;stat('torpHit');stat('torpDmg',dmg)}else if(k!=='capital'){if(e.shield>0){e.shield=Math.max(0,e.shield-dmg*.6);e.shHitT=W.t;e.shHitA=.5;fxSpark(at||e,'#8fc8ff',3)}else{fxSpark(at||e,'#ffd9a0',2);if(srcSide==='player'&&W.t-(W.capT||-99)>8){W.capT=W.t;flash('Frigate armour shrugs off fighter weapons: guns drain its shield, only torpedoes break the hull.',true)}}return}}
   if(e.isPlayer&&at&&srcSide){let dx,dy,dz;if(at.src&&at.src.x!==undefined&&at.vx===undefined){dx=at.src.x-e.x;dy=at.src.y-e.y;dz=at.src.z-e.z}else if(at.vx!==undefined){dx=-at.vx;dy=-at.vy;dz=-at.vz}else{dx=at.x-e.x;dy=at.y-e.y;dz=at.z-e.z}
     const l=hyp(dx,dy,dz)||1;W.hitDirs=(W.hitDirs||[]).filter(h=>W.t-h.t<1.3);W.hitDirs.push({x:dx/l,y:dy/l,z:dz/l,t:W.t})}
@@ -2719,7 +2727,7 @@ function routeNext(){const P=S.player;if(!P.route||!W)return null;if(P.route===W
 let apOn=false,apSaid=false;
 function say(text){try{if(!AU.on.sfx||!('speechSynthesis' in window))return;const ss=speechSynthesis;ss.cancel();const u=new SpeechSynthesisUtterance(text),vs=ss.getVoices();
   const v=vs.find(v=>/en[-_]GB/i.test(v.lang)&&/Daniel|Arthur|George|Oliver|Male/i.test(v.name))||vs.find(v=>/en[-_]GB/i.test(v.lang))||vs.find(v=>/UK English|British/i.test(v.name));
-  if(v)u.voice=v;u.lang='en-GB';u.rate=.95;u.pitch=.92;u.volume=.9;ss.speak(u)}catch(e){}}
+  if(v)u.voice=v;u.lang='en-GB';u.rate=.92;u.pitch=.72;u.volume=.9;ss.speak(u)}catch(e){}}
 try{if('speechSynthesis' in window){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}}catch(e){}
 function apTarget(){if(W.tgt&&validTgt(W.tgt)&&W.tgt.kind!=='ship')return W.tgt;if(W.tgt&&W.tgt.kind==='ship'&&!hostile('player',W.tgt.ref.side)&&validTgt(W.tgt))return W.tgt;const g=routeNext();return g?{kind:'gate',ref:g}:null}
 function toggleAutopilot(){if(!W||S.player.docked)return;if(apOn){apOn=false;flash('Autopilot off.');return}const T=apTarget();if(!T){flash('Autopilot needs a destination: target a gate, station or rock (Tab cycles), or set a course on the map (M).',true);return}
@@ -4492,7 +4500,7 @@ function clientRecv(m){
     case 'gseatok':break;
     case 'gseatno':{if(W&&W.gunseat)leaveSeat(true);else if(S.player.docked==='turret')S.player.docked=null;flash(m.busy?'That turret is already manned.':m.out?'Your gunboat is gone. Your fighter is adrift.':'Could not board that turret. Pull alongside a friendly gunboat.',true);break}
     case 'gjump':{if(S.player.docked!=='turret')break;const G=W&&W.gunseat,keep=G?{id:G.id,yaw:G.yaw,pitch:G.pitch,msl:0}:{id:m.id,yaw:Math.PI,pitch:.1,msl:0};exitSector();S.player.sector=m.to;enterSector(m.to);S.player.docked='turret';W.gunseat={...keep,ent:null,lost:performance.now()};SFX.jump();feed(`Jumped to ${DEF[m.to].name} with the gunboat.`,'info');break}
-    case 'nobridge':{if(W&&W.bridge)exitBridge();else if(S.player.docked==='bridge')S.player.docked=null;flash(m.gone?'The frigate is gone. Your fighter is adrift.':'You can only board your own frigate, close up.',true);break}
+    case 'nobridge':{if(W&&W.bridge)exitBridge();else if(S.player.docked==='bridge'){S.player.docked=null;ejectReset()}else if(m.gone)break;flash(m.gone?'The frigate is gone. Your fighter is adrift.':'You can only board your own frigate, close up.',true);break}
     case 'ckpt':MP.ckpt=m.ck;MP.ckMeta={gid:m.ck.gid,T:m.ck.T};try{localStorage.setItem(ckKey(),JSON.stringify(m.ck))}catch(e){}break;
     case 'msg':if(m.k==='taken'){mpShutdown();running=false;$('hud').hidden=true;$('start').hidden=false;showStart();mpStatus(`The callsign <b>${esc(m.a[0])}</b> is already taken in this galaxy. Pick another one and join again.`,true);$('mpName').focus();break}if(m.k==='feed')feed(...m.a);else if(m.k==='distress'){feed(m.a[0],'bad');SFX.distress()}else if(m.k==='flash')flash(...m.a);else if(m.k==='stat')mpStatus(m.a[0]);break;
     case 'actr':dockErr=m.err||'';if(!$('dock').hidden&&S.player.docked)renderDock();break;
@@ -4532,7 +4540,7 @@ function mkPup(r){const[id,side,fac,cls,role,tier,wpn,name]=r;const st=shipStats
   if(role==='pilot'){e.pname=name;e.rp=id.slice(2)}if(role==='frigate'){e.tokId=r[23];e.tok=(S.frigates||[]).find(x=>x.id===r[23])||{name,side,id:r[23]};e.pickets=[]}e.q.x=r[11]/1000;e.q.y=r[12]/1000;e.q.z=r[13]/1000;e.q.w=r[14]/1000;qNorm(e.q);e.momId=r[22];return e}
 function relinkFrigs(){const w=LW;if(!w||!w.pup)return;for(const id in w.pup){const e=w.pup[id];if(e.role!=='frigate'||e.tokId==null)continue;const t=(S.frigates||[]).find(x=>x.id===e.tokId);if(!t)continue;e.tok=t;
     if(t.ctl){const C=fctl(t);if(C.tgtId&&!C.tgt){const T=C.tgtId==='S'?w.stationEnt:C.tgtId==='p_'+MP.pid?w.player:w.pup[C.tgtId];if(T)C._t=T}}}
-  if(MP.fjB){const e=Object.values(w.pup).find(x=>x.role==='frigate'&&x.tokId===MP.fjB.id);if(e){W.bridge={f:e,...MP.fjB.keep,panel:null};cam.snap=true;const st=MP.fjB.keep.seat;MP.fjB=null;if(st)openConsole('strat')}else if(performance.now()-MP.fjB.at>8000){MP.fjB=null;if(S.player.docked==='bridge'){S.player.docked=null;const p=W.player;netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:0,vy:0,vz:0,q:[p.q.x,p.q.y,p.q.z,p.q.w]});flash('Lost contact with the frigate. Your fighter is adrift.',true)}}}}
+  if(MP.fjB){const e=Object.values(w.pup).find(x=>x.role==='frigate'&&x.tokId===MP.fjB.id);if(e){W.bridge={f:e,...MP.fjB.keep,panel:null};cam.snap=true;const st=MP.fjB.keep.seat;MP.fjB=null;if(st)openConsole('strat')}else if(performance.now()-MP.fjB.at>8000){MP.fjB=null;if(S.player.docked==='bridge'){S.player.docked=null;ejectReset();const p=W.player;netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:0,vy:0,vz:0,q:[p.q.x,p.q.y,p.q.z,p.q.w]});flash('Lost contact with the frigate. Your fighter is adrift.',true)}}}}
 function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.pup||{};const seen=new Set(),now=w.t,ast=S.sectors[w.sid].ast;
   for(const r of m.e){const id=r[0];let e=w.pup[id];const full=r.length>16;
     if(full&&(!e||e.cls!==r[3]||e.side!==r[1])){const fresh=!e;if(e){const i=w.ents.indexOf(e);if(i>=0)w.ents.splice(i,1)}e=mkPup(r);w.pup[id]=e;w.ents.push(e);if(fresh&&e.role==='frigate'&&w.t>3&&!(MP.fjB&&MP.fjB.id===e.tokId)){const ow=W;W=w;try{frigArriveFx(e)}finally{W=ow}}}
@@ -4693,7 +4701,7 @@ function step(dt){if(S&&S.won)return;
 }
 function resize(){DPR=Math.min(2,devicePixelRatio||1);VW=glc.clientWidth;VH=glc.clientHeight;glc.width=Math.round(VW*DPR);glc.height=Math.round(VH*DPR);ovc.width=Math.round(VW*DPR);ovc.height=Math.round(VH*DPR);cam.fovBase=VW<VH?78:62;cam.fov=cam.fovBase}
 addEventListener('resize',()=>{resize();if(!$('map').hidden)drawMap()});
-let hidT=0;function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;hidT=performance.now();if(S&&running&&W)step(dt);updateCamera(dt);draw3D();drawOverlay();if(W&&W.bridge&&W.bridge.panel){drawStrat();fcT-=dt;if(fcT<=0){fcT=.4;renderConsole(false)}}auFrame();requestAnimationFrame(frame)}
+let hidT=0;function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;hidT=performance.now();if(S&&running&&W)step(dt);if(W&&!W.bridge&&!W.gunseat&&lookLocked())ejectReset();updateCamera(dt);draw3D();drawOverlay();if(W&&W.bridge&&W.bridge.panel){drawStrat();fcT-=dt;if(fcT<=0){fcT=.4;renderConsole(false)}}auFrame();requestAnimationFrame(frame)}
 addEventListener('beforeunload',save);
 try{const wk=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),33)'],{type:'text/javascript'})));wk.onmessage=()=>{if(MP.sig&&MP.sig.hb)MP.sig.hb();if(!document.hidden||!NET.on||!S||!running)return;const now=performance.now(),dt=Math.min(.1,(now-(hidT||now))/1000);hidT=now;if(dt>0)step(dt)}}catch(e){}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
