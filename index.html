@@ -35,6 +35,8 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .sec-name{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:.05em;text-transform:uppercase;line-height:1;text-wrap:balance}
 .sec-sub{font-size:13px;color:var(--dim);margin-top:5px;letter-spacing:.02em}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.schips{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}.schips .chip{font-size:6.5px;padding:1px 4px;letter-spacing:.08em}.schips:empty{display:none}
+#hTR .holdline{display:none}
 .mpbox{margin:2px 0 4px}.mpor{align-self:center;color:var(--faint);font-size:13px}.mpinv{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 26px 0;padding:8px 10px;border:1px solid var(--amber);border-radius:8px;background:rgba(240,178,74,.07)}.mpinv span{color:var(--amber);font-weight:600;font-size:13px}.mpinv code{font-family:var(--f-mono);font-size:12.5px;color:var(--ivory);word-break:break-all;flex:1 1 220px}.mprow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;padding:0 26px}.mpin{flex:1 1 150px;min-width:0;background:var(--deep);border:1px solid var(--line-hi);color:var(--ivory);padding:9px 11px;border-radius:8px;font:inherit;font-size:14px}.mpin:focus{outline:2px solid var(--amber);outline-offset:1px}
 .netchip{margin-top:8px;font-size:12px;color:var(--dim);line-height:1.45}.netchip b{color:var(--ok);font-weight:600}.netchip small{color:var(--faint)}
 .netban{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(10,15,29,.92);border:1px solid var(--amber);color:var(--amber);padding:8px 14px;border-radius:8px;font-size:13px;z-index:30}
@@ -58,7 +60,8 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .hbtn:hover,.hbtn:focus-visible{border-color:var(--amber);color:var(--amber);outline:none}
 #hBL{left:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:14px;align-items:flex-end}
 #radar{width:340px;height:300px;display:block}
-#hBL>div{zoom:2;max-width:236px}#hBL .flight{gap:4px 12px}#hBL .cds{gap:4px 10px}
+#hBL>div{zoom:2;max-width:300px}
+@media (max-width:1499px),(max-height:820px){#hBL>div{zoom:1.5;max-width:330px}#radar{width:270px;height:238px}}#hBL .flight{gap:4px 12px}#hBL .cds{gap:4px 10px}
 .bars{width:230px;display:grid;gap:6px}
 .bar{display:grid;grid-template-columns:52px 1fr 44px;align-items:center;gap:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .bar .tr{height:7px;background:rgba(255,255,255,.06);position:relative;overflow:hidden}
@@ -82,7 +85,7 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .flight b{font-family:var(--f-mono);color:var(--ivory);font-weight:400;letter-spacing:0}
 .shipname{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase}
 #hBR{right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}#hTgt{width:272px}#hTgt:empty{display:none}
-.comms{background:rgba(5,7,13,.72);border:1px solid var(--line);font-size:12px;pointer-events:none;width:clamp(280px,calc(100vw - 960px),440px)}
+.comms{background:rgba(5,7,13,.72);border:1px solid var(--line);font-size:12px;pointer-events:none;width:clamp(280px,calc(100vw - 1010px),440px)}
 .cmh{all:unset;pointer-events:auto;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 10px;cursor:pointer;font-family:var(--f-display);font-weight:600;letter-spacing:.16em;text-transform:uppercase;font-size:12px;color:var(--ivory)}
 .cmh em{font-style:normal;font-family:var(--f-body,inherit);font-weight:400;letter-spacing:.08em;font-size:10px;color:var(--faint)}
 .cmh:focus-visible{outline:1px solid var(--amber)}
@@ -263,6 +266,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
   .sec-name{font-size:21px}.sec-sub{font-size:11.5px}
   #radar{width:116px;height:102px}
   #hBL>div{zoom:1}
+  .schips .chip{font-size:10px;padding:2px 6px}
   .bars{width:150px}.bar{grid-template-columns:44px 1fr 36px;font-size:10px}
   #hBR{width:180px;bottom:auto;top:calc(200px + env(safe-area-inset-top,0px))}
   #hComms .cev,#hComms .ckeys,#hComms .cmt{display:none}
@@ -307,7 +311,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
           <div class="bar" id="bH">Hull<div class="tr"><div class="fl"></div></div><span class="v"></span></div>
           <div class="bar" id="bE">Energy<div class="tr"><div class="fl"></div></div><span class="v"></span></div>
         </div>
-        <div class="flight"><span>Speed <b id="hSpd">0</b></span><span>Assist <b id="hFA">ON</b></span><span><i id="hMslL" style="font-style:normal">Missiles</i> <b id="hMsl">0</b></span><span>Gun <b id="hWpn">KINETIC</b></span></div><div class="cds" id="hCds"></div>
+        <div class="flight"><span>Speed <b id="hSpd">0</b></span><span>Assist <b id="hFA">ON</b></span><span><i id="hMslL" style="font-style:normal">Missiles</i> <b id="hMsl">0</b></span><span>Gun <b id="hWpn">KINETIC</b></span></div><div class="cds" id="hCds"></div><div class="schips" id="hSChips"></div>
       </div>
     </div>
     <div class="hud" id="contacts" aria-label="Contacts"></div>
@@ -3978,13 +3982,16 @@ function hudUpdate(){
   const P=S.player,p=W.player,d=DEF[W.sid],oid=OUT_BY_SECTOR[W.sid],o=oid&&S.outposts[oid];
   $('hSec').textContent=d.name;
   {const Rs=S.stations[W.sid];$('hSub').textContent=(d.home?`${FACTIONS[d.home].short} ${d.kind==='core'?'core space':'frontier'}`:d.kind==='den'?'Unbound territory':d.kind==='hub'?'Junction':d.kind==='hive'?'Brood hive':d.kind==='deep'?'Deep space':d.kind==='void'?'Quiet space':'Contested')+(Rs?` · ${Rs.name}`:'')+(o?` · ${o.name}: ${o.owner?sideName(o.owner):'unclaimed'}`:'')+(!Rs&&!o?' · no station':'')}
-  const chips=[];if(S.coal)chips.push([`Truce vs ${S.coal.lead==='brood'?'the Brood':FACTIONS[S.coal.lead].short}`,S.coal.lead===S.player.faction?'bad':'warn']);if(S.victory){const n=controlCounts()[S.victory.side]||0;chips.push([`${S.victory.side==='brood'?'Brood':sideName(S.victory.side)} holds ${n}/${SECTOR_DEFS.length} systems · galaxy falls in ${fmtT(Math.max(0,WIN_TIME-(S.T-S.victory.since)))}`,S.victory.side===S.player.faction?'good':'bad'])}if(W.pbuild)chips.push([`Building depot ${Math.round(W.pbuild.prog*100)}%${d3(W.pbuild,p)>350?' · return to the site':''}`,'good']);if(W.scaffold)chips.push([`${sideName(W.scaffold.owner)} construction ${Math.round(W.scaffold.prog*100)}%`,friendSide(W.scaffold.owner)?'good':'bad']);if(apOn)chips.push(['Autopilot · J to cancel','good']);if(S.player.route)chips.push([`Course: ${DEF[S.player.route].name}`,'warn']);if(S.player.level===false)chips.push(['Auto-level off','warn']);if(S.sectors[W.sid].storm>S.T)chips.push(['Ion storm','warn']);
+  const chips=[],sc=[];if(S.coal)chips.push([`Truce vs ${S.coal.lead==='brood'?'the Brood':FACTIONS[S.coal.lead].short}`,S.coal.lead===S.player.faction?'bad':'warn']);if(S.victory){const n=controlCounts()[S.victory.side]||0;chips.push([`${S.victory.side==='brood'?'Brood':sideName(S.victory.side)} holds ${n}/${SECTOR_DEFS.length} systems · galaxy falls in ${fmtT(Math.max(0,WIN_TIME-(S.T-S.victory.since)))}`,S.victory.side===S.player.faction?'good':'bad'])}if(W.pbuild)sc.push([`Building depot ${Math.round(W.pbuild.prog*100)}%${d3(W.pbuild,p)>350?' · return to the site':''}`,'good']);if(W.scaffold)chips.push([`${sideName(W.scaffold.owner)} construction ${Math.round(W.scaffold.prog*100)}%`,friendSide(W.scaffold.owner)?'good':'bad']);if(apOn)sc.push(['Autopilot · J to cancel','good']);if(S.player.route)sc.push([`Course: ${DEF[S.player.route].name}`,'warn']);if(S.player.level===false)sc.push(['Auto-level off','warn']);if(S.sectors[W.sid].storm>S.T)chips.push(['Ion storm','warn']);
   for(const g of GATES[W.sid])if(S.gateDown[gateKey(W.sid,g.to)])chips.push(['Gate to '+DEF[g.to].name+' down','bad']);
   for(const ev of S.events){if(ev.sector!==W.sid)continue;if(ev.type==='comet')chips.push(['Comet in sector','good']);if(ev.type==='derelict')chips.push(['Derelict cargo','good']);if(ev.type==='offensive'){if(ev.stage==='engaged')chips.push([`${sideName(ev.att)} assault in progress`,'bad']);else if(evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'swarm':'strike'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,'warn'])}if(ev.type==='build'&&ev.stage==='inbound'&&evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'Seeder':'constructor'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,friendSide(ev.att)?'good':'warn'])}
   if(o&&o.cap.p>0)chips.push([`${sideName(o.cap.side)} claiming ${Math.round(o.cap.p*100)}%`,o.cap.side==='player'?'good':'warn']);
-  {const bc=beaconChip();if(bc)chips.push(bc)}
-  {const H=handling(p);if(H.L>.2&&!P.docked)chips.push([`Laden ${Math.round(H.L*100)}% · ${HEAVY_CLS.has(P.cls)?'heavy':'slower'} handling −${Math.round((1-H.turn)*100)}% turn`,H.L>.65&&HEAVY_CLS.has(P.cls)?'bad':'warn'])}
-  $('hChips').innerHTML=chips.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');campHud();
+  {const bc=beaconChip();if(bc)sc.push(bc)}
+  // your own ship's status lives with the ship readout at the bottom: hold, mining, handling, flight modes
+  {const m=invMass(P.cargo),cap=p.st.cargo||1,f=m/cap;sc.unshift([`Hold ${m}/${cap} t`,f>=.98?'bad':f>.7?'warn':''])}
+  if(p.mining&&!P.docked){const k=mainOre(p.mining);sc.splice(1,0,[`Mining ${k?ITEMS[k].name:'rock'}${invMass(P.cargo)>=p.st.cargo-.5?' · hold full':''}`,invMass(P.cargo)>=p.st.cargo-.5?'bad':'good'])}
+  {const H=handling(p);if(H.L>.2&&!P.docked)sc.push([`Laden ${Math.round(H.L*100)}% · ${HEAVY_CLS.has(P.cls)?'heavy':'slower'} handling −${Math.round((1-H.turn)*100)}% turn`,H.L>.65&&HEAVY_CLS.has(P.cls)?'bad':'warn'])}
+  $('hChips').innerHTML=chips.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');$('hSChips').innerHTML=sc.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');campHud();
   $('hCr').textContent=fmt(P.credits);$('hHold').textContent=`${invMass(P.cargo)}/${p.st.cargo} t`;
   $('hShip').textContent=W.gunseat&&gsEnt()?`Gunner · ${gsEnt().pname?gsEnt().pname+'\'s ':''}${hullName(gsEnt().fac,'gunboat')}`:P.cls==='gunboat'&&p.tur?`${FACTIONS[P.faction].hulls[P.cls]} · Gunboat · gunner: ${p.tur.gname||(p.tur.gunner&&p.tur.gunner!=='local'?(S.pilots&&S.pilots[p.tur.gunner]?S.pilots[p.tur.gunner].name:'pilot'):'AI')}`:W.bridge?`${W.bridge.f.tok.name} · Frigate bridge`:`${FACTIONS[P.faction].hulls[P.cls]} · ${CLASSES[P.cls].name}`;
   const bar=(id,v,m)=>{const el=$(id);el.querySelector('.fl').style.width=clamp(v/m*100,0,100)+'%';el.querySelector('.v').textContent=Math.round(v)};
