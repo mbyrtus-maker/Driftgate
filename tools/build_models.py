@@ -6,6 +6,7 @@ from station import Comp,piece,build_station
 from frigate import build_frigate
 from rockbase import build_rockbase
 from brood import BROOD_MODELS
+from works import WORKS
 KD='/home/claude/kenney/sk/Models/GLTF format/';QD='/home/claude/qlp/OBJ/'
 LIGHT,MID,DARK,ACC,GLASS,GLOW,WIN=0,1,2,3,4,5,6
 def kenney_role(c):
@@ -70,7 +71,8 @@ MODELS={
  'yard':('struct',lambda:comp([('hangar_largeA',(0,0,0),0,1.6),('hangar_largeA',(0,0,0),H,1.6,True),('platform_large',(2.6,-.2,0),H/2,1.3),('platform_large',(-2.6,-.2,0),H/2,1.3),('supports_high',(2.6,.0,1.1),0,1),('supports_high',(-2.6,.0,-1.1),0,1),('barrels_rail',(2.6,0,-.6),0,.9),('craft_cargoA',(-2.6,0,.5),H/2,.7),('machine_generator',(0,1.7,0),0,1)])),
 }
 for _k,_f in BROOD_MODELS.items():MODELS[_k]=('ship',_f);GLOW_N[_k]=0   # Brood: glow comes from their sacs and vents, not the stern rule
-FIT={'rockbase':230,'station':150,'depot':105,'forge':120,'relay':120,'yard':120}
+for _k,(_f,_s) in WORKS.items():MODELS[_k]=('struct',(lambda f:lambda:comp_model(f))(_f))
+FIT={'rockbase':230,'station':150,'depot':105,'forge':120,'relay':120,'yard':120,**{k:v[1] for k,v in WORKS.items()}}
 def pack():
     idx={};blob=bytearray()
     for name,(kind,fn) in MODELS.items():
