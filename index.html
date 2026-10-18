@@ -80,7 +80,22 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .flight{display:flex;gap:14px;font-size:11px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;flex-wrap:wrap}
 .flight b{font-family:var(--f-mono);color:var(--ivory);font-weight:400;letter-spacing:0}
 .shipname{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase}
-#hBR{right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:250px}
+#hBR{right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:272px;display:flex;flex-direction:column;gap:8px}
+.comms{background:rgba(5,7,13,.72);border:1px solid var(--line);font-size:11.5px;pointer-events:auto}
+.cmh{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 10px;cursor:pointer;font-family:var(--f-display);font-weight:600;letter-spacing:.16em;text-transform:uppercase;font-size:12px;color:var(--ivory)}
+.cmh em{font-style:normal;font-family:var(--f-body,inherit);font-weight:400;letter-spacing:.08em;font-size:10px;color:var(--faint)}
+.cmh:focus-visible{outline:1px solid var(--amber)}
+.cmb{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;padding:0 10px 9px}.comms{min-width:0;overflow:hidden}.comms.min .cmb{display:none}
+.cmt{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-top:3px}
+#hComms .ordc{margin:0;width:auto;min-width:0}#hComms .ordc .om{overflow-wrap:anywhere}
+.cev{display:grid;grid-template-columns:minmax(0,1fr);gap:3px}.cev div{display:flex;gap:6px;border-left:2px solid var(--line-hi);padding-left:6px;line-height:1.3}
+.cev div span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ivory)}.cev div em{font-style:normal;color:var(--faint);font-family:var(--f-mono);font-size:10px}
+.cev .good{border-left-color:var(--ok)}.cev .bad{border-left-color:var(--danger)}.cev .warn{border-left-color:var(--amber)}.cev .news span{color:var(--dim)}
+.ckeys{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3px 10px;color:var(--dim)}.ckeys div{display:flex;gap:6px;align-items:center;white-space:nowrap}.ckeys kbd{color:var(--ivory);min-width:12px;text-align:center}
+.ckeys .wait{color:var(--amber)}.ckeys .sub{display:block;grid-column:1/-1;font-size:10.5px;color:var(--faint);white-space:normal;line-height:1.6}
+.cds{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-top:5px}
+.cd{display:flex;align-items:center;gap:5px}.cd i{display:block;width:42px;height:4px;background:rgba(236,228,207,.13);position:relative;overflow:hidden}
+.cd i b{position:absolute;left:0;top:0;bottom:0;background:var(--amber)}.cd.rdy i b{background:var(--ok)}.cd u{text-decoration:none;font-family:var(--f-mono);color:var(--ivory);letter-spacing:0}
 .tp{background:rgba(5,7,13,.72);border:1px solid var(--line);padding:10px 12px;display:grid;gap:5px}
 .tp .tn{font-family:var(--f-display);font-weight:600;font-size:17px;letter-spacing:.08em;text-transform:uppercase;line-height:1.05}
 .tp .ts{font-size:12px;color:var(--dim)}
@@ -248,6 +263,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
   #radar{width:116px;height:102px}
   .bars{width:150px}.bar{grid-template-columns:44px 1fr 36px;font-size:10px}
   #hBR{width:180px;bottom:auto;top:calc(200px + env(safe-area-inset-top,0px))}
+  #hComms .cev,#hComms .ckeys,#hComms .cmt{display:none}
   #feed{top:calc(100px + env(safe-area-inset-top,0px));transform:none;width:calc(100% - 32px)}
   .fd{font-size:11.5px}
   .facs{grid-template-columns:1fr}
@@ -272,7 +288,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
   <canvas id="ov"></canvas>
 
   <div id="hud" hidden>
-    <div class="hud" id="hTL"><div class="sec-name" id="hSec"></div><div class="sec-sub" id="hSub"></div><div class="chips" id="hChips"></div><div class="ordc" id="hOrd" hidden></div><div class="netchip" id="netChip" hidden></div></div>
+    <div class="hud" id="hTL"><div class="sec-name" id="hSec"></div><div class="sec-sub" id="hSub"></div><div class="chips" id="hChips"></div><div class="netchip" id="netChip" hidden></div></div>
     <div class="netban" id="netBanner" hidden></div><input id="chatIn" class="chatin" hidden maxlength="160" autocomplete="off" placeholder="Message everyone · Enter sends · Esc cancels">
     <div class="hud" id="hTR">
       <div class="cr"><small>CREDITS</small><span id="hCr">0</span></div>
@@ -288,11 +304,11 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
           <div class="bar" id="bH">Hull<div class="tr"><div class="fl"></div></div><span class="v"></span></div>
           <div class="bar" id="bE">Energy<div class="tr"><div class="fl"></div></div><span class="v"></span></div>
         </div>
-        <div class="flight"><span>Speed <b id="hSpd">0</b></span><span>Assist <b id="hFA">ON</b></span><span><i id="hMslL" style="font-style:normal">Missiles</i> <b id="hMsl">0</b></span><span>Gun <b id="hWpn">KINETIC</b></span></div>
+        <div class="flight"><span>Speed <b id="hSpd">0</b></span><span>Assist <b id="hFA">ON</b></span><span><i id="hMslL" style="font-style:normal">Missiles</i> <b id="hMsl">0</b></span><span>Gun <b id="hWpn">KINETIC</b></span></div><div class="cds" id="hCds"></div>
       </div>
     </div>
     <div class="hud" id="contacts" aria-label="Contacts"></div>
-    <div class="hud" id="hBR"></div>
+    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Comms</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
     <div class="hud" id="hPrompt"></div>
     <div class="hud" id="feed" aria-live="polite"></div>
     <div id="touch" hidden>
@@ -1386,7 +1402,24 @@ function campAct(act,c,P,srcs){const C=myCamp(),m=C&&C.mv,f=P.faction,k=pkey();i
     const cn=Math.min(n,m.cons[k]||0);m.cons[k]=(m.cons[k]||0)-cn;const pay=Math.round(baseValue(it)*(cn*1.35+(n-cn)*1.15)),got=transfer(f,'player',pay);add(n);dockErr=`✓ Delivered ${n} ${ITEMS[it].name}: +${fmt(got)} cr${cn?' (deposit back plus fee)':''}. Drive ${Math.floor(m.prog)}/${m.need}.`}
   if(m.prog>=m.need&&!NET.cl&&!CTX){const P2=campOf(f);if(P2.mv===m)campEnd(f,P2,true)}}
 // HUD card under the system name
-function campHud(){const el=$('hOrd');if(!el)return;const C=myCamp(),m=C&&C.mv,f=S.player.faction;if(!C||(!m&&!C.goal)){el.hidden=true;return}el.hidden=false;
+// HUD cooldowns: missile/torpedo magazine, swarm pods, flares and the distress beacon, each as a bar that fills to ready
+function cdItem(lbl,val,p,left){const r=p>=1;return`<span class="cd${r?' rdy':''}">${lbl}${val!=null?` <u>${val}</u>`:''}<i><b style="width:${Math.round(clamp(p,0,1)*100)}%"></b></i><u>${r?'ready':Math.ceil(left)+'s'}</u></span>`}
+function cdsHtml(){const P=S.player,p=W.player,torp=CLASSES[P.cls].torp,cap=rackCapC(P.cls,P.tiers.weapon),out=[];
+  {const T=reloadT(P,torp?'torpedo':'missile'),l=P.rack<cap?(P.mslT||T):0;out.push(cdItem(torp?'Torps':'Missiles',`${P.rack}/${cap}`,P.rack>=cap?1:1-l/T,l))}
+  const sc=swarmCap(P);if(sc){const T=reloadT(P,'swarm'),l=(P.swarm||0)<sc?(P.swT||T):0;out.push(cdItem('Swarm',`${P.swarm||0}/${sc}`,(P.swarm||0)>=sc?1:1-l/T,l))}
+  {const l=W.flareCd||0;out.push(cdItem('Flares',null,1-l/5,l))}
+  {const l=Math.max(0,(P.distT||0)-S.T);out.push(cdItem('Distress',null,1-l/90,l))}
+  return out.join('')}
+let cmSig='';try{if(localStorage.getItem('dg_comms_min')==='1')setTimeout(()=>{const c=$('hComms');if(c){c.classList.add('min');$('cmTog').textContent='show';$('cmHead').setAttribute('aria-expanded','false')}},0)}catch(e){}
+function commsUpdate(){const P=S.player,dl=Math.max(0,(P.distT||0)-S.T),fc=W.flareCd||0,last=FEED.slice(-5);
+  $('hCds').innerHTML=cdsHtml();
+  const sig=FEED.length+'|'+(last.length?last[last.length-1].rt:0)+'|'+Math.ceil(dl)+'|'+Math.ceil(fc)+'|'+Math.floor(S.T/15);if(sig===cmSig)return;cmSig=sig;
+  const ago=t=>{const d=Math.max(0,S.T-t);return d<60?Math.round(d)+'s':Math.round(d/60)+'m'};
+  $('cEv').innerHTML=last.length?last.slice().reverse().map(f=>`<div class="${f.kind}" title="${esc(f.msg)}"><span>${esc(f.msg)}</span><em>${ago(f.t)}</em></div>`).join(''):'<div class="news"><span>Quiet on all channels.</span></div>';
+  const K=(k,l,w)=>`<div${w?' class="wait"':''}><kbd>${k}</kbd>${l}</div>`;
+  $('cKeys').innerHTML=K('U',dl>0?`Distress ${Math.ceil(dl)}s`:'Distress',dl>0)+K('I','Comms menu')+K('Y','Assist friendly')+K('O','Join operation')+K('P','Campaign orders')+K('B',fc>0?`Flares ${Math.ceil(fc)}s`:'Flares',fc>0)
+    +`<div class="sub">In the comms menu (I): <kbd>1</kbd> guard · <kbd>2</kbd> escort · <kbd>3</kbd> construction · <kbd>4</kbd> distress</div>`}
+function campHud(){const el=$('hOrd');if(!el)return;const C=myCamp(),m=C&&C.mv,f=S.player.faction;if(!C||(!m&&!C.goal)){el.hidden=false;el.innerHTML=`<div class="ot" style="border-color:${sideCol(f)}"><span>${esc(FACTIONS[f].short)} orders</span><b>${controlCounts()[f]||0}/${VIC_NEED} systems</b></div><div class="om" style="color:var(--dim)">No campaign move right now. Command posts the next one shortly.</div>`;return}el.hidden=false;
   const n=controlCounts()[f]||0,k=pkey();let h=`<div class="ot" style="border-color:${sideCol(f)}"><span>${esc(FACTIONS[f].short)} · ${esc(DOCTRINE[f].name)}</span><b>${n}/${VIC_NEED} systems</b></div>`;
   if(!m){el.innerHTML=h+`<div class="om">Goal reached. Hold the line.</div>`;return}
   const signed=m.acc.includes(k),left=m.stage==='active'&&m.until?Math.max(0,Math.round(m.until-S.T)):Math.max(0,Math.round(m.brief-S.T)),ev=m.evId&&S.events.find(e=>e.id===m.evId);
@@ -3909,7 +3942,7 @@ function hudUpdate(){
   const bar=(id,v,m)=>{const el=$(id);el.querySelector('.fl').style.width=clamp(v/m*100,0,100)+'%';el.querySelector('.v').textContent=Math.round(v)};
   if(W.gunseat&&gsEnt()){const F=gsEnt();bar('bS',F.shield,F.st.sCap);bar('bH',F.hull,F.st.hull);bar('bE',F.energy||0,F.st.eCap)}else if(W.bridge){const F=W.bridge.f;bar('bS',F.shield,F.st.sCap);bar('bH',F.hull,F.st.hull);bar('bE',F.energy,F.st.eCap)}else{bar('bS',p.shield,p.st.sCap);bar('bH',p.hull,p.st.hull);bar('bE',p.energy,p.st.eCap)}
   $('bS').classList.toggle('down',p.shield<=.5&&!P.docked);$('bH').classList.toggle('down',p.hull<p.st.hull*.35&&!P.docked);$('bS').classList.toggle('low',p.shield>.5&&p.shield<p.st.sCap*.3);
-  $('hSpd').textContent=Math.round(hyp(p.vx,p.vy,p.vz))+' m/s';$('hFA').textContent=P.fa?'ON':'OFF';$('hMsl').textContent=`${P.rack}/${rackCapC(P.cls,P.tiers.weapon)}${P.mslT>0?` ⟳${Math.ceil(P.mslT)}s`:''}${swarmCap(P)?` · swarm ${P.swarm||0}/${swarmCap(P)}${P.swT>0?` ⟳${Math.ceil(P.swT)}s`:''}`:''}${CLASSES[P.cls].drones?` · drones ${(p.drones||[]).filter(d=>d.alive).length}/${CLASSES[P.cls].drones}`:''}`;$('hMslL').textContent=CLASSES[P.cls].torp?'Torpedoes':'Missiles';$('hWpn').textContent=P.wpn==='laser'?'LASER':'KINETIC';$('hWpn').style.color=P.wpn==='laser'?'#a5deff':'var(--amber)';
+  $('hSpd').textContent=Math.round(hyp(p.vx,p.vy,p.vz))+' m/s';$('hFA').textContent=P.fa?'ON':'OFF';$('hMsl').textContent=`${P.rack}/${rackCapC(P.cls,P.tiers.weapon)}${swarmCap(P)?` · swarm ${P.swarm||0}/${swarmCap(P)}`:''}${CLASSES[P.cls].drones?` · drones ${(p.drones||[]).filter(d=>d.alive).length}/${CLASSES[P.cls].drones}`:''}`;$('hMslL').textContent=CLASSES[P.cls].torp?'Torpedoes':'Missiles';$('hWpn').textContent=P.wpn==='laser'?'LASER':'KINETIC';$('hWpn').style.color=P.wpn==='laser'?'#a5deff':'var(--amber)';
   {const BRf=W.bridge&&W.bridge.f,ref=BRf||(W.gunseat&&gsEnt())||p,selR=BRf?batteryTgt(BRf):W.tgt&&W.tgt.ref;
    const all=W.ents.filter(e=>e.type==='ship'&&e.alive&&!e.isPlayer&&e!==ref&&seenShip(e)&&(e.role!=='drone'||(e.ai.tgt===p&&hostile('player',e.side)))),nh=all.filter(e=>hostile('player',e.side)).length;
     const stOf=e=>{if(hostile('player',e.side))return e.ai&&e.ai.tgt===p?['on you','b']:e.ai&&e.ai.tgt&&!e.ai.tgt.isPlayer&&friendSide(e.ai.tgt.side)?['hitting ally','w']:null;if(W.t-e.lastHit<3&&hostile(e.side,e.lastHitBy))return['under fire','b'];if(e.role==='flee')return['retreating','w'];if(e.order&&e.order.tgt)return[(e.order.kind==='guard'?'guarding ':'escorting ')+(e.order.tgt===p?'you':'ally'),'g'];if(e.ord)return[e.ord,'g'];if(e.ai&&e.ai.tgt&&e.ai.tgt.alive&&hostile(e.side,e.ai.tgt.side))return['engaging','g'];if(e.role==='escort')return['escorting','g'];if(e.role==='screen')return['screening','g'];if(e.role==='scout')return['scouting','g'];if(e.role==='builder')return['building','g'];if(e.escortG&&escortHauler(grpLead(e.escortG)||{}))return['escorted','g'];return null};
@@ -3929,7 +3962,7 @@ function hudUpdate(){
     else if(W.tgt.kind==='station')th=`<div class="tp"><div class="tn" style="color:${sideCol(T.fac)}">${esc(T.name)}</div>${hostile('player',T.fac)?'<div class="ts" style="color:var(--amber)">Armoured: only torpedoes damage it</div>':''}<div class="ts">${T.fac==='player'?'Your':FACTIONS[T.fac].name} ${T.kind==='hive'?'hive':T.core?'station':'depot'}${T.rec?` · hull ${Math.round(T.rec.hull/T.rec.hMax*100)}%`:''} · ${T.turrets.length} turrets${T.offline?' · OFFLINE':''}</div><div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.sMax*100}%;background:#6fb7ff"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
   if(th&&W.lock.ref&&W.tgt&&W.lock.ref===W.tgt.ref){const L=W.lock;th=th.slice(0,-6)+`<div class="row">Missile lock<b style="color:${L.locked?'var(--danger)':'var(--amber)'}">${L.locked?'LOCKED · press C':Math.round(L.p*100)+'%'}</b></div><div class="mini"><i style="width:${L.p*100}%;background:${L.locked?'var(--danger)':'var(--amber)'}"></i></div></div>`}
   else if(th&&lockable(W.tgt)&&P.rack>0)th=th.slice(0,-6)+`<div class="ts">Keep it inside the dashed lock ring to lock missiles.</div></div>`;
-  $('hBR').innerHTML=th;
+  $('hTgt').innerHTML=th;commsUpdate();
   let pr='',alert=false;
   if(flashMsg&&performance.now()-flashMsg.t<2600){pr=flashMsg.m;alert=flashMsg.alert}
   else if(W.docking)pr='';
@@ -4086,6 +4119,7 @@ function closeSheets(){if(!$('help').hidden){$('help').hidden=true;return}if(!$(
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{$(b.dataset.close).hidden=true}));
 let quitArm=0;$('bQuit').addEventListener('click',()=>{if(!running)return;const b=$('bQuit');if(performance.now()-quitArm>3000){quitArm=performance.now();b.textContent='Save & quit?';b.style.color='var(--amber)';setTimeout(()=>{if(performance.now()-quitArm>=2900){b.textContent='Quit';b.style.color=''}},3000);return}b.textContent='Quit';b.style.color='';quitGame()});
 $('bMap').addEventListener('click',toggleMap);$('bHelp').addEventListener('click',()=>toggleSheet('help'));
+$('cmHead').addEventListener('click',e=>{e.stopPropagation();const c=$('hComms'),mn=!c.classList.contains('min');c.classList.toggle('min',mn);$('cmTog').textContent=mn?'show':'hide';$('cmHead').setAttribute('aria-expanded',String(!mn));try{localStorage.setItem('dg_comms_min',mn?'1':'0')}catch(er){}$('cmHead').blur()});
 const mcv=$('mapCv'),mctx=mcv.getContext('2d');
 function mapXY(d,w,h){const pad=46,sz=Math.min(w,h)-pad*2,ox=(w-sz)/2,oy=(h-sz)/2;return[ox+d.x*sz,oy+d.y*sz]}
 function sectorOwner(id){const d=DEF[id],R=S.stations[id];if(R)return R.owner;{const fc=frigControl(id);if(fc)return fc}if(d.home)return d.home;const oid=OUT_BY_SECTOR[id];return oid?S.outposts[oid].owner:null}
