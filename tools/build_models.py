@@ -35,9 +35,18 @@ def comp(parts,name=None):
         for p in parts:S.add(*p)
         return S.model()
     return comp_model(b,name)
+GLOW_N={}  # models where only the first N triangles may become engine glow (bolted-on parts stay unlit)
+def scout2():
+    # the Advanced Scout: the scout hull with a missile pod slung under each wing, a swarm box on the spine and a sensor dish aft
+    P,N,R=ql_model(2);S=Comp();sc=.62
+    for sx in (-1,1):
+        for k in range(4):S.add('rocket_fuelA',(1.85*sx,-.32,-.55+k*.5*sc),0,sc,False,math.pi/2)
+        S.add('rocket_topA',(1.85*sx,-.32,-.55+4*.5*sc),0,sc,False,math.pi/2)
+    S.add('machine_barrel',(0,1.05,-.45),math.pi/2,1.15);S.add('satelliteDish',(0,1.4,-1.05),math.pi,.95)
+    M=S.model();GLOW_N['scout2']=len(P);return np.concatenate([np.array(P).reshape(-1,3,3),M['P']]),list(N)+list(M['N']),list(R)+[kenney_role(c) for c in M['cols']]
 H=math.pi
 MODELS={
- 'interceptor':('ship',lambda:ql_model(4)),'striker':('ship',lambda:ql_model('')),'heavy':('ship',lambda:ql_model(5)),'bomber':('ship',lambda:ql_model(3)),'scout':('ship',lambda:ql_model(2)),
+ 'interceptor':('ship',lambda:ql_model(4)),'striker':('ship',lambda:ql_model('')),'heavy':('ship',lambda:ql_model(5)),'bomber':('ship',lambda:ql_model(3)),'scout':('ship',lambda:ql_model(2)),'scout2':('ship',scout2),
  'picket':('ship',lambda:glb_model('craft_speederB')),'gunboat':('ship',lambda:glb_model('craft_speederD')),
  'skiff':('ship',lambda:glb_model('craft_miner')),
  'prospector':('ship',lambda:comp([('craft_miner',(0,0,0),0,1),('machine_barrel',(.95,.15,-.2),0,.55),('machine_barrel',(-.95,.15,-.2),0,.55)])),
@@ -68,7 +77,7 @@ def pack():
             n/=l;vn=N[k] if k<len(N) else None
             if vn is not None and np.dot(n,np.array(vn,dtype=float))<0:t=t[[0,2,1]];n=-n
             r,sh=R[k]
-            if kind=='ship' and n[2]<-.8 and t[:,2].mean()<zlo+.3*L and r!=GLASS:r=GLOW   # aft-facing faces at the stern glow as engines
+            if kind=='ship' and k<GLOW_N.get(name,1<<30) and n[2]<-.8 and t[:,2].mean()<zlo+.3*L and r!=GLASS:r=GLOW   # aft-facing faces at the stern glow as engines
             if kind=='struct' and r==DARK:r=WIN                                             # dark recesses on structures read as lit windows
             tris.append(t);roles.append(r);shades.append(sh)
         T=np.array(tris);q=np.clip(np.round(T*32767),-32767,32767).astype('<i2')
