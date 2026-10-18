@@ -453,7 +453,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
               <kbd>R</kbd><span>Target nearest asteroid</span>
               <kbd>Tab</kbd><span>Cycle all targets, including jumpgates</span>
               <kbd>C · Middle-click</kbd><span>Launch a missile once locked (×1.8 damage once the target's shields are down)</span>
-              <kbd>3</kbd><span>Heavy Fighter / Bomber / Gunboat / Advanced Scout only — Swarm Pod: eight micro-missiles at your target and ships near it, no lock needed (pods ride in your hold)</span>
+              <kbd>3</kbd><span>Heavy Fighter / Bomber / Gunboat / Advanced Scout only — Swarm Pod: eight micro-missiles at your target and ships near it, no lock needed (reloads on a cooldown)</span>
               <kbd>B</kbd><span>Flares: spoof missiles tracking you (30 energy, 5 s recharge)</span>
               <kbd>E</kbd><span>Dock / launch</span>
               <kbd>V</kbd><span>Chase or cockpit camera</span>
@@ -602,6 +602,8 @@ const ITEMS={
   frame:{name:'Depot Frame',recipe:{plate:10,wire:6,coil:3},col:'#c8d2e0'},
 };
 const ITEM_ORDER=['fe','cu','ir','xc','au','plate','wire','coil','lattice','core','beacon','missile','torpedo','swarm','drone','frame','keel','picket'];
+// missiles, torpedoes and swarm pods are magazines on a cooldown now: no one buys, sells or fabricates them on the market
+const MUNITIONS=new Set(['missile','torpedo','swarm']);
 const CRAFTABLE=['plate','wire','coil','lattice','core','beacon','missile','torpedo','swarm','tune','frame','keel','picket'];
 const COMP={},DEPTH={};
 function comp(id){if(COMP[id])return COMP[id];const v={fe:0,cu:0,ir:0,xc:0,au:0};if(RAWS.includes(id))v[id]=1;else{const r=ITEMS[id].recipe;for(const k in r){const c=comp(k);for(const e of RAWS)v[e]+=c[e]*r[k]}}return COMP[id]=v}
@@ -877,7 +879,7 @@ const buyPrice=(st,id)=>Math.ceil(price(st,id)*1.06),sellPrice=(st,id)=>Math.max
 // oversupplied, cheap; - means short, dear). Goods still move through the faction's stock and credits through its treasury,
 // so the economy stays zero-sum; the local level only shapes the price. Each station produces some goods and consumes
 // others, so its level drifts back toward a natural surplus or shortage after trading. AI merchants work the widest gaps.
-const TRADE_ITEMS=['fe','cu','ir','xc','au','plate','wire','coil','lattice','missile','torpedo','drone','swarm'];
+const TRADE_ITEMS=['fe','cu','ir','xc','au','plate','wire','coil','lattice','drone'];
 function locT(id){return Math.max(6,stockTarget(id)/4)}
 function mkStations(){const out=[];for(const id in S.stations){const R=S.stations[id];if(R.kind==='hive'||!(FAC_IDS.includes(R.owner)||R.owner==='neutral'))continue;out.push(R)}return out}
 function mkStock(R){return S.econ.stock[R.owner]||{}}
@@ -1494,7 +1496,7 @@ function driftSeed(){const D=S.drift;let tot=0;for(const e of RAWS)tot+=D[e];if(
 function allFeed(msg,kind){if(NET.cl)return;feed(msg,kind);if(NET.host)for(const pid in S.pilots||{})if(pid!==NET.me)feedTo(pid,msg,kind)}
 function fpContracts(){const st=S.econ.stock.neutral;if(!st)return;for(const F of FREEPORTS){const R=S.stations[F.sid];if(!R||R.owner!=='neutral')continue;
     if(S.contracts.filter(c=>c.st===F.sid).length>=2||Math.random()<.5)continue;
-    const want={plate:[40,3],wire:[40,3],coil:[16,2],ir:[80,2],xc:[30,1.6],lattice:[6,1],missile:[16,1.2],fe:[150,1.2],cu:[150,1.2]},c=[];for(const k in want)if((st[k]||0)<want[k][0]&&!S.contracts.some(x=>x.st===F.sid&&x.item===k))c.push([k,want[k][1]]);if(!c.length)continue;
+    const want={plate:[40,3],wire:[40,3],coil:[16,2],ir:[80,2],xc:[30,1.6],lattice:[6,1],fe:[150,1.2],cu:[150,1.2]},c=[];for(const k in want)if((st[k]||0)<want[k][0]&&!S.contracts.some(x=>x.st===F.sid&&x.item===k))c.push([k,want[k][1]]);if(!c.length)continue;
     const item=wpickArr(c),n=item==='fe'||item==='cu'||item==='ir'?ri(24,48):item==='plate'||item==='wire'?ri(10,20):item==='lattice'?ri(2,4):ri(5,10),reward=Math.ceil(baseValue(item)*n*rnd(2.6,3.4)/10)*10;
     S.contracts.push({id:S.nextId++,fac:'neutral',st:F.sid,item,n,reward,until:S.T+rnd(600,900)});
     allFeed(`📦 Freeport request · ${R.name} (${DEF[F.sid].name}, out in the void): ${n} ${ITEMS[item].name} for ${fmt(reward)} cr. Deliver there in person.`,'info')}}
@@ -1543,9 +1545,9 @@ function fpAct(act,arg,c,P,srcs){
 // goal, every pilot who served it gets a victory bonus. The Brood and the Unbound have no campaign: they play for themselves.
 const DOCTRINE={
   halcyon:{name:'Trade Charter',why:'buy the frontier with depots and relays',prep:['haul','haul','mine'],haul:'plate',mine:'cu',w:{build:1.7,relay:3,forge:1,yard:1.2,neutral:2.6,depot:.8,hub:2.2,deep:1,contested:1}},
-  varkesh:{name:'Iron Advance',why:'push the line forward one siege at a time',prep:['haul','mine','haul'],haul:'missile',mine:'ir',w:{build:.7,relay:1,forge:1.4,yard:1.4,neutral:1.4,depot:3.4,hub:1.2,deep:1,contested:2.4}},
+  varkesh:{name:'Iron Advance',why:'push the line forward one siege at a time',prep:['haul','mine','haul'],haul:'wire',mine:'ir',w:{build:.7,relay:1,forge:1.4,yard:1.4,neutral:1.4,depot:3.4,hub:1.2,deep:1,contested:2.4}},
   ostrova:{name:'Lattice Ascendancy',why:'seize the crystal: forges and the deep fields',prep:['mine','mine','haul'],haul:'coil',mine:'xc',w:{build:1,relay:1,forge:4,yard:1,neutral:1.7,depot:1.3,hub:1,deep:3,contested:1}}};
-const CAMP_PAY={take:900,build:700,mine:450,haul:550},CAMP_GOAL=3000,CAMP_HAUL_N={plate:16,missile:10,coil:6,torpedo:4},CAMP_MINE_N={xc:24,ir:36,cu:48,fe:48};
+const CAMP_PAY={take:900,build:700,mine:450,haul:550},CAMP_GOAL=3000,CAMP_HAUL_N={plate:16,wire:14,coil:6},CAMP_MINE_N={xc:24,ir:36,cu:48,fe:48};
 function stN(sid){return S.stations[sid]?S.stations[sid].name:DEF[sid]?DEF[sid].name+' depot':'the depot'}
 function pkey(){return NET.on?curPid():'me'}
 function isMe(k){return k==='me'||(NET.on&&k===NET.me)}
@@ -4337,17 +4339,18 @@ function renderDock(){
   $('dTabs').innerHTML=tabs.map(([k,l])=>`<button class="tab" role="tab" type="button" aria-selected="${k===dockTab}" data-act="tab" data-arg="${k}">${l}</button>`).join('');
   let h='';
   if(dockTab==='market'){
-    const st=c.market;const items=ITEM_ORDER.filter(k=>k!=='beacon'&&((st[k]||0)>0||countIn(k,srcs)>0)).sort(byName);
+    const st=c.market;const items=ITEM_ORDER.filter(k=>k!=='beacon'&&!MUNITIONS.has(k)&&((st[k]||0)>0||countIn(k,srcs)>0)).sort(byName),salv=[...MUNITIONS].filter(k=>countIn(k,srcs)>0);
     h+=`<p class="note" style="margin:0 0 12px">Prices follow this ${c.kind}'s supply: scarce goods cost more, plentiful ones less. A whole purchase or sale goes at the price shown; the price moves afterwards. Purchases go to your ${c.storageName.toLowerCase()}; sales draw from your hold first. Every credit moves between you and the ${sideName(c.wallet)} treasury.</p>`;
     h+=`<div class="tblw"><table class="t"><thead><tr><th>Item</th><th class="r">Stock</th><th class="r">Buy</th><th class="r">Sell</th><th class="r">You have</th><th></th></tr></thead><tbody>`;
     for(const k of items){const bp=mBuy(c,k),sp=mSell(c,k),have=countIn(k,srcs),dm=demandOf(mR(c),k);
       h+=`<tr><td class="iname">${sw(k)}${esc(ITEMS[k].name)}<span class="mass">${mass(k)} t</span>${dm==='high'?' <span class="dchip hi">high demand</span>':dm==='low'?' <span class="dchip lo">oversupplied</span>':''}</td><td class="r num">${st[k]||0}</td><td class="r num">${fmt(bp)}</td><td class="r num">${fmt(sp)}</td><td class="r num">${have}</td>
       <td><div class="act"><button class="btn sm" data-act="buy" data-arg="${k}:1" ${!(st[k]>0)||P.credits<bp?'disabled':''}>Buy 1</button><button class="btn sm" data-act="buy" data-arg="${k}:10" ${!(st[k]>0)||P.credits<bp?'disabled':''}>Buy 10</button><button class="btn sm" data-act="sell" data-arg="${k}:1" ${have<1?'disabled':''}>Sell 1</button><button class="btn sm" data-act="sell" data-arg="${k}:all" ${have<1?'disabled':''}>Sell all</button></div></td></tr>`}
     h+=`</tbody></table></div>`;if(!items.length)h+=`<div class="empty">Nothing in stock.</div>`;
+    if(salv.length)h+=`<p class="note" style="margin:12px 0 6px">Missiles, torpedoes and swarm pods aren't traded: your launchers reload on a cooldown. Salvaged ones you carry can be sold off as scrap.</p><div class="act">${salv.map(k=>`<button class="btn sm" data-act="sell" data-arg="${k}:all">Sell ${countIn(k,srcs)} ${esc(ITEMS[k].name)} · ${fmt(mSell(c,k))} cr each</button>`).join('')}</div>`;
   }else if(dockTab==='fab'){
     h+=`<p class="note" style="margin:0 0 12px">Fabrication draws from your hold and ${c.storageName.toLowerCase()} and puts the result in your ${c.storageName.toLowerCase()}. Mass is conserved: a part weighs exactly what went into it.${c.fee?' This dock charges a 6% labour fee.':''}${c.forge?'':' Crystal Lattice and Resonance Cores need a Forge.'}</p>`;
     h+=`<div class="tblw"><table class="t"><thead><tr><th>Part</th><th>Recipe</th><th class="r">Have</th><th></th></tr></thead><tbody>`;
-    for(const k of CRAFTABLE.slice().sort(byName)){const r=ITEMS[k].recipe,ok=!ITEMS[k].forge||c.forge||c.fab;const can=ok&&haveIn(r,srcs);
+    for(const k of CRAFTABLE.filter(k=>!MUNITIONS.has(k)).sort(byName)){const r=ITEMS[k].recipe,ok=!ITEMS[k].forge||c.forge||c.fab;const can=ok&&haveIn(r,srcs);
       h+=`<tr><td class="iname">${sw(k)}${esc(ITEMS[k].name)}<span class="mass">${mass(k)} t</span></td><td>${Object.keys(r).map(i=>chip(i,r[i],countIn(i,srcs))).join('')}${ok?'':'<span class="req no">Forge or home station</span>'}</td><td class="r num">${countIn(k,srcs)}</td>
       <td><div class="act"><button class="btn sm" data-act="make" data-arg="${k}:1" ${can?'':'disabled'}>Make 1</button><button class="btn sm" data-act="make" data-arg="${k}:max" ${can?'':'disabled'}>Make max</button></div></td></tr>`}
     h+=`</tbody></table></div>`;
@@ -4425,9 +4428,11 @@ $('dock').addEventListener('click',e=>{
   if(NET.cl){netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
   dockAction(act,arg);renderDock()});
 function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.cargo,c.storage];
+  if(act==='buy'&&MUNITIONS.has(arg.split(':')[0]))return;
   if(act==='buy'){const[k,n]=arg.split(':');let got=0,spent=0;const pr0=mBuy(c,k),lot=lotCap(c,k,-1,Math.min(+n,c.market[k]||0)),capped=lot<Math.min(+n,c.market[k]||0);for(let i=0;i<lot;i++){const pr=pr0;if(!(c.market[k]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k,1);inv.add(c.storage,k,1);got++;spent+=pr}{const R=mR(c);if(R&&got){mkOf(R)[k]=(R.mk[k]||0)-got}}if(got){P.bought=P.bought||{};P.bought[k]=(P.bought[k]||0)+got;if(c.owner==='neutral'){const F=(P.fpBought=P.fpBought||{})[P.sector]=(P.fpBought||{})[P.sector]||{};F[k]=(F[k]||0)+got}}if(got)dockErr=`✓ Bought ${got} ${ITEMS[k].name} for ${fmt(spent)} cr.${capped?' That is all it sells at that price; the next lot goes at the new price.':''}`}
-  else if(act==='sell'){const[k,n]=arg.split(':');const want=n==='all'?countIn(k,srcs):1,max=lotCap(c,k,1,want),capped=max<want;let sold=0,earn=0;const pr0=mSell(c,k);for(let i=0;i<max;i++){const pr=pr0;if(S.econ.treasury[c.wallet]<pr){dockErr=`The ${sideName(c.wallet)} treasury can't afford more.`;break}if(!takeFrom({[k]:1},srcs))break;inv.add(c.market,k,1);transfer(c.wallet,'player',pr);sold++;earn+=pr}{const R=mR(c);if(R&&sold){mkOf(R)[k]=(R.mk[k]||0)+sold}}if(sold&&P.bought&&P.bought[k]){P.bought[k]=Math.max(0,P.bought[k]-sold);if(!P.bought[k])delete P.bought[k]}if(sold)dockErr=`✓ Sold ${sold} ${ITEMS[k].name} for ${fmt(earn)} cr.${capped?` That is all ${c.name||'the market'} takes at that price; sell again for the rest at the new price.`:''}`}
+  else if(act==='sell'){const[k,n]=arg.split(':');const want=n==='all'?countIn(k,srcs):1,max=MUNITIONS.has(k)?want:lotCap(c,k,1,want),capped=max<want;let sold=0,earn=0;const pr0=mSell(c,k);for(let i=0;i<max;i++){const pr=pr0;if(S.econ.treasury[c.wallet]<pr){dockErr=`The ${sideName(c.wallet)} treasury can't afford more.`;break}if(!takeFrom({[k]:1},srcs))break;inv.add(c.market,k,1);transfer(c.wallet,'player',pr);sold++;earn+=pr}{const R=mR(c);if(R&&sold){mkOf(R)[k]=(R.mk[k]||0)+sold}}if(sold&&P.bought&&P.bought[k]){P.bought[k]=Math.max(0,P.bought[k]-sold);if(!P.bought[k])delete P.bought[k]}if(sold)dockErr=`✓ Sold ${sold} ${ITEMS[k].name} for ${fmt(earn)} cr.${capped?` That is all ${c.name||'the market'} takes at that price; sell again for the rest at the new price.`:''}`}
   else if(act==='make'&&ITEMS[arg.split(':')[0]].forge&&!c.forge&&!c.fab)dockErr='Crystal Lattice and Resonance Cores need a Forge or a faction home station.';
+  else if(act==='make'&&MUNITIONS.has(arg.split(':')[0])){}
   else if(act==='make'){const[k,n]=arg.split(':');const r=ITEMS[k].recipe,fee=c.fee?Math.ceil(baseValue(k)*.06):0;let made=0;const lim=n==='max'?999:1;
     while(made<lim&&haveIn(r,srcs)&&P.credits>=fee){takeFrom(r,srcs);inv.add(c.storage,k,1);if(fee)transfer('player',c.wallet,fee);made++}
     dockErr=made?`✓ Fabricated ${made} ${ITEMS[k].name}.`:(P.credits<fee?'Not enough credits for the labour fee.':'Missing materials.')}
