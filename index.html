@@ -80,8 +80,8 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .flight{display:flex;gap:14px;font-size:11px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;flex-wrap:wrap}
 .flight b{font-family:var(--f-mono);color:var(--ivory);font-weight:400;letter-spacing:0}
 .shipname{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase}
-#hBR{right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:272px;display:flex;flex-direction:column;gap:8px}
-.comms{background:rgba(5,7,13,.72);border:1px solid var(--line);font-size:11.5px;pointer-events:auto}
+#hBR{right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}#hTgt{width:272px}#hTgt:empty{display:none}
+.comms{background:rgba(5,7,13,.72);border:1px solid var(--line);font-size:11.5px;pointer-events:auto;width:clamp(272px,calc(100vw - 800px),544px)}
 .cmh{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 10px;cursor:pointer;font-family:var(--f-display);font-weight:600;letter-spacing:.16em;text-transform:uppercase;font-size:12px;color:var(--ivory)}
 .cmh em{font-style:normal;font-family:var(--f-body,inherit);font-weight:400;letter-spacing:.08em;font-size:10px;color:var(--faint)}
 .cmh:focus-visible{outline:1px solid var(--amber)}
@@ -91,7 +91,7 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .cev{display:grid;grid-template-columns:minmax(0,1fr);gap:3px}.cev div{display:flex;gap:6px;border-left:2px solid var(--line-hi);padding-left:6px;line-height:1.3}
 .cev div span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ivory)}.cev div em{font-style:normal;color:var(--faint);font-family:var(--f-mono);font-size:10px}
 .cev .good{border-left-color:var(--ok)}.cev .bad{border-left-color:var(--danger)}.cev .warn{border-left-color:var(--amber)}.cev .news span{color:var(--dim)}
-.ckeys{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3px 10px;color:var(--dim)}.ckeys div{display:flex;gap:6px;align-items:center;white-space:nowrap}.ckeys kbd{color:var(--ivory);min-width:12px;text-align:center}
+.ckeys{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:3px 10px;color:var(--dim)}.ckeys div{display:flex;gap:6px;align-items:center;white-space:nowrap}.ckeys kbd{color:var(--ivory);min-width:12px;text-align:center}
 .ckeys .wait{color:var(--amber)}.ckeys .sub{display:block;grid-column:1/-1;font-size:10.5px;color:var(--faint);white-space:normal;line-height:1.6}
 .cds{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-top:5px}
 .cd{display:flex;align-items:center;gap:5px}.cd i{display:block;width:42px;height:4px;background:rgba(236,228,207,.13);position:relative;overflow:hidden}
@@ -264,6 +264,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
   .bars{width:150px}.bar{grid-template-columns:44px 1fr 36px;font-size:10px}
   #hBR{width:180px;bottom:auto;top:calc(200px + env(safe-area-inset-top,0px))}
   #hComms .cev,#hComms .ckeys,#hComms .cmt{display:none}
+  #hComms,#hTgt{width:180px}
   #feed{top:calc(100px + env(safe-area-inset-top,0px));transform:none;width:calc(100% - 32px)}
   .fd{font-size:11.5px}
   .facs{grid-template-columns:1fr}
