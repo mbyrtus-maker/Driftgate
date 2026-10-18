@@ -293,7 +293,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     <div class="hud" id="hTR">
       <div class="cr"><small>CREDITS</small><span id="hCr">0</span></div>
       <div class="holdline">Hold <b id="hHold">0/0</b></div>
-      <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button><button class="hbtn" id="bInvite" type="button" hidden>Invite</button><button class="hbtn" id="bQuit" type="button" aria-label="Save and quit">Quit</button></div>
+      <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bFull" type="button" aria-label="Full screen">Full <kbd>F11</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button><button class="hbtn" id="bInvite" type="button" hidden>Invite</button><button class="hbtn" id="bQuit" type="button" aria-label="Save and quit">Quit</button></div>
     </div>
     <div class="hud" id="hBL">
       <canvas id="radar" width="340" height="300" aria-label="Radar"></canvas>
@@ -447,6 +447,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
               <kbd>J</kbd><span>Autopilot to your target (gate, station, rock) or the next jump on your course</span>
               <kbd>L</kbd><span>Auto-level on/off (rolls you back level with the sector)</span>
               <kbd>Wheel</kbd><span>Chase camera distance</span>
+              <kbd>F11</kbd><span>Full screen on/off (or the Full button at the top right)</span>
               <kbd>M</kbd><span>Galaxy map and economy ledger</span>
               <kbd>N</kbd><span>Sound: all on → music off → muted</span>
             </div>
@@ -2312,7 +2313,7 @@ function civHelp(e){let best=null,bd=2600;for(const c of W.ents){if(!c.npc||!c.a
 // ============================================================ input
 const keys={},mouse={x:0,y:0,l:false,r:false,aim:false,in:false},touch={on:false,ox:0,oy:0,dx:0,dy:0,id:null,fire:false,mine:false,boost:false,thrust:false};
 let coarse=matchMedia('(pointer:coarse)').matches;
-addEventListener('keydown',e=>{
+addEventListener('keydown',e=>{if(e.code==='F11'){e.preventDefault();toggleFull();return}
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
   const c=e.code;if(running)auInit();
   if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();return}
@@ -4118,7 +4119,16 @@ function toggleSheet(id){const el=$(id);el.hidden=!el.hidden;if(!el.hidden&&id==
 function closeSheets(){if(!$('help').hidden){$('help').hidden=true;return}if(!$('map').hidden){$('map').hidden=true;return}if(S.player.docked)undock()}
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{$(b.dataset.close).hidden=true}));
 let quitArm=0;$('bQuit').addEventListener('click',()=>{if(!running)return;const b=$('bQuit');if(performance.now()-quitArm>3000){quitArm=performance.now();b.textContent='Save & quit?';b.style.color='var(--amber)';setTimeout(()=>{if(performance.now()-quitArm>=2900){b.textContent='Quit';b.style.color=''}},3000);return}b.textContent='Quit';b.style.color='';quitGame()});
-$('bMap').addEventListener('click',toggleMap);$('bHelp').addEventListener('click',()=>toggleSheet('help'));
+$('bMap').addEventListener('click',toggleMap);
+// full screen: the whole page, so the HUD, map and dock come along. Embedded views may not allow it; say so instead of failing quietly.
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||null}
+function toggleFull(){try{if(fsEl()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return}
+  const el=document.documentElement,rq=el.requestFullscreen||el.webkitRequestFullscreen;if(!rq||document.fullscreenEnabled===false){fsBlocked();return}
+  const pr=rq.call(el,{navigationUI:'hide'});if(pr&&pr.catch)pr.catch(fsBlocked)}catch(e){fsBlocked()}}
+function fsBlocked(){flash('Full screen isn\'t allowed in this embedded view. Open the game on its own page (mbyrtus-maker.github.io/Driftgate) to play full screen.',true)}
+function fsLabel(){const b=$('bFull');if(b)b.innerHTML=fsEl()?'Exit full <kbd>F11</kbd>':'Full <kbd>F11</kbd>';setTimeout(()=>{resize();if(!$('map').hidden)drawMap()},60)}
+document.addEventListener('fullscreenchange',fsLabel);document.addEventListener('webkitfullscreenchange',fsLabel);
+$('bFull').addEventListener('click',e=>{e.currentTarget.blur();toggleFull()});$('bHelp').addEventListener('click',()=>toggleSheet('help'));
 $('cmHead').addEventListener('click',e=>{e.stopPropagation();const c=$('hComms'),mn=!c.classList.contains('min');c.classList.toggle('min',mn);$('cmTog').textContent=mn?'show':'hide';$('cmHead').setAttribute('aria-expanded',String(!mn));try{localStorage.setItem('dg_comms_min',mn?'1':'0')}catch(er){}$('cmHead').blur()});
 const mcv=$('mapCv'),mctx=mcv.getContext('2d');
 function mapXY(d,w,h){const pad=46,sz=Math.min(w,h)-pad*2,ox=(w-sz)/2,oy=(h-sz)/2;return[ox+d.x*sz,oy+d.y*sz]}
