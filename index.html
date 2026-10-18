@@ -1825,7 +1825,7 @@ function openWorld(sid){const o=W;
   const TUR=[[0,104,0],[0,-104,0],[0,0,50],[0,0,-50],[50,0,0],[-50,0,0]];
   W.tilt=tilt;if(S.stations[sid])addStationEnt(S.stations[sid]);
   const oid=OUT_BY_SECTOR[sid];if(oid){const e={type:'outpost',q:tilt(),o:S.outposts[oid],x:0,y:0,z:0,r:oid==='hollow'?185:95,cool:0,lastHit:-99,aim:{x:0,y:0,z:1}};W.ents.push(e);W.outpostEnt=e}
-  if(!NET.cl){for(let i=0;i<5;i++)populate(true);
+  if(!NET.cl){populateAll();W.popT=rnd(28,40);
     for(const ev of S.events)if(ev.type==='offensive'&&ev.stage==='inbound'&&ev.sector===sid&&ev.eta<=S.T+2)ev.eta=S.T+3;
     for(const t of S.scouts||[])if(t.sector===sid){t.live=false;spawnScout(t,false)}
     for(const t of S.frigates||[])if(t.sector===sid){t.live=false;spawnFrigate(t,false)}}
@@ -1865,11 +1865,8 @@ function closeWorld(w){const o=W;W=w;
 function returnHome(e){const h=holder(e.home)||S.econ.stock[e.side]||S.econ.stock.pirate;inv.addAll(h,e.load);inv.addAll(h,e.cargo);e.load={};e.cargo={}}
 function syncPlayer(){if(!W||!W.player)return;const p=W.player,P=S.player;P.x=p.x;P.y=p.y;P.z=p.z;P.vx=p.vx;P.vy=p.vy;P.vz=p.vz;P.q=[p.q.x,p.q.y,p.q.z,p.q.w];P.hull=p.hull;P.shield=p.shield;P.energy=p.energy}
 function refreshPlayerStats(){if(!W)return;const p=W.player,P=S.player;const old=p.st;p.st=shipStats(P.faction,P.cls,P.tiers,P.tune);p.cls=P.cls;if(old)p.hull=Math.min(p.st.hull,p.hull*(p.st.hull/old.hull));p.shield=Math.min(p.st.sCap,p.shield);p.energy=Math.min(p.st.eCap,p.energy)}
-function populate(initial){
-  const d=DEF[W.sid],oid=OUT_BY_SECTOR[W.sid],o=oid&&S.outposts[oid];
-  const npcs=W.ents.filter(e=>e.npc&&e.role!=='drone');if(npcs.length>=(d.kind==='void'?6:17))return;
-  const cnt=(r,s)=>npcs.filter(e=>e.role===r&&e.side===s).length;
-  const wings=(r,s)=>Object.values(W.groups).filter(g=>g.role===r&&g.side===s&&!g.fleeing).length;
+function popCap(){return DEF[W.sid].kind==='void'?6:17}
+function popWants(){const d=DEF[W.sid],oid=OUT_BY_SECTOR[W.sid],o=oid&&S.outposts[oid];
   const want=[]; // [role, side, how many (ships, or wings when a wing size is given), chance, wing size]
   if(d.home){want.push(['miner',d.home,2,1],['patrol',d.home,1,1,3],['hauler',d.home,1,d.kind==='core'?.4:.3]);
     if(d.kind==='frontier'){for(const f of FAC_IDS)if(f!==d.home)want.push(['raider',f,1,.12,3]);want.push(['pirate','pirate',1,.15,3])}}
@@ -1881,6 +1878,16 @@ function populate(initial){
   else if(d.kind==='void'){want.push(['pirate','pirate',1,.06,3]);for(const f of FAC_IDS)want.push(['raider',f,1,.025,3])}
   {const Rs=S.stations[W.sid];if(Rs&&FACTIONS[Rs.owner]&&Rs.owner!==d.home&&Rs.kind==='depot'){want.push(['miner',Rs.owner,2,1],['patrol',Rs.owner,1,1,3]);if(Rs.owner!=='brood')want.push(['hauler',Rs.owner,1,.35])}}
   if(d.kind!=='hive'&&broodNear(W.sid))want.push(['raider','brood',1,d.kind==='void'?.08:.22,3]);
+  return want}
+// arrival: the system is already going about its business. Every wish on the list gets its chance at once, and everything is
+// placed at work (miners at rocks, haulers along their runs, wings out on patrol) while the jump fade is still dark.
+function populateAll(){const want=popWants(),live=()=>W.ents.filter(e=>e.npc&&e.role!=='drone').length;
+  for(const[r,s,n,ch,ws]of want)for(let i=0;i<n;i++){if(live()>=popCap())return;if(Math.random()>=Math.min(1,ch*.9))continue;if(ws)spawnWing(r,s,ws,true);else if(r==='hauler')spawnHauler(s,true);else spawnNPC(r,s,true)}}
+function populate(initial){
+  const npcs=W.ents.filter(e=>e.npc&&e.role!=='drone');if(npcs.length>=popCap())return;
+  const cnt=(r,s)=>npcs.filter(e=>e.role===r&&e.side===s).length;
+  const wings=(r,s)=>Object.values(W.groups).filter(g=>g.role===r&&g.side===s&&!g.fleeing).length;
+  const want=popWants();
   for(const[r,s,n,ch,ws]of want){
     if(ws){if(wings(r,s)<n&&Math.random()<(initial?.75:.25)*ch){spawnWing(r,s,ws,initial);return}}
     else if(cnt(r,s)<n&&Math.random()<(initial?.6:.35)*ch){if(r==='hauler')spawnHauler(s,initial);else spawnNPC(r,s,initial);return}}
@@ -1925,12 +1932,14 @@ function spawnNPC(role,side,initial,lead){
   const sEnt=W.stationEnt&&W.stationEnt.fac===side?W.stationEnt:null;
   if(role==='hauler'){const gs=GATES[W.sid],D=sEnt?sEnt:W.outpostEnt&&W.outpostEnt.o.owner===side?W.outpostEnt:null;const g=pick(gs);let dest=pick(gs.filter(x=>x!==g));e.x=g.x*.94;e.y=g.y*.94;e.z=g.z*.94;
     if(D&&(!dest||Math.random()<.35)){if(Math.random()<.5)dest=D;else{dest=g;const o=rdir(.4);e.x=D.x+o.x*190;e.y=D.y+o.y*190;e.z=D.z+o.z*190}}e.ai.dest=dest||g;
+    if(initial){const t=rnd(.15,.8),G=e.ai.dest;e.x+=(G.x-e.x)*t;e.y+=(G.y-e.y)*t;e.z+=(G.z-e.z)*t}
     const st=S.econ.stock[side];for(const[k,n]of[['plate',ri(2,8)],['wire',ri(2,6)],['coil',ri(0,2)],['fe',ri(0,14)]]){const m=inv.take(st,k,n);if(m)inv.add(e.cargo,k,m)}}
+  else if(initial&&role==='miner'&&S.sectors[W.sid].ast.some(x=>!x.comet)){const a=pick(S.sectors[W.sid].ast.filter(x=>!x.comet)),o=rdir(.6),k=astR(a)+rnd(70,140);e.x=a.x+o.x*k;e.y=a.y+o.y*k;e.z=a.z+o.z*k;e.ai.ast=a}
+  else if(initial){Object.assign(e,randPos(600*SPACE,2300*SPACE))}
   else if(sEnt&&(role==='miner'||role==='patrol')){const o=rdir(1);e.x=o.x*200;e.y=o.y*200;e.z=o.z*200}
-  else if(initial&&role!=='raider'){Object.assign(e,randPos(500*SPACE,2000*SPACE))}
   else{const g=pick(GATES[W.sid]);e.x=g.x*.93+rnd(-80,80);e.y=g.y*.93+rnd(-80,80);e.z=g.z*.93+rnd(-80,80);fxWarp(e,sideCol(side))}
   if(lead){const o=rdir();e.x=lead.x+o.x*70;e.y=lead.y+o.y*70;e.z=lead.z+o.z*70;qCopy(e.q,lead.q);W.ents.push(e);return e}
-  faceInstant(e,-e.x+rnd(-300,300),-e.y,-e.z+rnd(-300,300));if(role==='hauler'){const g=e.ai.dest;faceInstant(e,g.x-e.x,g.y-e.y,g.z-e.z)}W.ents.push(e);if(e.load.drone)deployDrones(e);return e;
+  faceInstant(e,-e.x+rnd(-300,300),-e.y,-e.z+rnd(-300,300));if(role==='hauler'){const g=e.ai.dest;faceInstant(e,g.x-e.x,g.y-e.y,g.z-e.z)}if(e.ai.ast&&initial){const a=e.ai.ast;faceInstant(e,a.x-e.x,a.y-e.y,a.z-e.z)}W.ents.push(e);if(e.load.drone)deployDrones(e);return e;
 }
 // guard drones: carried in the hold as items, flown out as tiny escorts; whatever survives goes home with the ship
 function spawnFrigate(t,arrive){if(!W||t.live)return null;const side=t.side,fac=side==='player'?S.player.faction:side,tier=1;
