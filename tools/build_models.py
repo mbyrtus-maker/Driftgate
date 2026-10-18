@@ -4,6 +4,7 @@ import numpy as np
 from mdl import load_glb,load_obj,tri_colors
 from station import Comp,piece,build_station
 from frigate import build_frigate
+from rockbase import build_rockbase
 KD='/home/claude/kenney/sk/Models/GLTF format/';QD='/home/claude/qlp/OBJ/'
 LIGHT,MID,DARK,ACC,GLASS,GLOW,WIN=0,1,2,3,4,5,6
 def kenney_role(c):
@@ -35,6 +36,10 @@ def comp(parts,name=None):
         for p in parts:S.add(*p)
         return S.model()
     return comp_model(b,name)
+PTS={}  # explicit docking ports (model space) for models whose arm tips can't be found from the silhouette
+def rockbase():
+    M=build_rockbase();MOUNTS['rockbase']=M['mounts'];PTS['rockbase']=M['ports']
+    return M['P'],M['N'],list(M['rock'])+[kenney_role(c) for c in M['cols']]
 GLOW_N={}  # models where only the first N triangles may become engine glow (bolted-on parts stay unlit)
 def scout2():
     # the Advanced Scout: the scout hull with a missile pod slung under each wing, a swarm box on the spine and a sensor dish aft
@@ -59,9 +64,10 @@ MODELS={
  'depot':('struct',lambda:comp([('hangar_roundGlass',(0,0,0),0,1.3),('hangar_roundGlass',(0,0,0),H,1.3,True)]+[x for i in range(3) for x in [('corridor_window',(math.sin(i*2.094)*2.4,-.5,math.cos(i*2.094)*2.4),i*2.094,1),('hangar_smallA',(math.sin(i*2.094)*4.0,-.5,math.cos(i*2.094)*4.0),i*2.094+H,1),('turret_single',(math.sin(i*2.094)*4.0,.55,math.cos(i*2.094)*4.0),i*2.094,1)]]+[('satelliteDish',(0,1.8,0),0,1.2)],'depot')),
  'forge':('struct',lambda:comp([('machine_generatorLarge',(0,0,0),0,2.2),('machine_generatorLarge',(0,0,0),H,2.2,True),('rocket_fuelA',(0,1.5,0),0,1.6)]+[x for i in range(4) for x in [('pipe_straight',(math.sin(i*1.571)*2.0,-.3,math.cos(i*1.571)*2.0),i*1.571,1.1),('machine_barrelLarge',(math.sin(i*1.571)*3.2,-.6,math.cos(i*1.571)*3.2),i*1.571,1.1),('chimney_detailed',(math.sin(i*1.571+.785)*1.6,.9,math.cos(i*1.571+.785)*1.6),0,.9)]])),
  'relay':('struct',lambda:comp([('structure_closed',(0,-.5,0),0,1.6),('rocket_sidesA',(0,1.1,0),0,1.2),('rocket_fuelA',(0,2.3,0),0,1.2),('satelliteDish_large',(0,2.9,0),0,2.4),('satelliteDish_large',(0,-.5,0),H,1.8,True)]+[x for i in range(3) for x in [('corridor',(math.sin(i*2.094)*1.8,-.5,math.cos(i*2.094)*1.8),i*2.094,1),('machine_wireless',(math.sin(i*2.094)*2.9,-.5,math.cos(i*2.094)*2.9),i*2.094,1.2)]])),
+ 'rockbase':('struct',rockbase),
  'yard':('struct',lambda:comp([('hangar_largeA',(0,0,0),0,1.6),('hangar_largeA',(0,0,0),H,1.6,True),('platform_large',(2.6,-.2,0),H/2,1.3),('platform_large',(-2.6,-.2,0),H/2,1.3),('supports_high',(2.6,.0,1.1),0,1),('supports_high',(-2.6,.0,-1.1),0,1),('barrels_rail',(2.6,0,-.6),0,.9),('craft_cargoA',(-2.6,0,.5),H/2,.7),('machine_generator',(0,1.7,0),0,1)])),
 }
-FIT={'station':150,'depot':105,'forge':120,'relay':120,'yard':120}
+FIT={'rockbase':230,'station':150,'depot':105,'forge':120,'relay':120,'yard':120}
 def pack():
     idx={};blob=bytearray()
     for name,(kind,fn) in MODELS.items():
@@ -95,7 +101,8 @@ def pack():
         while len(blob)%4:blob+=b'\0'
         off=len(blob);blob+=q.tobytes();blob+=bytes(roles);blob+=bytes(int(np.clip(s*100,0,255)) for s in shades)
         tp=[[round(float(x),3) for x in (np.array(m)-c)/half] for m in MOUNTS.get(name,[])]
-        idx[name]={'o':off,'n':len(T),'k':kind,'s':FIT.get(name,1),'e':eng,'tp':tp,'top':round(float(T[:,:,1].max()),3)}
+        pt=[[round(float(x),3) for x in (np.array(m)-c)/half] for m in PTS.get(name,[])]
+        idx[name]={'o':off,'n':len(T),'k':kind,'s':FIT.get(name,1),'e':eng,'tp':tp,'top':round(float(T[:,:,1].max()),3),**({'pt':pt} if pt else {})}
         print(name.ljust(12),kind,len(T),'tris',('eng %d'%len(eng)) if eng else '')
     return idx,bytes(blob)
 idx,blob=pack()
