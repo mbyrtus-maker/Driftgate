@@ -1162,7 +1162,8 @@ const force={};takeFrom(ESCORT_COST,[st]);inv.addAll(force,ESCORT_COST);S.events
     const sc=S.sectors[t.sector],into=own==='player'?S.player.vault:t.owner&&S.pilots&&S.pilots[t.owner]?S.pilots[t.owner].vault:S.econ.stock[own];if(invMass(into)<(own==='player'||t.owner?600:2500))inv.addAll(into,extract(sc,3));
     const oid=OUT_BY_SECTOR[t.sector];if(oid&&t.hold>=6){const o=S.outposts[oid];if(o.owner!==own&&!(own==='player'&&o.owner===S.player.faction)&&!(o.owner==='player'&&own===S.player.faction))capture(o,own)}}}
 function killFrigateToken(t,how){toDebris(S.sectors[t.sector],t.load);t.load={};S.frigates=S.frigates.filter(x=>x!==t);if(friendSide(t.side)||covered(t.sector))feed(`${t.side==='player'?'Your '+capName(t):t.owner&&S.pilots&&S.pilots[t.owner]?S.pilots[t.owner].name+'\'s '+capName(t):t.side==='brood'?'A Brood Leviathan':sideName(t.side)+' '+capName(t)} ${t.side==='brood'?'':t.name+' '}was destroyed ${how} in ${DEF[t.sector].name}.`,friendSide(t.side)?'bad':'good')}
-function frigOrders(t){let best=t.sector,bs=-1e9;for(const d of SECTOR_DEFS){const h=HOP[d.id][t.sector];if(h>3)continue;let sc=-.8*h+rnd(0,1);const Rs=S.stations[d.id];
+function frigOrders(t){let best=t.sector,bs=-1e9;const bro=t.side==='brood',bcc=bro?controlCounts():null,bmx=bro?Math.max(1,...FAC_IDS.map(k=>bcc[k]||0)):1;for(const d of SECTOR_DEFS){const h=HOP[d.id][t.sector];if(h>(bro?5:3))continue;let sc=-(bro?.55:.8)*h+rnd(0,1);const Rs=S.stations[d.id];
+    if(bro){const ow=sideNorm(sectorOwner(d.id));if(FAC_IDS.includes(ow))sc+=2.5*(bcc[ow]||0)/bmx}   // Leviathans range further and go for the leading faction
     if(Rs&&hostile(t.side,Rs.owner)&&(Rs.kind==='depot'||Rs.kind==='free'&&t.side==='brood'))sc+=Rs.owner==='brood'?7:t.side==='brood'?5:3;else if(Rs&&Rs.owner!==t.side)sc-=4;
     if(frigatesIn(d.id).some(o=>hostile(t.side,o.side)))sc+=3;
     if(!Rs&&d.kind!=='hive'&&d.kind!=='den'&&d.kind!=='core'&&frigControl(d.id)!==t.side){sc+=2.5;const oid=OUT_BY_SECTOR[d.id];if(oid&&S.outposts[oid].owner!==t.side)sc+=2}
@@ -1199,14 +1200,16 @@ function galaxyWon(side){if(NET.host)for(const c of readyCl())send(c.L,{t:'won',
 function broodNear(sid){const t=territory('brood');return t.has(sid)||NEIGH[sid].some(n=>t.has(n))}
 function planOffensive(f){if(FACTIONS[f]&&f!=='brood'&&campBusy(f)){S.ai[f].next=S.T+rnd(30,50);return}
   const terr=territory(f),busy=new Set(S.events.filter(e=>e.type==='offensive'&&e.stage!=='done'&&e.att===f).map(e=>e.st?'st:'+e.st:e.target)),c=[],pf=S.player.faction;
-  const adjOf=sec=>terr.has(sec)||NEIGH[sec].some(n=>terr.has(n)),hopTo=sec=>{let m=9;for(const t of terr)m=Math.min(m,HOP[t][sec]);return m},bw=sec=>{const h=hopTo(sec);return h<=1?1.8:h===2?.8:.12};
+  const adjOf=sec=>terr.has(sec)||NEIGH[sec].some(n=>terr.has(n)),hopTo=sec=>{let m=9;for(const t of terr)m=Math.min(m,HOP[t][sec]);return m},bw=sec=>{const h=hopTo(sec);return h<=1?1.6:h===2?1.1:h===3?.7:.4};
+  // the Brood hunts the strong: targets held by the faction with the most systems weigh up to 1.5x, the weakest down to 0.6x
+  const bcc=f==='brood'?controlCounts():null,bmx=bcc?Math.max(1,...FAC_IDS.map(k=>bcc[k]||0)):1,bstr=ow=>!bcc||!FAC_IDS.includes(sideNorm(ow))?1:.6+.9*(bcc[sideNorm(ow)]||0)/bmx;
   for(const id in S.outposts){const o=S.outposts[id];if(o.owner===f||busy.has(id))continue;let w;
     if(f==='pirate')w=id==='wrack'?6:o.owner==='player'?2.2:o.owner?1:.4;
-    else if(f==='brood')w=(o.owner?1.6:2.2)*bw(o.sector);
+    else if(f==='brood')w=(o.owner?1.6*bstr(o.owner):2.2)*bw(o.sector);
     else{w=!o.owner?3:o.owner==='player'?2:o.owner==='brood'?3.4:o.owner==='pirate'?(id==='wrack'?.8:2):1.4;w*=adjOf(o.sector)?1.6:.3}
     c.push([{out:id},w])}
   for(const sid in S.stations){const R=S.stations[sid];if(R.owner===f||(R.owner==='neutral'&&f!=='brood')||busy.has('st:'+sid)||R.kind==='hive'||!hostile(f,R.owner))continue;const adj=adjOf(sid);let w=0;
-    if(f==='brood')w=R.kind==='core'?(adj?.5:0):R.kind==='free'?1.8*bw(sid):2.6*bw(sid);
+    if(f==='brood')w=R.kind==='core'?(adj?.5*bstr(R.owner):0):R.kind==='free'?1.8*bw(sid):2.6*bw(sid)*bstr(R.owner);
     else if(R.kind==='depot'){if(f==='pirate')w=R.owner==='player'?1.4:DEF[sid].home?0:.5;else w=(R.owner==='brood'?3.6:R.owner==='player'?1.2:DEF[sid].home?.15:.9)*(adj?1.4:.2)}
     if(w>0)c.push([{st:sid},w])}
   {const C=S.coal;if(C&&f!=='pirate'&&f!=='brood'){const own=x=>{const o=x[0].out?S.outposts[x[0].out]:null;return sideNorm(o?o.owner:S.stations[x[0].st].owner)};
@@ -1654,7 +1657,7 @@ function fpAct(act,arg,c,P,srcs){
 const DOCTRINE={
   halcyon:{name:'Trade Charter',why:'buy the frontier with depots and relays',prep:['haul','haul','mine'],haul:'plate',mine:'cu',w:{build:1.7,relay:3,forge:1,yard:1.2,neutral:2.6,depot:.8,hub:2.2,deep:1,contested:1}},
   varkesh:{name:'Iron Advance',why:'push the line forward one siege at a time',prep:['haul','mine','haul'],haul:'wire',mine:'ir',w:{build:.7,relay:1,forge:1.4,yard:1.4,neutral:1.4,depot:3.4,hub:1.2,deep:1,contested:2.4}},
-  ostrova:{name:'Lattice Ascendancy',why:'seize the crystal: forges and the deep fields',prep:['mine','mine','haul'],haul:'coil',mine:'xc',w:{build:1,relay:1,forge:4,yard:1,neutral:1.7,depot:1.3,hub:1,deep:3,contested:1}}};
+  ostrova:{name:'Lattice Ascendancy',why:'seize the crystal: forges and the deep fields',prep:['mine','mine','haul'],haul:'coil',mine:'xc',w:{build:1,relay:1,forge:3,yard:1,neutral:1.7,depot:1.3,hub:1,deep:2.4,contested:1}}};
 const CAMP_PAY={take:900,build:700,mine:450,haul:550},CAMP_GOAL=3000,CAMP_HAUL_N={plate:16,wire:14,coil:6},CAMP_MINE_N={xc:24,ir:36,cu:48,fe:48};
 function stN(sid){return S.stations[sid]?S.stations[sid].name:DEF[sid]?DEF[sid].name+' depot':'the depot'}
 function pkey(){return NET.on?curPid():'me'}
