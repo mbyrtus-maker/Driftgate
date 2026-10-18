@@ -1680,12 +1680,17 @@ function auInit(){
    const w1=c.createOscillator();w1.type='sawtooth';w1.frequency.value=30;const w2=c.createOscillator();w2.type='sine';w2.frequency.value=45;const w2g=c.createGain();w2g.gain.value=.8;w1.connect(wf);w2.connect(w2g);w2g.connect(wf);w1.start();w2.start();
    const wn=c.createBufferSource();wn.buffer=nb;wn.loop=true;const wnf=c.createBiquadFilter();wnf.type='bandpass';wnf.frequency.value=220;wnf.Q.value=2;const wng=c.createGain();wng.gain.value=.5;wn.connect(wnf);wnf.connect(wng);wng.connect(wf);wn.start();
    const lfo=c.createOscillator();lfo.frequency.value=3;const lg2=c.createGain();lg2.gain.value=60;lfo.connect(lg2);lg2.connect(wf.frequency);lfo.start();AU.whir={g:wg,f:wf,o1:w1,o2:w2,nf:wnf,lfo,lg:lg2}}
-  // mining beam: a buzzing square pair through a resonant band-pass that wobbles, plus gritty filtered noise for the rock being cut
-  const mg=c.createGain();mg.gain.value=0;mg.connect(AU.sfx);const mbp=c.createBiquadFilter();mbp.type='bandpass';mbp.frequency.value=390;mbp.Q.value=4;mbp.connect(mg);
-  const mos=[];for(const f of[82.4,83.1]){const o=c.createOscillator();o.type='square';o.frequency.value=f;const og=c.createGain();og.gain.value=.5;o.connect(og);og.connect(mbp);o.start();mos.push(o)}
-  const wob=c.createOscillator();wob.frequency.value=7.5;const wg=c.createGain();wg.gain.value=105;wob.connect(wg);wg.connect(mbp.frequency);wob.start();
-  const mn=c.createBufferSource();mn.buffer=nb;mn.loop=true;const mnf=c.createBiquadFilter();mnf.type='bandpass';mnf.frequency.value=680;mnf.Q.value=1.4;const mng=c.createGain();mng.gain.value=.9;mn.connect(mnf);mnf.connect(mng);mng.connect(mg);mn.start();
-  AU.mine={g:mg,bp:mbp,os:mos,wob};
+  // mining beam: a laser burning through rock. A deep steady beam hum, a gritty grinding bed from the rock face that shudders
+  // irregularly, a low steady sizzle, and crackling bursts scheduled each frame while it cuts (mineCrackle)
+  {const wn=c.createBuffer(1,c.sampleRate,c.sampleRate),wd=wn.getChannelData(0);for(let i=0;i<wd.length;i++)wd[i]=Math.random()*2-1;AU.white=wn}
+  const mg=c.createGain();mg.gain.value=0;mg.connect(AU.sx||AU.sfx);
+  const hum=c.createBiquadFilter();hum.type='lowpass';hum.frequency.value=380;hum.Q.value=.8;const hg=c.createGain();hg.gain.value=.42;hum.connect(hg);hg.connect(mg);
+  const mos=[];for(const[f,ty,v]of[[61.7,'sawtooth',.5],[62.2,'sawtooth',.5],[123.5,'triangle',.22]]){const o=c.createOscillator();o.type=ty;o.frequency.value=f;const og=c.createGain();og.gain.value=v;o.connect(og);og.connect(hum);o.start();mos.push(o)}
+  const wob=c.createOscillator();wob.frequency.value=.7;const wg=c.createGain();wg.gain.value=50;wob.connect(wg);wg.connect(hum.frequency);wob.start();
+  const gn=c.createBufferSource();gn.buffer=nb;gn.loop=true;const gf=c.createBiquadFilter();gf.type='bandpass';gf.frequency.value=210;gf.Q.value=.8;const gg=c.createGain();gg.gain.value=1.0;gn.connect(gf);gf.connect(gg);gg.connect(mg);gn.start();
+  for(const[r,dd]of[[5.3,.28],[8.9,.22]]){const l=c.createOscillator();l.frequency.value=r;const lg=c.createGain();lg.gain.value=dd;l.connect(lg);lg.connect(gg.gain);l.start()}
+  const sz=c.createBufferSource();sz.buffer=AU.white;sz.loop=true;const szf=c.createBiquadFilter();szf.type='bandpass';szf.frequency.value=1700;szf.Q.value=.6;const szg=c.createGain();szg.gain.value=.07;sz.connect(szf);szf.connect(szg);szg.connect(mg);sz.start();
+  AU.mine={g:mg,bp:hum,os:mos,wob};
   musicStart()}
 // distant radio voices for the bridge: formant-filtered syllables between squelch clicks
 function chatterRun(){if(!auOK()||!AU.on.sfx||!voice(3))return;const c=AU.ctx;let t=c.currentTime+.03;const n=5+Math.floor(Math.random()*9),base=(95+Math.random()*85)*PITCH,vol=.026+Math.random()*.014;
@@ -1774,9 +1779,9 @@ const SFX0={
   step(k){thump(92*(k||1),52,.09,.05,'sine');rumble(420,.06,.028,1.4)},
   cbeep(){if(!smp(['cb1','cb2','cb3','cb4','cb5','cb6'],.15,1,0,.12)){const f=[784,880,988,1175,1319][Math.floor(Math.random()*5)];thump(f,f,.07,.024,'sine');if(Math.random()<.45)setTimeout(()=>thump(f*1.26,f*1.26,.06,.02,'sine'),95)}},
   chatter(){chatterRun()},
-  mineOn(){if(!smp('swOn',.3,1)){thump(180,420,.18,.07,'square');rumble(700,.12,.06,2)}},
-  mineOff(){if(!smp('swOff',.28,1))thump(400,140,.2,.06,'square')},
-  ore(n){if(!smp(['ore1','ore2','ore3'][n%3],.3,1+.06*(n%4),0,0)){const f=[740,880,988,1175][n%4];thump(f,f*.98,.09,.06,'triangle');setTimeout(()=>thump(f*1.5,f*1.48,.07,.03,'sine'),35)}},
+  mineOn(){thump(78,44,.32,.14);rumble(520,.4,.12,.8,170);if(auOK()){const t=AU.ctx.currentTime;for(let i=0;i<9;i++)mineCrackle(t+.04+i*.03+Math.random()*.02,1.4)}},
+  mineOff(){rumble(300,.35,.08,.7,80);if(!smp('clk1',.1,.55,.05,.04))thump(120,60,.12,.06)},
+  ore(n){const now=performance.now();if(now-(AU.oreT||0)<240)return;AU.oreT=now;thump(98+(n%3)*7,46,.22,.42);rumble(260,.14,.18,.9);smp(['clk1','clk2'],.22,.52+.03*(n%3),0,.04)},
   dockGrab(){lowRumble(1.05,220,420,.08);metalGroan(1.05,140,190,.42);if(smp('clk2',.3,.75,.95,.02)){}else{thump(88,48,.22,.17,'triangle');rumble(230,.18,.12);thump(48,96,1.7,.09,'triangle');[250,420].forEach(d=>setTimeout(()=>thump(1046,1040,.09,.045,'sine'),d))}},
   dockClamp(){dockHyd(DOCK_T-2.45);lowRumble(.45,130,60,.07);if(smp('clk2',.32,.75)){}else{thump(70,28,.55,.28);rumble(320,.35,.2,.9,90);thump(180,120,.09,.08,'square');setTimeout(()=>hiss(.7,.07),120)}},
   dockClank(i){if(!smp('clk1',.26,.7+.05*(i%2),0,.03)){thump(250+20*(i%2),180,.06,.05,'square');thump(78,42,.16,.1);rumble(500,.06,.05,1.6)}},
@@ -1792,12 +1797,15 @@ const SFX0={
 };
 const SFX={};for(const k in SFX0)SFX[k]=(...a)=>{if(MUTE)return;SND.k=SFXG[k]||1;try{return SFX0[k](...a)}finally{SND.k=1}};
 addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button,.btn,[data-act],[data-fc],[data-tab],[data-fac],[data-cls],[data-role]');if(b&&!b.disabled)SFX.ui()},true);
-function auFrame(){if(!auOK())return;const c=AU.ctx,t=c.currentTime,E=AU.eng;bridgeHum(t);let g=0,ng=0,f=34,lg=0,ml=0;
+// one crackle of rock burning under the beam: a few milliseconds of band-passed white noise at a random pitch and level
+function mineCrackle(t,k){const c=AU.ctx;if(!AU.white||MUTE||!AU.on.sfx)return;const n=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain(),d=.01+Math.random()*.045,v=(.022+Math.random()*.055)*(k||1);
+  n.buffer=AU.white;f.type='bandpass';f.frequency.value=600+Math.random()*1500;f.Q.value=1.1;n.connect(f);f.connect(g);g.connect(AU.sx||AU.sfx);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+d);n.start(t,Math.random()*.8);n.stop(t+d+.02)}
+function auFrame(){if(!auOK())return;const c=AU.ctx,t=c.currentTime,E=AU.eng,fdt=Math.min(.1,Math.max(0,t-(AU.lastFT||t)));AU.lastFT=t;bridgeHum(t);let g=0,ng=0,f=34,lg=0,ml=0;
   if(running&&W&&W.player&&!S.player.docked&&!W.dead&&AU.on.sfx){const p=W.player,sp=hyp(p.vx,p.vy,p.vz),k=clamp(sp/(p.st.maxSpd*1.9),0,1);
     const on=p.thrusting||p.boosting;g=on?.05+.02*k+(p.boosting?.03:0):0;ng=on?.05+(p.boosting?.09:0)+k*.012:0;f=41+k*3+(p.boosting?2:0);if(W.t-(AU.lasT||-9)<.14)lg=.1;
     if(p.mining){ml=.075+.012*Math.sin(t*2.3);const m=invMass(S.player.cargo);if(AU.mineM!=null&&m>AU.mineM+.5){AU.oreN=(AU.oreN||0)+1;SFX.ore(AU.oreN)}AU.mineM=m}}
   const mOn=ml>0;if(mOn!==!!AU.mineOn){AU.mineOn=mOn;if(mOn)SFX.mineOn();else{SFX.mineOff();AU.mineM=null}}if(!mOn)AU.mineM=null;
-  AU.mine.g.gain.setTargetAtTime(ml,t,mOn?.06:.09);
+  AU.mine.g.gain.setTargetAtTime(ml,t,mOn?.06:.09);if(mOn){let k=0;while(k<3&&Math.random()<fdt*24){mineCrackle(t+Math.random()*.04);k++}}
   E.g.gain.setTargetAtTime(g,t,g>0?.1:.25);E.ng.gain.setTargetAtTime(ng,t,ng>0?.08:.22);E.o1.frequency.setTargetAtTime(f,t,.8);E.o2.frequency.setTargetAtTime(f*1.51,t,.8);E.nf.frequency.setTargetAtTime(240+ng*1800,t,.4);
   AU.las.g.gain.setTargetAtTime(lg,t,.05);
   if(AU.whir){const Wh=AU.whir,wi=running&&AU.on.sfx?AU.whirIn:null;AU.whirIn=null;if(wi){const p=Math.pow(clamp(wi.p,0,1),1.7),f=30+58*p;Wh.o1.frequency.setTargetAtTime(f,t,.3);Wh.o2.frequency.setTargetAtTime(f*1.502,t,.3);Wh.nf.frequency.setTargetAtTime(160+350*p,t,.35);Wh.f.frequency.setTargetAtTime(140+475*p,t,.35);Wh.lfo.frequency.setTargetAtTime(3+12*p,t,.35);Wh.lg.gain.setTargetAtTime(50+130*p,t,.35);Wh.g.gain.setTargetAtTime(Math.min(1.2,wi.v)*(.06+.1*p),t,.25)}else Wh.g.gain.setTargetAtTime(0,t,.12)}}
