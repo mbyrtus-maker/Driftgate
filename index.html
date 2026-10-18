@@ -35,6 +35,8 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .sec-name{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:.05em;text-transform:uppercase;line-height:1;text-wrap:balance}
 .sec-sub{font-size:13px;color:var(--dim);margin-top:5px;letter-spacing:.02em}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.dchip{display:inline-block;font-size:10.5px;letter-spacing:.06em;padding:1px 6px;border:1px solid var(--line-hi);margin:0 4px 3px 0;white-space:nowrap}.dchip i{font-style:normal;opacity:.75}.dchip.hi{border-color:var(--amber);color:var(--amber)}.dchip.lo{border-color:var(--ok);color:var(--ok)}
+.dboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}.dcard{border:1px solid var(--line);background:rgba(5,7,13,.45);padding:8px 10px}.dch{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:5px}.dch b{font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase}.dch span{font-size:11px;color:var(--dim)}.dcr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px;margin-top:3px}.dcr em{font-style:normal;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);width:46px}
 .bayc{border:1px solid var(--line);background:rgba(5,7,13,.45);padding:10px 12px;margin-bottom:10px}.bayc.cur{border-color:var(--line-hi)}
 .bayh{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}.bayh b{font-family:var(--f-display);font-size:16px;letter-spacing:.1em;text-transform:uppercase}.bayh em{font-style:normal;color:var(--dim);font-size:12px}
 .bays{font-size:12px;color:var(--dim)}.bayslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:8px}
@@ -864,6 +866,61 @@ const holder=path=>holderIn(S,path);
 function stockTarget(id){return RAWS.includes(id)?300:id==='plate'||id==='wire'?90:id==='coil'?40:16}
 function price(stock,id){const s=stock[id]||0,t=stockTarget(id);return Math.max(1,baseValue(id)*clamp(Math.pow((t+10)/(s+10),.45),.5,2.8))}
 const buyPrice=(st,id)=>Math.ceil(price(st,id)*1.06),sellPrice=(st,id)=>Math.max(1,Math.floor(price(st,id)*.94));
+// ---- local markets and trade. Every faction station and freeport keeps its own local supply level per good (R.mk: + means
+// oversupplied, cheap; - means short, dear). Goods still move through the faction's stock and credits through its treasury,
+// so the economy stays zero-sum; the local level only shapes the price. Each station produces some goods and consumes
+// others, so its level drifts back toward a natural surplus or shortage after trading. AI merchants work the widest gaps.
+const TRADE_ITEMS=['fe','cu','ir','xc','au','plate','wire','coil','lattice','missile','torpedo','drone','swarm'];
+function locT(id){return Math.max(6,stockTarget(id)/4)}
+function mkStations(){const out=[];for(const id in S.stations){const R=S.stations[id];if(R.kind==='hive'||!(FAC_IDS.includes(R.owner)||R.owner==='neutral'))continue;out.push(R)}return out}
+function mkStock(R){return S.econ.stock[R.owner]||{}}
+// what a station makes (+) and uses up (-)
+function mkProfile(R){const p={},d=DEF[R.sid],ores=Object.keys(d.ores||{});
+  if(R.kind==='core'){for(const k of['plate','wire','coil','missile'])p[k]=1;for(const k of['fe','cu','ir','xc','au'])p[k]=-1;p.lattice=-.5}
+  else if(R.kind==='free'){for(const k of['lattice','coil','missile','torpedo','drone','plate'])p[k]=-1;for(const k of ores)p[k]=.6;p.swarm=-.6}
+  else{for(const k of ores)p[k]=1;for(const k of['plate','wire','missile','drone'])p[k]=-1;p.coil=-.5;if(d.kind==='deep')p.au=1}
+  return p}
+function mkOf(R){if(!R.mk){R.mk={};const p=mkProfile(R);for(const k of TRADE_ITEMS)R.mk[k]=Math.round(((p[k]||0)*.9+(Math.random()-.5)*.3)*locT(k)*10)/10}return R.mk}
+function locF(R,id){if(!R||!R.mk)return 1;const L=R.mk[id]||0;return clamp(Math.exp(-L/(locT(id)*2)),.55,1.9)}
+function stPrice(R,id){return price(R?mkStock(R):{},id)*locF(R,id)}
+// market prices at the dock you're in (outposts have no local level)
+function mR(c){return c&&c.kind==='station'?S.stations[S.player.sector]:null}
+function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id)*locF(R,id)*1.06)}
+function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id)*locF(R,id)*.94))}
+function demandOf(R,id){const f=locF(R,id);return f>=1.22?'high':f<=.82?'low':''}
+// every strategic tick: stations drift back toward their own surplus or shortage, and AI merchants buy low and sell high
+function mkTick(){if(NET.cl)return;const L=mkStations();if(L.length<2)return;
+  for(const R of L){const m=mkOf(R),p=mkProfile(R);for(const k of TRADE_ITEMS){const t=locT(k),eq=(p[k]||0)*.9*t;m[k]+=(eq-m[k])*.035+(Math.random()-.5)*t*.05}}
+  for(const k of TRADE_ITEMS){let lo=null,hi=null,pl=1e9,ph=0;for(const R of L){const pr=stPrice(R,k);if((mkStock(R)[k]||0)>0&&pr<pl){pl=pr;lo=R}if(pr>ph){ph=pr;hi=R}}
+    if(lo&&hi&&lo!==hi&&ph>pl*1.3){const v=locT(k)*.07;lo.mk[k]-=v;hi.mk[k]+=v}}
+  for(const P of allPilots())intelTick(P)}
+// price intel: live where you are, where your faction holds the beacon, where a friendly scout is (and next door when you fly a scout)
+function intelSectors(P){const s=new Set([P.sector]);for(const id in S.beacons||{})if(S.beacons[id].owner===P.faction)s.add(id);
+  for(const t of S.scouts||[])if(t.side===P.faction)s.add(t.sector);if(isScoutCls(P.cls))for(const n of NEIGH[P.sector]||[])s.add(n);
+  if(S.outposts.hollow&&(S.outposts.hollow.owner===P.faction))for(const d of SECTOR_DEFS)s.add(d.id);return s}
+function intelTick(P){const first=!P.pintel;P.pintel=P.pintel||{};const live=intelSectors(P);if(first)for(const R of mkStations())if(R.owner===P.faction)live.add(R.sid);for(const R of mkStations()){if(!live.has(R.sid))continue;if(hostile(P.faction,R.owner)&&R.owner!=='neutral')continue;mkOf(R);
+  const st=mkStock(R),b={},sl={},n={};for(const k of TRADE_ITEMS){const pr=stPrice(R,k);b[k]=Math.ceil(pr*1.06);sl[k]=Math.max(1,Math.floor(pr*.94));n[k]=st[k]||0}P.pintel[R.sid]={T:first&&R.sid!==P.sector?S.T-600:S.T,b,s:sl,n}}}
+function intelAge(e){if(!e)return'no data';const a=S.T-e.T;return a<15?'live':a<90?Math.round(a)+' s ago':Math.round(a/60)+' min ago'}
+// the trade screen: best runs between stations you have prices for, and the demand board for every friendly market
+function tradeHtml(c,P){intelTick(P);const I=P.pintel||{},p=W.player,cap=p.st.cargo,free=Math.max(0,cap-invMass(P.cargo)),mk=mkStations().filter(R=>R.owner===P.faction||R.owner==='neutral');
+  const known=mk.filter(R=>I[R.sid]);let h=`<p class="note" style="margin:0 0 12px">Prices are live where you are docked, where ${esc(FACTIONS[P.faction].short)} holds the sector beacon and where a friendly scout is (and the next systems over when you fly a scout). Elsewhere you see the last reading and its age. Every sale goes at the price you see; the market moves after it. AI merchants work the same gaps.</p>`;
+  const runs=[];for(const k of TRADE_ITEMS){const m=mass(k);for(const A of known)for(const B of known){if(A===B)continue;const a=I[A.sid],b=I[B.sid];if(!(a.n[k]>0))continue;const per=b.s[k]-a.b[k];if(per<=0)continue;
+      const units=Math.min(a.n[k],Math.floor(cap/m)),tot=per*units,j=HOP[A.sid][B.sid]||0,j0=HOP[P.sector][A.sid]||0;runs.push({k,A,B,per,units,tot,j,j0,score:tot/(1+j+j0*.5),age:Math.max(S.T-a.T,S.T-b.T)})}}
+  runs.sort((x,y)=>y.score-x.score);const seen=new Set(),top=[];for(const r of runs){const key=r.k+r.A.sid;if(seen.has(key))continue;seen.add(key);top.push(r);if(top.length>=8)break}
+  h+=`<div class="h3">Best runs for your ${cap} t hold</div>`;
+  if(top.length){h+=`<div class="tblw"><table class="t"><thead><tr><th>Cargo</th><th>Buy at</th><th class="r">Buy</th><th>Sell at</th><th class="r">Sell</th><th class="r">Per unit</th><th class="r">Full hold</th><th class="r">Jumps</th><th class="r">Data</th><th></th></tr></thead><tbody>`;
+    for(const r of top)h+=`<tr><td class="iname">${sw(r.k)}${esc(ITEMS[r.k].name)}</td><td><span style="color:${sideCol(r.A.owner)}">${esc(r.A.name)}</span><br><span class="mass" style="margin:0">${esc(DEF[r.A.sid].name)} · ${r.j0?r.j0+' jump'+(r.j0>1?'s':'')+' away':'here'}</span></td><td class="r num">${fmt(I[r.A.sid].b[r.k])}</td><td><span style="color:${sideCol(r.B.owner)}">${esc(r.B.name)}</span><br><span class="mass" style="margin:0">${esc(DEF[r.B.sid].name)}</span></td><td class="r num">${fmt(I[r.B.sid].s[r.k])}</td><td class="r num" style="color:var(--ok)">+${fmt(r.per)}</td><td class="r num" style="color:var(--ok)">+${fmt(r.tot)}<br><span class="mass" style="margin:0">${r.units} × ${mass(r.k)} t</span></td><td class="r num">${r.j}</td><td class="r"><span class="mass" style="margin:0">${r.age<15?'live':Math.round(r.age/60)>0?Math.round(r.age/60)+' min':Math.round(r.age)+' s'}</span></td><td><div class="act"><button class="btn sm" data-act="croute" data-arg="${(P.cargo[r.k]||0)>0?r.B.sid:r.A.sid}" ${((P.cargo[r.k]||0)>0?r.B.sid:r.A.sid)===P.sector?'disabled':''}>${(P.cargo[r.k]||0)>0?(r.B.sid===P.sector?'Sell here':'Course to sell'):(r.A.sid===P.sector?'Buy here':'Course to buy')}</button></div></td></tr>`;
+    h+=`</tbody></table></div><p class="note">Hold free now: ${free} t. Full-hold profit assumes an empty ${cap} t hold and the stock on hand at the buying station.</p>`}
+  else h+=`<div class="empty">No profitable run between the markets you have prices for. Flip beacons or send scouts out to see more of the galaxy's prices.</div>`;
+  h+=`<div class="h3" style="margin-top:18px">Demand board</div><div class="dboard">`;
+  for(const R of mk.sort((a,b)=>(HOP[P.sector][a.sid]||0)-(HOP[P.sector][b.sid]||0))){const e=I[R.sid],j=HOP[P.sector][R.sid]||0;let hi=[],lo=[];
+    if(e)for(const k of TRADE_ITEMS){const base=baseValue(k),r=e.s[k]/(base*.94);if(r>=1.22)hi.push([k,r]);else if(r<=.8&&e.n[k]>0)lo.push([k,r])}
+    hi.sort((a,b)=>b[1]-a[1]);lo.sort((a,b)=>a[1]-b[1]);
+    h+=`<div class="dcard"><div class="dch"><b style="color:${sideCol(R.owner)}">${esc(R.name)}</b><span>${esc(DEF[R.sid].name)} · ${j?j+' jump'+(j>1?'s':''):'here'} · ${intelAge(e)}</span></div>`+
+      (e?`<div class="dcr"><em>Wants</em>${hi.length?hi.slice(0,5).map(([k,r])=>`<span class="dchip hi">${esc(ITEMS[k].name)} ${fmt(e.s[k])} <i>+${Math.round((r-1)*100)}%</i></span>`).join(''):'<span class="mass" style="margin:0">nothing pressing</span>'}</div>
+        <div class="dcr"><em>Cheap</em>${lo.length?lo.slice(0,5).map(([k,r])=>`<span class="dchip lo">${esc(ITEMS[k].name)} ${fmt(e.b[k])} <i>−${Math.round((1-r)*100)}%</i></span>`).join(''):'<span class="mass" style="margin:0">no bargains</span>'}</div>`
+      :`<div class="dcr"><span class="mass" style="margin:0">No prices yet: flip its beacon, send a scout, or visit.</span></div>`)+`</div>`}
+  return h+`</div>`}
 
 // ============================================================ strategic sim
 function strategicTick(){
@@ -885,7 +942,7 @@ function strategicTick(){
     for(let i=s.crates.length-1;i>=0;i--){const c=s.crates[i];if(T>c.until){toDebris(s,c.inv);s.crates.splice(i,1)}}
     for(let i=s.ast.length-1;i>=0;i--){const a=s.ast[i];if(a.comet&&T>a.until){toDebris(s,a.ore);s.ast.splice(i,1);if(W&&W.tgt&&W.tgt.ref===a)W.tgt=null}}
   }
-  diffuse();seamTick(2);scoutsTick();beaconTick();coalTick();threatTick();capitalTick();victoryTick();campTick();for(const ev of S.events)announce(ev);
+  diffuse();seamTick(2);scoutsTick();beaconTick();mkTick();coalTick();threatTick();capitalTick();victoryTick();campTick();for(const ev of S.events)announce(ev);
   for(const f of FAC_IDS)factionIndustry(f);factionIndustry('brood');neutralIndustry();lifeTick();devTick();fpContracts();
   pirateIndustry();
   const h=S.outposts.hollow;
@@ -1285,13 +1342,13 @@ function worksHtml(c,P,srcs,R){const d=devOf(R),mine=R.owner==='player';let h=`<
   for(const k of DEV_KEYS){const L=d[k]||0,max=DEV[k].length,r=devNext(R,k),why=k==='prod'&&R.kind==='core'?'built in':L>=max?'max':!r?'needs more life support':'';
     h+=`<tr><td><b>${DEV_TXT[k][0]}</b><br><span class="mass" style="margin:0">${DEV_TXT[k][1]}</span></td><td class="r num">${L}/${k==='prod'&&R.kind==='core'?'—':max}</td><td>${r?Object.keys(r).map(i=>chip(i,r[i],countIn(i,srcs))).join(' '):`<span class="mass" style="margin:0">${why}</span>`}</td><td>${mine&&r?`<div class="act"><button class="btn sm" data-act="dev" data-arg="${k}" ${haveIn(r,srcs)?'':'disabled'}>Build</button></div>`:''}</td></tr>`}
   return h+`</tbody></table></div>`}
-function refitHtml(c,P,srcs){const F=fpOf(P.sector),rf=refitsOf(P);if(!F)return'';let h=`<p class="note" style="margin:0 0 12px">Freeport refits are fitted to you, not the hull: they stay with every ship you fly. Each freeport sells its own; none are sold anywhere else.</p><div class="tblw"><table class="t"><thead><tr><th>Refit</th><th>Cost</th><th></th></tr></thead><tbody>`;
-  for(const k of F.refits){const R=REFITS[k],have=!!rf[k];h+=`<tr><td><b>${esc(R.name)}</b><br><span class="mass" style="margin:0">${esc(R.desc)}</span></td><td>${have?'<span class="mass" style="margin:0">fitted</span>':`<span class="req ${P.credits>=R.cr?'ok':'no'}">${fmt(R.cr)} cr</span> `+Object.keys(R.need).map(i=>chip(i,R.need[i],countIn(i,srcs))).join(' ')}</td><td>${have?'':`<div class="act"><button class="btn sm" data-act="refit" data-arg="${k}" ${P.credits>=R.cr&&haveIn(R.need,srcs)?'':'disabled'}>Fit</button></div>`}</td></tr>`}
+function refitHtml(c,P,srcs){const F=fpOf(P.sector),rf=refitsOf(P);if(!F)return'';let h=`<p class="note" style="margin:0 0 12px">Freeport refits are fitted to the ship you're flying and stay with it (in the Ship Bay too). Credits only. Each freeport sells its own; none are sold anywhere else.</p><div class="tblw"><table class="t"><thead><tr><th>Refit</th><th>Cost</th><th></th></tr></thead><tbody>`;
+  for(const k of F.refits){const R=REFITS[k],have=!!rf[k];h+=`<tr><td><b>${esc(R.name)}</b><br><span class="mass" style="margin:0">${esc(R.desc)}</span></td><td>${have?'<span class="mass" style="margin:0">fitted</span>':`<span class="req ${P.credits>=R.cr?'ok':'no'}">${fmt(R.cr)} cr</span>`}</td><td>${have?'':`<div class="act"><button class="btn sm" data-act="refit" data-arg="${k}" ${P.credits>=R.cr?'':'disabled'}>Fit</button></div>`}</td></tr>`}
   h+=`</tbody></table></div><p class="note">Other freeports: ${FREEPORTS.filter(x=>x.sid!==P.sector).map(x=>`${esc(S.stations[x.sid]?S.stations[x.sid].name:DEF[x.sid].name)} (${DEF[x.sid].name}) · ${x.refits.map(k=>REFITS[k].name).join(', ')}`).join(' — ')}.</p>`;return h}
 function fpAct(act,arg,c,P,srcs){
   if(act==='dev'){const R=S.stations[P.sector];if(!R||R.owner!=='player'||!DEV[arg])return;if(devBuild(R,arg,[R.stock,P.vault,P.cargo]))dockErr=`✓ ${DEV_TXT[arg][0]} built (level ${devOf(R)[arg]}).`;else dockErr='Not enough materials, or no crew room: build more life support.';return true}
   if(act==='refit'){const F=fpOf(P.sector),R=REFITS[arg];if(!F||!R||!F.refits.includes(arg))return true;const rf=P.tune=P.tune||{};rf.rf=rf.rf||{};if(rf.rf[arg])return true;
-    if(P.credits<R.cr||!haveIn(R.need,srcs)){dockErr='Not enough credits or materials.';return true}takeFrom(R.need,srcs);inv.addAll(S.econ.stock.neutral,R.need);transfer('player','neutral',R.cr);rf.rf[arg]=1;if(!CTX)refreshPlayerStats();dockErr=`✓ ${R.name} fitted.`;return true}
+    if(P.credits<R.cr){dockErr='Not enough credits.';return true}transfer('player','neutral',R.cr);rf.rf[arg]=1;if(!CTX)refreshPlayerStats();dockErr=`✓ ${R.name} fitted.`;return true}
   if(act==='croute'){if(DEF[arg]){P.route=arg;dockErr=`Course set to ${DEF[arg].name}. Launch and press J to fly it.`}return true}
   return false}
 
@@ -4055,7 +4112,7 @@ function boughtOf(P,k){const B=P.bought||(P.bought={}),b=B[k]||0;if(!b)return 0;
 function consOf(P,k){const C=S.plans&&S.plans[P.faction],m=C&&C.mv;return m&&m.kind==='haul'&&m.item===k?(m.cons[pkey()]||0):0}
 function fpBoughtAt(P,sid,k){const B=P.fpBought&&P.fpBought[sid],b=B?B[k]||0:0;if(!b)return 0;const v=Math.min(b,ownedOf(P,k));if(v!==b){if(v)B[k]=v;else delete B[k]}return v}
 function fpDeliverable(P,c,srcs){return Math.max(0,Math.min(countIn(c.item,srcs),ownedOf(P,c.item)-fpBoughtAt(P,c.st,c.item)-consOf(P,c.item)))}
-function fpBuyable(c,P,k){if(!c.market||k.st===P.sector||!(c.market[k.item]>0))return null;const p=W.player,free=Math.max(0,p.st.cargo-invMass(P.cargo)),need=Math.max(0,k.n-fpDeliverable(P,k,[P.cargo,P.vault])),pr=buyPrice(c.market,k.item);return{stock:c.market[k.item],pr,need,n:Math.min(need,c.market[k.item],Math.floor(free/mass(k.item)),Math.floor(P.credits/Math.max(1,pr)))}}
+function fpBuyable(c,P,k){if(!c.market||k.st===P.sector||!(c.market[k.item]>0))return null;const p=W.player,free=Math.max(0,p.st.cargo-invMass(P.cargo)),need=Math.max(0,k.n-fpDeliverable(P,k,[P.cargo,P.vault])),pr=mBuy(c,k.item);return{stock:c.market[k.item],pr,need,n:Math.min(need,c.market[k.item],Math.floor(free/mass(k.item)),Math.floor(P.credits/Math.max(1,pr)))}}
 function deliverable(P,k,srcs,res){return Math.max(0,Math.min(countIn(k,srcs),ownedOf(P,k)-boughtOf(P,k)-(res===undefined?consOf(P,k):res)))}
 // ============================================================ dock UI
 let dockTab='market',dockErr='';
@@ -4082,16 +4139,16 @@ function renderDock(){
   const c=dockCtx(),P=S.player,p=W.player,srcs=[P.cargo,c.storage];
   $('dTitle').textContent=c.name;$('dTitle').style.color=sideCol(c.owner);$('dSub').textContent=c.sub;
   $('dMeta').innerHTML=`<div>Credits<b class="amber">${fmt(P.credits)}</b></div><div>Hold<b>${invMass(P.cargo)}/${p.st.cargo} t</b></div><div>${c.storageName}<b>${invMass(c.storage)} t</b></div>${c.wallet?`<div>${sideName(c.wallet)} treasury<b>${fmt(S.econ.treasury[c.wallet])}</b></div>`:''}`;
-  const tabs=[];if(c.market)tabs.push(['market','Market']);tabs.push(['fab','Fabricate'],['ship','Shipyard'],['storage',c.storageName]);if(c.contracts)tabs.push(['contracts','Contracts']);if(c.wallet&&c.wallet===P.faction&&S.plans&&S.plans[P.faction])tabs.push(['orders','Orders']);if(c.storage===P.vault)tabs.push(['bay',`Ship Bay ${shipsCount(P)}/${BAY_MAX}`]);if(c.works)tabs.push(['works','Station works']);if(c.refit)tabs.push(['refit','Refits']);if(c.fortify)tabs.push(['outpost','Outpost']);
+  const tabs=[];if(c.market)tabs.push(['market','Market']);tabs.push(['fab','Fabricate'],['ship','Shipyard'],['storage',c.storageName]);if(c.contracts)tabs.push(['contracts','Contracts']);if(c.wallet&&c.wallet===P.faction&&S.plans&&S.plans[P.faction])tabs.push(['orders','Orders']);tabs.push(['trade','Trade']);if(c.storage===P.vault)tabs.push(['bay',`Ship Bay ${shipsCount(P)}/${BAY_MAX}`]);if(c.works)tabs.push(['works','Station works']);if(c.refit)tabs.push(['refit','Refits']);if(c.fortify)tabs.push(['outpost','Outpost']);
   if(!tabs.some(t=>t[0]===dockTab))dockTab=tabs[0][0];
   $('dTabs').innerHTML=tabs.map(([k,l])=>`<button class="tab" role="tab" type="button" aria-selected="${k===dockTab}" data-act="tab" data-arg="${k}">${l}</button>`).join('');
   let h='';
   if(dockTab==='market'){
     const st=c.market;const items=ITEM_ORDER.filter(k=>k!=='beacon'&&((st[k]||0)>0||countIn(k,srcs)>0)).sort(byName);
-    h+=`<p class="note" style="margin:0 0 12px">Prices follow this ${c.kind}'s stock: scarce goods cost more. Purchases go to your ${c.storageName.toLowerCase()}; sales draw from your hold first. Every credit moves between you and the ${sideName(c.wallet)} treasury.</p>`;
+    h+=`<p class="note" style="margin:0 0 12px">Prices follow this ${c.kind}'s supply: scarce goods cost more, plentiful ones less. A whole purchase or sale goes at the price shown; the price moves afterwards. Purchases go to your ${c.storageName.toLowerCase()}; sales draw from your hold first. Every credit moves between you and the ${sideName(c.wallet)} treasury.</p>`;
     h+=`<div class="tblw"><table class="t"><thead><tr><th>Item</th><th class="r">Stock</th><th class="r">Buy</th><th class="r">Sell</th><th class="r">You have</th><th></th></tr></thead><tbody>`;
-    for(const k of items){const bp=buyPrice(st,k),sp=sellPrice(st,k),have=countIn(k,srcs);
-      h+=`<tr><td class="iname">${sw(k)}${esc(ITEMS[k].name)}<span class="mass">${mass(k)} t</span></td><td class="r num">${st[k]||0}</td><td class="r num">${fmt(bp)}</td><td class="r num">${fmt(sp)}</td><td class="r num">${have}</td>
+    for(const k of items){const bp=mBuy(c,k),sp=mSell(c,k),have=countIn(k,srcs),dm=demandOf(mR(c),k);
+      h+=`<tr><td class="iname">${sw(k)}${esc(ITEMS[k].name)}<span class="mass">${mass(k)} t</span>${dm==='high'?' <span class="dchip hi">high demand</span>':dm==='low'?' <span class="dchip lo">oversupplied</span>':''}</td><td class="r num">${st[k]||0}</td><td class="r num">${fmt(bp)}</td><td class="r num">${fmt(sp)}</td><td class="r num">${have}</td>
       <td><div class="act"><button class="btn sm" data-act="buy" data-arg="${k}:1" ${!(st[k]>0)||P.credits<bp?'disabled':''}>Buy 1</button><button class="btn sm" data-act="buy" data-arg="${k}:10" ${!(st[k]>0)||P.credits<bp?'disabled':''}>Buy 10</button><button class="btn sm" data-act="sell" data-arg="${k}:1" ${have<1?'disabled':''}>Sell 1</button><button class="btn sm" data-act="sell" data-arg="${k}:all" ${have<1?'disabled':''}>Sell all</button></div></td></tr>`}
     h+=`</tbody></table></div>`;if(!items.length)h+=`<div class="empty">Nothing in stock.</div>`;
   }else if(dockTab==='fab'){
@@ -4127,6 +4184,7 @@ function renderDock(){
       h+=`<div class="h3" style="margin-top:22px">Hulls · each ship is bought with credits</div><div class="note" style="margin-bottom:8px">Starter hulls are free. Anything else is one ship for its price, paid to the station's faction: if it's destroyed you relaunch in a starter hull and buy another. Switching away trades a bought hull in for half its price. Your components, tunings and rack move to the new frame${P.hullInv&&Object.keys(P.hullInv).length?`, and the parts in your current frame go back into your ${c.storageName.toLowerCase()}`:''}.</div><div class="ships" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">`;
       for(const k of YARD_IDS){const C=CLASSES[k],own=hullOwned(P,k),price=hullPrice(k),docks=!own&&DOCKS_ONLY.includes(k)&&!atDocks(P),can=P.cls!==k&&!docks&&(own||P.credits>=price),tag=P.cls===k?'<span class="req ok">current</span>':docks?`<span class="req no">orbital docks only · ${fmt(price)} cr</span>`:own?`<span class="req ok">starter · free</span>`:`<span class="req ${P.credits>=price?'ok':'no'}">buy · ${fmt(price)} cr</span>`;
         h+=`<button class="cls" type="button" data-act="hull" data-arg="${k}" aria-pressed="${P.cls===k}" ${can?'':'disabled'}><b>${FACTIONS[P.faction].hulls[k]}</b><em>${C.name}${P.cls===k?' · current':''}</em><span>${C.desc}</span><span style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${tag}</span></button>`}h+=`</div>`}
+  }else if(dockTab==='trade'){h+=tradeHtml(c,P);
   }else if(dockTab==='bay'){P.ships=P.ships||[];const HN=k=>esc(FACTIONS[P.faction].hulls[k]),mk=t=>ROMAN[t||1];
     const cur=shipRec(P),curBare=START_HULLS.includes(P.cls)&&shipBare(cur);
     h+=`<p class="note" style="margin:0 0 12px">Upgrades belong to the ship. Store up to ${BAY_MAX} ships here with everything fitted to them (components, Aurora tunings, refits, drones), swap between them at any station with your vault, and upgrade them while they wait. Buying a new hull at a shipyard strips the old one's upgrades into parts, so bay a ship first to keep it whole. A ship that's destroyed leaves its upgrades in the wreck.</p>`;
@@ -4174,8 +4232,8 @@ $('dock').addEventListener('click',e=>{
   if(NET.cl){netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
   dockAction(act,arg);renderDock()});
 function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.cargo,c.storage];
-  if(act==='buy'){const[k,n]=arg.split(':');let got=0,spent=0;for(let i=0;i<+n;i++){const pr=buyPrice(c.market,k);if(!(c.market[k]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k,1);inv.add(c.storage,k,1);got++;spent+=pr}if(got){P.bought=P.bought||{};P.bought[k]=(P.bought[k]||0)+got;if(c.owner==='neutral'){const F=(P.fpBought=P.fpBought||{})[P.sector]=(P.fpBought||{})[P.sector]||{};F[k]=(F[k]||0)+got}}if(got)dockErr=`✓ Bought ${got} ${ITEMS[k].name} for ${fmt(spent)} cr.`}
-  else if(act==='sell'){const[k,n]=arg.split(':');const max=n==='all'?countIn(k,srcs):1;let sold=0,earn=0;for(let i=0;i<max;i++){const pr=sellPrice(c.market,k);if(S.econ.treasury[c.wallet]<pr){dockErr=`The ${sideName(c.wallet)} treasury can't afford more.`;break}if(!takeFrom({[k]:1},srcs))break;inv.add(c.market,k,1);transfer(c.wallet,'player',pr);sold++;earn+=pr}if(sold&&P.bought&&P.bought[k]){P.bought[k]=Math.max(0,P.bought[k]-sold);if(!P.bought[k])delete P.bought[k]}if(sold)dockErr=`✓ Sold ${sold} ${ITEMS[k].name} for ${fmt(earn)} cr.`}
+  if(act==='buy'){const[k,n]=arg.split(':');let got=0,spent=0;const pr0=mBuy(c,k);for(let i=0;i<+n;i++){const pr=pr0;if(!(c.market[k]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k,1);inv.add(c.storage,k,1);got++;spent+=pr}{const R=mR(c);if(R&&got){mkOf(R)[k]=(R.mk[k]||0)-got}}if(got){P.bought=P.bought||{};P.bought[k]=(P.bought[k]||0)+got;if(c.owner==='neutral'){const F=(P.fpBought=P.fpBought||{})[P.sector]=(P.fpBought||{})[P.sector]||{};F[k]=(F[k]||0)+got}}if(got)dockErr=`✓ Bought ${got} ${ITEMS[k].name} for ${fmt(spent)} cr.`}
+  else if(act==='sell'){const[k,n]=arg.split(':');const max=n==='all'?countIn(k,srcs):1;let sold=0,earn=0;const pr0=mSell(c,k);for(let i=0;i<max;i++){const pr=pr0;if(S.econ.treasury[c.wallet]<pr){dockErr=`The ${sideName(c.wallet)} treasury can't afford more.`;break}if(!takeFrom({[k]:1},srcs))break;inv.add(c.market,k,1);transfer(c.wallet,'player',pr);sold++;earn+=pr}{const R=mR(c);if(R&&sold){mkOf(R)[k]=(R.mk[k]||0)+sold}}if(sold&&P.bought&&P.bought[k]){P.bought[k]=Math.max(0,P.bought[k]-sold);if(!P.bought[k])delete P.bought[k]}if(sold)dockErr=`✓ Sold ${sold} ${ITEMS[k].name} for ${fmt(earn)} cr.`}
   else if(act==='make'&&ITEMS[arg.split(':')[0]].forge&&!c.forge&&!c.fab)dockErr='Crystal Lattice and Resonance Cores need a Forge or a faction home station.';
   else if(act==='make'){const[k,n]=arg.split(':');const r=ITEMS[k].recipe,fee=c.fee?Math.ceil(baseValue(k)*.06):0;let made=0;const lim=n==='max'?999:1;
     while(made<lim&&haveIn(r,srcs)&&P.credits>=fee){takeFrom(r,srcs);inv.add(c.storage,k,1);if(fee)transfer('player',c.wallet,fee);made++}
@@ -4205,7 +4263,7 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
   else if(act==='stashall'){inv.addAll(c.storage,P.cargo);P.cargo={}}
   else if(act==='cmine'||act==='cload'||act==='chaul')campAct(act,c,P,srcs);
   else if(fpAct(act,arg,c,P,srcs)){}
-  else if(act==='hbuy'){const k=S.contracts.find(x=>String(x.id)===arg),b=k&&fpBuyable(c,P,k);if(!b||b.n<=0){dockErr=k&&b&&b.need<=0?'You already have enough for that request.':'Nothing to buy here for that request, or no room in your hold.';}else{let got=0,spent=0;for(let i=0;i<b.n;i++){const pr=buyPrice(c.market,k.item);if(!(c.market[k.item]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k.item,1);inv.add(P.cargo,k.item,1);got++;spent+=pr}
+  else if(act==='hbuy'){const k=S.contracts.find(x=>String(x.id)===arg),b=k&&fpBuyable(c,P,k);if(!b||b.n<=0){dockErr=k&&b&&b.need<=0?'You already have enough for that request.':'Nothing to buy here for that request, or no room in your hold.';}else{let got=0,spent=0;const pr0=mBuy(c,k.item);for(let i=0;i<b.n;i++){const pr=pr0;if(!(c.market[k.item]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k.item,1);inv.add(P.cargo,k.item,1);got++;spent+=pr}{const R=mR(c);if(R&&got){mkOf(R)[k.item]=(R.mk[k.item]||0)-got}}
     if(got){P.bought=P.bought||{};P.bought[k.item]=(P.bought[k.item]||0)+got;if(c.owner==='neutral'){const F=(P.fpBought=P.fpBought||{})[P.sector]=(P.fpBought||{})[P.sector]||{};F[k.item]=(F[k.item]||0)+got}P.route=k.st;dockErr=`✓ Bought ${got} ${ITEMS[k.item].name} into your hold for ${fmt(spent)} cr. Course set to ${S.stations[k.st]?S.stations[k.st].name:DEF[k.st].name}: launch and press J.`}}}
   else if(act==='deliver'){const k=S.contracts.find(x=>String(x.id)===arg);if(k&&k.st&&k.st!==P.sector){dockErr=`Deliver this one in person at ${S.stations[k.st]?S.stations[k.st].name:DEF[k.st].name}.`}else if(k&&k.st&&fpDeliverable(P,k,srcs)<k.n){dockErr=`You need ${k.n} ${ITEMS[k.item].name} that weren't bought here.`}else if(k&&!k.st&&deliverable(P,k.item,srcs)<k.n){const b=boughtOf(P,k.item);dockErr=`Contracts take goods you mined, salvaged or made. ${b?b+' '+ITEMS[k.item].name+' you bought on a market':'Consigned goods'} can't fill it.`}else if(k&&takeFrom({[k.item]:k.n},srcs)){inv.add(S.econ.stock[k.fac],k.item,k.n);const got=transfer(k.fac,'player',k.reward);S.contracts.splice(S.contracts.indexOf(k),1);dockErr=`✓ Contract complete. +${fmt(got)} cr.`;feed(`Contract delivered: +${fmt(got)} cr.`,'good')}}
   else if(act==='fort'){const o=c.o,r=fortRecipe(o.level+1);if(takeFrom(r,srcs)){const v=invVec(r);for(const e2 of RAWS)o.fort[e2]+=v[e2];o.level++;const os=oStats(o);o.shield=os.sMax;o.hull=os.hMax;dockErr=`✓ ${o.name} fortified to level ${o.level}.`}}
