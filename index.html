@@ -1063,6 +1063,8 @@ function fctl(t){if(!t.ctl)t.ctl={throttle:1,movePt:null,lanceMode:'auto',pd:'to
   return C}
 // frigate ownership: solo frigates use side 'player'; in multiplayer a frigate flies its pilot's faction colours and carries owner = pilot id
 function curPid(){return NET.on?((S.player&&S.player.pid)||NET.me||MP.pid):null}
+function fGuest(t){return!!t&&!t.owner&&t.side!=='player'&&t.side===S.player.faction}
+function fBoard(t){return fMine(t)||fGuest(t)}
 function fOwn(t){return!!t&&(t.side==='player'||!!t.owner)}
 function fMine(t){return!!t&&(t.side==='player'||(!!t.owner&&t.owner===curPid()))}
 function yk(){return NET.on?'p:'+curPid():'player'}
@@ -2384,7 +2386,7 @@ function bridgeLight(d){const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return
       f=wall*flo*cei*pool;
     d[i+6]*=f;d[i+7]*=f;d[i+8]*=f}}
 function bridgeOrigin(F){const k=F.st.radius*1.25;qRot(F.q,BRIDGE.off[0]*k,BRIDGE.off[1]*k,BRIDGE.off[2]*k,_u);return{x:F.x+_u.x,y:F.y+_u.y,z:F.z+_u.z}}
-function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id,slot:S.player.bslot|0});if(NET.host)S.hostAtt={id:F.tok&&F.tok.id,slot:S.player.bslot|0,cls:S.player.cls,fac:S.player.faction};W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok)}
+function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id,slot:S.player.bslot|0});if(NET.host)S.hostAtt={id:F.tok&&F.tok.id,slot:S.player.bslot|0,cls:S.player.cls,fac:S.player.faction};W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(fGuest(F.tok)?`Aboard ${F.tok.name} as a guest of ${FACTIONS[F.tok.side].short} command. You ride along wherever it jumps; consoles are view-only. WASD to walk; walk to the hatch and press E to launch.`:`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok)}
 function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;if(NET.host)S.hostAtt=null;const bp=F.alive?berthPose(F,S.player.bslot|0,S.player.cls,_bp):null;
   if(bp){p.x=bp.x;p.y=bp.y;p.z=bp.z;qCopy(p.q,bp.q);p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;W.detach={F,slot:S.player.bslot|0,t:0};flash('Releasing the hull clamps…')}
   else{qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q)}cam.snap=true;SFX.clunk();SFX.hatch();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
@@ -2429,7 +2431,7 @@ function openConsole(id){if(!W||!W.bridge)return;freeLook();W.bridge.panel=id;$(
 function closeConsole(){const B=W&&W.bridge;if(B)B.panel=null;const el=$('fcon');if(el)el.hidden=true;if(B&&B.seat)standChair()}
 function fcPip(n){return`<span class="pips">${[1,2,3,4,5,6].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>`}
 function renderConsole(full){const B=W&&W.bridge;if(!B||!B.panel)return;const F=B.f,t=F.tok,C=fctl(t),id=B.panel,pw=C.power;
-  $('fcTitle').textContent=`${t.name} · ${FC_TABS.find(x=>x[0]===id)[1]}`;$('fcSub').textContent=`${DEF[W.sid].name} · hull ${Math.round(F.hull/F.st.hull*100)}% · shield ${Math.round(F.shield/F.st.sCap*100)}% · battery: ${(bt=>bt?fTgtName(bt)+' '+fmt(Math.round(d3(bt,F)))+' m':C.lanceMode==='hold'?'holding':'no target')(batteryTgt(F))}${t.spin?` · jump drive ${Math.round(t.spin.p*100)}% → ${DEF[t.spin.to].name}`:''}`;
+  $('fcTitle').textContent=`${t.name} · ${FC_TABS.find(x=>x[0]===id)[1]}`;$('fcSub').textContent=`${DEF[W.sid].name} · hull ${Math.round(F.hull/F.st.hull*100)}% · shield ${Math.round(F.shield/F.st.sCap*100)}% · battery: ${(bt=>bt?fTgtName(bt)+' '+fmt(Math.round(d3(bt,F)))+' m':C.lanceMode==='hold'?'holding':'no target')(batteryTgt(F))}${t.spin?` · jump drive ${Math.round(t.spin.p*100)}% → ${DEF[t.spin.to].name}`:''}${fGuest(t)?` · guest aboard: ${FACTIONS[t.side].short} command has the helm`:''}`;
   $('fcMeta').innerHTML=`<div>Power<b>${PWR.reduce((a,k)=>a+pw[k],0)}/12</b></div><div>Pickets<b>${(F.pickets||[]).filter(p=>p.alive&&W.ents.includes(p)).length}/2</b></div>`;
   if(full)$('fcTabs').innerHTML=FC_TABS.map(([k,n])=>`<button class="tab" type="button" data-fc="tab:${k}" aria-selected="${k===id}">${n}</button>`).join('');
   let h='';
@@ -2496,7 +2498,7 @@ function fconApply(t,a,ent){const C=fctl(t);const[k,v,w]=String(a).split(':');if
   if(k==='pw'){const used=PWR.reduce((a,x)=>a+C.power[x],0),d=+w;if(d<0&&C.power[v]>0)C.power[v]--;else if(d>0&&C.power[v]<6&&used<12)C.power[v]++}
   if(k==='preset'){const n=v.split(',').map(Number);if(n.length===4&&n.every(x=>x>=0&&x<=6)&&n.reduce((a,b)=>a+b,0)<=12)PWR.forEach((x,i)=>C.power[x]=n[i])}}
 // a console press on the bridge: apply it here (instantly, for feedback) and, on a client, ask the host to apply it for real
-function fconSend(t,a,ent){if(NET.cl){const om=MUTE;MUTE=true;try{fconApply(t,a,ent)}finally{MUTE=om}netSend({t:'fcon',id:t.id,a,e:ent?(ent.type==='station'?'S':ent.id):0})}else fconApply(t,a,ent)}
+function fconSend(t,a,ent){if(fGuest(t)){const m=`${FACTIONS[t.side].short} command has the helm and the guns. You're aboard as a guest: ride along, use comms, launch any time.`;const el=$('fcErr');if(el&&W.bridge&&W.bridge.panel)el.textContent=m;else flash(m,true);return}if(NET.cl){const om=MUTE;MUTE=true;try{fconApply(t,a,ent)}finally{MUTE=om}netSend({t:'fcon',id:t.id,a,e:ent?(ent.type==='station'?'S':ent.id):0})}else fconApply(t,a,ent)}
 function consoleAct(a){const B=W&&W.bridge;if(!B)return;const F=B.f,t=F.tok;const[k,v]=a.split(':');
   if(k==='close'){closeConsole();return}if(k==='tab'){B.panel=v;renderConsole(true);return}
   if(k==='cmo'){const T=(B.clist||[])[+a.split(':')[2]];if(T&&T.alive){if(NET.cl)netSend({t:'order',k:v==='guard'?'guard':'escort',id:T.id});else issueOrder(v==='guard'?'guard':'escort',T);$('fcErr').textContent='Order sent. Replies appear in the feed.'}renderConsole(false);return}
@@ -2614,7 +2616,7 @@ addEventListener('keydown',e=>{if(e.code==='F11'){e.preventDefault();toggleFull(
   if(W&&W.gunseat){if(c==='KeyE'){leaveSeat();return}if(c==='KeyC'){if(NET.cl)netSend({t:'gmsl'});else W.gunseat.msl=1;return}}
   if(W&&W.bridge&&W.bridge.panel){const i=['Digit1','Digit2','Digit3','Digit4','Digit5'].indexOf(c);if(i>=0){W.bridge.panel=FC_TABS[i][0];renderConsole(true);return}}
   if(W&&W.bridge&&!W.bridge.panel&&(c==='KeyT'||c==='KeyQ')){bridgeTarget(c==='KeyQ');return}
-  if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd')sitChair();else openConsole(n.id)}return}if(S.player.docked)undock();else tryDock();return}
+  if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd'){if(fGuest(W.bridge.f.tok))flash(`The command chair is ${FACTIONS[W.bridge.f.tok.side].short} command's. You're a guest aboard.`,true);else sitChair()}else openConsole(n.id)}return}if(S.player.docked)undock();else tryDock();return}
   if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey();return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
@@ -3253,7 +3255,7 @@ function doJump(to){
 function dockTarget(){const p=W.player;for(const e of W.ents){if((e.type==='station'||e.type==='outpost')&&d3(e,p)<(e.type==='outpost'?(e.r||95)+(e.r>95?260:195):290))return e}return null}
 function canDock(E){if(E.type==='station')return E.fac===S.player.faction||E.fac==='player'||E.fac==='neutral';const o=E.o;return!o.breached&&(o.owner==='player'||o.owner===S.player.faction)}
 // what E would dock with: the nearest of your frigate, a friendly gunboat's turret, or a station / outpost in range
-function myFrigNear(){const p=W&&W.player;if(!p)return null;let b=null,bd=1e9;for(const e of W.ents)if(e.role==='frigate'&&e.tok&&fMine(e.tok)&&e.alive){const d=d3(e,p);if(d<e.st.radius*1.25+320&&d<bd){bd=d;b=e}}return b}
+function myFrigNear(){const p=W&&W.player;if(!p)return null;let b=null,bd=1e9;for(const e of W.ents)if(e.role==='frigate'&&e.tok&&fBoard(e.tok)&&e.alive){const d=d3(e,p);if(d<e.st.radius*1.25+320&&d<bd){bd=d;b=e}}return b}
 function dockChoice(){if(!W||!W.player||W.dead||S.player.docked)return null;const p=W.player,c=[];
   const F=myFrigNear();if(F)c.push({k:'frigate',e:F,d:d3(F,p)-F.st.radius*1.25});
   const gb=seatCandidate();if(gb)c.push({k:'turret',e:gb,d:d3(gb,p)-gb.st.radius*1.25});
@@ -4274,7 +4276,7 @@ function hudUpdate(){
   let pr='',alert=false;
   if(flashMsg&&performance.now()-flashMsg.t<2600){pr=flashMsg.m;alert=flashMsg.alert}
   else if(W.docking)pr='';
-  else if(!P.docked&&!W.dead){const ch=dockChoice();if(ch&&ch.k==='frigate')pr=`${coarse?'Act':'E'} — board ${ch.e.tok.name}`;else if(ch&&ch.k==='turret')pr=`${coarse?'Act':'E'} — man the gunboat's turret`;const E=ch&&(ch.k==='station'||ch.k==='outpost')?ch.e:null;if(E){if(canDock(E))pr=`${coarse?'Act':'E'} — dock at ${E.type==='station'?E.name:E.o.name}`;else if(E.type==='outpost'&&(!E.o.owner||E.o.breached))pr=(P.cargo.beacon?'Hold the ring to claim this outpost.':'You need a Claim Beacon in your hold to claim this outpost.')}}
+  else if(!P.docked&&!W.dead){const ch=dockChoice();if(ch&&ch.k==='frigate')pr=`${coarse?'Act':'E'} — board ${ch.e.tok.name}${fGuest(ch.e.tok)?' (ride along as a guest)':''}`;else if(ch&&ch.k==='turret')pr=`${coarse?'Act':'E'} — man the gunboat's turret`;const E=ch&&(ch.k==='station'||ch.k==='outpost')?ch.e:null;if(E){if(canDock(E))pr=`${coarse?'Act':'E'} — dock at ${E.type==='station'?E.name:E.o.name}`;else if(E.type==='outpost'&&(!E.o.owner||E.o.breached))pr=(P.cargo.beacon?'Hold the ring to claim this outpost.':'You need a Claim Beacon in your hold to claim this outpost.')}}
   $('hPrompt').innerHTML=pr?`<span class="${alert?'alert':''}">${esc(pr)}</span>`:'';
   renderFeed();drawRadar();
 }
@@ -4827,7 +4829,7 @@ function entInWorld(w,id){if(!w||!id)return null;if(id==='S')return w.stationEnt
   if(typeof id==='string'&&id.startsWith('p_')){const pid=id.slice(2);if(pid===NET.me)return w===LW?LW.player:null;return MP.rp[pid]||null}return null}
 function frigEnt(t){const w=WORLDS[t.sector];return w?w.ents.find(e=>e.alive&&e.tok===t):null}
 function hBridge(c,m){const pid=c.pid,P=S.pilots[pid],e=MP.rp[pid],t=(S.frigates||[]).find(x=>x.id===m.id);
-  const F=t&&t.owner===pid&&t.sector===P.sector?frigEnt(t):null;if(!e||!F||d3(e,F)>F.st.radius*1.25+700){send(c.L,{t:'nobridge'});return}
+  const F=t&&(t.owner===pid||(!t.owner&&t.side===P.faction))&&t.sector===P.sector?frigEnt(t):null;if(!e||!F||d3(e,F)>F.st.radius*1.25+700){send(c.L,{t:'nobridge'});return}
   despawnRP(pid,true);P.docked='bridge';P.bridgeId=t.id;P.bslot=(+m.slot|0)&3;P.vx=P.vy=P.vz=0;delete MP.inp[pid];netRoster()}
 function hBridgeTick(){for(const pid in S.pilots||{}){const P=S.pilots[pid];if(P.docked!=='bridge'||pid===NET.me)continue;const c=Object.values(MP.cl).find(x=>x.pid===pid&&x.ready);if(!c)continue;
     const t=(S.frigates||[]).find(x=>x.id===P.bridgeId);
