@@ -92,6 +92,7 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .cmb{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;padding:0 10px 9px}.comms{min-width:0;overflow:hidden}.comms.min .cmb{display:none}
 .cmt{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-top:3px}
 #hComms .ordc{margin:0;width:auto;min-width:0}#hComms .ordc .om{overflow-wrap:anywhere}
+.cops{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}.cops:empty{display:none}.cops .ct{pointer-events:auto;margin:0}
 .cev{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}.cev div{padding-top:1px;padding-bottom:1px}.cev div{display:flex;gap:6px;border-left:2px solid var(--line-hi);padding-left:6px;line-height:1.3}
 .cev div span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ivory)}.cev div em{font-style:normal;color:var(--faint);font-family:var(--f-mono);font-size:10px}
 .cev .good{border-left-color:var(--ok)}.cev .bad{border-left-color:var(--danger)}.cev .warn{border-left-color:var(--amber)}.cev .news span{color:var(--dim)}
@@ -315,7 +316,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       </div>
     </div>
     <div class="hud" id="contacts" aria-label="Contacts"></div>
-    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Comms</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
+    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Comms</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Friendly ops · O joins the top one</div><div class="cops" id="cOps"></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
     <div class="hud" id="hPrompt"></div>
     <div class="hud" id="feed" aria-live="polite"></div>
     <div id="touch" hidden>
@@ -774,6 +775,8 @@ const TRADE_IN=.5;
 // gunboats come only from orbital docks: a constructed capital shipyard (yours or your faction's) in the system you're docked in
 function atDocks(P){const Y=(S.yards||{})[yk()]||(S.yards||{})[P.faction];return!!(Y&&Y.sector===P.sector&&P.docked==='station')}
 const DOCKS_ONLY=['gunboat'];
+function droneTopUp(P,store,fac){const cap=(CLASSES[P.cls]&&CLASSES[P.cls].drones)||0;P.bay=P.bay||{};let need=cap-(P.bay.drone||0),got=0;if(need<0){inv.add(store||P.vault,'drone',-need);P.bay.drone=cap;return 0}if(need<=0)return 0;
+  for(const h of[store,fac&&S.econ.stock[fac],fac&&S.econ.fleet[fac]]){if(!h||need<=0)continue;const n=inv.take(h,'drone',need);if(n){inv.add(P.bay,'drone',n);need-=n;got+=n}}return got}
 function hullOwned(P,k){return START_HULLS.includes(k)}
 function stationName(owner,kind,sid){if(owner==='player')return`${DEF[sid].name} Depot`;if(owner==='neutral')return`${DEF[sid].name.split(' ')[0]} Freeport`;const F=FACTIONS[owner];if(kind==='core'||kind==='hive')return F.station;if(DEF[sid].home===owner)return F.depot;return owner==='brood'?`Bloom Node · ${DEF[sid].name}`:`${F.short} Depot · ${DEF[sid].name}`}
 function makeStation(sid,owner,kind,pos,fort){const k=STN[kind];return S.stations[sid]={sid,owner,kind,name:stationName(owner,kind,sid),x:pos.x,y:pos.y,z:pos.z,sMax:k.sMax,shield:k.sMax,hMax:k.hMax,hull:k.hMax,fort:fort||{},stock:{},built:S.T}}
@@ -1433,10 +1436,12 @@ function cdsHtml(){const P=S.player,p=W.player,torp=CLASSES[P.cls].torp,cap=rack
   {const l=W.flareCd||0;out.push(cdItem('Flares',null,1-l/5,l))}
   {const l=Math.max(0,(P.distT||0)-S.T);out.push(cdItem('Distress',null,1-l/90,l))}
   return out.join('')}
-let cmSig='';try{if(localStorage.getItem('dg_comms_min')==='1')setTimeout(()=>{const c=$('hComms');if(c){c.classList.add('min');$('cmTog').textContent='show';$('cmHead').setAttribute('aria-expanded','false')}},0)}catch(e){}
+let cmSig={s:''};try{if(localStorage.getItem('dg_comms_min')==='1')setTimeout(()=>{const c=$('hComms');if(c){c.classList.add('min');$('cmTog').textContent='show';$('cmHead').setAttribute('aria-expanded','false')}},0)}catch(e){}
 function commsUpdate(){const P=S.player,dl=Math.max(0,(P.distT||0)-S.T),fc=W.flareCd||0,nEv=innerHeight>=940?8:innerHeight>=820?6:5,last=FEED.slice(-nEv);
   $('hCds').innerHTML=cdsHtml();
-  const sig=nEv+'|'+FEED.length+'|'+(last.length?last[last.length-1].rt:0)+'|'+Math.ceil(dl)+'|'+Math.ceil(fc)+'|'+Math.floor(S.T/15);if(sig===cmSig)return;cmSig=sig;
+  const ops=friendlyOps().slice(0,3),osig=ops.map(o=>o.label+opWhen(o)).join('~');
+  if(osig!==cmSig.o){cmSig.o=osig;$('cOpsT').hidden=!ops.length;$('cOps').innerHTML=ops.map((o,i)=>`<button type="button" class="ct op ${o.kind}" data-op="${i}"><i></i><span>${esc(o.label)}</span><em>${esc(opWhen(o))}</em></button>`).join('')}
+  const sig=nEv+'|'+FEED.length+'|'+(last.length?last[last.length-1].rt:0)+'|'+Math.ceil(dl)+'|'+Math.ceil(fc)+'|'+Math.floor(S.T/15);if(sig===cmSig.s)return;cmSig.s=sig;
   const ago=t=>{const d=Math.max(0,S.T-t);return d<60?Math.round(d)+'s':Math.round(d/60)+'m'};
   $('cEv').innerHTML=last.length?last.slice().reverse().map(f=>`<div class="${f.kind}" title="${esc(f.msg)}"><span>${esc(f.msg)}</span><em>${ago(f.t)}</em></div>`).join(''):'<div class="news"><span>Quiet on all channels.</span></div>';
   const K=(k,l,w)=>`<div${w?' class="wait"':''}><kbd>${k}</kbd>${l}</div>`;
@@ -2600,7 +2605,7 @@ function playerDeath(p0){
 }
 function respawn(){if(NET.cl){clientRespawn();return}
   $('deathMsg').hidden=true;const P=S.player;exitSector();
-  const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';
+  const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';droneTopUp(P,P.vault,P.faction);
   enterSector(P.sector);openDock();save();
 }
 function damageStation(E,dmg,by,kind){if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only scratch station armour. Torpedoes are needed: bring a Bomber.',true)}return}
@@ -4002,9 +4007,8 @@ function hudUpdate(){
    const all=W.ents.filter(e=>e.type==='ship'&&e.alive&&!e.isPlayer&&e!==ref&&seenShip(e)&&(e.role!=='drone'||(e.ai.tgt===p&&hostile('player',e.side)))),nh=all.filter(e=>hostile('player',e.side)).length;
     const stOf=e=>{if(hostile('player',e.side))return e.ai&&e.ai.tgt===p?['on you','b']:e.ai&&e.ai.tgt&&!e.ai.tgt.isPlayer&&friendSide(e.ai.tgt.side)?['hitting ally','w']:null;if(W.t-e.lastHit<3&&hostile(e.side,e.lastHitBy))return['under fire','b'];if(e.role==='flee')return['retreating','w'];if(e.order&&e.order.tgt)return[(e.order.kind==='guard'?'guarding ':'escorting ')+(e.order.tgt===p?'you':'ally'),'g'];if(e.ord)return[e.ord,'g'];if(e.ai&&e.ai.tgt&&e.ai.tgt.alive&&hostile(e.side,e.ai.tgt.side))return['engaging','g'];if(e.role==='escort')return['escorting','g'];if(e.role==='screen')return['screening','g'];if(e.role==='scout')return['scouting','g'];if(e.role==='builder')return['building','g'];if(e.escortG&&escortHauler(grpLead(e.escortG)||{}))return['escorted','g'];return null};
     const cl=all.map(e=>[e,d3(e,ref),hostile('player',e.side)?2:W.t-e.lastHit<3&&hostile(e.side,e.lastHitBy)?1:0]).sort((a,b)=>(b[2]-a[2])||(a[1]-b[1])).slice(0,8);
-    const ops=friendlyOps().slice(0,4);
     $('contacts').innerHTML=`<div class="ctt"><span>Contacts</span>${nh?`<b>${nh} hostile</b>`:'<span>No hostiles</span>'}</div>`+structRows(ref,selR)+cl.map(([e,d,h])=>`<button type="button" class="ct${h?' h':''}${selR===e?' sel':''}" data-cid="${e.id}"><i style="background:${sideCol(e.side)}"></i><span>${esc(shipLabel(e))}${(n=>n?` <small style="opacity:.6">+${n} drone${n>1?'s':''}</small>`:'')((e.drones||[]).filter(d=>d.alive).length)}</span><em>${selR===e?'<u class="cs t">target</u>':(st=>st?`<u class="cs ${st[1]}">${st[0]}</u>`:'')(stOf(e))}${fmt(d)} m</em></button>`).join('')+`<div class="ctk">${detAll()?'Full sector picture':'Radar 2.8 km · a scout or friendly station shows the whole sector'} · T nearest · Y assist · Q next · G ahead · I friendly</div>`
-      +(ops.length?`<div class="ctt" style="margin-top:10px"><span>Friendly ops</span><span>O joins top</span></div>`+ops.map((o,i)=>`<button type="button" class="ct op ${o.kind}" data-op="${i}"><i></i><span>${esc(o.label)}</span><em>${esc(opWhen(o))}</em></button>`).join(''):'')}
+}
   let th='';if(W.tgt&&validTgt(W.tgt)){const T=W.tgt.ref,dist=Math.round(d3(T,p));
     if(W.tgt.kind==='ship'){const col=sideCol(T.side);th=`<div class="tp"><div class="tn" style="color:${col}">${esc(T.tok?T.tok.name:hullName(T.side==="player"?S.player.faction:T.side,T.cls))}</div><div class="ts">${esc(sideName(T.side))} · ${CLASSES[T.cls].name} · ${T.role==='strike'?'strike group':T.role} · Mk ${ROMAN[T.tier]} · ${T.wpn==='laser'?'lasers':'kinetic'} · ${hostile('player',T.side)?'hostile':'friendly'}${T.tuned?' · <span style="color:#6ff2cf">Aurora-tuned ✦</span>':''}</div>${T.role==='frigate'?'<div class="ts" style="color:var(--amber)">Capital ship: guns drain its shield; only torpedoes and capital guns hurt its hull</div>':''}
       <div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.st.sCap*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(T.hull)}</b></div><div class="mini"><i style="width:${T.hull/T.st.hull*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
@@ -4156,7 +4160,7 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
   else if(act==='frigbuild'){const Y=S.yards[yk()]||S.yards[P.faction];if(Y&&haveIn(FRIGATE_COST,srcs)&&S.frigates.filter(fMine).length<FRIG_CAP.player&&!S.events.some(e=>e.type==='frigbuild'&&e.att===yk())){const force={};takeFrom(FRIGATE_COST,srcs);inv.addAll(force,FRIGATE_COST);S.events.push({id:S.nextId++,type:'frigbuild',att:yk(),sector:Y.sector,force,until:S.T+FRIGATE_TIME,stage:'building'});dockErr='✓ Frigate laid down in the slip.';feed('A Frigate is being built at your shipyard.','good')}}
   else if(act==='bayload'){const cap=CLASSES[P.cls].drones||0;P.bay=P.bay||{};if((P.bay.drone||0)<cap&&takeFrom({drone:1},srcs)){inv.add(P.bay,'drone',1);dockErr=`✓ Drone loaded (${P.bay.drone}/${cap}).`}}
   else if(act==='bayunload'){if(P.bay&&P.bay.drone>0){inv.add(c.storage,'drone',inv.take(P.bay,'drone',1));dockErr='Drone unloaded.'}}
-  else if(act==='hull'&&CLASSES[arg]&&YARD_IDS.includes(arg)){const own=hullOwned(P,arg),price=own?0:hullPrice(arg);if(P.cls===arg)return;if(!own&&DOCKS_ONLY.includes(arg)&&!atDocks(P)){dockErr='Gunboats are sold only at orbital docks: a constructed capital shipyard, where frigates are commissioned.';return}if(P.credits<price){dockErr=`The ${FACTIONS[P.faction].hulls[arg]} costs ${fmt(price)} cr.`;return}{const room=shipStats(P.faction,arg,P.tiers,P.tune).cargo;if(invMass(P.cargo)>room)dockErr='Store some cargo first; the new hold is smaller.';else{inv.addAll(c.storage,P.hullInv||{});P.hullInv={};const ti=START_HULLS.includes(P.cls)?0:Math.floor(hullPrice(P.cls)*TRADE_IN),got=ti?transfer(c.wallet,'player',ti):0;if(price)transfer('player',c.wallet,price);{const nc=CLASSES[arg].drones||0;P.bay=P.bay||{};if((P.bay.drone||0)>nc){inv.add(c.storage,'drone',P.bay.drone-nc);P.bay.drone=nc}}P.rack=rackCapC(arg,P.tiers.weapon);P.mslT=0;P.swarm=CLASSES[arg].swarm||0;P.swT=0;P.cls=arg;hullsOwned(P);refreshPlayerStats();p.hull=p.st.hull;dockErr=`✓ ${price?`Bought for ${fmt(price)} cr. `:''}You now fly the ${FACTIONS[P.faction].hulls[arg]}.${got?` Your old hull was traded in for ${fmt(got)} cr.`:''}${price?' If it is destroyed you relaunch in a starter hull.':''}`}}}
+  else if(act==='hull'&&CLASSES[arg]&&YARD_IDS.includes(arg)){const own=hullOwned(P,arg),price=own?0:hullPrice(arg);if(P.cls===arg)return;if(!own&&DOCKS_ONLY.includes(arg)&&!atDocks(P)){dockErr='Gunboats are sold only at orbital docks: a constructed capital shipyard, where frigates are commissioned.';return}if(P.credits<price){dockErr=`The ${FACTIONS[P.faction].hulls[arg]} costs ${fmt(price)} cr.`;return}{const room=shipStats(P.faction,arg,P.tiers,P.tune).cargo;if(invMass(P.cargo)>room)dockErr='Store some cargo first; the new hold is smaller.';else{inv.addAll(c.storage,P.hullInv||{});P.hullInv={};const ti=START_HULLS.includes(P.cls)?0:Math.floor(hullPrice(P.cls)*TRADE_IN),got=ti?transfer(c.wallet,'player',ti):0;if(price)transfer('player',c.wallet,price);{const nc=CLASSES[arg].drones||0;P.bay=P.bay||{};if((P.bay.drone||0)>nc){inv.add(c.storage,'drone',P.bay.drone-nc);P.bay.drone=nc}}P.rack=rackCapC(arg,P.tiers.weapon);P.mslT=0;P.swarm=CLASSES[arg].swarm||0;P.swT=0;P.cls=arg;hullsOwned(P);const dg=droneTopUp(P,c.storage,c.wallet),dcap=CLASSES[arg].drones||0;refreshPlayerStats();p.hull=p.st.hull;dockErr=`✓ ${price?`Bought for ${fmt(price)} cr. `:''}You now fly the ${FACTIONS[P.faction].hulls[arg]}.${dcap?` Drone bay ${P.bay.drone}/${dcap}${(P.bay.drone||0)<dcap?' (the station is out of drones: buy more on the Market)':''}.`:''}${got?` Your old hull was traded in for ${fmt(got)} cr.`:''}${price?' If it is destroyed you relaunch in a starter hull.':''}`}}}
   else if(act==='mv'){const[k,dir,n]=arg.split(':');if(dir==='in'){const m=n==='all'?P.cargo[k]:1;inv.add(c.storage,k,inv.take(P.cargo,k,m))}else{const room=p.st.cargo-invMass(P.cargo);let m=n==='all'?(c.storage[k]||0):1;m=Math.min(m,Math.floor(room/mass(k)));if(m<=0)dockErr='Not enough hold space.';else inv.add(P.cargo,k,inv.take(c.storage,k,m))}}
   else if(act==='stashall'){inv.addAll(c.storage,P.cargo);P.cargo={}}
   else if(act==='cmine'||act==='cload'||act==='chaul')campAct(act,c,P,srcs);
@@ -4184,6 +4188,7 @@ function fsBlocked(){flash('Full screen isn\'t allowed in this embedded view. Op
 function fsLabel(){const b=$('bFull');if(b)b.innerHTML=fsEl()?'Exit full <kbd>F11</kbd>':'Full <kbd>F11</kbd>';setTimeout(()=>{resize();if(!$('map').hidden)drawMap()},60)}
 document.addEventListener('fullscreenchange',fsLabel);document.addEventListener('webkitfullscreenchange',fsLabel);
 $('bFull').addEventListener('click',e=>{e.currentTarget.blur();toggleFull()});$('bHelp').addEventListener('click',()=>toggleSheet('help'));
+$('hComms').addEventListener('pointerdown',e=>{const ob=e.target.closest('[data-op]');if(ob&&W){e.preventDefault();e.stopPropagation();joinOp(friendlyOps()[+ob.dataset.op])}});
 $('cmHead').addEventListener('click',e=>{e.stopPropagation();const c=$('hComms'),mn=!c.classList.contains('min');c.classList.toggle('min',mn);$('cmTog').textContent=mn?'show':'hide';$('cmHead').setAttribute('aria-expanded',String(!mn));try{localStorage.setItem('dg_comms_min',mn?'1':'0')}catch(er){}$('cmHead').blur()});
 const mcv=$('mapCv'),mctx=mcv.getContext('2d');
 function mapXY(d,w,h){const pad=46,sz=Math.min(w,h)-pad*2,ox=(w-sz)/2,oy=(h-sz)/2;return[ox+d.x*sz,oy+d.y*sz]}
@@ -4599,7 +4604,7 @@ function runAs(pid,fn){if(!pid||pid===NET.me||!S.pilots||!S.pilots[pid])return f
 function rpDeath(e){const pid=e.rp,P=S.pilots[pid];
   runAs(pid,()=>{playerDeath(e)});
   despawnRP(pid,true);const old=WORLDS[P.sector];
-  const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';delete MP.inp[pid];
+  const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';droneTopUp(P,P.vault,P.faction);delete MP.inp[pid];
   if(old&&old!==LW&&!worldBusy(old))closeWorld(old);if(!WORLDS[P.sector])openWorld(P.sector);
   const c=Object.values(MP.cl).find(x=>x.pid===pid&&x.ready);if(c){sendPR(c,true,true);send(c.L,{t:'dead'})}netRoster()}
 function resolveTgt(id){if(id==='S')return W.stationEnt;if(id==='O')return W.outpostEnt;if(NET.host&&id==='p_'+NET.me)return W.player;return W.ents.find(x=>x.id===id&&x.alive)||null}
