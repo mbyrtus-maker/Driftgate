@@ -41,7 +41,8 @@ PTS={}  # explicit docking ports (model space) for models whose arm tips can't b
 def rockbase():
     M=build_rockbase();MOUNTS['rockbase']=M['mounts'];PTS['rockbase']=M['ports']
     return M['P'],M['N'],list(M['rock'])+[kenney_role(c) for c in M['cols']]
-GLOW_N={}  # models where only the first N triangles may become engine glow (bolted-on parts stay unlit)
+GLOW_N={}
+ENGZ=[]  # models where only the first N triangles may become engine glow (bolted-on parts stay unlit)
 def scout2():
     # the Advanced Scout: the scout hull with a missile pod slung under each wing, a swarm box on the spine and a sensor dish aft
     P,N,R=ql_model(2);S=Comp();sc=.62
@@ -98,7 +99,7 @@ def pack():
                 else:cl.append({'c':g.copy(),'n':1,'p':[g]})
             cl.sort(key=lambda C:-C['n'])
             for C in cl[:3]:
-                ce=C['c']/C['n'];rad=max(.04,min(.08 if name=='frigate' else .2,max(np.linalg.norm(p-ce) for p in C['p'])+.03));eng.append([round(float(ce[0]),3),round(float(ce[1]),3),round(float(zlo),3),round(float(rad),3)])
+                ce=C['c']/C['n'];rad=max(.04,min(.08 if name=='frigate' else .2,max(np.linalg.norm(p-ce) for p in C['p'])+.03));cz=min(float(p[2]) for p in C['p']);ez=zlo if cz-zlo<.06 else cz-.01;ENGZ.append((name,round(float(zlo),3),round(cz,3)));eng.append([round(float(ce[0]),3),round(float(ce[1]),3),round(float(ez),3),round(float(rad),3)])
             if not eng:eng=[[0,0,round(float(zlo),3),.1]]
         while len(blob)%4:blob+=b'\0'
         off=len(blob);blob+=q.tobytes();blob+=bytes(roles);blob+=bytes(int(np.clip(s*100,0,255)) for s in shades)
@@ -108,6 +109,8 @@ def pack():
         print(name.ljust(12),kind,len(T),'tris',('eng %d'%len(eng)) if eng else '')
     return idx,bytes(blob)
 idx,blob=pack()
+for r in ENGZ:
+    if r[2]-r[1]>=.06:print('engine moved forward to its vent:',r)
 import gzip
 gz=gzip.compress(blob,9)
 open('models_idx.json','w').write(json.dumps(idx,separators=(',',':')))
