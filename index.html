@@ -464,7 +464,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
               <kbd>V</kbd><span>Chase or cockpit camera</span>
               <kbd>Hold</kbd><span>A full hold makes any ship heavier. Haulers, miners and constructors at full load turn, accelerate and brake at about half rate and slide wide through turns</span>
               <kbd>P</kbd><span>Campaign orders: sign on to your faction's next move (shown under the system name), then set a course to it</span>
-              <kbd>K</kbd><span>Constructor: build a depot here (2 Depot Frames, no station in sector)</span>
+              <kbd>I</kbd><span>then 4 — call a faction constructor to build a depot here (area must be mostly clear when you call)</span>
               <kbd>J</kbd><span>Autopilot to your target (gate, station, rock) or the next jump on your course</span>
               <kbd>L</kbd><span>Auto-level on/off (rolls you back level with the sector)</span>
               <kbd>Wheel</kbd><span>Chase camera distance</span>
@@ -493,7 +493,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Capital ships.</b> At your faction's main station you can build a Capital Shipyard (4 Depot Frames, 4 Capital Keels, 4 Crystal Lattice, 40 plates and 5,000 cr). It commissions Frigates (6 Keels, 6 Lattice, 2 Resonance Cores, 10 conduit, 2 Picket Kits, 4 missiles). Order your frigates from the galaxy map. A frigate holds any system with no station unless another frigate is there: it mines the system for you and takes its outpost after about a minute. Each flies with two Pickets, small fighters with two missiles each. Point-defence turrets shred fighters and torpedoes; a heavy capital battery cracks station hulls and other frigates. Fighter guns and missiles only drain a frigate's shield; torpedoes (four times damage) and capital guns break the hull. AI factions build yards and frigates too, and the Brood grows Leviathans in The Bloom. The galaxy's asteroid fields are richer to feed all this (Capital Keels need lots of Iridium).</p>
             <p><b>Aurorite.</b> A fifth ore that exists only in the three deep-space sectors (Ashen Expanse, Glass Shallows, Lantern Deep), glowing teal in the rock. It never re-forms anywhere else: dust from wrecks drifts back toward deep space. Fabricate it into Aurora Tuning (2 Aurorite + 1 Flux Coil) and attune any component in the Shipyard: each level adds +6% to that component (two levels max, 1 then 2 tunings). Whoever holds depots in deep space mines Aurorite, and their fighters start showing up tuned.</p>
             <p><b>Missiles and swarms.</b> Missiles and swarm micro-missiles hit 1.8× harder once a target's shield is down, so break shields with guns and finish with missiles. Heavy Fighters, Bombers, Gunboats and Advanced Scouts carry a swarm launcher with 2 pods (fire with 3): eight micro-missiles fan out at your target and anything flying near it. Flares fool only about half of them. AI heavy fighters and bombers sometimes carry one too.</p>
-            <p><b>Constructors.</b> Factions send escorted constructor convoys to build depots in sectors without a station, and to rebuild lost frontier depots. You can too: buy a Constructor hull at a core station, fabricate 2 Depot Frames, fly to a sector with no station and press K. Your depot mines that sector for you and defends itself.</p>
+            <p><b>Constructors.</b> Factions send escorted constructor convoys to build depots in sectors without a station, and to rebuild lost frontier depots. Constructors are flown only by faction command. To get a depot built, fly to a system with no station, make sure the area is mostly clear (no more than one hostile within 3 km, no hostile frigate in the system) and call one in through comms (I, then 4). If command has no constructor ready it assembles one as soon as its stores allow, then it sets out from the nearest friendly station and jumps system by system to you, always with an escort of at least two fighters. The site doesn't have to stay clear while it travels, but the convoy has to survive to build.</p>
             <p><b>Sensors, not omniscience.</b> You only hear about strikes, convoys and battles in sectors your side can see: sectors with a friendly station or depot (plus their neighbours), friendly outposts, and wherever a friendly scout is (plus neighbours). Holding the Hollow Relay taps the whole network. The map dims sectors you cannot see. Scout hulls are the fastest ships, see the whole sector and the sectors next door, but carry light guns and turn slowly. The Scout fires its missiles in pairs from two launchers; the Advanced Scout has one launcher plus a swarm launcher.</p>
             <p><b>Hugging a rock.</b> Slow below 70 m/s next to an asteroid and press E to land on it. Everything but your radar powers down: no engines, guns, missiles or shields, and no recharge. Enemy ships, turrets and stations lose you unless they come within 320 m, and missiles chasing you lose their lock. Press E to lift off: the ship reboots, so guns and launchers stay cold for 4 s while energy surges back, and shields start charging from empty once the boot is done. You can turn in place to watch while landed.</p>
             <p><b>Sector beacons.</b> Every system has a beacon (◆ on the map, filled in the colour of the team holding it) set well away from the centre: press Tab to target it. Fly a Scout or Advanced Scout within 250 m of it and hold there for 10 seconds to flip it to your faction. While your faction holds it, that system is scanned for your side all the time and its market prices reach your Trade screen live. Flipping one pays you a one-off bonus of 250 cr from your faction's treasury, then 20 cr every minute until another team's scout flips it back. Two teams' scouts on the same beacon block each other. AI scouts flip beacons too.</p>
@@ -660,7 +660,7 @@ const CLASSES={
   dredger:{name:'Heavy Miner',hull:190,shield:1.15,speed:.82,turn:1.6,weapon:.9,cargo:80,drill:2.2,radius:23,rack:.75,boost:.9,agile:.75,acc:.82,drones:4,lasers:3,desc:'3 mining lasers, 4 guard drones, deep hold. Slow and armoured.'},
   bulker:{name:'Heavy Hauler',hull:260,shield:1.25,speed:.72,turn:1.2,weapon:.7,cargo:180,drill:.6,radius:28,rack:.75,boost:.85,agile:.6,acc:.7,drones:4,desc:'180 t hold, 4 guard drones. A fortress that crawls.'},
 };
-const CLS_IDS=['interceptor','striker','heavy','bomber','skiff','prospector','dredger','courier','freighter','bulker','scout','scout2'],YARD_IDS=[...CLS_IDS,'gunboat','constructor'];
+const CLS_IDS=['interceptor','striker','heavy','bomber','skiff','prospector','dredger','courier','freighter','bulker','scout','scout2'],YARD_IDS=[...CLS_IDS,'gunboat'];   // constructors are AI-only: call one in through comms
 const FIGHTERS=['interceptor','striker','heavy','bomber'];
 function hullName(side,cls){if(side==='player')side=S.player.faction;return side==='pirate'?PIRATE.hulls[cls]:FACTIONS[side]?FACTIONS[side].hulls[cls]:cls}
 const SHAPES={
@@ -837,7 +837,7 @@ function newGame(fac,cls){
 
 function broodInit(){S.econ.stock.brood={fe:420,cu:300,ir:160,xc:40,plate:50,wire:40,coil:14,missile:10,torpedo:10,frame:2};S.econ.fleet.brood={plate:30,wire:20,coil:8,missile:6,torpedo:6};S.econ.treasury.brood=0;S.ai.brood={next:S.T+150,build:S.T+260}}
 // older saves: add the new sectors, station records and the Brood, then shift the conservation baseline by exactly what was added
-function migrate(st){S=st;fpMigrate();beaconInit();if(!S.seamV&&S.sectors){S.seamV=1;seamTick(SEAM_CAP)}for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.tiers&&!P.tiers.payload)P.tiers.payload=1;magInit(S.player);for(const k in S.pilots||{})magInit(S.pilots[k]);S.frigates=S.frigates||[];for(const t of S.frigates)t.live=false;S.yards=S.yards||{brood:{sector:'bl'}};S.player.hullInv=S.player.hullInv||{};S.player.bay=S.player.bay||{};S.scouts=S.scouts||[];for(const t of S.scouts)t.live=false;for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;for(const id in S.sectors){if(S.sectors[id].debris.au===undefined)S.sectors[id].debris.au=0}for(const id in S.outposts){if(S.outposts[id].fort.au===undefined)S.outposts[id].fort.au=0}S.player.tune=S.player.tune||{};const L0=ledger();let ch=false;
+function migrate(st){S=st;for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.cls==='constructor')P.cls='courier';fpMigrate();beaconInit();if(!S.seamV&&S.sectors){S.seamV=1;seamTick(SEAM_CAP)}for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.tiers&&!P.tiers.payload)P.tiers.payload=1;magInit(S.player);for(const k in S.pilots||{})magInit(S.pilots[k]);S.frigates=S.frigates||[];for(const t of S.frigates)t.live=false;S.yards=S.yards||{brood:{sector:'bl'}};S.player.hullInv=S.player.hullInv||{};S.player.bay=S.player.bay||{};S.scouts=S.scouts||[];for(const t of S.scouts)t.live=false;for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;for(const id in S.sectors){if(S.sectors[id].debris.au===undefined)S.sectors[id].debris.au=0}for(const id in S.outposts){if(S.outposts[id].fort.au===undefined)S.outposts[id].fort.au=0}S.player.tune=S.player.tune||{};const L0=ledger();let ch=false;
   for(const d of SECTOR_DEFS)if(!S.sectors[d.id]){S.sectors[d.id]=genSector(d);ch=true}
   if(!S.stations){S.stations={};for(const d of SECTOR_DEFS)if(d.home)makeStation(d.id,d.home,d.kind==='core'?'core':'depot',{x:0,y:0,z:0},d.kind==='core'?{}:{...DEPOT_COST});ch=true}
   if(!S.stations.bl){makeStation('bl','brood','hive',{x:0,y:0,z:0},{});ch=true}
@@ -1002,7 +1002,7 @@ function strategicTick(){
     for(let i=s.crates.length-1;i>=0;i--){const c=s.crates[i];if(T>c.until){toDebris(s,c.inv);s.crates.splice(i,1)}}
     for(let i=s.ast.length-1;i>=0;i--){const a=s.ast[i];if(a.comet&&T>a.until){toDebris(s,a.ore);s.ast.splice(i,1);if(W&&W.tgt&&W.tgt.ref===a)W.tgt=null}}
   }
-  diffuse();seamTick(2);scoutsTick();beaconTick();bcnMissionsTick();mkTick();coalTick();threatTick();capitalTick();victoryTick();campTick();for(const ev of S.events)announce(ev);
+  diffuse();seamTick(2);scoutsTick();beaconTick();bcnMissionsTick();cReqTick();mkTick();coalTick();threatTick();capitalTick();victoryTick();campTick();for(const ev of S.events)announce(ev);
   for(const f of FAC_IDS)factionIndustry(f);factionIndustry('brood');neutralIndustry();lifeTick();devTick();wkRepair();fpContracts();
   pirateIndustry();
   const h=S.outposts.hollow;
@@ -1670,6 +1670,7 @@ function campBuild(f,m){const sid=m.sector;if(!canBuildIn(sid,f))return'gone';if
   const st=S.econ.stock[f],srcs=[S.econ.fleet[f],st];if(!haveIn(DEPOT_COST,[st])||!haveIn(CONSTR_LD,srcs))return null;
   const force={};takeFrom(DEPOT_COST,[st]);inv.addAll(force,DEPOT_COST);takeFrom(CONSTR_LD,srcs);inv.addAll(force,CONSTR_LD);
   const tier=factionTier(f),cls=[];for(let i=0;i<3+(m.boost?2:0);i++){const cl=pickFighter('patrol'),ld=loadout('patrol',tier,cl);if(takeFrom(ld,srcs)){inv.addAll(force,ld);cls.push(cl)}}
+  if(cls.length<CR_ESC_MIN){inv.addAll(st,force);return null}   // never without an escort
   const ev={id:S.nextId++,type:'build',att:f,sector:sid,eta:S.T+80,stage:'inbound',force,n:cls.length,tier,cls,site:stationSite(sid),prog:0,camp:m.id};S.events.push(ev);announce(ev);return ev}
 function campBusy(f){const P=S.plans&&S.plans[f],m=P&&P.mv;return!!m&&m.kind==='take'&&m.stage==='active'}
 // run every strategic tick (10 s) on the host
@@ -2714,7 +2715,7 @@ addEventListener('keydown',e=>{if(e.code==='F11'){e.preventDefault();toggleFull(
   if(c==='Tab')cycleTarget();
   if(c==='KeyV')toggleCam();
   if(c==='KeyJ'){toggleAutopilot();return}
-  if(c==='KeyK'){startPlayerBuild();return}
+  if(c==='KeyK'){flash('Constructors fly for faction command now: open comms (I) and choose 4 to call one in here.');return}
   if(c==='KeyU'&&!(W&&W.bridge)){if(NET.cl)netSend({t:'order',k:'help'});else pilotDistress();return}
   if(c==='KeyO'){const ops=friendlyOps();if(!ops.length){flash('No friendly operations right now. Strikes and threats appear in the Ops list and on the map.');return}joinOp(ops[0]);return}
   if(c==='KeyY'){assistTarget();return}
@@ -2790,12 +2791,28 @@ function requestBuild(){if(!W||!W.player)return;const f=S.player.faction,sid=W.s
   if(S.stations[sid]){feed(`${F} command: this system already has a station.`,'warn');return}
   if(!canBuildIn(sid,f)){feed(`${F} command: we can't build here. ${DEF[sid].kind==='hive'?'Nothing takes root in the Bloom.':'Another power holds this system.'}`,'warn');return}
   const ex=S.events.find(e=>e.type==='build'&&e.sector===sid&&e.stage!=='done');if(ex){feed(`${ex.att===f?F+' command: a constructor is already on its way here.':'Another power is already building here.'}`,'info');return}
-  const fl=S.econ.fleet[f],srcs=[fl,st];if(!haveIn(DEPOT_COST,[st])||!haveIn(CONSTR_LD,srcs)){const need={...DEPOT_COST};for(const k in CONSTR_LD)need[k]=(need[k]||0)+CONSTR_LD[k];const have={};for(const k in need)have[k]=(st[k]||0)+((k in DEPOT_COST)?0:(fl[k]||0));feed(`${F} command: no constructor available. Our stores are short ${lackText(need,have)||'of parts'}.`,'warn');return}
-  let site={x:Math.round(p.x),y:Math.round(p.y),z:Math.round(p.z)};if(GATES[sid].some(g=>d3(g,site)<900)||S.sectors[sid].ast.some(a=>d3(a,site)<astR(a)+200)||(W.outpostEnt&&d3(W.outpostEnt,site)<700)||hyp(site.x,site.y,site.z)>4000)site=stationSite(sid);
-  const force={};takeFrom(DEPOT_COST,[st]);inv.addAll(force,DEPOT_COST);takeFrom(CONSTR_LD,srcs);inv.addAll(force,CONSTR_LD);
-  const tier=factionTier(f),cls=[];for(let i=0;i<2;i++){const cl=pickFighter('patrol'),ld=loadout('patrol',tier,cl);if(takeFrom(ld,srcs)){inv.addAll(force,ld);cls.push(cl)}}
-  const ev={id:S.nextId++,type:'build',att:f,sector:sid,eta:S.T+30,stage:'inbound',force,n:cls.length,tier,cls,site,prog:0};S.events.push(ev);announce(ev);
-  feed(`${F} command: copy. A constructor${cls.length?' and escort':''} will jump in shortly to build a depot ${site.x===Math.round(p.x)&&site.z===Math.round(p.z)?'at your position':'nearby'}.`,'good')}
+  S.cReq=S.cReq||{};const q=S.cReq[f];if(q&&q.sid===sid){feed(`${F} command: your constructor for ${DEF[sid].name} is already being readied.`,'info');return}if(q){feed(`${F} command: we're already readying a constructor for ${DEF[q.sid].name}. One build call at a time.`,'warn');return}
+  // the area has to be mostly clear when you call: at most one hostile ship near you and no hostile capital ship in the system
+  const near=W.ents.filter(e=>e.type==='ship'&&e.alive&&!e.isPlayer&&e.role!=='drone'&&hostile(f,e.side)&&d3(e,p)<3000).length,cap=W.ents.some(e=>e.type==='ship'&&e.alive&&(e.role==='frigate'||e.role==='escortcap')&&hostile(f,e.side));
+  if(near>1||cap){feed(`${F} command: negative. The area isn't secure: ${cap?'a hostile capital ship is in the system':near+' hostiles within 3 km of you'}. Clear it and call again.`,'warn');return}
+  let site={x:Math.round(p.x),y:Math.round(p.y),z:Math.round(p.z)};if(GATES[sid].some(g=>d3(g,site)<900)||S.sectors[sid].ast.some(a=>d3(a,site)<astR(a)+200)||(W.outpostEnt&&d3(W.outpostEnt,site)<700)||hyp(site.x,site.y,site.z)>4000*SPREAD)site=stationSite(sid);
+  S.cReq[f]={sid,site,T:S.T,by:pkey(),said:S.T};feed(`${F} command: copy. A constructor and escort will be sent to build a depot ${site.x===Math.round(p.x)&&site.z===Math.round(p.z)?'at your position':'nearby'} in ${DEF[sid].name}.`,'good');cReqTick()}
+// a called-in constructor: assembled from faction stores as soon as they allow, then flown from the nearest friendly station,
+// one jump at a time, always with at least two escorts. The site only had to be clear when the call was made.
+const CR_ESC_MIN=2,CR_HOP=40;
+function cReqTick(){if(NET.cl||!S.cReq)return;for(const f in S.cReq){const q=S.cReq[f],F=FACTIONS[f]?FACTIONS[f].short:f,nm=DEF[q.sid].name;
+    if(S.stations[q.sid]||!canBuildIn(q.sid,f)||S.events.some(e=>e.type==='build'&&e.sector===q.sid&&e.stage!=='done')){delete S.cReq[f];facFeed(f,`${F} command: the depot call for ${nm} is cancelled, the system has changed hands.`,'warn');continue}
+    if(S.T-q.T>1500){delete S.cReq[f];facFeed(f,`${F} command: we couldn't ready a constructor for ${nm} in time. Call again when our stores recover.`,'warn');continue}
+    const st=S.econ.stock[f],fl=S.econ.fleet[f],srcs=[fl,st],tier=factionTier(f);
+    const esc=[];{const tmp={},probe=[{...fl},{...st}];for(let i=0;i<3;i++){const cl=pickFighter('patrol'),ld=loadout('patrol',tier,cl);if(takeFrom(ld,probe))esc.push([cl,ld])}}
+    const ready=haveIn(DEPOT_COST,[st])&&haveIn(CONSTR_LD,srcs)&&esc.length>=CR_ESC_MIN;
+    if(!ready){if(S.T-q.said>120){q.said=S.T;const need={...DEPOT_COST};for(const k in CONSTR_LD)need[k]=(need[k]||0)+CONSTR_LD[k];facFeed(f,`${F} command: still readying your constructor for ${nm}${haveIn(DEPOT_COST,[st])&&haveIn(CONSTR_LD,srcs)?': waiting on escort fighters':': stores short '+(lackText(need,{...fl,...st})||'parts')}.`,'info')}continue}
+    const force={};takeFrom(DEPOT_COST,[st]);inv.addAll(force,DEPOT_COST);takeFrom(CONSTR_LD,srcs);inv.addAll(force,CONSTR_LD);const cls=[];
+    for(const[cl,ld]of esc)if(takeFrom(ld,srcs)){inv.addAll(force,ld);cls.push(cl)}
+    if(cls.length<CR_ESC_MIN){inv.addAll(st,force);continue}
+    const from=nearestOwnStation(f,q.sid),hops=from?HOP[from][q.sid]||0:2,eta=S.T+30+CR_HOP*hops;
+    const ev={id:S.nextId++,type:'build',att:f,sector:q.sid,eta,stage:'inbound',force,n:cls.length,tier,cls,site:q.site,prog:0,from,hops,T0:S.T};S.events.push(ev);announce(ev);delete S.cReq[f];
+    facFeed(f,`${F} command: constructor away from ${from?stN(from):'the rear'} with ${cls.length} escorts. ${hops} jump${hops===1?'':'s'} to ${nm}, ETA ${fmtT(eta-S.T)}. Track it under Missions or in comms.`,'good')}}
 function feedTo(pid,msg,k){const o=CTX;CTX=pid||null;try{feed(msg,k)}finally{CTX=o}}
 function threatTo(T,e,R){let best=null,bd=1e9;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e||!hostile(e.side,o.side))continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;
     const dT=d3(o,T);if(dT>R)continue;const sc=dT*(o.ai&&o.ai.tgt===T?.4:1)*(o.cls==='bomber'?.6:1);if(sc<bd){bd=sc;best=o}}return best}
