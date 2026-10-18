@@ -2992,10 +2992,18 @@ function doJump(to){
 }
 function dockTarget(){const p=W.player;for(const e of W.ents){if((e.type==='station'||e.type==='outpost')&&d3(e,p)<(e.type==='outpost'?(e.r||95)+(e.r>95?260:195):290))return e}return null}
 function canDock(E){if(E.type==='station')return E.fac===S.player.faction||E.fac==='player'||E.fac==='neutral';const o=E.o;return!o.breached&&(o.owner==='player'||o.owner===S.player.faction)}
+// what E would dock with: the nearest of your frigate, a friendly gunboat's turret, or a station / outpost in range
+function myFrigNear(){const p=W&&W.player;if(!p)return null;let b=null,bd=1e9;for(const e of W.ents)if(e.role==='frigate'&&e.tok&&fMine(e.tok)&&e.alive){const d=d3(e,p);if(d<e.st.radius*1.25+320&&d<bd){bd=d;b=e}}return b}
+function dockChoice(){if(!W||!W.player||W.dead||S.player.docked)return null;const p=W.player,c=[];
+  const F=myFrigNear();if(F)c.push({k:'frigate',e:F,d:d3(F,p)-F.st.radius*1.25});
+  const gb=seatCandidate();if(gb)c.push({k:'turret',e:gb,d:d3(gb,p)-gb.st.radius*1.25});
+  const E=dockTarget();if(E)c.push({k:E.type,e:E,d:d3(E,p)-(E.r||100)});
+  c.sort((a,b)=>a.d-b.d);return c[0]||null}
 function tryDock(){if(W&&W.docking){abortDocking('Docking aborted.');return false}
-  if(!S.player.docked&&W&&W.player&&!W.dead){const gb=seatCandidate();if(gb&&!dockTarget()){if(!seatOk(gb))return false;return startDocking(gb,'turret')}}
-  {const p=W.player,F=W.ents.find(e=>e.role==='frigate'&&e.tok&&fMine(e.tok)&&e.alive&&d3(e,p)<e.st.radius*1.25+320);if(F&&!dockTarget()){if(hyp(p.vx-F.vx,p.vy-F.vy,p.vz-F.vz)>140){flash('Match speed with the frigate to dock (under 140 m/s relative).');return false}return startDocking(F,'frigate')}}
-  const E=dockTarget(),p=W.player;if(!E){flash('Nothing to dock with nearby.');return false}
+  const ch=dockChoice(),p=W.player;
+  if(ch&&ch.k==='turret'){if(!seatOk(ch.e))return false;return startDocking(ch.e,'turret')}
+  if(ch&&ch.k==='frigate'){const F=ch.e;if(hyp(p.vx-F.vx,p.vy-F.vy,p.vz-F.vz)>140){flash('Match speed with the frigate to dock (under 140 m/s relative).');return false}return startDocking(F,'frigate')}
+  const E=ch&&ch.e;if(!E){flash('Nothing to dock with nearby.');return false}
   if(!canDock(E)){flash(E.type==='station'?'Hostile station. Docking refused.':E.o.owner?'This outpost is not yours or your faction\'s.':'Unclaimed outpost. Hold its ring with a Claim Beacon to claim it.',true);return false}
   if(hyp(p.vx,p.vy,p.vz)>180){flash('Too fast to dock. Slow below 180 m/s.');return false}
   return startDocking(E,E.type);
@@ -3998,7 +4006,7 @@ function hudUpdate(){
   let pr='',alert=false;
   if(flashMsg&&performance.now()-flashMsg.t<2600){pr=flashMsg.m;alert=flashMsg.alert}
   else if(W.docking)pr='';
-  else if(!P.docked&&!W.dead){const E=dockTarget();if(E){if(canDock(E))pr=`${coarse?'Act':'E'} — dock at ${E.type==='station'?E.name:E.o.name}`;else if(E.type==='outpost'&&(!E.o.owner||E.o.breached))pr=(P.cargo.beacon?'Hold the ring to claim this outpost.':'You need a Claim Beacon in your hold to claim this outpost.')}}
+  else if(!P.docked&&!W.dead){const ch=dockChoice();if(ch&&ch.k==='frigate')pr=`${coarse?'Act':'E'} — board ${ch.e.tok.name}`;else if(ch&&ch.k==='turret')pr=`${coarse?'Act':'E'} — man the gunboat's turret`;const E=ch&&(ch.k==='station'||ch.k==='outpost')?ch.e:null;if(E){if(canDock(E))pr=`${coarse?'Act':'E'} — dock at ${E.type==='station'?E.name:E.o.name}`;else if(E.type==='outpost'&&(!E.o.owner||E.o.breached))pr=(P.cargo.beacon?'Hold the ring to claim this outpost.':'You need a Claim Beacon in your hold to claim this outpost.')}}
   $('hPrompt').innerHTML=pr?`<span class="${alert?'alert':''}">${esc(pr)}</span>`:'';
   renderFeed();drawRadar();
 }
