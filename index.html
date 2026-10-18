@@ -295,6 +295,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
   #hPrompt{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 }
 @media (prefers-reduced-motion:reduce){#fade{transition:none}#bS.down{animation:none}}
+.fccmd{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px;padding:10px 14px;border:1px solid var(--amber);border-radius:4px;background:rgba(240,178,74,.08)}.fccmd span{opacity:.8;font-size:.92em}.fccmd.sm{padding:6px 12px;border-color:rgba(236,228,207,.25);background:transparent}.fccmd .fbtns{flex:none;margin:0}
 </style>
 
 <div id="app">
@@ -374,6 +375,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     <div class="console">
       <div class="c-head"><div><div class="c-title" id="fcTitle"></div><div class="c-sub" id="fcSub"></div></div><div class="c-meta" id="fcMeta"></div></div>
       <div class="tabs" role="tablist" id="fcTabs"></div>
+      <div id="fcCmd"></div>
       <div class="c-body" id="fcBody"></div>
       <div class="c-foot"><div class="err" id="fcErr"></div><button class="btn" type="button" data-fc="close">Step away <kbd style="color:inherit;border-color:currentColor">E</kbd></button></div>
     </div>
@@ -1066,7 +1068,10 @@ function curPid(){return NET.on?((S.player&&S.player.pid)||NET.me||MP.pid):null}
 function fGuest(t){return!!t&&!t.owner&&t.side!=='player'&&t.side===S.player.faction}
 function fBoard(t){return fMine(t)||fGuest(t)}
 function fOwn(t){return!!t&&(t.side==='player'||!!t.owner)}
-function fMine(t){return!!t&&(t.side==='player'||(!!t.owner&&t.owner===curPid()))}
+function fMine(t){return!!t&&(t.side==='player'||(!!t.owner&&t.owner===(curPid()||'me')))}
+// taking command of one of your faction's frigates: it stays your faction's ship, but you give the orders until you hand it back
+function fTake(t){if(!fGuest(t))return false;t.owner=curPid()||'me';t.cmd=1;t.dest=null;t.jumpTo=null;t.ctl=null;fctl(t);feed(`You have taken command of ${t.name}. Give it orders from its consoles or the galaxy map (M); hand it back to ${FACTIONS[t.side].short} command from the Strategic console.`,'good');return true}
+function fRelease(t){if(!t.cmd||!fMine(t))return false;delete t.owner;delete t.cmd;t.ctl=null;t.dest=null;t.jumpTo=null;feed(`${t.name} is back under ${FACTIONS[t.side].short} command.`,'info');return true}
 function yk(){return NET.on?'p:'+curPid():'player'}
 function ykPid(k){return typeof k==='string'&&k.startsWith('p:')?k.slice(2):null}
 function pmul(t,k){return fOwn(t)?fctl(t).power[k]/3:1}
@@ -2386,7 +2391,7 @@ function bridgeLight(d){const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return
       f=wall*flo*cei*pool;
     d[i+6]*=f;d[i+7]*=f;d[i+8]*=f}}
 function bridgeOrigin(F){const k=F.st.radius*1.25;qRot(F.q,BRIDGE.off[0]*k,BRIDGE.off[1]*k,BRIDGE.off[2]*k,_u);return{x:F.x+_u.x,y:F.y+_u.y,z:F.z+_u.z}}
-function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id,slot:S.player.bslot|0});if(NET.host)S.hostAtt={id:F.tok&&F.tok.id,slot:S.player.bslot|0,cls:S.player.cls,fac:S.player.faction};W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(fGuest(F.tok)?`Aboard ${F.tok.name} as a guest of ${FACTIONS[F.tok.side].short} command. You ride along wherever it jumps; consoles are view-only. WASD to walk; walk to the hatch and press E to launch.`:`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok)}
+function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id,slot:S.player.bslot|0});if(NET.host)S.hostAtt={id:F.tok&&F.tok.id,slot:S.player.bslot|0,cls:S.player.cls,fac:S.player.faction};W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(fGuest(F.tok)?`Aboard ${F.tok.name}, a ${FACTIONS[F.tok.side].short} frigate. Take command, or ride along as a guest.`:`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok);if(fGuest(F.tok))openConsole('strat')}
 function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;if(NET.host)S.hostAtt=null;const bp=F.alive?berthPose(F,S.player.bslot|0,S.player.cls,_bp):null;
   if(bp){p.x=bp.x;p.y=bp.y;p.z=bp.z;qCopy(p.q,bp.q);p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;W.detach={F,slot:S.player.bslot|0,t:0};flash('Releasing the hull clamps…')}
   else{qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q)}cam.snap=true;SFX.clunk();SFX.hatch();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
@@ -2432,6 +2437,7 @@ function closeConsole(){const B=W&&W.bridge;if(B)B.panel=null;const el=$('fcon')
 function fcPip(n){return`<span class="pips">${[1,2,3,4,5,6].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>`}
 function renderConsole(full){const B=W&&W.bridge;if(!B||!B.panel)return;const F=B.f,t=F.tok,C=fctl(t),id=B.panel,pw=C.power;
   $('fcTitle').textContent=`${t.name} · ${FC_TABS.find(x=>x[0]===id)[1]}`;$('fcSub').textContent=`${DEF[W.sid].name} · hull ${Math.round(F.hull/F.st.hull*100)}% · shield ${Math.round(F.shield/F.st.sCap*100)}% · battery: ${(bt=>bt?fTgtName(bt)+' '+fmt(Math.round(d3(bt,F)))+' m':C.lanceMode==='hold'?'holding':'no target')(batteryTgt(F))}${t.spin?` · jump drive ${Math.round(t.spin.p*100)}% → ${DEF[t.spin.to].name}`:''}${fGuest(t)?` · guest aboard: ${FACTIONS[t.side].short} command has the helm`:''}`;
+  {const el=$('fcCmd'),fs=FACTIONS[t.side]?FACTIONS[t.side].short:'Faction',h=fGuest(t)?`<div class="fccmd"><div><b>${esc(t.name)} flies for ${esc(fs)} command.</b><br><span>Ride along as a guest, or take command: it stays a ${esc(fs)} ship, but you give the orders until you hand it back.</span></div><div class="fbtns"><button class="btn pri" data-fc="take">Take command</button><button class="btn" data-fc="close">Ride as guest</button></div></div>`:t.cmd&&fMine(t)?`<div class="fccmd sm"><div><b>Under your command</b> · on loan from ${esc(fs)} command</div><div class="fbtns"><button class="btn" data-fc="release">Hand back to ${esc(fs)}</button></div></div>`:'';if(el.innerHTML!==h)el.innerHTML=h}
   $('fcMeta').innerHTML=`<div>Power<b>${PWR.reduce((a,k)=>a+pw[k],0)}/12</b></div><div>Pickets<b>${(F.pickets||[]).filter(p=>p.alive&&W.ents.includes(p)).length}/2</b></div>`;
   if(full)$('fcTabs').innerHTML=FC_TABS.map(([k,n])=>`<button class="tab" type="button" data-fc="tab:${k}" aria-selected="${k===id}">${n}</button>`).join('');
   let h='';
@@ -2488,7 +2494,7 @@ function drawStrat(){const B=W&&W.bridge;if(!B||B.panel!=='strat')return;const c
     const T=C.tgt;if(T&&C.lanceMode==='target'){g.strokeStyle='#ff5d4f';g.beginPath();g.arc(X(T.x),Y(T.z),14,0,TAU);g.stroke();g.beginPath();g.moveTo(x,y);g.lineTo(X(T.x),Y(T.z));g.stroke()}
     g.strokeStyle='rgba(255,93,79,.25)';g.setLineDash([2,4]);g.beginPath();g.arc(x,y,2600*sc,0,TAU);g.stroke();g.strokeStyle='rgba(111,183,255,.25)';g.beginPath();g.arc(x,y,1150*sc,0,TAU);g.stroke();g.setLineDash([])}
   g.textAlign='left';g.fillStyle='#5a647c';g.fillText('red ring: battery range · blue ring: point defence',10,h-10)}
-function fconApply(t,a,ent){const C=fctl(t);const[k,v,w]=String(a).split(':');if((k==='jump'||k==='course')&&!DEF[v])return;
+function fconApply(t,a,ent){if(a==='take'){fTake(t);return}if(a==='release'){fRelease(t);return}const C=fctl(t);const[k,v,w]=String(a).split(':');if((k==='jump'||k==='course')&&!DEF[v])return;
   if(k==='helm'){C.helm=v==='manual'?'manual':null;if(C.helm)C.movePt=null;return}if(k==='man'){C.man={y:clamp(+v||0,-1,1),p:clamp(+w||0,-1,1),at:performance.now()};return}if(k==='thrset'){C.throttle=clamp(+v||0,0,1);return}if(k==='fire'){C.fire=1;return}
   if(k==='move'){C.movePt={x:clamp(+v||0,-3000,3000),y:+(a.split(':')[3])||0,z:clamp(+w||0,-3000,3000)};return}
   if(k==='stop')C.movePt=null;if(k==='thr')C.throttle=clamp(C.throttle+ +v,0,1);
@@ -2498,7 +2504,7 @@ function fconApply(t,a,ent){const C=fctl(t);const[k,v,w]=String(a).split(':');if
   if(k==='pw'){const used=PWR.reduce((a,x)=>a+C.power[x],0),d=+w;if(d<0&&C.power[v]>0)C.power[v]--;else if(d>0&&C.power[v]<6&&used<12)C.power[v]++}
   if(k==='preset'){const n=v.split(',').map(Number);if(n.length===4&&n.every(x=>x>=0&&x<=6)&&n.reduce((a,b)=>a+b,0)<=12)PWR.forEach((x,i)=>C.power[x]=n[i])}}
 // a console press on the bridge: apply it here (instantly, for feedback) and, on a client, ask the host to apply it for real
-function fconSend(t,a,ent){if(fGuest(t)){const m=`${FACTIONS[t.side].short} command has the helm and the guns. You're aboard as a guest: ride along, use comms, launch any time.`;const el=$('fcErr');if(el&&W.bridge&&W.bridge.panel)el.textContent=m;else flash(m,true);return}if(NET.cl){const om=MUTE;MUTE=true;try{fconApply(t,a,ent)}finally{MUTE=om}netSend({t:'fcon',id:t.id,a,e:ent?(ent.type==='station'?'S':ent.id):0})}else fconApply(t,a,ent)}
+function fconSend(t,a,ent){if(fGuest(t)&&a!=='take'){const m=`${FACTIONS[t.side].short} command has the helm and the guns. You're aboard as a guest: ride along, use comms, launch any time.`;const el=$('fcErr');if(el&&W.bridge&&W.bridge.panel)el.textContent=m;else flash(m,true);return}if(NET.cl){const om=MUTE;MUTE=true;try{fconApply(t,a,ent)}finally{MUTE=om}netSend({t:'fcon',id:t.id,a,e:ent?(ent.type==='station'?'S':ent.id):0})}else fconApply(t,a,ent)}
 function consoleAct(a){const B=W&&W.bridge;if(!B)return;const F=B.f,t=F.tok;const[k,v]=a.split(':');
   if(k==='close'){closeConsole();return}if(k==='tab'){B.panel=v;renderConsole(true);return}
   if(k==='cmo'){const T=(B.clist||[])[+a.split(':')[2]];if(T&&T.alive){if(NET.cl)netSend({t:'order',k:v==='guard'?'guard':'escort',id:T.id});else issueOrder(v==='guard'?'guard':'escort',T);$('fcErr').textContent='Order sent. Replies appear in the feed.'}renderConsole(false);return}
@@ -2616,7 +2622,7 @@ addEventListener('keydown',e=>{if(e.code==='F11'){e.preventDefault();toggleFull(
   if(W&&W.gunseat){if(c==='KeyE'){leaveSeat();return}if(c==='KeyC'){if(NET.cl)netSend({t:'gmsl'});else W.gunseat.msl=1;return}}
   if(W&&W.bridge&&W.bridge.panel){const i=['Digit1','Digit2','Digit3','Digit4','Digit5'].indexOf(c);if(i>=0){W.bridge.panel=FC_TABS[i][0];renderConsole(true);return}}
   if(W&&W.bridge&&!W.bridge.panel&&(c==='KeyT'||c==='KeyQ')){bridgeTarget(c==='KeyQ');return}
-  if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd'){if(fGuest(W.bridge.f.tok))flash(`The command chair is ${FACTIONS[W.bridge.f.tok.side].short} command's. You're a guest aboard.`,true);else sitChair()}else openConsole(n.id)}return}if(S.player.docked)undock();else tryDock();return}
+  if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd'){if(fGuest(W.bridge.f.tok)){openConsole('strat');flash('Take command first to use the command chair.',true)}else sitChair()}else openConsole(n.id)}return}if(S.player.docked)undock();else tryDock();return}
   if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey();return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
@@ -4276,7 +4282,7 @@ function hudUpdate(){
   let pr='',alert=false;
   if(flashMsg&&performance.now()-flashMsg.t<2600){pr=flashMsg.m;alert=flashMsg.alert}
   else if(W.docking)pr='';
-  else if(!P.docked&&!W.dead){const ch=dockChoice();if(ch&&ch.k==='frigate')pr=`${coarse?'Act':'E'} — board ${ch.e.tok.name}${fGuest(ch.e.tok)?' (ride along as a guest)':''}`;else if(ch&&ch.k==='turret')pr=`${coarse?'Act':'E'} — man the gunboat's turret`;const E=ch&&(ch.k==='station'||ch.k==='outpost')?ch.e:null;if(E){if(canDock(E))pr=`${coarse?'Act':'E'} — dock at ${E.type==='station'?E.name:E.o.name}`;else if(E.type==='outpost'&&(!E.o.owner||E.o.breached))pr=(P.cargo.beacon?'Hold the ring to claim this outpost.':'You need a Claim Beacon in your hold to claim this outpost.')}}
+  else if(!P.docked&&!W.dead){const ch=dockChoice();if(ch&&ch.k==='frigate')pr=`${coarse?'Act':'E'} — board ${ch.e.tok.name}${fGuest(ch.e.tok)?' (take command or ride as a guest)':''}`;else if(ch&&ch.k==='turret')pr=`${coarse?'Act':'E'} — man the gunboat's turret`;const E=ch&&(ch.k==='station'||ch.k==='outpost')?ch.e:null;if(E){if(canDock(E))pr=`${coarse?'Act':'E'} — dock at ${E.type==='station'?E.name:E.o.name}`;else if(E.type==='outpost'&&(!E.o.owner||E.o.breached))pr=(P.cargo.beacon?'Hold the ring to claim this outpost.':'You need a Claim Beacon in your hold to claim this outpost.')}}
   $('hPrompt').innerHTML=pr?`<span class="${alert?'alert':''}">${esc(pr)}</span>`:'';
   renderFeed();drawRadar();
 }
@@ -4565,7 +4571,7 @@ function startWith(state){
   migrate(state);if(S.player.rack===undefined)S.player.rack=0;if(!S.player.wpn)S.player.wpn='kinetic';running=true;$('start').hidden=true;$('hud').hidden=false;showTouch();
   enterSector(S.player.sector);
   if(S.player.docked==='turret')S.player.docked=null;
-  if(S.player.docked==='bridge'){const F=W.ents.find(e=>e.role==='frigate'&&e.side==='player');S.player.docked=null;if(F)enterBridge(F)}
+  if(S.player.docked==='bridge'){const F=W.ents.find(e=>e.role==='frigate'&&e.tok&&fMine(e.tok));S.player.docked=null;if(F)enterBridge(F)}
   else if(S.player.docked){const E=S.player.docked==='station'?W.stationEnt:W.outpostEnt;if(!E||(E.type==='outpost'&&!canDock(E)))S.player.docked=null;else openDock()}
   hudUpdate();
 }
@@ -4786,7 +4792,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'g':{if(P.docked!=='turret')break;MP.ginp=MP.ginp||{};const o=MP.ginp[pid]||{};MP.ginp[pid]={yaw:+m.yaw||0,pitch:+m.pitch||0,f:m.f?1:0,at:performance.now(),msl:o.msl||0};break}
     case 'gmsl':{if(P.docked==='turret'&&MP.ginp&&MP.ginp[pid])MP.ginp[pid].msl=1;break}
     case 'order':{if(m.k==='build'){runAs(pid,()=>requestBuild());break}if(m.k==='help'){runAs(pid,()=>pilotDistress());break}const e=MP.rp[pid],w=e?worldOf(e):WORLDS[P.sector],k=m.k==='guard'?'guard':'escort';if(!w)break;runAs(pid,()=>{const T=m.id==='me'?W.player:entInWorld(w,String(m.id||''));if(T&&!hostile(S.player.faction,T.side==='player'?S.player.faction:T.side))issueOrder(k,T)});break}
-    case 'fcon':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(!t||t.owner!==pid)break;const ent=m.e?entInWorld(WORLDS[t.sector],String(m.e)):null;runAs(pid,()=>fconApply(t,String(m.a||'').slice(0,40),ent));sendFtok(c);break}
+    case 'fcon':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(!t)break;if(m.a==='take'){if(!t.owner&&t.side===S.pilots[pid].faction)runAs(pid,()=>fTake(t));sendFtok(c);break}if(t.owner!==pid)break;const ent=m.e?entInWorld(WORLDS[t.sector],String(m.e)):null;runAs(pid,()=>fconApply(t,String(m.a||'').slice(0,40),ent));sendFtok(c);break}
     case 'fdest':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(t&&t.owner===pid&&DEF[m.dest]){t.dest=String(m.dest);t.jumpTo=null}sendFtok(c);break}
     case 'dev':{if(m.k==='efrig'||m.k==='levi'){netMsg(pid,'flash',runAs(pid,()=>devEnemyFrig(String(m.side||''),m.k==='levi')));break}
       if(m.k==='squad'){const sd=String(m.side||'');if(!(FACTIONS[sd]||sd==='pirate'||sd==='brood'))break;netMsg(pid,'flash',runAs(pid,()=>devSquad(sd,+m.n,Array.isArray(m.types)?m.types.map(String).slice(0,6):[])));break}
