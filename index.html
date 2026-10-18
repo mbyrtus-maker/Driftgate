@@ -500,6 +500,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Fighter screens.</b> Friendly fighter wings in a frigate's system form up around it (up to three wings) and screen it: they push out to catch bombers before they can launch, then take on anything else closing in. Once a torpedo is away, the screen can't stop it; only the frigate's point defence can. Your own frigates are screened by your faction's wings.</p>
             <p><b>Winning the galaxy.</b> A side that controls 8 systems for 30 minutes wins. The nine quiet systems (thin fields, little traffic) don't raise that bar, but holding one with a depot or a frigate counts toward it. The galaxy resets, and the winner starts the next one with a finished capital shipyard and 40% richer stores; if it was your faction, you start with 4,000 extra credits and a crate of parts.</p>
             <p><b>Capital ships.</b> At your faction's main station you can build a Capital Shipyard (4 Depot Frames, 4 Capital Keels, 4 Crystal Lattice, 40 plates and 5,000 cr). It commissions Frigates (6 Keels, 6 Lattice, 2 Resonance Cores, 10 conduit, 2 Picket Kits, 4 missiles). Order your frigates from the galaxy map. A frigate holds any system with no station unless another frigate is there: it mines the system for you and takes its outpost after about a minute. Each flies with two Pickets, small fighters with two missiles each. Point-defence turrets shred fighters and torpedoes; a heavy capital battery cracks station hulls and other frigates. Fighter guns and missiles only drain a frigate's shield; torpedoes (four times damage) and capital guns break the hull. AI factions build yards and frigates too, and the Brood grows Leviathans in The Bloom. The galaxy's asteroid fields are richer to feed all this (Capital Keels need lots of Iridium).</p>
+            <p><b>Vantium.</b> A dense, green-veined sixth ore that every Capital Keel needs (8 per keel), so no shipyard, frigate or escort gets built without it. It lies in only four fields: the three contested forge systems (Kestrel Drift, The Shoal, Cinder Reach), each between two powers, and the richest field in Hollow Verge, the hub all three border. Like Aurorite it only re-forms in its own fields. Factions push for those systems when they run short, and the Freeport Compact sells a little at a steep price.</p>
             <p><b>Aurorite.</b> A fifth ore that exists only in the three deep-space sectors (Ashen Expanse, Glass Shallows, Lantern Deep), glowing teal in the rock. It never re-forms anywhere else: dust from wrecks drifts back toward deep space. Fabricate it into Aurora Tuning (2 Aurorite + 1 Flux Coil) and attune any component in the Shipyard: each level adds +6% to that component (two levels max, 1 then 2 tunings). Whoever holds depots in deep space mines Aurorite, and their fighters start showing up tuned.</p>
             <p><b>Missiles and swarms.</b> Missiles and swarm micro-missiles hit 1.8× harder once a target's shield is down, so break shields with guns and finish with missiles. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts carry a swarm launcher with 2 pods (fire with 3): eight micro-missiles fan out at your target and anything flying near it. Flares fool only about half of them. AI heavy fighters and bombers sometimes carry one too.</p>
             <p><b>Constructors.</b> Factions send escorted constructor convoys to build depots in sectors without a station, and to rebuild lost frontier depots. Constructors are flown only by faction command. To get a depot built, fly to a system with no station, make sure the area is mostly clear (no more than one hostile within 3 km, no hostile frigate in the system) and call one in through comms (I, then 4). If command has no constructor ready it assembles one as soon as its stores allow, then it sets out from the nearest friendly station and jumps system by system to you, always with an escort of at least two fighters. The site doesn't have to stay clear while it travels, but the convoy has to survive to build.</p>
@@ -596,13 +597,14 @@ const d3=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
 function rdir(flat){let x,y,z,l;do{x=rnd(-1,1);y=rnd(-1,1);z=rnd(-1,1);l=x*x+y*y+z*z}while(l>1||l<.02);y*=flat===undefined?1:flat;l=Math.hypot(x,y,z);return{x:x/l,y:y/l,z:z/l}}
 
 // ============================================================ items & recipes
-const RAWS=['fe','cu','ir','xc','au'];
+const RAWS=['fe','cu','ir','xc','au','nu'];
 const ITEMS={
   fe:{name:'Ferrite',base:6,col:'#bba98d'},
   cu:{name:'Cuprite',base:7,col:'#e48a5a'},
   ir:{name:'Iridium',base:16,col:'#9cc4ec'},
   xc:{name:'Xenocrystal',base:40,col:'#c99cff'},
   au:{name:'Aurorite',base:70,col:'#6ff2cf'},
+  nu:{name:'Vantium',base:30,col:'#c6f25a'},
   plate:{name:'Alloy Plate',recipe:{fe:3},col:'#d6ccb4'},
   wire:{name:'Conduit',recipe:{cu:3},col:'#f2a070'},
   coil:{name:'Flux Coil',recipe:{wire:2,ir:2},col:'#acd6ff'},
@@ -614,20 +616,20 @@ const ITEMS={
   drone:{name:'Guard Drone',recipe:{plate:1,wire:1,coil:1},col:'#9fe0c8'},
   swarm:{name:'Swarm Pod',recipe:{missile:4,coil:2,xc:2},col:'#ff6fae'},
   tune:{name:'Aurora Tuning',recipe:{au:2,coil:1},col:'#8ff7dc'},
-  keel:{name:'Capital Keel',recipe:{plate:20,coil:6,ir:16},col:'#b8c4d8'},
+  keel:{name:'Capital Keel',recipe:{plate:20,coil:6,ir:16,nu:8},col:'#b8c4d8'},
   picket:{name:'Picket Kit',recipe:{plate:3,wire:2,coil:1},col:'#e8d8a0'},
   frame:{name:'Depot Frame',recipe:{plate:10,wire:6,coil:3},col:'#c8d2e0'},
 };
-const ITEM_ORDER=['fe','cu','ir','xc','au','plate','wire','coil','lattice','core','beacon','missile','torpedo','swarm','drone','frame','keel','picket'];
+const ITEM_ORDER=['fe','cu','ir','xc','au','nu','plate','wire','coil','lattice','core','beacon','missile','torpedo','swarm','drone','frame','keel','picket'];
 // missiles, torpedoes and swarm pods are magazines on a cooldown now: no one buys, sells or fabricates them on the market
 const MUNITIONS=new Set(['missile','torpedo','swarm']);
 const CRAFTABLE=['plate','wire','coil','lattice','core','beacon','missile','torpedo','swarm','tune','frame','keel','picket'];
 const COMP={},DEPTH={};
-function comp(id){if(COMP[id])return COMP[id];const v={fe:0,cu:0,ir:0,xc:0,au:0};if(RAWS.includes(id))v[id]=1;else{const r=ITEMS[id].recipe;for(const k in r){const c=comp(k);for(const e of RAWS)v[e]+=c[e]*r[k]}}return COMP[id]=v}
+function comp(id){if(COMP[id])return COMP[id];const v={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};if(RAWS.includes(id))v[id]=1;else{const r=ITEMS[id].recipe;for(const k in r){const c=comp(k);for(const e of RAWS)v[e]+=c[e]*r[k]}}return COMP[id]=v}
 function depth(id){if(id in DEPTH)return DEPTH[id];if(RAWS.includes(id))return DEPTH[id]=0;let d=0;for(const k in ITEMS[id].recipe)d=Math.max(d,depth(k));return DEPTH[id]=d+1}
-function mass(id){const c=comp(id);return c.fe+c.cu+c.ir+c.xc}
+function mass(id){const c=comp(id);return c.fe+c.cu+c.ir+c.xc+c.nu}
 function baseValue(id){const c=comp(id);let v=0;for(const e of RAWS)v+=c[e]*ITEMS[e].base;return Math.round(v*(1+.12*depth(id)))}
-function invVec(o,out){out=out||{fe:0,cu:0,ir:0,xc:0,au:0};for(const k in o){const c=comp(k);for(const e of RAWS)out[e]+=c[e]*o[k]}return out}
+function invVec(o,out){out=out||{fe:0,cu:0,ir:0,xc:0,au:0,nu:0};for(const k in o){const c=comp(k);for(const e of RAWS)out[e]+=c[e]*o[k]}return out}
 function invMass(o){let m=0;for(const k in o)m+=mass(k)*o[k];return m}
 function invValue(o){let v=0;for(const k in o)v+=baseValue(k)*o[k];return v}
 const SLOTS=[
@@ -731,10 +733,10 @@ const SECTOR_DEFS=[
   {id:'vm',name:'Sundered Marches',x:.71,y:.3,home:'varkesh',kind:'frontier',ores:{fe:4,cu:3,ir:3}},
   {id:'os',name:'Ostrova Spire',x:.5,y:.94,home:'ostrova',kind:'core',ores:{fe:5,cu:5}},
   {id:'of',name:'Veil Fringe',x:.5,y:.77,home:'ostrova',kind:'frontier',ores:{fe:4,cu:3,ir:3}},
-  {id:'ke',name:'Kestrel Drift',x:.5,y:.19,kind:'contested',ores:{ir:4,xc:3,fe:2}},
-  {id:'sh',name:'The Shoal',x:.27,y:.6,kind:'contested',ores:{cu:4,xc:3,ir:2}},
-  {id:'ci',name:'Cinder Reach',x:.73,y:.6,kind:'contested',ores:{fe:4,xc:3,ir:2}},
-  {id:'ho',name:'Hollow Verge',x:.5,y:.42,kind:'hub',ores:{fe:3,cu:3,ir:3}},
+  {id:'ke',name:'Kestrel Drift',x:.5,y:.19,kind:'contested',ores:{ir:4,xc:3,fe:2,nu:2}},
+  {id:'sh',name:'The Shoal',x:.27,y:.6,kind:'contested',ores:{cu:4,xc:3,ir:2,nu:2}},
+  {id:'ci',name:'Cinder Reach',x:.73,y:.6,kind:'contested',ores:{fe:4,xc:3,ir:2,nu:2}},
+  {id:'ho',name:'Hollow Verge',x:.5,y:.42,kind:'hub',ores:{fe:3,cu:3,ir:3,nu:3}},
   {id:'wr',name:'The Wrack',x:.5,y:.6,kind:'den',ores:{xc:4,ir:3,fe:2}},
   {id:'ae',name:'Ashen Expanse',x:.06,y:.45,kind:'deep',ores:{fe:4,ir:3,xc:2,au:2}},
   {id:'gs',name:'Glass Shallows',x:.94,y:.45,kind:'deep',ores:{cu:4,ir:3,xc:2,au:2}},
@@ -779,19 +781,28 @@ function oreTotal(a){let t=0;for(const k in a.ore)t+=a.ore[k];return t}
 function mainOre(a){let b=null,m=0;for(const k in a.ore)if(a.ore[k]>m){m=a.ore[k];b=k}return b}
 function astR(a){return 14+Math.sqrt(oreTotal(a))*3.3}
 function newAstPos(s){const b=pick(s.belts),d=rdir(1),r=Math.cbrt(Math.random())*(b.r||440);return{x:Math.round(b.x+d.x*r),y:Math.round(b.y+d.y*r),z:Math.round(b.z+d.z*r)}}
+// Vantium lies in the three contested forge systems and the hub. Every power is one jump from two fields (each shared with one
+// rival) and two jumps from the hub, so no faction's geography gives it the better supply. Tuned by simulation.
+const NU_FIELD={ke:650,sh:650,ci:650,ho:900};
 function genSector(d){
-  const s={id:d.id,debris:{fe:0,cu:0,ir:0,xc:0,au:0},ast:[],crates:[],belts:[],storm:0};
+  const s={id:d.id,debris:{fe:0,cu:0,ir:0,xc:0,au:0,nu:0},ast:[],crates:[],belts:[],storm:0};
   const gates=GATES[d.id];let tries=0;
   const vd=d.kind==='void',nb=vd?ri(1,2):ri(2,4);while(s.belts.length<nb&&tries++<400){const dd=rdir(1),r=rnd(700,2300)*SPACE,x=dd.x*r,y=dd.y*r,z=dd.z*r;
     if(gates.some(g=>hyp(g.x-x,g.y-y,g.z-z)<800*SPREAD))continue;if(s.belts.some(b=>hyp(b.x-x,b.y-y,b.z-z)<1400*SPREAD))continue;s.belts.push({x:Math.round(x),y:Math.round(y),z:Math.round(z),r:Math.round(ri(380,560)*SPREAD)})}
   const mult=d.kind==='core'?1.25:d.kind==='den'?1.1:1;
   for(const b of s.belts){const n=vd?ri(6,10):ri(12,18);for(let i=0;i<n;i++){let p,k=0;do{p=newAstPos({belts:[b]})}while(k++<8&&s.ast.some(a=>d3(a,p)<90*SPREAD));
-    const raw=wpick(d.ores);s.ast.push({id:S.nextId++,...p,ore:{[raw]:Math.round(ri(35,110)*mult)},seed:ri(1,1e9)})}}
-  for(let i=0;i<(vd?4:8);i++){let p,k=0;do{p=randPos(450*SPACE,2900*SPACE)}while(k++<10&&(gates.some(g=>d3(g,p)<350*SPREAD)||s.ast.some(a=>d3(a,p)<120*SPREAD)));s.ast.push({id:S.nextId++,...p,ore:{[wpick(d.ores)]:ri(20,60)},seed:ri(1,1e9)})}
+    const raw=wpick(oresNoNu(d));s.ast.push({id:S.nextId++,...p,ore:{[raw]:Math.round(ri(35,110)*mult)},seed:ri(1,1e9)})}}
+  for(let i=0;i<(vd?4:8);i++){let p,k=0;do{p=randPos(450*SPACE,2900*SPACE)}while(k++<10&&(gates.some(g=>d3(g,p)<350*SPREAD)||s.ast.some(a=>d3(a,p)<120*SPREAD)));s.ast.push({id:S.nextId++,...p,ore:{[wpick(oresNoNu(d))]:ri(20,60)},seed:ri(1,1e9)})}
+  // Vantium fields are laid down to an exact size so no faction's pocket is richer than another's
+  {let left=NU_FIELD[d.id]||0;while(left>0){const m=Math.min(left,ri(55,85));left-=m;s.ast.push({id:S.nextId++,...newAstPos(s),ore:{nu:m},seed:ri(1,1e9)})}}
   return s;
 }
+function oresNoNu(d){if(!d.ores.nu)return d.ores;const o={...d.ores};delete o.nu;return o}
 const STN={free:{sMax:3600,hMax:10000,tur:6,dmg:16,range:1500},core:{sMax:3200,hMax:9000,tur:6,dmg:15,range:1500},depot:{sMax:2000,hMax:4000,tur:4,dmg:12,range:1300},hive:{sMax:4200,hMax:14000,tur:6,dmg:18,range:1600}};
-const DEPOT_COST={frame:2},YARD_COST={frame:4,keel:4,lattice:4,plate:40},YARD_FEE=5000,FRIGATE_COST={keel:6,lattice:6,core:2,wire:10,picket:2,missile:4},YARD_TIME=180,FRIGATE_TIME=150,FRIG_CAP={player:3,brood:2,halcyon:3},FRIG_HULL=6000;
+// balance levers, tuned by simulation so each of the four powers (the Brood included) wins about a quarter of galaxies
+// (settled over nine rounds of 36-48 simulated galaxies: Brood 31%, Varkesh 28%, Halcyon 23%, Ostrova 18% of decided games)
+const BAL={brBuild:.675,brOff:.775,brLevT:1500,brN:1,brHive:9,antiBrood:2.6,halProsp:1,halImp:1,brGraze:2,coal:.35};
+const DEPOT_COST={frame:2},YARD_COST={frame:4,keel:4,lattice:4,plate:40},YARD_FEE=5000,FRIGATE_COST={keel:6,lattice:6,core:2,wire:10,picket:2,missile:4},YARD_TIME=180,FRIGATE_TIME=150,FRIG_CAP={player:3,brood:3},FRIG_HULL=6000;
 // the Escort: a light capital ship. Smaller and cheaper than a frigate, hurt by ordinary guns and missiles but heavily built; no
 // main cannon, instead six anti-fighter batteries and twin torpedo launchers. Holds a system like a frigate, jumps faster.
 const ESCORT_COST={keel:3,lattice:2,core:1,wire:8,missile:2},ESCORT_TIME=90,ESC_CAP={player:2,halcyon:2,varkesh:2,ostrova:2},ESC_HULL=2800,ESC_JUMP=1.7,ESC_TORP_CD=12;
@@ -842,16 +853,16 @@ function canBuildIn(sid,side){const d=DEF[sid];if(S.stations[sid]||d.kind==='hiv
 function yardHome(f){return f==='brood'?'bl':FAC_HOME(f)}   // the Brood grow their Leviathans at the Bloom
 function FAC_HOME(f){return SECTOR_DEFS.find(d=>d.home===f&&d.kind==='core').id}
 function newGame(fac,cls){
-  S={v:2,T:0,nextId:1,sectors:{},outposts:{},econ:{stock:{},treasury:{},fleet:{}},events:[],contracts:[],gateDown:{},ai:{},timers:{tick:2,event:35,contract:12},tollAcc:0,
+  S={v:2,nuV:1,T:0,nextId:1,sectors:{},outposts:{},econ:{stock:{},treasury:{},fleet:{}},events:[],contracts:[],gateDown:{},ai:{},timers:{tick:2,event:35,contract:12},tollAcc:0,
     player:{faction:fac,cls,hullInv:{},bay:{drone:CLASSES[cls].drones||0},tiers:{engine:1,power:1,shield:1,weapon:1,armor:1,drill:1,cargo:1,payload:1},cargo:{},vault:{plate:6,wire:6},rack:rackCapC(cls,1),magV:1,swarm:(CLASSES[cls]&&CLASSES[cls].swarm)||0,wpn:'kinetic',credits:1800,sector:FAC_HOME(fac),docked:'station',x:0,y:0,z:0,vx:0,vy:0,vz:0,q:[0,0,0,1],hull:0,shield:0,energy:0,fa:true,kills:0,tune:{}}};
   for(const d of SECTOR_DEFS)S.sectors[d.id]=genSector(d);
   seamSeed();S.seamV=1;
   S.stations={};S.scouts=[];S.beacons={};beaconInit();S.frigates=[];S.yards={};for(const d of SECTOR_DEFS)if(d.home)makeStation(d.id,d.home,d.kind==='core'?'core':'depot',{x:0,y:0,z:0},d.kind==='core'?{}:{...DEPOT_COST});makeStation('bl','brood','hive',{x:0,y:0,z:0},{});
-  for(const id in OUTPOST_DEFS){const D=OUTPOST_DEFS[id],L=id==='wrack'?3:1;const fort={fe:0,cu:0,ir:0,xc:0,au:0};for(let l=1;l<=L;l++)invVec(fortRecipe(l),fort);
+  for(const id in OUTPOST_DEFS){const D=OUTPOST_DEFS[id],L=id==='wrack'?3:1;const fort={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};for(let l=1;l<=L;l++)invVec(fortRecipe(l),fort);
     const o={id,sector:D.sector,name:D.name,type:D.type,owner:id==='wrack'?'pirate':null,level:L,fort,stock:{},shield:0,hull:0,breached:0,cap:{side:null,p:0}};const os=oStats(o);o.shield=os.sMax;o.hull=os.hMax;S.outposts[id]=o}
   for(const f of FAC_IDS){S.econ.stock[f]={fe:260,cu:260,ir:90,xc:10,plate:70,wire:70,coil:24,missile:20,torpedo:8,drone:16};S.econ.fleet[f]={plate:30,wire:24,coil:8,missile:6,torpedo:4};S.econ.treasury[f]=250000;S.ai[f]={next:40+rnd(40)}}
   S.econ.stock.pirate={fe:60,cu:30,plate:40,wire:30,coil:8,lattice:2,missile:4,torpedo:2};S.econ.fleet.pirate={};S.econ.treasury.pirate=20000;S.ai.pirate={next:110};
-  broodInit();neutralInit();S.drift={fe:0,cu:0,ir:0,xc:0,au:0};for(const f of FAC_IDS)S.ai[f].build=rnd(70,160);
+  broodInit();neutralInit();S.drift={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};for(const f of FAC_IDS)S.ai[f].build=rnd(70,160);
   {const lg=loadLegacy(),f=lg.last;if(f&&S.econ.stock[f]){const st=S.econ.stock[f];for(const k in st)st[k]=Math.round(st[k]*1.4);if(FAC_IDS.includes(f))inv.addAll(st,YARD_COST);if(f===fac){S.player.credits+=4000;inv.addAll(S.player.vault,{plate:20,wire:20,coil:8,lattice:2})}S.legacy=f}}
   const st=shipStats(fac,cls,S.player.tiers);S.player.hull=st.hull;S.player.shield=st.sCap;S.player.energy=st.eCap;
   const l=ledger();S.ledger0={tot:l.tot,credits:l.credits};
@@ -859,32 +870,37 @@ function newGame(fac,cls){
 
 function broodInit(){S.econ.stock.brood={fe:420,cu:300,ir:160,xc:40,plate:50,wire:40,coil:14,missile:10,torpedo:10,frame:2};S.econ.fleet.brood={plate:30,wire:20,coil:8,missile:6,torpedo:6};S.econ.treasury.brood=0;S.ai.brood={next:S.T+150,build:S.T+260}}
 // older saves: add the new sectors, station records and the Brood, then shift the conservation baseline by exactly what was added
-function migrate(st){S=st;for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.cls==='constructor')P.cls='courier';fpMigrate();beaconInit();if(!S.seamV&&S.sectors){S.seamV=1;seamTick(SEAM_CAP)}for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.tiers&&!P.tiers.payload)P.tiers.payload=1;magInit(S.player);for(const k in S.pilots||{})magInit(S.pilots[k]);S.frigates=S.frigates||[];for(const t of S.frigates)t.live=false;S.yards=S.yards||{brood:{sector:'bl'}};S.player.hullInv=S.player.hullInv||{};S.player.bay=S.player.bay||{};S.scouts=S.scouts||[];for(const t of S.scouts)t.live=false;for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;for(const id in S.sectors){if(S.sectors[id].debris.au===undefined)S.sectors[id].debris.au=0}for(const id in S.outposts){if(S.outposts[id].fort.au===undefined)S.outposts[id].fort.au=0}S.player.tune=S.player.tune||{};const L0=ledger();let ch=false;
+function migrate(st){S=st;for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.cls==='constructor')P.cls='courier';fpMigrate();beaconInit();if(!S.seamV&&S.sectors){S.seamV=1;seamTick(SEAM_CAP)}for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.tiers&&!P.tiers.payload)P.tiers.payload=1;magInit(S.player);for(const k in S.pilots||{})magInit(S.pilots[k]);S.frigates=S.frigates||[];for(const t of S.frigates)t.live=false;S.yards=S.yards||{brood:{sector:'bl'}};S.player.hullInv=S.player.hullInv||{};S.player.bay=S.player.bay||{};S.scouts=S.scouts||[];for(const t of S.scouts)t.live=false;for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;for(const id in S.sectors){if(S.sectors[id].debris.au===undefined)S.sectors[id].debris.au=0}for(const id in S.outposts){if(S.outposts[id].fort.au===undefined)S.outposts[id].fort.au=0}S.player.tune=S.player.tune||{};for(const id in S.sectors){const sc=S.sectors[id];if(sc.debris.nu===undefined)sc.debris.nu=0}for(const id in S.outposts){const o=S.outposts[id];if(o.fort.nu===undefined)o.fort.nu=0}if(S.drift&&S.drift.nu===undefined)S.drift.nu=0;const L0=ledger();let ch=false;
   for(const d of SECTOR_DEFS)if(!S.sectors[d.id]){S.sectors[d.id]=genSector(d);ch=true}
   if(!S.stations){S.stations={};for(const d of SECTOR_DEFS)if(d.home)makeStation(d.id,d.home,d.kind==='core'?'core':'depot',{x:0,y:0,z:0},d.kind==='core'?{}:{...DEPOT_COST});ch=true}
   if(!S.stations.bl){makeStation('bl','brood','hive',{x:0,y:0,z:0},{});ch=true}
   if(!S.econ.stock.brood){broodInit();ch=true}
-  if(!S.econ.stock.neutral){neutralInit();S.ledger0.credits+=S.econ.treasury.neutral||0;ch=true}if(!S.drift)S.drift={fe:0,cu:0,ir:0,xc:0,au:0};
+  if(!S.econ.stock.neutral){neutralInit();S.ledger0.credits+=S.econ.treasury.neutral||0;ch=true}if(!S.drift)S.drift={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};
   for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;
   for(const id in S.sectors){const sc=S.sectors[id];if(sc.debris.au===undefined)sc.debris.au=0}for(const id in S.outposts){const o=S.outposts[id];if(o.fort.au===undefined)o.fort.au=0}
-  if(!S.richer){S.richer=1;for(const d of SECTOR_DEFS){if(d.kind==='hive')continue;const sc=S.sectors[d.id];for(let i=0;i<10;i++){const k=wpick(d.ores);sc.ast.push({id:S.nextId++,...newAstPos(sc),ore:{[k==='au'?'ir':k]:ri(40,100)},seed:ri(1,1e9)})}}ch=true}
+  if(!S.richer){S.richer=1;for(const d of SECTOR_DEFS){if(d.kind==='hive')continue;const sc=S.sectors[d.id];for(let i=0;i<10;i++){const k=wpick(d.ores);sc.ast.push({id:S.nextId++,...newAstPos(sc),ore:{[k==='au'||k==='nu'?'ir':k]:ri(40,100)},seed:ri(1,1e9)})}}ch=true}
   for(const id of DEEP){const sc=S.sectors[id];if(!sc.ast.some(a=>a.ore.au)){for(let i=0;i<8;i++)sc.ast.push({id:S.nextId++,...newAstPos(sc),ore:{au:ri(40,100)},seed:ri(1,1e9)});ch=true}}
+  for(const id of NU_SECT){const sc=S.sectors[id];if(!sc.ast.some(a=>a.ore.nu)){{let left=NU_FIELD[id]||0;while(left>0){const m=Math.min(left,ri(55,85));left-=m;sc.ast.push({id:S.nextId++,...newAstPos(sc),ore:{nu:m},seed:ri(1,1e9)})}}ch=true}}
   for(const f of FAC_IDS)if(S.ai[f].build===undefined)S.ai[f].build=S.T+rnd(60,150);
-  if(ch){const L1=ledger();if(!S.ledger0.tot.au)S.ledger0.tot.au=0;for(const e of RAWS)S.ledger0.tot[e]+=L1.tot[e]-L0.tot[e];feed('New space charted: deep sectors, constructors, and something growing in The Bloom.','warn')}}
+  if(ch){const L1=ledger();if(!S.ledger0.tot.au)S.ledger0.tot.au=0;for(const e of RAWS)S.ledger0.tot[e]+=L1.tot[e]-L0.tot[e];feed('New space charted: deep sectors, constructors, and something growing in The Bloom.','warn')}
+  if(!S.nuV){S.nuV=1;S.ledger0.tot.nu=ledger().tot.nu;if(ch)feed('Survey: Vantium, a dense green-veined ore, has been charted in Kestrel Drift, The Shoal, Cinder Reach and Hollow Verge. Capital Keels now need it.','info')}}
 // ============================================================ economy primitives
 function toDebris(s,o){const v=invVec(o);for(const e of RAWS)s.debris[e]+=v[e]}
 // skip: ores the buyer is already swimming in (left in the rocks so iron and copper keep flowing)
 function extract(s,n,noSeam,skip){const got={};let g=0;while(n>0&&s.ast.length&&g++<30){const a=pick(s.ast);if(a.comet||(noSeam&&a.seam))continue;const k=mainOre(a);if(!k){removeAst(s,a);continue}if(skip&&skip[k]&&g<24)continue;const m=Math.min(n,a.ore[k],ri(1,4));a.ore[k]-=m;if(a.ore[k]<=0)delete a.ore[k];n-=m;inv.add(got,k,m);if(oreTotal(a)<=0)removeAst(s,a)}return got}
 function removeAst(s,a){const i=s.ast.indexOf(a);if(i>=0)s.ast.splice(i,1);if(W&&W.tgt&&W.tgt.ref===a)W.tgt=null}
+// zoned ores only re-form in their own fields: Aurorite in deep space, Vantium where it was first found
+function oreHere(e,id){const d=DEF[id];return e==='au'?d.kind==='deep':e==='nu'?!!(d.ores&&d.ores.nu):true}
+const NU_SECT=SECTOR_DEFS.filter(d=>d.ores&&d.ores.nu).map(d=>d.id);function toNu(id){let b=null,bd=99;for(const n of NEIGH[id]){const h=Math.min(...NU_SECT.map(x=>HOP[x][n]));if(h<bd){bd=h;b=n}}return b}
 function regrow(s){
-  for(const e of RAWS){if(e==='au'&&DEF[s.id].kind!=='deep')continue;const m=Math.min(s.debris[e],Math.max(1,Math.ceil(s.debris[e]*.06)));if(m<=0)continue;s.debris[e]-=m;
+  for(const e of RAWS){if(!oreHere(e,s.id))continue;const m=Math.min(s.debris[e],Math.max(1,Math.ceil(s.debris[e]*.06)));if(m<=0)continue;s.debris[e]-=m;
     const c=s.ast.filter(a=>!a.comet&&a.ore[e]&&oreTotal(a)<150);
     if(c.length&&(Math.random()<.7||s.ast.length>60))pick(c).ore[e]+=m;
     else if(s.ast.length>60){const a=pick(s.ast.filter(a=>!a.comet))||s.ast[0];inv.add(a.ore,e,m)}
     else s.ast.push({id:S.nextId++,...newAstPos(s),ore:{[e]:m},seed:ri(1,1e9)})}
 }
 const DEEP=SECTOR_DEFS.filter(d=>d.kind==='deep').map(d=>d.id);function toDeep(id){let b=null,bd=99;for(const n of NEIGH[id]){const h=Math.min(...DEEP.map(x=>HOP[x][n]));if(h<bd){bd=h;b=n}}return b}
-function diffuse(){const mv=[];for(const id in S.sectors){const s=S.sectors[id];for(const e of RAWS){if(e==='au'){if(DEF[id].kind!=='deep'&&s.debris.au>0)mv.push([id,toDeep(id),e,Math.max(1,Math.floor(s.debris.au*.3))]);continue}const m=Math.floor(s.debris[e]*.04);if(m>0)mv.push([id,pick(NEIGH[id]),e,m])}}for(const[a,b,e,m]of mv){S.sectors[a].debris[e]-=m;S.sectors[b].debris[e]+=m}}
+function diffuse(){const mv=[];for(const id in S.sectors){const s=S.sectors[id];for(const e of RAWS){if(e==='au'||e==='nu'){if(!oreHere(e,id)&&s.debris[e]>0)mv.push([id,e==='au'?toDeep(id):toNu(id),e,Math.max(1,Math.floor(s.debris[e]*.3))]);continue}const m=Math.floor(s.debris[e]*.04);if(m>0)mv.push([id,pick(NEIGH[id]),e,m])}}for(const[a,b,e,m]of mv){S.sectors[a].debris[e]-=m;S.sectors[b].debris[e]+=m}}
 function craftAbstract(st,item,max,cap){let n=0;const r=ITEMS[item].recipe;while(n<max&&(st[item]||0)<cap&&haveIn(r,[st])){takeFrom(r,[st]);inv.add(st,item,1);n++}}
 function forgesOwned(f){let n=0;for(const id in S.outposts){const o=S.outposts[id];if(o.type==='forge'&&o.owner===f)n++}return n}
 function factionTier(f){return 1+Math.min(2,forgesOwned(f))}
@@ -914,13 +930,13 @@ const buyPrice=(st,id)=>Math.ceil(price(st,id)*1.06),sellPrice=(st,id)=>Math.max
 // oversupplied, cheap; - means short, dear). Goods still move through the faction's stock and credits through its treasury,
 // so the economy stays zero-sum; the local level only shapes the price. Each station produces some goods and consumes
 // others, so its level drifts back toward a natural surplus or shortage after trading. AI merchants work the widest gaps.
-const TRADE_ITEMS=['fe','cu','ir','xc','au','plate','wire','coil','lattice','drone'];
+const TRADE_ITEMS=['fe','cu','ir','xc','au','nu','plate','wire','coil','lattice','drone'];
 function locT(id){return Math.max(6,stockTarget(id)/4)}
 function mkStations(){const out=[];for(const id in S.stations){const R=S.stations[id];if(R.kind==='hive'||!(FAC_IDS.includes(R.owner)||R.owner==='neutral'))continue;out.push(R)}return out}
 function mkStock(R){return S.econ.stock[R.owner]||{}}
 // what a station makes (+) and uses up (-)
 function mkProfile(R){const p={},d=DEF[R.sid],ores=Object.keys(d.ores||{});
-  if(R.kind==='core'){for(const k of['plate','wire','coil','missile'])p[k]=1;for(const k of['fe','cu','ir','xc','au'])p[k]=-1;p.lattice=-.5}
+  if(R.kind==='core'){for(const k of['plate','wire','coil','missile'])p[k]=1;for(const k of['fe','cu','ir','xc','au','nu'])p[k]=-1;p.lattice=-.5}
   else if(R.kind==='free'){for(const k of['lattice','coil','missile','torpedo','drone','plate'])p[k]=-1;for(const k of ores)p[k]=.6;p.swarm=-.6}
   else{for(const k of ores)p[k]=1;for(const k of['plate','wire','missile','drone'])p[k]=-1;p.coil=-.5;if(d.kind==='deep')p.au=1}
   return p}
@@ -1015,8 +1031,8 @@ function strategicTick(){
   const T=S.T;
   for(const d of SECTOR_DEFS){
     const s=S.sectors[d.id],here=!!WORLDS[d.id];
-    {const R=S.stations[d.id];if(R){const cn=R.owner!=='player'&&!here&&S.T>150&&FACTIONS[R.owner]&&capNeed(R.owner),n=here&&R.owner!=='player'?0:Math.round((here?2:R.kind==='core'?5:R.kind==='hive'?9:R.owner==='player'?3:4)*(cn?2.2:1))+devOf(R).store;
-      if(R.owner==='player'){if(invMass(R.stock)<400+300*devOf(R).store)inv.addAll(R.stock,extract(s,n))}else if(n>0){const st=S.econ.stock[R.owner];if((st.fe||0)+(st.cu||0)<(R.owner==='brood'?1000:500)+250*devOf(R).store){const got=extract(s,n,(st.xc||0)>=30,{ir:(st.ir||0)>400,xc:(st.xc||0)>300});inv.addAll(st,got);if(R.mk)for(const k in got)R.mk[k]=(R.mk[k]||0)+got[k]*.3}}
+    {const R=S.stations[d.id];if(R){const cn=R.owner!=='player'&&!here&&S.T>150&&FACTIONS[R.owner]&&capNeed(R.owner),n=here&&R.owner!=='player'?0:Math.round((here?2:R.kind==='core'?5:R.kind==='hive'?BAL.brHive:R.owner==='player'?3:4)*(cn?2.2:1))+devOf(R).store;
+      if(R.owner==='player'){if(invMass(R.stock)<400+300*devOf(R).store)inv.addAll(R.stock,extract(s,n))}else if(n>0){const st=S.econ.stock[R.owner];const full=(st.fe||0)+(st.cu||0)>=(R.owner==='brood'?1000:500)+250*devOf(R).store,nuW=(st.nu||0)<120&&d.ores&&d.ores.nu;if(!full||nuW){const got=extract(s,n,(st.xc||0)>=30,{ir:(st.ir||0)>400,xc:(st.xc||0)>300,fe:full,cu:full});inv.addAll(st,got);if(R.mk)for(const k in got)R.mk[k]=(R.mk[k]||0)+got[k]*.3}}
       if(!here){R.shield=R.sMax;R.hull=Math.min(R.hMax,R.hull+R.hMax*.05)}}}
     const oid=OUT_BY_SECTOR[d.id];
     if(oid){const o=S.outposts[oid];if(o.owner){
@@ -1035,8 +1051,8 @@ function strategicTick(){
   pirateIndustry();
   const h=S.outposts.hollow;
   if(h.owner){let got=0;for(const f of FAC_IDS){if(f===h.owner)continue;got+=transfer(f,h.owner,22)}if(h.owner==='player'){S.tollAcc+=got;if(S.tollAcc>=300){feed(`Hollow Relay tolls: +${fmt(S.tollAcc)} cr`,'good');S.tollAcc=0}}}
-  for(const f of[...FAC_IDS,'pirate','brood'])if(T>=S.ai[f].next){S.ai[f].next=T+(f==='pirate'?rnd(110,170):f==='brood'?rnd(95,150):rnd(75,135));planOffensive(f)}
-  for(const f of[...FAC_IDS,'brood'])if(T>=(S.ai[f].build||0)){S.ai[f].build=T+(f==='brood'?rnd(220,340):rnd(150,260));planBuild(f)}
+  for(const f of[...FAC_IDS,'pirate','brood'])if(T>=S.ai[f].next){S.ai[f].next=T+(f==='pirate'?rnd(110,170):f==='brood'?rnd(95,150)*BAL.brOff:rnd(75,135));planOffensive(f)}
+  for(const f of[...FAC_IDS,'brood'])if(T>=(S.ai[f].build||0)){S.ai[f].build=T+(f==='brood'?rnd(220,340)*BAL.brBuild:rnd(150,260));planBuild(f)}
 }
 // Xenocrystal seams: a small, limited vein in each faction's home system, so every faction (and its pilots) can make Lattice and Cores
 // without holding a Forge. Mass stays conserved: the seam is refilled only by drawing xenocrystal from drifting debris or from distant fields.
@@ -1054,13 +1070,16 @@ function facFrigs(f){return S.frigates.filter(x=>x.side===f&&!isEsc(x)&&(!x.owne
 function capNeed(f){if(!S.yards[f])return YARD_COST;if(facFrigs(f).length<(FRIG_CAP[f]||2))return FRIGATE_COST;return null}
 function factionIndustry(f){
   const st=S.econ.stock[f],fl=S.econ.fleet[f],war=S.ai[f]&&S.ai[f].war>S.T,need=S.T>150?capNeed(f):null;
+  // the Brood grazes: its swarms strip rock from the systems it holds and the ones next door (ore out of real fields, nothing created)
+  if(f==='brood'&&BAL.brGraze>0&&((st.fe||0)<300||(st.cu||0)<300)){const t=territory('brood'),z=new Set(t);for(const id of t)for(const n of NEIGH[id])if(!(DEF[n].home&&DEF[n].kind==='core'))z.add(n);
+    const L=[...z].filter(id=>S.sectors[id]&&S.sectors[id].ast.length&&!WORLDS[id]);for(let i=0;i<BAL.brGraze&&L.length;i++)inv.addAll(st,extract(S.sectors[pick(L)],6,false,{au:1,nu:(st.nu||0)>200,cu:(st.cu||0)>=300,fe:(st.fe||0)>=300,ir:(st.ir||0)>300,xc:(st.xc||0)>150}))}
   // imports: short of construction stock, a faction buys from the Freeport Compact with treasury credits (zero-sum: credits to the
   // Compact, goods out of its stores). Halcyon's Trade Charter buys twice the volume at a discount.
   // Trade Charter: Halcyon hires Freeport prospectors to work the rocks in its own systems when its ore runs short.
   // The ore comes out of those fields and the wages go to the Compact, so nothing is created.
-  if(f==='halcyon'&&S.T>120&&(st.fe||0)+(st.cu||0)<300&&(S.econ.treasury[f]||0)>30000){const terr=[...territory(f)].filter(id=>S.sectors[id]&&S.sectors[id].ast.length);if(terr.length){const sc=S.sectors[pick(terr)],got=extract(sc,8,true,{ir:1,xc:1,au:1});let cost=0;for(const k in got)cost+=Math.ceil(baseValue(k)*.9)*got[k];if(cost){transfer(f,'neutral',cost);inv.addAll(st,got)}}}
-  {const N=S.econ.stock.neutral,hal=f==='halcyon';if(N&&f!=='brood'&&S.T>120)for(const k of hal?['plate','wire','fe','cu']:['fe','cu']){const proc=k==='plate'||k==='wire',low=proc?30:60;if((st[k]||0)>=low)continue;const avail=(N[k]||0)-(proc?20:80);if(avail<=0)continue;
-    const n=Math.min(avail,hal?16:8),pr=Math.ceil(baseValue(k)*(hal?.85:1.1)),cost=pr*n;if((S.econ.treasury[f]||0)<cost+20000)continue;inv.take(N,k,n);inv.add(st,k,n);transfer(f,'neutral',cost)}}
+  if(f==='halcyon'&&BAL.halProsp&&S.T>120&&(st.fe||0)+(st.cu||0)<300&&(S.econ.treasury[f]||0)>30000){const terr=[...territory(f)].filter(id=>S.sectors[id]&&S.sectors[id].ast.length);if(terr.length){const sc=S.sectors[pick(terr)],got=extract(sc,8,true,{ir:1,xc:1,au:1,nu:1});let cost=0;for(const k in got)cost+=Math.ceil(baseValue(k)*.9)*got[k];if(cost){transfer(f,'neutral',cost);inv.addAll(st,got)}}}
+  {const N=S.econ.stock.neutral,hal=f==='halcyon'&&BAL.halImp;if(N&&f!=='brood'&&S.T>120)for(const k of hal?['plate','wire','fe','cu','nu']:['fe','cu','nu']){const proc=k==='plate'||k==='wire',low=k==='nu'?(need?48:16):proc?30:60;if((st[k]||0)>=low)continue;const avail=(N[k]||0)-(k==='nu'?10:proc?20:80);if(avail<=0)continue;
+    const n=Math.min(avail,k==='nu'?(hal?8:4):hal?16:8),pr=Math.ceil(baseValue(k)*(k==='nu'?(hal?1.2:1.6):hal?.85:1.1)),cost=pr*n;if((S.econ.treasury[f]||0)<cost+20000)continue;inv.take(N,k,n);inv.add(st,k,n);transfer(f,'neutral',cost)}}
   craftAbstract(st,'plate',need?7:5,140);craftAbstract(st,'wire',need?7:5,140);craftAbstract(st,'coil',2,need?30:60);
   if(forgesOwned(f)>0||f==='brood'){craftAbstract(st,'lattice',1,16);if(S.T>200)craftAbstract(st,'core',1,4)}
   else{craftAbstract(st,'lattice',1,8);if(S.T>200)craftAbstract(st,'core',1,2)}
@@ -1139,7 +1158,7 @@ function capitalTick(){const T=S.T;S.frigates=S.frigates||[];
   for(const f of[...FAC_IDS,'brood']){const st=S.econ.stock[f],busyY=S.events.some(e=>e.type==='yardbuild'&&e.att===f),busyF=S.events.some(e=>e.type==='frigbuild'&&e.att===f);
     if(!S.yards[f]&&!busyY&&T>300&&haveIn(YARD_COST,[st])&&Math.random()<.4){const force={};takeFrom(YARD_COST,[st]);inv.addAll(force,YARD_COST);S.events.push({id:S.nextId++,type:'yardbuild',att:f,sector:yardHome(f),force,until:T+YARD_TIME,stage:'building'});if(covered(yardHome(f))||f===S.player.faction)feed(`${FACTIONS[f].short} has begun building a capital shipyard at ${DEF[yardHome(f)].name}.`,'warn')}
     const cap=FRIG_CAP[f]||2,war=S.ai[f]&&S.ai[f].war>T;{const busyE=S.events.some(e=>e.type==='escbuild'&&e.att===f);const both={...FRIGATE_COST};for(const k in ESCORT_COST)both[k]=(both[k]||0)+ESCORT_COST[k];if(f!=='brood'&&S.yards[f]&&!busyE&&facEsc(f).length<(ESC_CAP[f]||0)&&facFrigs(f).length>=1&&(facFrigs(f).length>=cap||haveIn(both,[st]))&&haveIn(ESCORT_COST,[st])&&Math.random()<(war?.8:.35)){   // frigates first: escorts only alongside one, and never at a frigate's expense
-const force={};takeFrom(ESCORT_COST,[st]);inv.addAll(force,ESCORT_COST);S.events.push({id:S.nextId++,type:'escbuild',t0:S.T,yard:f,att:f,sector:S.yards[f].sector,force,until:T+ESCORT_TIME,stage:'building'})}}if(S.yards[f]&&!busyF&&(f!=='brood'||T>1800)&&facFrigs(f).length<cap&&haveIn(FRIGATE_COST,[st])&&Math.random()<(war?1:.5)){const force={};takeFrom(FRIGATE_COST,[st]);inv.addAll(force,FRIGATE_COST);S.events.push({id:S.nextId++,type:'frigbuild',t0:S.T,yard:f,att:f,sector:S.yards[f].sector,force,until:T+FRIGATE_TIME*(war?.7:1),stage:'building'});if(war&&friendSide(f))feed(`${FACTIONS[f].short} has rushed a frigate into the slip at ${DEF[S.yards[f].sector].name} to answer the enemy capital ships.`,'info')}}
+const force={};takeFrom(ESCORT_COST,[st]);inv.addAll(force,ESCORT_COST);S.events.push({id:S.nextId++,type:'escbuild',t0:S.T,yard:f,att:f,sector:S.yards[f].sector,force,until:T+ESCORT_TIME,stage:'building'})}}if(S.yards[f]&&!busyF&&(f!=='brood'||T>BAL.brLevT)&&facFrigs(f).length<cap&&haveIn(FRIGATE_COST,[st])&&Math.random()<(war?1:.5)){const force={};takeFrom(FRIGATE_COST,[st]);inv.addAll(force,FRIGATE_COST);S.events.push({id:S.nextId++,type:'frigbuild',t0:S.T,yard:f,att:f,sector:S.yards[f].sector,force,until:T+FRIGATE_TIME*(war?.7:1),stage:'building'});if(war&&friendSide(f))feed(`${FACTIONS[f].short} has rushed a frigate into the slip at ${DEF[S.yards[f].sector].name} to answer the enemy capital ships.`,'info')}}
   for(const ev of S.events){if(ev.type!=='yardbuild'&&ev.type!=='frigbuild'&&ev.type!=='escbuild')continue;if(ev.stage==='done'||T<ev.until)continue;ev.stage='done';const mkCap=ev.type==='escbuild'?makeEscort:makeFrigate,capW=ev.type==='escbuild'?'Escort':'Frigate';
     const evp=ykPid(ev.att);if(ev.type==='yardbuild'&&S.yards[ev.att]){inv.addAll(evp&&S.pilots&&S.pilots[evp]?S.pilots[evp].vault:S.econ.stock[ev.att]||S.econ.stock[S.player.faction],ev.force);ev.force={};continue}
     if(evp){if(ev.type==='yardbuild'){S.yards[ev.att]={sector:ev.sector,fort:ev.force};ev.force={};feedTo(evp,`Your capital shipyard at ${DEF[ev.sector].name} is complete. Commission Frigates from Hangar → Shipyard there.`,'good')}
@@ -1169,7 +1188,7 @@ function frigOrders(t){let best=t.sector,bs=-1e9;const bro=t.side==='brood',bcc=
     if(!Rs&&d.kind!=='hive'&&d.kind!=='den'&&d.kind!=='core'&&frigControl(d.id)!==t.side){sc+=2.5;const oid=OUT_BY_SECTOR[d.id];if(oid&&S.outposts[oid].owner!==t.side)sc+=2}
     if(territory(t.side).has(d.id)&&frigatesIn(d.id).some(o=>hostile(t.side,o.side)))sc+=4;
     if(frigatesIn(d.id).some(o=>o!==t&&o.side===t.side))sc-=3;
-    {const C=S.coal;if(C&&t.side!=='brood'){const ow=sideNorm(sectorOwner(d.id));if(C.mem.includes(t.side)){if(ow===C.lead)sc+=5;if(frigatesIn(d.id).some(o=>sideNorm(o.side)===C.lead))sc+=4}else if(t.side===C.lead){if(ow===t.side&&frigatesIn(d.id).some(o=>hostile(t.side,o.side)))sc+=4;if(ow!==t.side)sc-=2.5}}}
+    {const C=S.coal;if(C&&t.side!=='brood'){const ow=sideNorm(sectorOwner(d.id));if(C.mem.includes(t.side)){if(ow===C.lead)sc+=5*BAL.coal;if(frigatesIn(d.id).some(o=>sideNorm(o.side)===C.lead))sc+=4}else if(t.side===C.lead){if(ow===t.side&&frigatesIn(d.id).some(o=>hostile(t.side,o.side)))sc+=4;if(ow!==t.side)sc-=2.5}}}
     if(sc>bs){bs=sc;best=d.id}}return best}
 const WIN_TIME=1800;
 function controlCounts(){const n={};for(const d of SECTOR_DEFS){let o=sectorOwner(d.id);if(o==='player')o=S.player.faction;if(o&&o!=='pirate'&&o!=='neutral')n[o]=(n[o]||0)+1}return n}
@@ -1210,16 +1229,16 @@ function planOffensive(f){if(FACTIONS[f]&&f!=='brood'&&campBusy(f)){S.ai[f].next
     c.push([{out:id},w])}
   for(const sid in S.stations){const R=S.stations[sid];if(R.owner===f||(R.owner==='neutral'&&f!=='brood')||busy.has('st:'+sid)||R.kind==='hive'||!hostile(f,R.owner))continue;const adj=adjOf(sid);let w=0;
     if(f==='brood')w=R.kind==='core'?(adj?.5*bstr(R.owner):0):R.kind==='free'?1.8*bw(sid):2.6*bw(sid)*bstr(R.owner);
-    else if(R.kind==='depot'){if(f==='pirate')w=R.owner==='player'?1.4:DEF[sid].home?0:.5;else w=(R.owner==='brood'?3.6:R.owner==='player'?1.2:DEF[sid].home?.15:.9)*(adj?1.4:.2)}
+    else if(R.kind==='depot'){if(f==='pirate')w=R.owner==='player'?1.4:DEF[sid].home?0:.5;else w=(R.owner==='brood'?BAL.antiBrood:R.owner==='player'?1.2:DEF[sid].home?.15:.9)*(adj?1.4:.2)}
     if(w>0)c.push([{st:sid},w])}
   {const C=S.coal;if(C&&f!=='pirate'&&f!=='brood'){const own=x=>{const o=x[0].out?S.outposts[x[0].out]:null;return sideNorm(o?o.owner:S.stations[x[0].st].owner)};
-    if(C.mem.includes(f)){for(const x of c){const ow=own(x);x[1]*=ow===C.lead?4.5:C.mem.includes(ow)?0:1}}
+    if(C.mem.includes(f)){for(const x of c){const ow=own(x);x[1]*=ow===C.lead?1+3.5*BAL.coal:C.mem.includes(ow)?0:1}}
     else if(f===C.lead){for(const x of c){const sec=x[0].st||S.outposts[x[0].out].sector;if(!adjOf(sec))x[1]*=.15}S.ai[f].next+=35}
     for(let i=c.length-1;i>=0;i--)if(c[i][1]<=0)c.splice(i,1)}}
   if(!c.length)return;if(FACTIONS[f]&&f!=='brood'){const see=covOf(f);for(const x of c){const sec=x[0].st||S.outposts[x[0].out].sector;if(see.has(sec))x[1]*=1.4}}
   const pk=wpickArr(c),isSt=!!pk.st,Rr=isSt?S.stations[pk.st]:null,o=isSt?null:S.outposts[pk.out];
   const lvl=isSt?(Rr.kind==='core'?4:2):o.level,sector=isSt?pk.st:o.sector,owner=isSt?Rr.owner:o.owner,name=isSt?Rr.name:o.name;
-  const n=clamp(3+lvl+ri(0,1)+(f==='brood'?1:0),4,8),tier=f==='pirate'?pirateTier():factionTier(f),role=f==='pirate'?'pirate':'patrol';
+  const n=clamp(3+lvl+ri(0,1)+(f==='brood'?BAL.brN:0),4,f==='brood'?10:8),tier=f==='pirate'?pirateTier():factionTier(f),role=f==='pirate'?'pirate':'patrol';
   const force={};let got=0;const srcs=[S.econ.fleet[f],S.econ.stock[f]];
   const nb=isSt?Math.max(3,Math.floor(n/2)):owner?Math.max(1,Math.floor(n/3)):0,clsList=[];
   for(let i=0;i<n;i++){const want=i<nb?bmbPick(f,i,role,tier,srcs):pickFighter(role);let cl=want,ld=loadout(role,tier,cl);
@@ -1371,7 +1390,7 @@ function isFreeport(sid){return!!(S.stations[sid]&&S.stations[sid].owner==='neut
 function fpOf(sid){return FREEPORTS.find(f=>f.sid===sid)}
 function refitsOf(P){return(P.tune&&P.tune.rf)||{}}
 function applyRefits(B,U){const R=U&&typeof U==='object'&&U.rf;if(!R)return B;if(R.hold)B.cargo=Math.round(B.cargo*1.4);if(R.drive){B.maxSpd*=1.12;B.thrust*=1.12}if(R.cap){B.eCap*=1.3;B.eRegen*=1.25}if(R.plate){B.hull*=1.2;B.dr=(B.dr||0)+.04}if(R.aegis)B.sCap*=1.25;return B}
-function neutralInit(){S.econ.stock.neutral={fe:300,cu:300,ir:120,xc:30,plate:60,wire:60,coil:20,lattice:4,missile:12};S.econ.fleet.neutral={};S.econ.treasury.neutral=150000;S.ai.neutral={dev:S.T+rnd(120,240)};
+function neutralInit(){S.econ.stock.neutral={fe:300,cu:300,ir:120,xc:30,nu:60,plate:60,wire:60,coil:20,lattice:4,missile:12};S.econ.fleet.neutral={};S.econ.treasury.neutral=150000;S.ai.neutral={dev:S.T+rnd(120,240)};
   for(const F of FREEPORTS){if(S.stations[F.sid])continue;const R=makeStation(F.sid,'neutral','free',{x:0,y:0,z:0},{});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R)}}
 // ---- station works: modules any station can build, paid in goods that stay in the structure (and fall as debris if it's razed)
 const DEV={
@@ -1535,7 +1554,7 @@ function devTick(){const T=S.T;for(const f of[...FAC_IDS,'neutral']){const A=S.a
 // ---- life support: every station burns supplies each cycle (more crew, more modules, more burn). What it burns is recycled
 // into the outer drift, and the drift seeds fresh asteroids into depleted systems, so the economy still balances exactly.
 const LS_RATE={core:.8,free:.7,depot:.5,hive:.6};
-function lifeTick(){S.drift=S.drift||{fe:0,cu:0,ir:0,xc:0,au:0};const D=S.drift;
+function lifeTick(){S.drift=S.drift||{fe:0,cu:0,ir:0,xc:0,au:0,nu:0};const D=S.drift;
   for(const id in S.stations){const R=S.stations[id],d=devOf(R),need=(R.kind==='hive'?1:Math.max(1,d.life))*(LS_RATE[R.kind]||1)*(1+.12*devUsed(R));R.ls=(R.ls||0)+need;
     const src=R.owner==='player'?R.stock:S.econ.stock[R.owner];if(!src)continue;let short=false;
     while(R.ls>=1){const cyc=(R.lsN=(R.lsN||0)+1)%4,k=cyc===3?'ir':cyc%2?'cu':'fe',k2=k==='fe'?'cu':'fe';const got=inv.take(src,k,1)?k:inv.take(src,k2,1)?k2:null;if(!got){short=true;break}D[got]++;R.ls--}
@@ -1544,7 +1563,7 @@ function lifeTick(){S.drift=S.drift||{fe:0,cu:0,ir:0,xc:0,au:0};const D=S.drift;
 function fieldMass(s){let m=0;for(const a of s.ast)if(!a.comet)m+=oreTotal(a);return m}
 function driftSeed(){const D=S.drift;let tot=0;for(const e of RAWS)tot+=D[e];if(tot<50)return;
   for(let n=0;n<2&&tot>=50;n++){const c=[];for(const d of SECTOR_DEFS){if(d.kind==='hive')continue;const s=S.sectors[d.id];if(s.base0===undefined)s.base0=fieldMass(s);if(s.ast.length>=70)continue;const f=s.base0?fieldMass(s)/s.base0:1;c.push([d,Math.max(.05,1.1-f)])}
-    if(!c.length)return;const d=wpickArr(c),s=S.sectors[d.id],ores=Object.keys(d.ores).filter(e=>e!=='au'||d.kind==='deep');let k=wpick(Object.fromEntries(ores.map(e=>[e,d.ores[e]])));if(D[k]<30)k=RAWS.reduce((b,e)=>D[e]>D[b]?e:b,'fe');
+    if(!c.length)return;const d=wpickArr(c),s=S.sectors[d.id],ores=Object.keys(d.ores).filter(e=>e!=='au'||d.kind==='deep');let k=wpick(Object.fromEntries(ores.map(e=>[e,d.ores[e]])));if(D[k]<30)k=RAWS.reduce((b,e)=>D[e]>D[b]?e:b,'fe');if(!oreHere(k,d.id))return;
     const m=Math.min(D[k],ri(40,90));if(m<20)return;D[k]-=m;tot-=m;s.ast.push({id:S.nextId++,...newAstPos(s),ore:{[k]:m},seed:ri(1,1e9),fresh:S.T});
     if(covered(d.id)&&S.T-(S.driftSaid||-999)>240){S.driftSaid=S.T;feed(`Survey: fresh drift rock has settled into ${d.name} (${m} t of ${ITEMS[k].name}).`,'info')}}}
 // ---- freeport requests: lucrative supply contracts, delivered only at that freeport
@@ -1657,7 +1676,7 @@ function fpAct(act,arg,c,P,srcs){
 const DOCTRINE={
   halcyon:{name:'Trade Charter',why:'buy the frontier with depots and relays',prep:['haul','haul','mine'],haul:'plate',mine:'cu',w:{build:1.7,relay:3,forge:1,yard:1.2,neutral:2.6,depot:.8,hub:2.2,deep:1,contested:1}},
   varkesh:{name:'Iron Advance',why:'push the line forward one siege at a time',prep:['haul','mine','haul'],haul:'wire',mine:'ir',w:{build:.7,relay:1,forge:1.4,yard:1.4,neutral:1.4,depot:3.4,hub:1.2,deep:1,contested:2.4}},
-  ostrova:{name:'Lattice Ascendancy',why:'seize the crystal: forges and the deep fields',prep:['mine','mine','haul'],haul:'coil',mine:'xc',w:{build:1,relay:1,forge:3,yard:1,neutral:1.7,depot:1.3,hub:1,deep:2.4,contested:1}}};
+  ostrova:{name:'Lattice Ascendancy',why:'seize the crystal: forges and the deep fields',prep:['mine','mine','haul'],haul:'coil',mine:'xc',w:{build:1,relay:1,forge:3.75,yard:1,neutral:1.7,depot:1.3,hub:1,deep:2.85,contested:1}}};
 const CAMP_PAY={take:900,build:700,mine:450,haul:550},CAMP_GOAL=3000,CAMP_HAUL_N={plate:16,wire:14,coil:6},CAMP_MINE_N={xc:24,ir:36,cu:48,fe:48};
 function stN(sid){return S.stations[sid]?S.stations[sid].name:DEF[sid]?DEF[sid].name+' depot':'the depot'}
 function pkey(){return NET.on?curPid():'me'}
@@ -1679,8 +1698,9 @@ function campTargets(f){const terr=territory(f),D=DOCTRINE[f],C=S.coal,out=[];
     else if(o&&sideNorm(o.owner)!==f&&!(d.home&&d.home!==f)&&(!o.owner||hostile(f,sideNorm(o.owner))||o.owner==='pirate'))s={kind:'take',out:oid,w:(o.owner?1.2:D.w.neutral)*(D.w[o.type]||1)};
     else if(canBuildIn(d.id,f)&&!S.events.some(e=>e.type==='build'&&e.sector===d.id))s={kind:'build',w:D.w.build};
     else continue;
+    if(d.ores&&d.ores.nu&&(S.econ.stock[f].nu||0)<64)s.w*=1.8;
     if(d.kind==='deep')s.w*=D.w.deep;if(d.kind==='contested')s.w*=D.w.contested;if(d.kind==='hub')s.w*=D.w.hub;if(ow==='brood')s.w*=1.5;
-    if(C&&C.mem.includes(f)&&ow===C.lead)s.w*=4;
+    if(C&&C.mem.includes(f)&&ow===C.lead)s.w*=1+3*BAL.coal;
     if(frigatesIn(d.id).some(t=>sideNorm(t.side)===f))s.w*=1.5;if(frigatesIn(d.id).some(t=>hostile(f,t.side)))s.w*=.5;
     out.push({...s,sid:d.id})}
   return out}
@@ -1908,7 +1928,8 @@ function updateEvents(){
   for(const k in S.gateDown)if(T>S.gateDown[k])delete S.gateDown[k];
   for(let i=S.contracts.length-1;i>=0;i--)if(T>S.contracts[i].until)S.contracts.splice(i,1);
 }
-const CONSTR_LD={plate:6,wire:4,coil:2},SCOUT_LD={plate:1,wire:2},SCOUT2_LD={plate:2,wire:3,coil:1};
+const CONSTR_LD={plate:6,wire:4,coil:2},BROOD_SEED={plate:2},   // Bloom nodes are grown from a frame, not assembled by a constructor
+ SCOUT_LD={plate:1,wire:2},SCOUT2_LD={plate:2,wire:3,coil:1};
 function scoutsTick(){S.scouts=S.scouts||[];const pf=S.player.faction;
   for(const f of FAC_IDS){const mine=S.scouts.filter(x=>x.side===f).length,want=2+(territory('brood').size>1?1:0);
     const srcs=[S.econ.fleet[f],S.econ.stock[f]],adv=facVet(f)&&haveIn(SCOUT2_LD,srcs),LD=adv?SCOUT2_LD:SCOUT_LD;if(mine<want&&haveIn(LD,srcs)){const load={};takeFrom(LD,srcs);inv.addAll(load,LD);if(adv&&srcs.some(x=>(x.swarm||0)>0)){takeFrom({swarm:1},srcs);inv.add(load,'swarm',1)}const home=SECTOR_DEFS.find(d=>d.home===f&&d.kind==='frontier').id;
@@ -1977,8 +1998,8 @@ function beaconChip(){const B=S.beacons&&S.beacons[W.sid],p=W.player;if(!B||!p||
 function planBuild(f){const terr=territory(f),busy=new Set(S.events.filter(e=>e.type==='build').map(e=>e.sector)),c=[],pf=S.player.faction;
   for(const d of SECTOR_DEFS){if(busy.has(d.id)||!canBuildIn(d.id,f)||d.kind==='den')continue;if(!(terr.has(d.id)||NEIGH[d.id].some(n=>terr.has(n))))continue;
     const w=f==='brood'?(d.kind==='deep'?3:d.kind==='contested'?2:d.kind==='core'?0:1):d.home===f?12:d.kind==='deep'?3:d.kind==='contested'?1.4:d.kind==='hub'?1:.4;if(w>0)c.push([d.id,w])}
-  if(!c.length)return;const st=S.econ.stock[f],fl=S.econ.fleet[f],srcs=[fl,st];if(!haveIn(DEPOT_COST,[st])||!haveIn(CONSTR_LD,srcs))return;if(f!=='brood'&&!S.yards[f]&&(st.frame||0)-DEPOT_COST.frame<YARD_COST.frame)return;
-  const sid=wpickArr(c),force={};takeFrom(DEPOT_COST,[st]);inv.addAll(force,DEPOT_COST);takeFrom(CONSTR_LD,srcs);inv.addAll(force,CONSTR_LD);
+  if(!c.length)return;const st=S.econ.stock[f],fl=S.econ.fleet[f],srcs=[fl,st],CL=f==='brood'?BROOD_SEED:CONSTR_LD;if(!haveIn(DEPOT_COST,[st])||!haveIn(CL,srcs))return;if(f!=='brood'&&!S.yards[f]&&(st.frame||0)-DEPOT_COST.frame<YARD_COST.frame)return;
+  const sid=wpickArr(c),force={};takeFrom(DEPOT_COST,[st]);inv.addAll(force,DEPOT_COST);takeFrom(CL,srcs);inv.addAll(force,CL);
   const tier=factionTier(f),cls=[];for(let i=0;i<3;i++){const cl=pickFighter('patrol'),ld=loadout('patrol',tier,cl);if(takeFrom(ld,srcs)){inv.addAll(force,ld);cls.push(cl)}}
   const ev={id:S.nextId++,type:'build',att:f,sector:sid,eta:S.T+80,stage:'inbound',force,n:cls.length,tier,cls,site:stationSite(sid),prog:0};S.events.push(ev);
   announce(ev)}
@@ -2001,7 +2022,7 @@ function completeBuild(ev,src){const f=ev.att;if(!haveIn(DEPOT_COST,[src])){fini
 function finishBuild(ev){ev.stage='done';inv.addAll(S.econ.stock[ev.att],ev.force);ev.force={}}
 // the convoy in person: a constructor plus its escort wing, flying to the site and building while you watch
 function engageBuild(ev){ev.live=true;const home=`ev:${ev.id}:${ev.att}`,mid=ev.prog>0;let C=null;
-  if(takeFrom(CONSTR_LD,[ev.force])){const ld={...CONSTR_LD};const fr=inv.take(ev.force,'frame',ev.force.frame||0);if(fr)ld.frame=fr;C=makeNPC('builder',ev.att,'constructor',1,ld,home);C.evId=ev.id;C.ai.site=ev.site}
+  const CL=ev.att==='brood'?BROOD_SEED:CONSTR_LD;if(takeFrom(CL,[ev.force])){const ld={...CL};const fr=inv.take(ev.force,'frame',ev.force.frame||0);if(fr)ld.frame=fr;C=makeNPC('builder',ev.att,'constructor',1,ld,home);C.evId=ev.id;C.ai.site=ev.site}
   if(!C){finishBuild(ev);return}
   const g0=GATES[ev.sector].slice().sort((a,b)=>d3(a,ev.site)-d3(b,ev.site))[0];
   if(mid){const o=rdir();C.x=ev.site.x+o.x*60;C.y=ev.site.y+o.y*60;C.z=ev.site.z+o.z*60}else{C.x=g0.x*.93;C.y=g0.y*.93;C.z=g0.z*.93;fxWarp(C,sideCol(ev.att))}
@@ -4675,7 +4696,7 @@ mcv.addEventListener('click',e=>{const r=mcv.getBoundingClientRect(),x=e.clientX
 function fmtT(t){const m=Math.floor(t/60),s=Math.floor(t%60);return`${m}:${String(s).padStart(2,'0')}`}
 function renderMapSide(){
   const d=DEF[mapSel],s=S.sectors[mapSel],oid=OUT_BY_SECTOR[mapSel],o=oid&&S.outposts[oid];
-  const fields={fe:0,cu:0,ir:0,xc:0,au:0};for(const a of s.ast)invVec(a.ore,fields);
+  const fields={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};for(const a of s.ast)invVec(a.ore,fields);
   let h=`<div><div class="h3" style="color:${sideCol(sectorOwner(mapSel))}">${esc(d.name)}</div><div class="kv"><span>Control</span><b>${sectorOwner(mapSel)?sideName(sectorOwner(mapSel)):'Unclaimed'} · ${d.kind}</b>`;
   {const Rs=S.stations[mapSel];h+=Rs?`<span>${esc(Rs.name)}</span><b>${Rs.kind==='hive'?'hive':Rs.kind} · hull ${Math.round(Rs.hull/Rs.hMax*100)}%</b>`:`<span>Station</span><b>${d.kind==='hive'?'—':'none · a Constructor can build here'}</b>`}
   if(o)h+=`<span>${esc(o.name)}</span><b>Level ${o.level}${o.breached?' · breached':''}</b><span>Role</span><b>${o.type}</b>`;
@@ -4710,7 +4731,7 @@ function renderMapSide(){
 }
 function allPilots(){if(!S.pilots)return[S.player];const a=Object.values(S.pilots);if(S.player&&!a.includes(S.player))a.push(S.player);return a}
 function ledger(){
-  const z=()=>({fe:0,cu:0,ir:0,xc:0,au:0});
+  const z=()=>({fe:0,cu:0,ir:0,xc:0,au:0,nu:0});
   const L={'Asteroid fields':z(),'Drifting debris':z(),'Salvage crates':z(),'Faction & Unbound stores':z(),'Fleets in muster':z(),'Outposts':z(),'Stations':z(),'Outer drift (recycling)':z(),'Ships in this sector':z(),'Your ship, hold, vault':z()};
   for(const id in S.sectors){const s=S.sectors[id];for(const a of s.ast)invVec(a.ore,L['Asteroid fields']);for(const e of RAWS)L['Drifting debris'][e]+=s.debris[e];for(const c of s.crates)invVec(c.inv,L['Salvage crates'])}
   for(const k in S.econ.stock)invVec(S.econ.stock[k],L['Faction & Unbound stores']);
@@ -4778,7 +4799,7 @@ $('bSnd').addEventListener('click',()=>{auInit();auToggle()});addEventListener('
 $('bNext').addEventListener('click',()=>{if(NET.host){mpNewGalaxy();return}if(NET.cl){$('win').hidden=true;flash('Waiting for the host to start the next galaxy.');return}$('win').hidden=true;if(W)exitSector();W=null;S=null;running=false;$('hud').hidden=true;$('dock').hidden=true;buildSectorScene(null);showStart()});
 // ============================================================ training: an offline flight school that walks through each major system
 // Runs in a private galaxy (never saved over your pilot). Each step watches the game for the action it teaches.
-const TR_ORE=['fe','cu','ir','xc','au'],trOre=()=>TR_ORE.reduce((a,k)=>a+(S.player.cargo[k]||0),0);
+const TR_ORE=['fe','cu','ir','xc','au','nu'],trOre=()=>TR_ORE.reduce((a,k)=>a+(S.player.cargo[k]||0),0);
 function trDrones(){const p=W.player;qRot(p.q,0,0,1,_f);const out=[];for(let i=0;i<3;i++){const e=makeNPC('pirate','pirate','interceptor',1,{},'stock:pirate');e.train=true;e.wpn='kinetic';
   const o=rdir();e.x=p.x+_f.x*900+o.x*220;e.y=p.y+_f.y*900+o.y*120;e.z=p.z+_f.z*900+o.z*220;e.hull=e.st.hull*.6;e.shield=e.st.sCap*.5;faceInstant(e,p.x-e.x,p.y-e.y,p.z-e.z);W.ents.push(e);out.push(e.id)}S.training.v.dr=out}
 function trDroneEnts(){return W.ents.filter(e=>e.train&&e.alive)}
@@ -4821,21 +4842,23 @@ const TRAIN=[
  {t:'Winning the war',steps:[
   {x:'Press <kbd>M</kbd> for the galaxy map: territory, operations, beacons and every faction’s progress.',ok:()=>!$('map').hidden},
   {x:'A faction wins by holding <b>8 systems for 30 minutes</b>. Stations, depots, frigates and escorts hold a system; the others band together against whoever leads. Close the map (<kbd>M</kbd>).',ok:()=>$('map').hidden},
-  {x:'Press <kbd>P</kbd> to read your faction’s campaign orders and sign on to its next move.',ok:()=>!!keys.KeyP}]}];
+  {x:'Press <kbd>P</kbd> to read your faction’s campaign orders and sign on to its next move.',ok:()=>!!keys.KeyP},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>How a galaxy ends.</b> The moment a side holds 8 systems, a 30-minute clock starts (the chip at the top of the screen shows it); drop below 8 and it resets. Every pilot who helped a campaign move is paid a victory bonus when their faction first reaches 8. When the clock runs out that side wins: this galaxy ends and a new one begins, with the winner starting 40% richer and with the parts for a capital shipyard. If it was your faction, you start with 4,000 extra credits and a crate of parts.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>The Brood can win too.</b> If the Bloom holds 8 systems for 30 minutes, the galaxy is consumed and the next one starts with a hungrier Brood. When anyone (the Brood included) gets close, the other powers call a truce and turn on them, so watch the map.'}]}];
 function trCur(){const T=S.training,L=TRAIN[T.i];return L?{L,s:L.steps[T.j]}:null}
-function trEnter(){const c=trCur();if(!c)return;const T=S.training;if(T.j===0&&c.L.setup)try{c.L.setup()}catch(e){}if(c.s.setup)try{c.s.setup()}catch(e){}T.html=''}
+function trEnter(){const c=trCur();if(!c)return;const T=S.training;T.ack=0;if(T.j===0&&c.L.setup)try{c.L.setup()}catch(e){}if(c.s.setup)try{c.s.setup()}catch(e){}T.html=''}
 function trNext(){const T=S.training;T.j++;if(T.j>=TRAIN[T.i].steps.length){T.done.push(T.i);feed(`✓ Training: ${TRAIN[T.i].t} complete.`,'good');SFX.count&&SFX.count(true);T.i++;T.j=0}trEnter()}
 function trainTick(){const T=S.training;if(!T||!W||!W.player)return;const c=trCur();
   if(c){let ok=false;try{ok=c.s.ok()}catch(e){}if(ok&&W.t>=(T.cool||0)){T.cool=W.t+.6;trNext()}}
   const el=$('train');const c2=trCur();
   const h=c2?`<div class="trh"><b>Training · ${T.i+1}/${TRAIN.length} · ${esc(c2.L.t)}</b><button type="button" class="trx" data-tr="min" aria-label="Collapse">${T.min?'+':'–'}</button></div>`
-    +(T.min?'':`<div class="trs">${c2.s.x}</div><div class="trp">${c2.L.steps.map((_,k)=>`<i class="${k<T.j?'d':k===T.j?'c':''}"></i>`).join('')}</div><div class="trb"><button type="button" class="btn sm" data-tr="skip">Skip step</button><button type="button" class="btn sm" data-tr="lesson">Next lesson</button><button type="button" class="btn sm" data-tr="exit">Exit</button></div>`)
+    +(T.min?'':`<div class="trs">${c2.s.x}</div><div class="trp">${c2.L.steps.map((_,k)=>`<i class="${k<T.j?'d':k===T.j?'c':''}"></i>`).join('')}</div><div class="trb">${c2.s.ack?'<button type="button" class="btn sm pri" data-tr="ack">Got it</button>':'<button type="button" class="btn sm" data-tr="skip">Skip step</button>'}<button type="button" class="btn sm" data-tr="lesson">Next lesson</button><button type="button" class="btn sm" data-tr="exit">Exit</button></div>`)
    :`<div class="trh"><b>Training complete</b></div><div class="trs">You have flown every major system in Driftgate. Keep flying this practice galaxy, or exit and launch a real pilot.</div><div class="trb"><button type="button" class="btn sm" data-tr="exit">Exit training</button></div>`;
   if(h!==T.html){T.html=h;el.innerHTML=h}el.hidden=false}
 function trainStart(){const cs=cleanCall($('mpName').value)||'Cadet';auInit();auApply();FEED.length=0;newGame(selFac,'interceptor');S.player.name=cs;S.training={i:0,j:0,done:[],v:{},html:''};startWith(S);
   feed(`Welcome to flight school, ${cs}. This is a private practice galaxy: nothing here touches your saved pilot.`,'good');trEnter()}
 $('train').addEventListener('click',e=>{const b=e.target.closest('[data-tr]');if(!b||!S||!S.training)return;const T=S.training,k=b.dataset.tr;
-  if(k==='min'){T.min=!T.min;T.html=''}else if(k==='skip')trNext();else if(k==='lesson'){T.i++;T.j=0;trEnter()}else if(k==='exit')location.reload()});
+  if(k==='min'){T.min=!T.min;T.html=''}else if(k==='ack')T.ack=1;else if(k==='skip')trNext();else if(k==='lesson'){T.i++;T.j=0;trEnter()}else if(k==='exit')location.reload()});
 $('bTrain').addEventListener('click',trainStart);
 $('bLaunch').addEventListener('click',()=>{const cs=cleanCall($('mpName').value);$('mpName').value=cs;if(cs.length<2){$('ssum').innerHTML='<b style="color:var(--danger)">Choose a callsign first (step 1).</b>';$('mpName').focus();return}MP.name=MP.name||cs;try{localStorage.setItem('driftgate.mpname',cs)}catch(e){}
   {const code=($('mpCode').value||'').trim();if(!NET.on&&mpSlug(code)&&mpOK()&&!$('mpBox').hidden){auInit();auApply();MP.autoLaunch={fac:selFac,cls:launchCls()};mpJoin();return}}
