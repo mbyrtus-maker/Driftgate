@@ -1271,7 +1271,7 @@ function campTitle(m){const nm=DEF[m.sector]?DEF[m.sector].name:'?';
   if(m.kind==='mine')return`Mine ${m.need} ${ITEMS[m.item].name} for the push on ${DEF[m.obj].name}`;
   return`Haul ${m.need} ${ITEMS[m.item].name}: ${stN(m.from)} → ${stN(m.to)}`}
 function mkMove(f,o){const m={id:S.nextId++,f,stage:'brief',T0:S.T,brief:S.T+(o.kind==='take'||o.kind==='build'?45:30),prog:0,acc:[],help:{},cons:{},tries:0,...o};if(m.st)m.stName=S.stations[m.st].name;m.title=campTitle(m);return m}
-function campPrep(f,pk){const D=DOCTRINE[f];let kind=pick(D.prep);const front=nearestOwnStation(f,pk.sid),home=FAC_HOME(f),from=S.stations[home]&&S.stations[home].owner===f?home:null;
+function campPrep(f,pk,P){const D=DOCTRINE[f];let kind=P&&P.lastPrep==='haul'?'mine':P&&P.lastPrep==='mine'?'haul':pick(D.prep);const front=nearestOwnStation(f,pk.sid),home=FAC_HOME(f),from=S.stations[home]&&S.stations[home].owner===f?home:null;
   if(kind==='haul'&&(!from||!front||front===from))kind='mine';
   if(kind==='haul'){const item=f==='halcyon'&&pk.kind==='build'?'plate':D.haul;return mkMove(f,{kind:'haul',item,need:CAMP_HAUL_N[item]||10,from,to:front,sector:front,obj:pk.sid,dur:420})}
   return mkMove(f,{kind:'mine',item:D.mine,need:CAMP_MINE_N[D.mine]||36,sector:home,obj:pk.sid,dur:360})}
@@ -1280,7 +1280,7 @@ function campValid(f,pk){if(!pk)return false;return campTargets(f).some(t=>t.sid
 function campDone(m){if(m.kind==='take')return m.st?!S.stations[m.st]||sideNorm(S.stations[m.st].owner)===m.f:sideNorm(S.outposts[m.out].owner)===m.f;if(m.kind==='build'){const R=S.stations[m.sector];return!!R&&sideNorm(R.owner)===m.f}return m.prog>=m.need}
 function campNew(f,P){let m=null;
   if(P.next&&campValid(f,P.next)){m=campStrike(f,P.next);m.boost=P.boost||0}
-  else{const tg=campTargets(f);if(!tg.length)return null;const pk=wpickArr(tg.map(t=>[t,t.w]));P.next=pk;P.boost=0;m=campPrep(f,pk)}
+  else{const tg=campTargets(f);if(!tg.length)return null;const pk=wpickArr(tg.map(t=>[t,t.w]));P.next=pk;P.boost=0;m=campPrep(f,pk,P);P.lastPrep=m.kind}
   if(m.kind==='take'||m.kind==='build')P.next=null;
   const n=controlCounts()[f]||0,D=DOCTRINE[f];
   facFeed(f,`📋 ${FACTIONS[f].short} command · ${D.name} (${n}/${VIC_NEED} systems). Next move: ${m.title}. ${m.kind==='mine'||m.kind==='haul'?'Supply drive opens':'Strike group forms'} in ${Math.round(m.brief-S.T)} s. Press P to sign on.`,'info');
@@ -1306,7 +1306,7 @@ function campTick(){if(NET.cl||S.T<100)return;S.plans=S.plans||{};
   for(const f of FAC_IDS){const P=campOf(f);let m=P.mv;
     if(!m){if(S.T<P.gap)continue;m=P.mv=campNew(f,P);if(!m){P.gap=S.T+60;continue}}
     if(m.stage==='brief'){if(S.T<m.brief)continue;
-      if(m.kind==='mine'||m.kind==='haul'){m.stage='active';m.until=S.T+m.dur;m.ai=rnd(.7,1.3);facFeed(f,`${FACTIONS[f].short} supply drive open: ${m.title}. ${Math.round(m.dur/60)} minutes. Deliver at ${m.kind==='haul'?stN(m.to):'any '+FACTIONS[f].short+' station'} (Orders tab).`,'info');continue}
+      if(m.kind==='mine'||m.kind==='haul'){m.stage='active';m.until=S.T+m.dur;m.ai=rnd(.7,1.3);facFeed(f,`${FACTIONS[f].short} supply drive open: ${m.title}. ${Math.round(m.dur/60)} minutes. Deliver at ${m.kind==='haul'?stN(m.to):'any '+FACTIONS[f].short+' station'} (Orders tab).${m.kind==='mine'&&oreField(m.item,m.sector,f)?` Good ${ITEMS[m.item].name} rocks in ${DEF[oreField(m.item,m.sector,f)].name}.`:''} Press P to sign on.`,'info');continue}
       if(campDone(m)){campEnd(f,P,true);continue}
       const ev=m.kind==='take'?campOffensive(f,m):campBuild(f,m);
       if(ev==='gone'){campEnd(f,P,campDone(m),'the target changed hands');continue}
@@ -1341,14 +1341,17 @@ function campGoal(){const n=controlCounts();for(const f of FAC_IDS){const P=camp
 function campAccept(k,m){if(m.acc.includes(k))return false;m.acc.push(k);m.help[k]=m.help[k]||0;
   const ev=m.evId&&S.events.find(e=>e.id===m.evId);if(ev&&ev.stage==='inbound'){const s=pSect(k);ev.hold=Math.max(ev.hold||0,S.T+Math.min(220,40*(s?HOP[m.sector][s]:2)+60))}
   keyFeed(k,`Signed on: ${m.title}. ${campHow(m)}`,'good');return true}
+function oreField(item,from,f){let best=null,bs=1e9;for(const d of SECTOR_DEFS){if(d.kind==='hive'||d.kind==='void')continue;const sc=S.sectors[d.id];if(!sc)continue;let n=0;for(const a of sc.ast)n+=a.ore[item]||0;if(n<30)continue;
+    const ow=sideNorm(sectorOwner(d.id)),h=(HOP[d.id][from]||0)+(ow&&f&&ow!==f&&hostile(f,ow)?2.5:0)-Math.min(.9,n/600);if(h<bs){bs=h;best=d.id}}return best}
+function fieldHint(m,from){const id=oreField(m.item,from,m.f);if(!id)return'';const h=HOP[id][from]||0;return` Nearest ${ITEMS[m.item].name} field: ${DEF[id].name}${h?` (${h} jump${h>1?'s':''})`:' (this system)'}.`}
 function campHow(m){const F=FACTIONS[m.f].short;
-  if(m.kind==='mine')return`Mine ${ITEMS[m.item].name} and deliver it at any ${F} station (Orders tab). Paid ${fmt(Math.round(baseValue(m.item)*1.3))} cr a unit, plus a bonus if the drive succeeds.`;
+  if(m.kind==='mine')return`Mine ${ITEMS[m.item].name} and deliver it at any ${F} station (Orders tab). Paid ${fmt(Math.round(baseValue(m.item)*1.3))} cr a unit, plus a bonus if the drive succeeds.${fieldHint(m,S.player.sector)}`;
   if(m.kind==='haul')return`Load a consignment at ${stN(m.from)} (Orders tab; you leave a deposit), fly it to ${stN(m.to)} and deliver it. Deposit back plus a fee, and a bonus if the drive succeeds.`;
   return`Fly to ${DEF[m.sector].name} and fight alongside them: time in the system while it plays out counts as your part.`}
 function campCourse(m){const P=S.player;let to=m.sector;
   if(m.kind==='haul')to=(P.cargo[m.item]||0)>0?m.to:m.from;
-  else if(m.kind==='mine')to=(P.cargo[m.item]||0)>=5?nearestOwnStation(m.f,P.sector)||m.sector:(m.item==='xc'?FAC_HOME(m.f):P.sector);
-  if(!to)return;if(to===P.sector){flash(m.kind==='mine'?`Mine ${ITEMS[m.item].name} here, then dock at a ${FACTIONS[m.f].short} station.`:m.kind==='haul'?'You are there: dock and open the Orders tab.':'You are in the target system. Hold near the action.');return}
+  else if(m.kind==='mine')to=(P.cargo[m.item]||0)>=5?nearestOwnStation(m.f,P.sector)||m.sector:(oreField(m.item,P.sector,m.f)||P.sector);
+  if(!to)return;if(to===P.sector){flash(m.kind==='mine'?((P.cargo[m.item]||0)>=5?`Dock here to deliver your ${ITEMS[m.item].name} (Orders tab).`:`${ITEMS[m.item].name} is in the rocks here: target a rock (Tab) and hold F to mine, then dock at a ${FACTIONS[m.f].short} station.`):m.kind==='haul'?'You are there: dock and open the Orders tab.':'You are in the target system. Hold near the action.');return}
   P.route=to;if(W&&!P.docked){apOn=true;const g=routeNext();if(g)W.tgt={kind:'gate',ref:g};flash(`Course set to ${DEF[to].name}. Autopilot on: steer to take back control.`)}else flash(`Course set to ${DEF[to].name}. Undock and press J to fly it.`)}
 function planKey(){const C=myCamp(),m=C&&C.mv;if(!m){flash('No campaign orders right now. Your faction posts its next move shortly.',true);return}
   const k=pkey();if(!m.acc.includes(k)){if(NET.cl){netSend({t:'plan',id:m.id});m.acc.push(k);feed(`Signed on: ${m.title}. ${campHow(m)}`,'good')}else campAccept(k,m);SFX.count(true)}
@@ -1361,7 +1364,7 @@ function campDockHtml(c,P,srcs){const C=myCamp(),f=P.faction,m=C&&C.mv,n=control
   h+=`<div class="opr assist" style="display:block"><b>${esc(m.title)}</b><br><span>${m.stage==='brief'?`Opens in ${left} s`:m.kind==='mine'||m.kind==='haul'?`${Math.floor(m.prog)} / ${m.need} delivered · ${fmtT(left)} left`:'Strike under way'} · ${signed?'you are signed on':'press P to sign on'}${m.help[k]?` · your part so far: ${Math.round(m.help[k])}${m.kind==='take'||m.kind==='build'?' s':''}`:''}</span></div>`;
   if(m.stage!=='active'||(m.kind!=='mine'&&m.kind!=='haul'))return h+`<p class="note">${esc(campHow(m))}</p>`;
   const it=m.item,nm=ITEMS[it].name,rest=Math.max(0,Math.ceil(m.need-m.prog));
-  if(m.kind==='mine'){const have=deliverable(P,it,srcs),bo=boughtOf(P,it),nn=Math.min(have,rest);h+=`<div class="act" style="margin-top:8px"><button class="btn" type="button" data-act="cmine" ${nn>0?'':'disabled'}>Deliver ${nn} ${esc(nm)} · +${fmt(Math.round(baseValue(it)*1.3*nn))} cr</button></div><p class="note">You have ${have} ${esc(nm)} you mined or salvaged in your hold and vault${bo?` (${bo} bought on a market don't count)`:''}.</p>`}
+  if(m.kind==='mine'){const have=deliverable(P,it,srcs),bo=boughtOf(P,it),nn=Math.min(have,rest);h+=`<div class="act" style="margin-top:8px"><button class="btn" type="button" data-act="cmine" ${nn>0?'':'disabled'}>Deliver ${nn} ${esc(nm)} · +${fmt(Math.round(baseValue(it)*1.3*nn))} cr</button></div><p class="note">You have ${have} ${esc(nm)} you mined or salvaged in your hold and vault${bo?` (${bo} bought on a market don't count)`:''}.${esc(fieldHint(m,P.sector))}</p>`}
   else{const p=W.player,free=Math.max(0,p.st.cargo-invMass(P.cargo)),stock=S.econ.stock[f][it]||0;
     if(sid===m.from){const nn=Math.min(rest,Math.floor(free/mass(it)),stock),dep=baseValue(it)*nn;h+=`<div class="act" style="margin-top:8px"><button class="btn" type="button" data-act="cload" ${nn>0&&P.credits>=dep?'':'disabled'}>Load ${nn} ${esc(nm)} · deposit ${fmt(dep)} cr</button></div><p class="note">${nn?`Fills ${nn*mass(it)} t of your hold. Deliver at ${esc(stN(m.to))} for the deposit back plus a ${fmt(Math.round(baseValue(it)*.35))} cr fee a unit.`:free<mass(it)?'Your hold is full.':'Nothing left to load.'}</p>`}
     else if(sid===m.to){const cn0=m.cons[k]||0,have=Math.min(P.cargo[it]||0,cn0+deliverable(P,it,[P.cargo],cn0)),nn=Math.min(have,rest);h+=`<div class="act" style="margin-top:8px"><button class="btn" type="button" data-act="chaul" ${nn>0?'':'disabled'}>Deliver ${nn} ${esc(nm)} from your hold</button></div><p class="note">${have?'':'Bring the consignment in your hold (not your vault). Goods bought on a market don\'t count.'}</p>`}
