@@ -560,3 +560,35 @@ These figures are from the fast simulator: 384 games, two-hour games, no human p
 - **Who earns it.** Every pilot who served a faction's campaign (helped at least one move) earns it when that faction wins the galaxy. Reaching 7 systems isn't enough; the faction has to hold them for 20 minutes and win.
 - **How it's paid.** The galaxy ends at the win, so the bonus is held in the device's legacy record. It is shown on the win screen and paid at the start of the next real galaxy: 3,000 cr, 2 Crystal Lattice and 1 Resonance Core into the starting vault, whatever faction the pilot picks. Flight school doesn't use it up.
 - **History.** It used to be paid the moment the faction first reached 7 systems.
+
+## Carrier hangar console (built)
+On a carrier's bridge the Weapons station is the **Hangar** (carriers have no main battery).
+
+- **Flight deck.** It shows:
+  - craft aboard against the 6 bays, split into flying and in the hangar;
+  - what the fabricator is building and how long is left;
+  - how many more craft the materials aboard can build, and whether a supply convoy is on the way;
+  - assault loads (3 bays) and, if a hostile depot is in the system, the garrison it will need.
+- **Wing orders** apply to every craft without an order of its own:
+
+  | Order | What the craft do |
+  |---|---|
+  | Guard | Stay with the carrier and fight off anything that comes for it (the default) |
+  | Strike | Attack the strike target, or the nearest hostile to the carrier |
+  | Hunt | Range across the system and attack any hostile craft, bombers first |
+  | Land | Fly home and land |
+
+  Landed craft wait in the hangar, repaired; their kits go back aboard. Launch them one at a time or all at once.
+- **Per-craft orders.** Each flying craft can be given its own order, or set back to follow the wing.
+- **Strike target.** A list of hostile ships in range, bombers and capitals first. Picking one sets the wing to Strike.
+- **Point defence.** Torpedoes first, fighters first, or hold fire.
+- **Fabricator under command.** A faction carrier on loan to a pilot keeps fabricating and calling in supply convoys. Only a pilot's own carrier is restocked by hand.
+- **Saving.** A save made while the carrier is in your system keeps its wing.
+
+## Bridge sound
+- Console beeps: once every 2–4 minutes.
+- The computer room tone: once every 2–4 minutes. It used to loop every 4 seconds.
+- Crew radio chatter: every 30–60 seconds.
+
+## Developer menu (Ctrl+Alt+D)
+Spawns a friendly carrier or escort, or an enemy carrier, escort or Brood Hive Ship (side picker).
