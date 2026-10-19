@@ -85,11 +85,11 @@ In strategic battles a carrier counts as its hull plus its wing. Its wing adds s
 3. Re-tune all four sides with the fast simulator after it lands.
 
 ## Brood carrier (design, not built)
-The Brood's version is a living carrier, the **Broodmother**: a swollen hive-ship that grows its own wing. It jumps like the Leviathan and has no lance or spitters of its own.
+The Brood's version is a living carrier, the **Hive Ship**: a swollen, living vessel that grows its own wing. It jumps like the Leviathan and has no lance or spitters of its own.
 
-- **Limit:** only one Broodmother can exist at a time. The Brood grows it at The Bloom once it holds 4 or more systems.
+- **Limit:** only one Hive Ship can exist at a time. The Brood grows it at The Bloom once it holds 4 or more systems.
 - **Hull:** high health (about 7,000), no shield. It regenerates slowly like other Brood growth, and its spore tendrils shoot down about 30% of incoming torpedoes.
-- **Wing:** up to 6 Brood craft (Mites, Thrashers and Sporemaw bombers). Lost craft are not refilled at a shipyard: the Broodmother regrows one every 90 seconds from biomass it carries, topped up by grazing in Brood space. Each regrown craft uses real materials from the Brood's stores, so the economy stays exact.
+- **Wing:** up to 6 Brood craft (Mites, Thrashers and Sporemaw bombers). Lost craft are not refilled at a shipyard: the Hive Ship regrows one every 90 seconds from biomass it carries, topped up by grazing in Brood space. Each regrown craft uses real materials from the Brood's stores, so the economy stays exact.
 - **Behaviour:** it hangs back while its wing does the fighting, and swarms Overgrowths it is defending and systems the Brood is attacking. With its wing gone and its biomass spent, it retreats to the nearest Brood system to regrow.
 - **Counterplay:** kill the wing to stall it, or reach it with torpedoes. Its tendrils punish a single bomber, so a group is needed.
 - **Balance:** tune its biomass cost and regrowth rate with the fast simulator so the Brood stays near 20%.
