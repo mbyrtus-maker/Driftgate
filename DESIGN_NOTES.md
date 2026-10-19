@@ -34,6 +34,44 @@ Each friendly station and outpost keeps its own vault. Goods stored at one stati
 
 ---
 
+## Capital roster: escorts and carriers, no frigates (design, not built)
+
+### The decision
+Frigates are removed. The capital roster becomes the **escort**, as the line capital ship, and the **fleet carrier**, one per faction. This ends the race to frigates: ground is held by structures, taken by assault ships after bombers and fighters breach it, and capitals support that instead of deciding it.
+
+### What replaces each frigate job
+| Frigate job today | Replaced by |
+|---|---|
+| Holding an empty system | Nothing: only homes, stations, depots and outposts hold systems. |
+| Capturing depots | Assault ships, after a breach (see below). |
+| Lance and torpedoes against structures and capitals | Bomber wings, escort torpedoes and the carrier's bombers. |
+| Pickets | The carrier's wing (pickets are removed). |
+| What hunter groups chase, and the "enemy capital nearby" war footing | Escorts and carriers. |
+| Brood Leviathan | The Brood Prowler (its escort) and the Hive Ship (its carrier). |
+
+### Escort changes
+Escorts become the main capital, so they get sturdier:
+- Hull about 2,800 → 3,600.
+- The torpedo weakness drops from ×7 to ×4, so they're still the bomber's prey but not paper.
+- The limit rises to 3–4 per faction.
+- They keep their torpedoes, anti-fighter batteries and point defence.
+
+### Knock-on changes
+- **Victory:** systems are counted from structures only, so the 7-system hold and the 2-hour tiebreak need re-tuning. Captures get harder, and more games may run to the deadline.
+- **Truce against the leader:** it is triggered by systems held, so it still works, but re-check its threshold.
+- **Pilot capitals:** the shipyard offers escorts and, if your faction has none, a carrier. The bridge, helm and guest rules carry over.
+- **Legend level 8:** "your faction's next frigate is named after you" becomes its next carrier or escort.
+- **War effort:** the frigate kill value (12) moves to carriers, and escorts stay at 6.
+- **Vantium and keels:** now used for escorts and carriers. Vantium may need an extra use (torpedoes or depot armour) so it still matters.
+- **Old saves:** frigates in a save are broken down into their kits (materials into the owner's stores), so nothing is lost and the economy stays exact. A pilot's own frigate is refunded as kit materials in their vault.
+- **Overgrowth:** unchanged. Escorts and carriers still jump past it.
+
+### Build order (so the game always works)
+1. **Assault ships and station key points:** captures work without frigates.
+2. **Fleet carrier and Hive Ship.**
+3. **Remove frigates and pickets:** the escort upgrades and old-save conversion, then re-balance all four sides with the fast simulator.
+4. **Overgrowth** (independent, any time after step 1).
+
 ## Assault ships and capturing structures (design, not built)
 
 ### The idea
@@ -121,7 +159,7 @@ Stations and depots have key points that fighters and bombers can target and des
 A faction capital ship that fights with its fighters instead of guns. It jumps like a frigate and has no main cannon, lance or torpedoes. It carries 6 fighters or bombers, and its turrets defend against fighters and torpedoes. It replaces the picket fighters frigates and escorts carry today (see below).
 
 ### Ship
-| | Fleet carrier | For comparison: frigate |
+| | Fleet carrier | For comparison: today's frigate (to be removed) |
 |---|---|---|
 | Hull / shield | about 5,000 / 2,400 | 6,000 / 2,400 |
 | Main weapon | none | lance, torpedoes |
