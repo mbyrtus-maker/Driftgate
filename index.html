@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Driftgate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4746,6 +4747,21 @@ const byName=(a,b)=>ITEMS[a].name.localeCompare(ITEMS[b].name);
 function vaultKey(P){if(P.docked==='station')return P.sector;if(P.docked&&S.outposts[P.docked])return 'o:'+P.docked;return null}
 function vaultSync(P){const k=vaultKey(P);if(!k)return;if(P.vaultAt===undefined){P.vaultAt=k;return}if(P.vaultAt===k)return;P.vaults=P.vaults||{};if(Object.values(P.vault).some(n=>n>0))P.vaults[P.vaultAt]=P.vault;P.vault=P.vaults[k]||{};delete P.vaults[k];P.vaultAt=k}
 function vaultName(k){if(k.startsWith('o:')){const o=S.outposts[k.slice(2)];return o?o.name:'an outpost'}const R=S.stations[k];return R?R.name:(DEF[k]?DEF[k].name:k)}
+// ---- the vault overview: every vault you hold, nearest first
+function vaultSid(k){if(k.startsWith('o:')){const o=S.outposts[k.slice(2)];return o?o.sector:null}return k}
+function vaultOpen(k,P){if(k.startsWith('o:')){const o=S.outposts[k.slice(2)];return!!o&&!o.breached&&(o.owner==='player'||o.owner===P.faction)}const R=S.stations[k];return!!R&&(R.owner===P.faction||R.owner==='player'||R.owner==='neutral')}
+function vaultWhy(k,P){if(k.startsWith('o:')){const o=S.outposts[k.slice(2)];return!o?'gone':o.breached?'outpost breached':`held by ${sideName(o.owner)}`}const R=S.stations[k];return R?`held by ${sideName(R.owner)}`:'gone'}
+function vaultList(P){const out=[],add=(k,inv,here)=>{const m=invMass(inv);if(!(m>0)&&!here)return;const sid=vaultSid(k);out.push({k,inv,m,here,sid,hops:sid&&HOP[P.sector]?HOP[P.sector][sid]:null,val:invValue(inv),open:vaultOpen(k,P)})};
+  if(P.vaultAt!==undefined)add(P.vaultAt,P.vault||{},!!P.docked);for(const k in P.vaults||{})add(k,P.vaults[k],false);
+  return out.sort((a,b)=>(b.here-a.here)||((a.hops??99)-(b.hops??99))||(b.m-a.m))}
+function vaultChips(inv,max=6){const ks=ITEM_ORDER.filter(k=>(inv[k]||0)>0);return ks.slice(0,max).map(k=>`<span style="white-space:nowrap">${sw(k)}${inv[k]} ${esc(ITEMS[k].name)}</span>`).join(' · ')+(ks.length>max?` · +${ks.length-max} more`:'')}
+function vaultsHtml(P){const L=vaultList(P).filter(v=>!v.here);let h=`<div class="h3" style="margin-top:20px">Stored elsewhere</div>`;
+  if(!L.length)return h+`<div class="empty">Nothing stored at other stations or outposts. Goods you store here stay here.</div>`;
+  const tm=L.reduce((a,v)=>a+v.m,0),tv=L.reduce((a,v)=>a+v.val,0);
+  h+=`<p class="note" style="margin:0 0 8px">Your goods at other stations and outposts, nearest first: ${fmt(tm)} t worth about ${fmt(tv)} cr. To use them, fly there, load them into your hold and haul them.</p>`;
+  h+=`<div class="tblw"><table class="t"><thead><tr><th>Where</th><th>Contents</th><th class="r">Mass</th><th class="r">Value</th><th class="r">Jumps</th><th></th></tr></thead><tbody>`;
+  for(const v of L){const sys=v.sid&&DEF[v.sid]?DEF[v.sid].name:'';h+=`<tr><td><b>${esc(vaultName(v.k))}</b><br><span class="mass" style="margin:0">${esc(sys)}${v.open?'':` · <span style="color:var(--red,#ff7a6b)">${esc(vaultWhy(v.k,P))}: you can't dock there</span>`}</span></td><td>${vaultChips(v.inv)}</td><td class="r num">${fmt(v.m)} t</td><td class="r num">${fmt(v.val)} cr</td><td class="r num">${v.hops??'—'}</td><td class="r">${v.sid&&v.sid!==P.sector&&v.open?`<button class="btn sm" data-act="vcourse" data-arg="${v.sid}">Set course</button>`:''}</td></tr>`}
+  return h+`</tbody></table></div>`}
 function vaultElsewhere(P){const L=Object.keys(P.vaults||{}).map(k=>[k,invMass(P.vaults[k])]).filter(x=>x[1]>0);return L.length?' You also have goods stored at: '+L.map(([k,m])=>`${esc(vaultName(k))} (${m} t)`).join(' · ')+'.':''}
 function dockCtx(){
   const P=S.player,d=DEF[P.sector];vaultSync(P);
@@ -4836,11 +4852,12 @@ function renderDock(){
     h+=`<div class="h3">In the bay · ${P.ships.length} / ${BAY_MAX}</div>`+(P.ships.length?P.ships.map((R,i)=>row(R,i,false)).join(''):'<div class="empty">No ships stored yet.</div>')+`<p class="note" style="margin-top:10px">Bay upgrades use parts from your hold and vault${c.forge?'':'; Mk IV–V need a Forge'}. Hover an upgrade button for its cost.</p>`;
   }else if(dockTab==='storage'){
     const keysAll=ITEM_ORDER.filter(k=>(P.cargo[k]||0)+(c.storage[k]||0)>0);
-    h+=`<p class="note" style="margin:0 0 12px">${c.storageName==='Vault'?`Your vault here at ${esc(vaultName(P.vaultAt||P.sector))}. Each station and outpost keeps its own vault: goods stored here stay here.${vaultElsewhere(P)}`:'This outpost\'s store is yours. It also collects the ore your outpost skims from the sector each cycle.'} Hold space: ${p.st.cargo-invMass(P.cargo)} t free.</p>`;
+    h+=`<p class="note" style="margin:0 0 12px">${c.storageName==='Vault'?`Your vault here at ${esc(vaultName(P.vaultAt||P.sector))}. Each station and outpost keeps its own vault: goods stored here stay here.${Object.values(P.vaults||{}).some(x=>invMass(x)>0)?' Your goods at other stations are listed under Stored elsewhere, below.':''}`:'This outpost\'s store is yours. It also collects the ore your outpost skims from the sector each cycle.'} Hold space: ${p.st.cargo-invMass(P.cargo)} t free.</p>`;
     h+=`<div class="tblw"><table class="t"><thead><tr><th>Item</th><th class="r">Hold</th><th class="r">${esc(c.storageName)}</th><th></th></tr></thead><tbody>`;
     for(const k of keysAll)h+=`<tr><td class="iname">${sw(k)}${esc(ITEMS[k].name)}<span class="mass">${mass(k)} t</span></td><td class="r num">${P.cargo[k]||0}</td><td class="r num">${c.storage[k]||0}</td><td><div class="act"><button class="btn sm" data-act="mv" data-arg="${k}:in:1" ${P.cargo[k]?'':'disabled'}>Store 1</button><button class="btn sm" data-act="mv" data-arg="${k}:in:all" ${P.cargo[k]?'':'disabled'}>Store all</button><button class="btn sm" data-act="mv" data-arg="${k}:out:1" ${c.storage[k]?'':'disabled'}>Load 1</button><button class="btn sm" data-act="mv" data-arg="${k}:out:all" ${c.storage[k]?'':'disabled'}>Load all</button></div></td></tr>`;
     h+=`</tbody></table></div>`;if(!keysAll.length)h+=`<div class="empty">Empty. Mine ore or buy materials to get started.</div>`;
     if(Object.keys(P.cargo).length)h+=`<div style="margin-top:12px"><button class="btn" data-act="stashall">Store entire hold</button></div>`;
+    if(c.storageName==='Vault')h+=vaultsHtml(P);
   }else if(dockTab==='orders'){h+=ordersHtml(c,P,srcs);
   }else if(dockTab==='missions'){h+=missionsHtml(c,P,srcs);
   }else if(dockTab==='works'){h+=worksHtml(c,P,srcs,S.stations[P.sector]);
@@ -4860,6 +4877,7 @@ $('dock').addEventListener('click',e=>{
   if(act==='quit'){quitGame();return}
   if(act==='invite'){$('bInvite').click();dockErr=`Invite link copied: ${inviteURL(MP.code)}`;renderDock();return}
   if(act==='tab'){dockTab=arg;renderDock();return}
+  if(act==='vcourse'){S.player.route=arg;dockErr=`✓ Course set to ${DEF[arg].name}. Launch and press J.`;renderDock();return}
   if(act==='opjoin'){joinOp(friendlyOps()[+arg]);dockErr=S.player.route?`✓ Course set to ${DEF[S.player.route].name}. Launch and press J.`:'';renderDock();return}
   if(NET.cl){netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
   dockAction(act,arg);renderDock()});
@@ -4949,6 +4967,7 @@ function drawMap(){
     {const fs=(S.frigates||[]).filter(t=>t.sector===d.id&&(t.side==='player'||t.side===S.player.faction||covered(d.id)));let fx=x-r-6;for(const t of fs){const col=fMine(t)?PLAYER_COL:sideCol(t.side);c.fillStyle=col;c.strokeStyle='#070b16';c.lineWidth=1.5;c.beginPath();c.moveTo(fx,y+r+24);c.lineTo(fx+6,y+r+30);c.lineTo(fx,y+r+36);c.lineTo(fx-6,y+r+30);c.closePath();c.fill();c.stroke();fx-=13}
       if(S.yards&&Object.keys(S.yards).some(k=>S.yards[k].sector===d.id&&k!=='brood')){c.fillStyle='#ece4cf';c.font='600 9px "Saira Semi Condensed",sans-serif';c.textAlign='left';c.fillText('YARD',x+r+3,y+r+2)}
       for(const t of S.frigates||[])if(fMine(t)&&t.dest&&t.dest!==t.sector&&t.sector===d.id){const[x2,y2]=mapXY(DEF[t.dest],w,h);c.strokeStyle='rgba(240,178,74,.55)';c.setLineDash([3,4]);c.lineWidth=1.5;c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke();c.setLineDash([])}}
+    {const V=vaultList(S.player).find(v=>v.sid===d.id&&v.m>0);if(V){c.fillStyle=V.open?PLAYER_COL:'#9a8f7a';c.font='700 9px "Saira Semi Condensed",sans-serif';c.textAlign='left';c.fillText('▣ VAULT',x+r+5,y-r+6)}}
     {const ns=(S.scouts||[]).filter(t=>t.side===S.player.faction&&t.sector===d.id).length;if(ns){c.fillStyle='#7ad9a7';c.font='600 10px "Saira Semi Condensed",sans-serif';c.textAlign='right';c.fillText('◇'.repeat(ns)+' SCOUT',x-r-4,y-r+4)}}
     if(isFreeport(d.id)){c.fillStyle=NEUTRAL.col;c.font='700 10px "Saira Semi Condensed",sans-serif';c.textAlign='center';c.fillText('FREEPORT',x,y-r-6);c.fillStyle=NEUTRAL.col;c.beginPath();c.arc(x,y,5,0,TAU);c.fill()}
     {const B=S.beacons&&S.beacons[d.id];if(B){const bx=x-r*.95,by=y-r*1.0,col=B.owner?sideCol(B.owner):'#6b7186',me=B.by&&isMe(B.by),k=8.5;c.beginPath();c.moveTo(bx,by-k);c.lineTo(bx+k*.75,by);c.lineTo(bx,by+k);c.lineTo(bx-k*.75,by);c.closePath();c.fillStyle=B.owner?col:'#0c1222';c.fill();c.strokeStyle=me?PLAYER_COL:B.owner?'#070b16':col;c.lineWidth=me?2.2:1.4;c.stroke();if(me){c.strokeStyle=hexA(PLAYER_COL,.45+.3*Math.sin(t*4));c.lineWidth=1;c.beginPath();c.arc(bx,by,k+4,0,TAU);c.stroke()}}}
@@ -4962,7 +4981,7 @@ function drawMap(){
   campMapDraw(c,w,h,t);
   c.font='500 11px "Saira Semi Condensed",sans-serif';c.textAlign='right';let ly=h-14;const lx=w-14;
   for(const[l,col]of[['Brood',FACTIONS.brood.col],['Unbound','#d8cd98'],['You','#f0b24a'],...FAC_IDS.map(f=>[FACTIONS[f].short,FACTIONS[f].col]).reverse()]){c.fillStyle=col;c.fillRect(lx-8,ly-8,8,8);c.fillStyle='#8c91a5';c.fillText(l,lx-14,ly);ly-=16}
-  c.fillStyle='#5a647c';c.fillText('◆ Beacon: team colour · hollow unclaimed · amber ring yours',lx,ly);ly-=16;c.fillText('F Forge · R Relay · Y Salvage Yard · ■ built depot',lx,ly);ly-=16;c.fillText('Dashed ring: sensors cover it · dimmed: no coverage',lx,ly);
+  c.fillStyle='#5a647c';c.fillText('◆ Beacon: team colour · hollow unclaimed · amber ring yours',lx,ly);ly-=16;c.fillText('F Forge · R Relay · Y Salvage Yard · ■ built depot · ▣ your vault',lx,ly);ly-=16;c.fillText('Dashed ring: sensors cover it · dimmed: no coverage',lx,ly);
 }
 mcv.addEventListener('click',e=>{const r=mcv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=34;for(const d of SECTOR_DEFS){const[sx,sy]=mapXY(d,r.width,r.height),dd=hyp(sx-x,sy-y);if(dd<bd){bd=dd;best=d.id}}if(best){mapSel=best;drawMap();renderMapSide()}});
 function fmtT(t){const m=Math.floor(t/60),s=Math.floor(t%60);return`${m}:${String(s).padStart(2,'0')}`}
@@ -4974,11 +4993,13 @@ function renderMapSide(){
   if(o)h+=`<span>${esc(o.name)}</span><b>Level ${o.level}${o.breached?' · breached':''}</b><span>Role</span><b>${o.type}</b>`;
   {const B=S.beacons&&S.beacons[mapSel];if(B)h+=`<span>Beacon</span><b style="color:${B.owner?sideCol(B.owner):'inherit'}">${B.owner?FACTIONS[B.owner].short+(B.T?' · held '+fmtT(S.T-B.T):''):'unclaimed'}${B.by&&isMe(B.by)?' · yours, '+BCN_RES+' cr/min':''}</b>`}
   for(const e of RAWS)h+=`<span>${ITEMS[e].name} in fields</span><b>${fmt(fields[e])} t</b>`;
+  {const V=vaultList(S.player).filter(v=>v.sid===mapSel);for(const v of V)h+=`<span>Your vault${V.length>1?' · '+esc(vaultName(v.k)):''}</span><b>${fmt(v.m)} t · ${fmt(v.val)} cr${v.open?'':' · '+esc(vaultWhy(v.k,S.player))}</b>`}
   h+=`<span>Drifting debris</span><b>${fmt(s.debris.fe+s.debris.cu+s.debris.ir+s.debris.xc)} t</b><span>Salvage crates</span><b>${s.crates.length}</b><span>Gates to</span><b>${NEIGH[mapSel].map(n=>DEF[n].name).join(', ')}</b></div>`;
   if(o)h+=`<p class="note" style="margin:8px 0 0">${TYPE_TEXT[o.type]}</p>`;h+=`</div>`;
   h+=`<div><div class="h3">Powers</div><div class="tblw"><table class="t"><thead><tr><th></th><th class="r">Treasury</th><th class="r">Stores</th><th class="r">Outposts</th></tr></thead><tbody>`;
   for(const f of[...FAC_IDS,'pirate','brood']){const n=Object.values(S.outposts).filter(x=>x.owner===f).length;h+=`<tr><td style="color:${sideCol(f)}">${sideName(f)}</td><td class="r num">${fmt(S.econ.treasury[f])}</td><td class="r num">${fmt(invMass(S.econ.stock[f])+invMass(S.econ.fleet[f]||{}))} t</td><td class="r num">${n}</td></tr>`}
-  h+=`<tr><td style="color:var(--amber)">You</td><td class="r num">${fmt(S.player.credits)}</td><td class="r num">${fmt(invMass(S.player.vault)+invMass(S.player.cargo))} t</td><td class="r num">${Object.values(S.outposts).filter(x=>x.owner==='player').length}</td></tr></tbody></table></div></div>`;
+  h+=`<tr><td style="color:var(--amber)">You</td><td class="r num">${fmt(S.player.credits)}</td><td class="r num">${fmt(vaultList(S.player).reduce((a,v)=>a+v.m,0)+invMass(S.player.cargo))} t</td><td class="r num">${Object.values(S.outposts).filter(x=>x.owner==='player').length}</td></tr></tbody></table></div></div>`;
+  {const V=vaultList(S.player).filter(v=>v.m>0);if(V.length)h+=`<div><div class="h3">Your vaults</div><div class="tblw"><table class="t"><thead><tr><th>Where</th><th class="r">Mass</th><th class="r">Value</th><th class="r">Jumps</th></tr></thead><tbody>${V.map(v=>`<tr${v.sid===mapSel?' style="background:rgba(255,190,90,.08)"':''}><td>${esc(vaultName(v.k))}<br><span class="mass" style="margin:0">${esc(v.sid&&DEF[v.sid]?DEF[v.sid].name:'')}${v.open?'':' · '+esc(vaultWhy(v.k,S.player))}</span></td><td class="r num">${fmt(v.m)} t</td><td class="r num">${fmt(v.val)} cr</td><td class="r num">${v.hops??'—'}</td></tr>`).join('')}</tbody></table></div></div>`}
   const L=ledger(),tm=RAWS.reduce((a,e)=>a+L.tot[e],0),t0=RAWS.reduce((a,e)=>a+(S.ledger0.tot[e]||0),0);
   h+=`<div><div class="h3">Conservation ledger</div><div class="tblw"><table class="t"><thead><tr><th>Held in</th><th class="r">Fe</th><th class="r">Cu</th><th class="r">Ir</th><th class="r">Xc</th><th class="r">Au</th></tr></thead><tbody>`;
   for(const k in L.L){const v=L.L[k];h+=`<tr><td>${k}</td>${RAWS.map(e=>`<td class="r num">${fmt(v[e])}</td>`).join('')}</tr>`}

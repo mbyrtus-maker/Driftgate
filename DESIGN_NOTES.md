@@ -95,7 +95,9 @@ Human pilots earn their faction War effort points, which make its fleets fight h
 - **Where it shows:** the faction's current bonus appears in the station campaign panel.
 
 ## Per-station vaults (built)
-Each friendly station and outpost keeps its own vault. Goods stored at one station stay there, so moving them means hauling them. The vault tab lists where else you have goods stored. Rewards that arrive while you're away (campaign items, frigate cargo) go to the vault where you last docked. A razed station takes its vaults down as debris. Old saves keep their single vault at the first station you dock at after updating.
+Each friendly station and outpost keeps its own vault. Goods stored at one station stay there, so moving them means hauling them. Two places show where else you have goods stored:
+- **Stored elsewhere** (Vault tab): every other vault, nearest first, with its contents, mass, value and distance in jumps. Each has a Set course button, and it flags vaults at stations you can no longer dock at (captured or breached).
+- **The map:** a ▣ VAULT tag marks each system holding your goods, and the side panel shows the selected system's vault and lists all your vaults. Rewards that arrive while you're away (campaign items, frigate cargo) go to the vault where you last docked. A razed station takes its vaults down as debris. Old saves keep their single vault at the first station you dock at after updating.
 
 ---
 
