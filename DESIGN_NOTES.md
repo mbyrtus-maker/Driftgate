@@ -55,6 +55,8 @@ Escorts stay light supporting capitals that guard the carrier and screen convoys
 - The torpedo weakness drops from ×7 to ×5: still the bomber's natural prey.
 - The limit stays at 2 per faction (3 for Ostrova).
 - They keep their torpedoes, anti-fighter batteries and point defence. Their default job is to stay with the carrier, or to screen a stand-off position while its wing is away.
+- **Assault:** each escort has 1 assault bay holding one assault ship (one load). Unlike the carrier, an escort doesn't stand off: it jumps into the target system, helps strip key points with its torpedoes, and launches its assault ship at a breached depot or outpost from close range. That makes escorts the quick way to take a lightly held depot, and they're exposed while they do it.
+- **On their own:** a pair of escorts can take a 1–2 load target alone. A 3-load target needs the carrier, a third ship called in, or a second wave inside the 3-minute window.
 
 ### Knock-on changes
 - **Victory:** systems are counted from structures only, so the 7-system hold and the 2-hour tiebreak need re-tuning. Captures get harder, and more games may run to the deadline.
@@ -94,6 +96,7 @@ Core stations and freeports can't be captured, only razed. The target panel show
 Every limit equals the largest possible garrison, 3, so one well-organised assault can always take any target in one go:
 - **In flight:** a faction can have up to 3 assault ships flying at once.
 - **On a carrier:** a carrier has 3 assault bays of its own, separate from its 6 craft bays, so it can carry a full 3-load assault without giving up any fighters or bombers.
+- **On escorts:** each escort carries 1 assault ship. Ships launched from escorts count toward the same limit of 3 in flight.
 - **Per call:** a pilot can call in as many ships as the target's remaining garrison, up to 3. The comms menu shows the number ("Call in 2 assault ships: 2 loads left").
 - **AI sieges:** the AI sends exactly enough for the garrison.
 
