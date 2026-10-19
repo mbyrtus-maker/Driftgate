@@ -74,6 +74,29 @@ Escorts stay light supporting capitals that guard the carrier and screen convoys
 3. **Remove frigates and pickets:** the escort upgrades and old-save conversion, then re-balance all four sides with the fast simulator.
 4. **Overgrowth** (independent, any time after step 1).
 
+## Cheaper forward depots (design, not built)
+
+### Why
+With frigates gone, systems are only held by structures, and taking one now needs a breach plus assault ships. That makes holding ground slower on both sides. Cheaper level 1 depots let factions and pilots claim systems faster, so the map keeps moving.
+
+### Depot levels
+Today a depot costs 2 Depot Frames (20 plate, 12 wire, 6 coil) plus the constructor's kit, and comes with 2,000 shield, 4,000 hull and 4 turrets.
+
+| Level | Cost | Build time | Shield / hull | Turrets | Station works | Garrison |
+|---|---|---|---|---|---|---|
+| **1: forward depot** | 1 Depot Frame (half today's cost) | about 60% of today's | 1,200 / 2,500 | 2 | 2 module slots, no fighter hangar | 1 load |
+| **2: depot** (today's depot) | +1 Depot Frame, upgraded in place | about 60 s | 2,000 / 4,000 | 4 | as today | 1, rising with works as in the garrison table |
+
+- **Holding:** a forward depot holds its system for victory the moment it's finished, like a full depot.
+- **Upgrading:** an upgrade is a station-works item ("Expand to full depot"). AI factions do it when they can spare a frame; pilots can pay for it from the depot's own store.
+- **Vulnerable:** forward depots are easy targets. Garrison 1, weak key points, two turrets: one escort with its assault ship, or a called-in assault, can take one once it's breached. Claiming is cheap, but keeping a claim means upgrading or defending it.
+- **Constructors:** a constructor called in by a pilot builds a forward depot by default. The call comes faster because the faction only needs 1 frame in stock.
+
+### Balance
+- Watch the victory pace: cheap claims could make the 7-system hold come too fast. The fast simulator should check game length and the share of games decided at the deadline against today's.
+- Levers: forward depot cost and build time, their shield and hull, and how eagerly the AI expands them.
+- Off-screen siege defence for a forward depot: about 800, against 1,300 for a full depot.
+
 ## Assault ships and capturing structures (design, not built)
 
 ### The idea
