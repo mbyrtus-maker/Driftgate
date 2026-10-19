@@ -807,7 +807,7 @@ function oresNoNu(d){if(!d.ores.nu)return d.ores;const o={...d.ores};delete o.nu
 const STN={free:{sMax:3600,hMax:10000,tur:6,dmg:16,range:1500},core:{sMax:3200,hMax:9000,tur:6,dmg:15,range:1500},depot:{sMax:2000,hMax:4000,tur:4,dmg:12,range:1300},hive:{sMax:4200,hMax:14000,tur:6,dmg:18,range:1600}};
 // balance levers, tuned by simulation so each of the four powers (the Brood included) wins about a quarter of galaxies
 // (tuned for the 2-hour deadline and the 20-minute hold over 18 rounds of simulated galaxies)
-const BAL={brBuild:.575,brOff:.64,brLevT:1200,brN:1,brHive:9,antiBrood:2.6,halProsp:1,halImp:.15,brGraze:3.95,coal:.35,devGap:1,ext:{halcyon:.87,varkesh:.89,ostrova:1.08}};   // ext: each faction's station mining rate
+const BAL={brBuild:.575,brOff:.72,brLevT:1200,brN:1,brHive:9,antiBrood:2.6,halProsp:1,halImp:.15,brGraze:3.45,coal:.35,devGap:1,ext:{halcyon:.87,varkesh:.89,ostrova:1.11}};   // ext: each faction's station mining rate
 const DEPOT_COST={frame:2},YARD_COST={frame:4,keel:4,lattice:4,plate:40},YARD_FEE=5000,FRIGATE_COST={keel:6,lattice:6,core:2,wire:10,picket:2,missile:4},YARD_TIME=180,FRIGATE_TIME=150,FRIG_CAP={player:3,brood:3},FRIG_HULL=6000;
 // the Escort: a light capital ship. Smaller and cheaper than a frigate, hurt by ordinary guns and missiles but heavily built; no
 // main cannon, instead six anti-fighter batteries and twin torpedo launchers. Holds a system like a frigate, jumps faster.
