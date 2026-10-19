@@ -3369,9 +3369,12 @@ function playerUpdate(dt){
   if(!roll)levelRoll(p,dt);
   qNorm(p.q);
   let fwd=0;if(keys.KeyW||touch.thrust)fwd+=1;if(keys.KeyS)fwd-=1;
-  const bm=C.boost||1,boost=(keys.ShiftLeft||keys.ShiftRight||touch.boost)&&fwd>0&&p.energy>3&&!p.stealth;
+  // afterburner: running dry locks it out until Shift is released and the reactor has at least 15 energy to light it again
+  // (without the latch it re-lit every time a sliver of energy came back, firing the start-up kick over and over)
+  const bHeld=(keys.ShiftLeft||keys.ShiftRight||touch.boost)&&fwd>0;if(!bHeld)p.bLock=false;
+  const bm=C.boost||1,boost=bHeld&&!p.stealth&&!p.bLock&&(p.boosting?p.energy>0:p.energy>=15);if(p.boosting&&bHeld&&!boost&&p.energy<=0){p.bLock=true;flash('Afterburner out of energy. Let go of Shift to let it recharge.')}
   if(boost&&!p.boosting){SFX.boost();const kick=70*bm*H.kick;qRot(p.q,0,0,1,_f);p.vx+=_f.x*kick;p.vy+=_f.y*kick;p.vz+=_f.z*kick;W.shake=Math.max(W.shake||0,.35);fxSpark({x:p.x-_f.x*20,y:p.y-_f.y*20,z:p.z-_f.z*20},FACTIONS[P.faction].col,6)}
-  p.boosting=boost;if(boost){p.energy-=30*dt*(CLASSES[P.cls].bcost||1);W.shake=Math.max(W.shake||0,.12)}
+  p.boosting=boost;if(boost){p.energy=Math.max(0,p.energy-30*dt*(CLASSES[P.cls].bcost||1));W.shake=Math.max(W.shake||0,.12)}
   qRot(p.q,0,0,1,_f);const thr=st.thrust*(boost?2.3*bm:1)*H.thr;p.thrusting=fwd>0;
   const v=hyp(p.vx,p.vy,p.vz),vf=p.vx*_f.x+p.vy*_f.y+p.vz*_f.z;
   if(fwd>0){const capF=st.maxSpd*(boost?1.95*bm:1)*H.spd;if(vf<capF){const a=Math.min(thr*dt,capF-vf);p.vx+=_f.x*a;p.vy+=_f.y*a;p.vz+=_f.z*a}}
