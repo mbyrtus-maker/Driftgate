@@ -1,10 +1,10 @@
 # Driftgate design notes
 
-Ideas that are agreed but not built yet. Each entry says what it is, how it should work, and what must stay true when it is built.
+Agreed designs. Each entry says what it is, how it works, and what must stay true. Entries marked (built) are in the game.
 
 ---
 
-## Pilot leaderboard and Legendary status (not built)
+## Pilot leaderboard and Legendary status (built)
 
 ### The idea
 Every time a pilot is part of a winning faction, they earn **1 Legend point**. A galaxy ends at most every 2 hours (the 8-system hold, or the 2-hour deadline), so points come slowly. Points raise a pilot through **10 Legendary levels**, from Victor to Legendary Ace. Each level unlocks a **permanent perk**: once earned, a pilot keeps it in every galaxy from then on.
@@ -31,7 +31,7 @@ Other pilots see your standing next to your callsign on radar, in the contacts l
 |---|---|---|---|
 | 1 | Pathfinder | 1 | **Scout's instinct**: in a Scout or Advanced Scout, beacons flip in 7 seconds instead of 10, and beacon bounties pay 20% more. |
 | 2 | Freighter | 2 | **Freight licence**: hauler hulls (Courier, Freighter, Bulker) get 10% more hold, the full-hold handling penalty is cut by a third, and hauling Orders pay 10% more. |
-| 3 | Prospector | 4 | **Miner's eye**: mining hulls (Light, Medium and Heavy Miner) drill 10% faster, and the target panel shows a rock's full ore breakdown from twice the usual range. |
+| 3 | Prospector | 4 | **Miner's eye**: mining hulls (Light, Medium and Heavy Miner) drill 10% faster and mine from 400 m instead of 300 m. (The target panel already shows a rock's full ore breakdown at any range, so the reach replaced that idea.) |
 | 4 | Veteran | 6 | **Your own ship**: start each new galaxy in the hull class you finished the last one in. It can't be a capital class (no frigates or escorts), and upgrades don't carry. Name your ship (shown to other pilots) and choose an engine-trail colour. |
 | 5 | Heroic Pilot | 9 | **Head start**: one system of your choice starts every galaxy at Mk II instead of Mk I. |
 | 6 | Ace | 12 | **Second head start**: choose a second system that starts at Mk II. |
@@ -71,6 +71,11 @@ A stealth fighter that hits hard but can't fight while hidden. Stealth is a mode
 - **Single player:** stored on the device, next to the existing galaxy-win history.
 - **Multiplayer:** the host records points for every pilot who meets the 30-minute rule when the galaxy ends. Each player's own device keeps their record. Callsigns are the identity, so the rules for a clean, unique callsign matter.
 - **Reset:** a "reset my legend" button in settings with a confirmation, for players who want to start over.
+
+### As built
+- Records are stored on each device under `driftgate.legend`, keyed by callsign. The Leaderboard button on the start screen shows them, the current callsign's perks, and its perk settings.
+- The Wraith uses the Light Fighter model for now. Stealth is synced in multiplayer, and other pilots lose a hidden Wraith from radar and target lists beyond 600 m.
+- Ship names, ranks and engine colours travel with the pilot's label to other players.
 
 ### Open questions
 - Should a Brood win give everyone a small consolation so Brood galaxies don't feel wasted?
