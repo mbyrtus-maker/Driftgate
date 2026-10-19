@@ -478,6 +478,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
               <kbd>B</kbd><span>Flares: spoof missiles tracking you (30 energy, 5 s recharge)</span>
               <kbd>E</kbd><span>Dock / launch</span>
               <kbd>V</kbd><span>Chase or cockpit camera</span>
+              <kbd>`</kbd><span>Show or hide the on-screen touch buttons</span>
               <kbd>Hold</kbd><span>A full hold makes any ship heavier. Haulers, miners and constructors at full load turn, accelerate and brake at about half rate and slide wide through turns</span>
               <kbd>P</kbd><span>Campaign orders: sign on to your faction's next move (shown under the system name), then set a course to it</span>
               <kbd>I</kbd><span>then 3 — call a faction constructor to build a depot here (area must be mostly clear when you call)</span>
@@ -2993,6 +2994,7 @@ addEventListener('keydown',e=>{if(e.code==='F11'){e.preventDefault();toggleFull(
   if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();devCredits();return}
   if(c==='Enter'&&running&&NET.on&&!S.player.docked){e.preventDefault();openChat();return}
   if(c==='KeyN'&&running&&!keys[c]){keys[c]=true;auToggle();return}
+  if(c==='Backquote'&&running&&!keys[c]){keys[c]=true;toggleTouch();return}
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(c)&&running)e.preventDefault();
   if(keys[c])return;keys[c]=true;
   if(!running)return;
@@ -3048,7 +3050,10 @@ $('contacts').addEventListener('pointerdown',e=>{const ob=e.target.closest('[dat
 document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.t;
   b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('on');if(k==='act'){if(S.player.docked)undock();else tryDock()}else if(k==='tgt')cycleHostile();else if(k==='msl')fireMissile();else if(k==='flare')playerFlares();else if(k==='wpn')setWeapon(S.player.wpn==='laser'?'kinetic':'laser');else touch[k]=true});
   const up=()=>{b.classList.remove('on');if(!['act','tgt','msl','flare','wpn'].includes(k))touch[k]=false};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up)});
-function showTouch(){$('touch').hidden=!coarse||!running}
+// the touch buttons can be switched off with ` (remembered on this device)
+let touchOff=false;try{touchOff=localStorage.getItem('dg_touchOff')==='1'}catch(e){}
+function showTouch(){$('touch').hidden=!coarse||!running||touchOff}
+function toggleTouch(){touchOff=!touchOff;try{localStorage.setItem('dg_touchOff',touchOff?'1':'0')}catch(e){}showTouch();flash(touchOff?'Touch buttons hidden. Press ` to show them again.':coarse?'Touch buttons shown. Press ` to hide them.':'Touch buttons on: they appear when you use a touch screen. Press ` to switch them off.')}
 
 function targetables(){const out=[];if(!W)return out;for(const e of W.ents){if(e.type==='ship'&&!e.isPlayer&&e.alive){if(seenShip(e))out.push({kind:'ship',ref:e})}else if(e.type==='outpost')out.push({kind:'outpost',ref:e});else if(e.type==='station')out.push({kind:'station',ref:e});else if(e.type==='gate')out.push({kind:'gate',ref:e});else if(e.type==='works')out.push({kind:'works',ref:e})}
   const s=S.sectors[W.sid];for(const a of s.ast)out.push({kind:'ast',ref:a});for(const c of s.crates)out.push({kind:'crate',ref:c});if(W.stationEnt&&!out.some(t=>t.ref===W.stationEnt))out.push({kind:'station',ref:W.stationEnt});if(W.outpostEnt&&!out.some(t=>t.ref===W.outpostEnt))out.push({kind:'outpost',ref:W.outpostEnt});if(S.beacons&&S.beacons[W.sid])out.push({kind:'beacon',ref:S.beacons[W.sid]});return out}
