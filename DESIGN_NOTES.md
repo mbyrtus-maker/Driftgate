@@ -137,6 +137,14 @@ A faction capital ship that fights with its fighters instead of guns. It jumps l
 - **Launching:** it launches its wing when hostiles come within about 4 km, two craft every few seconds. Bombers go for capitals, structures and Overgrowth; fighters screen the carrier and hunt enemy bombers.
 - **Recovery and rearming:** the wing lands again when the area is quiet. Landed craft rearm missiles and torpedoes from the carrier's stores and repair over a couple of minutes.
 - **Losses:** a craft shot down is gone; its kit falls as debris. The carrier refills empty bays from faction stores when it next visits a friendly station with a shipyard.
+- **Stand-off position:**
+  - **One system back:** an AI carrier sits one system away from the system it is attacking, in a friendly or quiet neighbour next to the gate that leads in.
+  - **Launching through the gate:** its wing and assault ships fly through that gate to strike, and come back through it to land, rearm and repair. The carrier itself stays out of reach of the target's turrets, hangar fighters and any defending frigate's lance.
+  - **When the gate is sealed:** if Overgrowth seals the gate into the target system, the craft can't get through. The carrier then jumps into the target system itself (capitals ignore gates), launches from there and accepts the risk. Clearing the Overgrowth comes first: its bombers go for the growth, and once the gate reopens the carrier jumps back to its stand-off position.
+  - **Defending its own space:** for defence, the carrier sits in the threatened system itself.
+  - **Pilots:** pilot carriers are free to sit wherever they like. The wing console marks the suggested stand-off system on the map.
+  - **Counterplay:** defenders who find the carrier's stand-off system can raid it with bombers while its wing is away. That makes guarding the carrier a real job, typically a screen of 2 craft kept back, or a frigate alongside.
+  - **Off-screen:** a carrier adjacent to a siege adds its wing and assault loads to that siege, as if it were present. Its own hull is only at risk if the target faction sends a raid into the stand-off system.
 - **Weakness:** on its own it is a big target. Its turrets keep fighters and torpedoes off it, but an enemy frigate's lance and torpedoes will hurt it. It needs either its wing in the air or a frigate alongside.
 
 ### Commanding one (pilots)
