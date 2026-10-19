@@ -11,6 +11,38 @@ Every system should follow these, and new work is checked against them.
 
 ---
 
+## Kill credit and bounties (built)
+- **Shared credit.** Every pilot who damaged a ship is paid a share of its bounty, and of the War effort points, equal to their share of the damage dealt (shield plus hull). You don't need the kill shot.
+- **AI damage.** It counts in the total but pays no one, so pilots aren't paid for what their wingmates did.
+- **Minimum share.** Below 5% of the damage, nothing is paid. The kill shot only adds to the pilot's kill count.
+- **Bounties scale with size.** The formula is `(25 + 20 × tier) × (hull ÷ striker hull)^0.6`:
+
+  | Ship (tier 1 unless stated) | Bounty |
+  |---|---|
+  | Interceptor | 35 cr |
+  | Striker | 45 cr |
+  | Heavy | 55 cr |
+  | Bomber | 60 cr |
+  | Gunboat | 70 cr |
+  | Bulker | 75 cr |
+  | Tier 3 heavy | 110 cr |
+  | Escort | 600 cr |
+  | Carrier or Hive Ship | 1,200 cr |
+  | Drone | 10 cr |
+
+  A supply freighter also pays the convoy raid bounty, split the same way.
+- **Payer.** Bounties are paid out of the pilot's faction treasury, so credits stay zero-sum.
+
+## Convoy escort (built)
+A Missions-tab contract to protect your own side's logistics.
+
+- **Signing on.** The Convoy escort table lists friendly supply convoys under way within 3 jumps. Pressing Escort signs you on (one contract at a time, one escort per convoy) and sets your course to the convoy.
+- **Counting jumps.** Each jump the convoy makes while you're in the system it leaves or the one it enters counts.
+- **Payment.** The contract needs 60% of the jumps left when you signed on. When the convoy docks, Command pays `60 + 45 per escorted jump + 4% of cargo value`. You also get War effort points (2, plus 0.5 per jump) and the Contractor bonus at Legend level 9.
+- **Protection and ambush.** With its escort along, the convoy's chance of being caught out of sight drops to 40% of normal. But each escorted jump may set up an ambush: three raiders from a hostile faction (or Unbound) jump in and go for the freighter while you're there. The chance is 2.5 times the system's convoy risk, clamped to between 12% and 55%.
+- **Failure.** If the convoy is destroyed, the contract fails. If you weren't with it for enough jumps, it pays nothing.
+- **Raiders and pirates go after supply freighters** as readily as haulers.
+
 ## Logistics (built)
 AI factions move their goods by freight convoy, so supply lines are real and can be cut.
 
@@ -68,6 +100,11 @@ Each friendly station and outpost keeps its own vault. Goods stored at one stati
 ---
 
 ## Capital roster: escorts and carriers, no frigates (built)
+A live carrier takes capital-ship damage, like the frigate did:
+- fighter guns and missiles only chip it;
+- torpedoes do four times their damage;
+- its shield regenerates slowly;
+- it keeps its full hull when a system loads.
 
 ### The decision
 Frigates are removed. The capital roster becomes the **fleet carrier**, one per faction, as the main capital ship, with **escorts** as its smaller supporting capitals. This ends the race to frigates: ground is held by structures, taken by assault ships after bombers and fighters breach it, and capitals support that instead of deciding it.

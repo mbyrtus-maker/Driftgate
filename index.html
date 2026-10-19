@@ -511,7 +511,8 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Aurorite.</b> A fifth ore that exists only in the three deep-space sectors (Ashen Expanse, Glass Shallows, Lantern Deep), glowing teal in the rock. It never re-forms anywhere else: dust from wrecks drifts back toward deep space. Fabricate it into Aurora Tuning (2 Aurorite + 1 Flux Coil) and attune any component in the Shipyard: each level adds +6% to that component (two levels max, 1 then 2 tunings). Whoever holds depots in deep space mines Aurorite, and their fighters start showing up tuned.</p>
             <p><b>Missiles and swarms.</b> Missiles and swarm micro-missiles hit 1.8× harder once a target's shield is down, so break shields with guns and finish with missiles. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts carry a swarm launcher with 2 pods (fire with 3): eight micro-missiles fan out at your target and anything flying near it. Flares fool only about half of them. AI heavy fighters and bombers sometimes carry one too.</p>
             <p><b>Constructors.</b> Factions send escorted constructor convoys to build forward depots in sectors without a station, and to rebuild lost frontier depots. A forward depot costs one Depot Frame and is lightly built (2 turrets, 2 module slots); its faction expands it into a full depot when it can spare a second frame. Constructors are flown only by faction command. To get a depot built, fly to a system with no station, make sure the area is mostly clear (no more than one hostile within 3 km, no hostile capital ship in the system) and call one in through comms (I, then 4). If command has no constructor ready it assembles one as soon as its stores allow, then it sets out from the nearest friendly station and jumps system by system to you, always with an escort of at least two fighters. The site doesn't have to stay clear while it travels, but the convoy has to survive to build.</p>
-            <p><b>Logistics.</b> Each faction's core station is its warehouse; each depot keeps its own store. A depot mines into its store, runs its life support, works and fighter hangar from it, and (with a production module) turns ore into plates, conduit and coil. Freight convoys carry surplus ore to the warehouse and components out to depots that are building and to carriers in the field. Convoys are real freighters: they can be caught on the way, and a destroyed freighter spills half its hold as salvage. The Missions tab lists enemy convoys within reach under Convoy raids, with a bounty for each.</p>
+            <p><b>Logistics.</b> Each faction's core station is its warehouse; each depot keeps its own store. A depot mines into its store, runs its life support, works and fighter hangar from it, and (with a production module) turns ore into plates, conduit and coil. Freight convoys carry surplus ore to the warehouse and components out to depots that are building and to carriers in the field. Convoys are real freighters: they can be caught on the way, and a destroyed freighter spills half its hold as salvage. The Missions tab lists enemy convoys within reach under Convoy raids, with a bounty for each, and our own convoys under Convoy escort: sign on, fly with one, and Command pays when it docks.</p>
+            <p><b>Bounties.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships. You don't need the kill shot: everyone who damaged it is paid their share of the bounty (and War effort) by damage dealt.</p>
             <p><b>War effort.</b> Orders delivered, supply-drive loads, campaign moves, beacon flips and enemy ships shot down earn your faction War effort. It fades over about 20 minutes, and while it lasts your faction's fleets fight harder in the battles fought out of sight. The campaign panel at your station shows the current bonus.</p>
             <p><b>Sensors, not omniscience.</b> You only hear about strikes, convoys and battles in sectors your side can see: sectors with a friendly station or depot (plus their neighbours), friendly outposts, and wherever a friendly scout is (plus neighbours). Holding the Hollow Relay taps the whole network. The map dims sectors you cannot see. Scout hulls are the fastest ships, see the whole sector and the sectors next door, but carry light guns and turn slowly. The Scout fires its missiles in pairs from two launchers; the Advanced Scout has one launcher plus a swarm launcher.</p>
             <p><b>Crewing together.</b> In multiplayer, a pilot docked at the same station as a squadmate's Heavy Bomber can sign on to its turret (Hangar, then Shipyard): when the pilot launches you go with them, straight into the turret. Any pilot of your faction can dock with a squadmate's carrier or escort as crew. From the Strategic console the commander can give a crew member one station (Helm, Weapons or Engineering). While it's assigned only that crew member can use it, even the commander can't, and the crew member can't use anything else. It returns to the commander the moment the crew member steps away from the console or leaves the bridge. The command chair goes with the Helm.</p>
@@ -1062,9 +1063,29 @@ function haulSend(f,fromSid,toSid,load,key,why,car){const path=trPath(fromSid,to
 // what a convoy is carrying, for feeds and the raid board
 function haulWhat(t){const ks=Object.keys(t.load||{}).filter(k=>t.load[k]>0);return ks.slice(0,3).map(k=>`${t.load[k]} ${ITEMS[k].name}`).join(', ')+(ks.length>3?'…':'')}
 // risk on entering a system off-screen: hostile capitals, a hostile station, Brood space, and a little anywhere outside home
-function haulRisk(t,sid){if(WORLDS[sid])return 0;let r=0;if(frigatesIn(sid).some(o=>hostile(t.side,o.side)))r+=LOGI.risk.cap;const Rs=S.stations[sid];if(Rs&&hostile(t.side,Rs.owner)&&Rs.owner!=='neutral')r+=LOGI.risk.station;
+function haulRisk(t,sid,raw){if(WORLDS[sid]&&!raw)return 0;let r=0;if(frigatesIn(sid).some(o=>hostile(t.side,o.side)))r+=LOGI.risk.cap;const Rs=S.stations[sid];if(Rs&&hostile(t.side,Rs.owner)&&Rs.owner!=='neutral')r+=LOGI.risk.station;
   if(sideNorm(sectorOwner(sid))==='brood')r+=LOGI.risk.brood;if(!territory(t.side).has(sid))r+=LOGI.risk.out;return r}
-function haulLost(t,sid,by){const s=S.sectors[sid],inv2={},rest={};for(const k in t.load){const m=Math.floor(t.load[k]*.5+Math.random()*.6);if(m>0)inv2[k]=m;if(t.load[k]-m>0)rest[k]=t.load[k]-m}t.load={};toDebris(s,rest);if(Object.keys(inv2).length){const o=rdir(.4);s.crates.push({id:S.nextId++,x:Math.round(o.x*1600),y:Math.round(o.y*300),z:Math.round(o.z*1600),inv:inv2,until:S.T+900})}
+// ---- convoy escort contract. A pilot signs on to a friendly convoy from the Missions tab. Each jump the convoy makes with
+// its escort in the system it leaves or the one it enters counts; the escort's presence scares off most interception out of
+// sight, but raiders may ambush the convoy while the escort is with it. If the escort was there for enough of the trip
+// when the convoy docks, the faction pays.
+const ESC_CV={need:.6,cut:.4,amb:2.5,ambMin:.12,ambMax:.55,base:60,hop:45,val:.04,we:2};
+function cvLeft(t){return Math.max(0,t.path.length-1-t.leg)}
+function cvPay(t,hops){return Math.round((ESC_CV.base+ESC_CV.hop*hops+invValue(t.load||{})*ESC_CV.val)/10)*10}
+function cvSign(t,k,name){const n=cvLeft(t);t.esc={k,name,hops:0,need:Math.max(1,Math.ceil(n*ESC_CV.need))};return t.esc}
+function cvStep(t,prev){const E=t.esc;if(!E)return 1;const ps=pSect(E.k);if(ps!==prev&&ps!==t.sector)return 1;E.hops++;
+  if(Math.random()<clamp(haulRisk(t,t.sector,1)*ESC_CV.amb,ESC_CV.ambMin,ESC_CV.ambMax))t.amb=1;return ESC_CV.cut}
+function cvEnd(t,ok,sid){const E=t.esc;if(!E)return;t.esc=null;const f=t.side;
+  if(!ok){keyFeed(E.k,`✖ Escort failed: the ${FACTIONS[f].short} convoy you were escorting was destroyed in ${DEF[sid].name}.`,'bad');return}
+  if(E.hops<E.need){keyFeed(E.k,`The convoy reached ${DEF[t.to].name}, but you were with it for only ${E.hops} of the ${E.need} jumps the contract needs. No pay.`,'warn');return}
+  const got=payKey(E.k,f,cvPay(t,E.hops));weAdd(f,ESC_CV.we+.5*E.hops);keyFeed(E.k,`✔ Escort complete: the convoy docked at ${DEF[t.to].name}. Command pays +${fmt(got)} cr.`,'good');legBonus(E.k,f,'a convoy escort')}
+// raiders jump the convoy while its escort is there
+function cvAmbush(e){const t=e.tradeT;if(!t)return;const Rs=S.stations[W.sid],ow=sideNorm(sectorOwner(W.sid));
+  let side=Rs&&FACTIONS[Rs.owner]&&hostile(t.side,Rs.owner)?Rs.owner:FACTIONS[ow]&&hostile(t.side,ow)?ow:broodNear(W.sid)?'brood':null;
+  if(!side){const L=FAC_IDS.filter(f=>hostile(t.side,f));side=L.length?pick(L):null}
+  const g=(side&&spawnWing('raider',side,3,false))||spawnWing('pirate','pirate',3,false);if(!g)return;for(const m of grpAlive(g))m.ai.tgt=e;
+  if(t.esc)keyFeed(t.esc.k,`⚠ Ambush! ${g.side==='pirate'?'Unbound':sideName(g.side)} raiders are going for the convoy you're escorting.`,'bad')}
+function haulLost(t,sid,by){cvEnd(t,false,sid);const s=S.sectors[sid],inv2={},rest={};for(const k in t.load){const m=Math.floor(t.load[k]*.5+Math.random()*.6);if(m>0)inv2[k]=m;if(t.load[k]-m>0)rest[k]=t.load[k]-m}t.load={};toDebris(s,rest);if(Object.keys(inv2).length){const o=rdir(.4);s.crates.push({id:S.nextId++,x:Math.round(o.x*1600),y:Math.round(o.y*300),z:Math.round(o.z*1600),inv:inv2,until:S.T+900})}
   if(friendSide(t.side))feed(`⚠ A ${FACTIONS[t.side].short} supply convoy was destroyed in ${DEF[sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(covered(sid))feed(`A ${FACTIONS[t.side].short} supply convoy was destroyed in ${DEF[sid].name}; some salvage is drifting there.`,'news')}
 // the per-tick logistics: depot industry, surplus ore home, and life support from the depot's own store
 function logiTick(){for(const id in S.stations){const R=S.stations[id];if(!isDepotF(R))continue;const f=R.owner,ds=dStore(R);
@@ -1091,15 +1112,15 @@ function tradersTick(){if(NET.cl)return;S.traders=S.traders||[];
     if(S.T<t.next)continue;
     if(t.kind==='haul'&&t.car){const C=S.frigates.find(x=>x.id===t.car);if(C&&C.sector!==t.to){t.to=C.sector;t.path=trPath(t.sector,t.to);t.leg=0}}
     if(t.leg>=t.path.length-1){traderArrive(t);S.traders.splice(i,1);continue}
-    t.leg++;t.sector=t.path[t.leg];t.next=S.T+TRADER_HOP;
-    if(t.kind==='haul'&&Math.random()<haulRisk(t,t.sector)){haulLost(t,t.sector);S.traders.splice(i,1);continue}
+    const prev=t.sector;t.leg++;t.sector=t.path[t.leg];t.next=S.T+TRADER_HOP;
+    if(t.kind==='haul'&&Math.random()<haulRisk(t,t.sector)*cvStep(t,prev)){haulLost(t,t.sector);S.traders.splice(i,1);continue}
     if(WORLDS[t.sector])inW(WORLDS[t.sector],()=>spawnTrader(t,true))}}
 function traderArrive(t){if(t.kind==='haul'){haulArrive(t);return}const B=S.stations[t.to],k=t.item,n=t.load[k]||0;
   if(!n){return}
   if(!trCanUse(t.side,B)){inv.addAll(S.econ.stock[t.side],t.load);t.load={};return}   // market gone or turned: the goods go home
   const pr=Math.max(1,Math.floor(stPrice(B,k)*.94));inv.add(mkStock(B),k,n);if(B.owner==='neutral')transfer('neutral',t.side,pr*n);mkOf(B)[k]+=n;t.load={};
   if(t.side===S.player.faction&&covered(t.to))feed(`${FACTIONS[t.side].short} trader delivered ${n} ${ITEMS[k].name} to ${B.name}.`,'news')}
-function haulArrive(t){const f=t.side;let into=null;
+function haulArrive(t){const f=t.side;let into=null;cvEnd(t,true);
   if(t.car){const C=S.frigates.find(x=>x.id===t.car);if(C){C.store=C.store||{};into=C.store}}
   else{const B=S.stations[t.to];if(B&&B.owner===f)into=storeOf(B)}
   if(!into)into=S.econ.stock[f]||S.econ.stock.pirate;inv.addAll(into,t.load);t.load={}}
@@ -1108,11 +1129,11 @@ function spawnTrader(t,arrive){const e=makeNPC('trader',t.side,t.cls,1,t.load,`t
   const prev=t.path[t.leg-1],nxt=t.path[t.leg+1],gin=gs.find(g=>g.to===prev),gout=gs.find(g=>g.to===nxt),SE=W.stationEnt;
   const start=arrive&&gin?{x:gin.x*.93,y:gin.y*.93,z:gin.z*.93}:t.leg===0&&SE?{x:SE.x+150,y:SE.y+40,z:SE.z}:randPos(700*SPACE,1800*SPACE);
   e.x=start.x;e.y=start.y;e.z=start.z;const dest=gout?W.ents.find(x=>x.type==='gate'&&x.to===nxt):(t.leg>=t.path.length-1?(t.car?(W.ents.find(x=>x.tok&&x.tok.id===t.car&&x.alive)||SE):SE):null);e.ai.dest=dest||{x:0,y:0,z:0};
-  if(arrive&&gin)fxWarp(e,sideCol(t.side));faceInstant(e,e.ai.dest.x-e.x,e.ai.dest.y-e.y,e.ai.dest.z-e.z);e.tradeT=t;W.ents.push(e);return e}
-function traderThink(e,dt){const D=e.ai.dest,hit=W.t-e.lastHit<5;e.boosting=hit;if(e.ai.arrived){brake(e,dt);return}
+  if(arrive&&gin)fxWarp(e,sideCol(t.side));faceInstant(e,e.ai.dest.x-e.x,e.ai.dest.y-e.y,e.ai.dest.z-e.z);e.tradeT=t;if(t.amb&&t.esc&&pSect(t.esc.k)===W.sid){t.amb=0;e.ambT=W.t+rnd(6,14)}W.ents.push(e);return e}
+function traderThink(e,dt){if(e.ambT&&W.t>e.ambT&&!NET.cl){e.ambT=0;cvAmbush(e)}const D=e.ai.dest,hit=W.t-e.lastHit<5;e.boosting=hit;if(e.ai.arrived){brake(e,dt);return}
   const d=steer(e,D.x,D.y,D.z,dt,true,hit?1.15:.8);faceTo(e,D,dt);e.thrusting=true;if(d<(D.type==='gate'?260:220)){e.ai.arrived=true;if(D.type==='gate')fxWarp(e,sideCol(e.side))}}
 function traderLost(e){const id=e.home.split(':')[1],t=(S.traders||[]).find(x=>String(x.id)===id);if(!t)return;S.traders=S.traders.filter(x=>x!==t);
-  if(t.kind==='haul'){if(friendSide(e.side))feed(`⚠ A ${FACTIONS[e.side].short} supply convoy was destroyed in ${DEF[W.sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} supply convoy destroyed: half its hold is drifting free.`,'good');return}
+  if(t.kind==='haul'){cvEnd(t,false,W.sid);if(friendSide(e.side))feed(`⚠ A ${FACTIONS[e.side].short} supply convoy was destroyed in ${DEF[W.sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} supply convoy destroyed: half its hold is drifting free.`,'good');return}
   if(friendSide(e.side))feed(`${FACTIONS[e.side].short} trader carrying ${ITEMS[t.item].name} was destroyed in ${DEF[W.sid].name}.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} trader destroyed: its ${ITEMS[t.item].name} is drifting free.`,'good')}
 function tradersEnRoute(P){return(S.traders||[]).filter(t=>t.side===P.faction||covered(t.sector))}
 // the trade screen: best runs between stations you have prices for, and the demand board for every friendly market
@@ -1379,7 +1400,21 @@ function wePts(f){const g=weFac(f);return g&&S.we?(S.we[g]||0):0}
 function weBonus(f){return WE.max*(1-Math.exp(-wePts(f)/WE.scale))}
 function weMul(f){return 1+weBonus(f)}
 function weTick(){if(!S.we)return;const k=Math.exp(-10/WE.tau);for(const f in S.we){S.we[f]*=k;if(S.we[f]<.01)delete S.we[f]}}
-function weKill(e){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'?K.drone:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p)}
+function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'?K.drone:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
+// ---- kill credit. Every pilot who damaged a ship is paid their share of its bounty (and War effort) by damage dealt, so the
+// kill shot isn't needed. AI damage counts in the total but pays no one; the kill shot only adds to the kill count.
+// Bounties grow with the size of the ship.
+function bountyOf(e){if(e.role==='drone')return 10;if(e.role==='frigate')return e.cls==='escort'?600:1200;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
+  return Math.max(10,Math.round((25+20*(e.tier||1))*Math.pow(Math.max(.3,r),.6)/5)*5)}
+function dmgRec(e,src,at,d){if(!(d>0)||e.isPlayer)return;const k=at&&at.src&&at.src.rp?at.src.rp:src==='player'?'me':'_ai';(e.dmg=e.dmg||{})[k]=(e.dmg[k]||0)+d}
+function killNoun(e){return e.role==='miner'?'miner':e.role==='hauler'?'hauler':e.role==='trader'?(e.tradeT&&e.tradeT.kind==='haul'?'supply freighter':'trader'):e.role==='builder'?'constructor':e.role==='drone'?'drone':e.role==='frigate'?(e.tok?capName(e.tok):'capital ship'):CLASSES[e.cls]?CLASSES[e.cls].name.toLowerCase():'fighter'}
+function payKill(e,src,at){const D=e.dmg||{},kp=at&&at.src&&at.src.rp,killer=kp||(src==='player'?'me':null);let tot=0;for(const k in D)tot+=D[k];
+  const sh={};for(const k in D)if(k!=='_ai'&&tot>0&&D[k]/tot>=.05)sh[k]=D[k]/tot;if(killer&&!(tot>0))sh[killer]=1;
+  if(killer&&!sh[killer])runAs(isMe(killer)?null:killer,()=>{S.player.kills++});
+  for(const k in sh)runAs(isMe(k)?null:k,()=>{const f=S.player.faction,x=sh[k],pct=Math.round(x*100);if(k===killer)S.player.kills++;if(!hostile(f,e.side))return;weKill(e,x);
+    const nm=`${e.side==='pirate'?'Unbound':FACTIONS[e.side]?FACTIONS[e.side].short:'Brood'} ${killNoun(e)}`,part=x<.995?` Your damage: ${pct}%.`:'';
+    if(e.role==='trader'&&e.tradeT&&e.tradeT.kind==='haul'){const got=transfer(f,'player',Math.round(raidBounty(e.tradeT)*x));weAdd(f,3*x);if(got)feed(`Convoy raid: +${fmt(got)} cr for cutting ${FACTIONS[e.side].short} supplies.${part}`,'good')}
+    const b=transfer(f,'player',Math.max(1,Math.round(bountyOf(e)*x)));feed(`${nm} destroyed${k===killer?'':' (shared kill)'}.${b?` Bounty +${b} cr.`:''}${part}`,'good')})}
 function raidBounty(t){return Math.round((invValue(t.load||{})*.25+120)/10)*10}
 function weHtml(f){const b=Math.round(weBonus(f)*100);return` War effort: <b>${b?'+'+b+'%':'none'}</b> in battles fought out of sight${b?'':''} (pilots earn it with Orders, supply drives, campaign moves, beacon flips and kills; it fades over about 20 minutes).`}
 function resolveAbstract(ev){
@@ -1841,6 +1876,9 @@ function missionsHtml(c,P,srcs){const f=P.faction,C=myCamp(),m=C&&C.mv,strike=m&
   h+=ops.length?ops.map((o,i)=>o.kind==='local'?'':`<div class="opr ${o.kind}"><div><b>${esc(o.label)}</b><br><span>${o.kind==='assist'?'Join the push':'Defend'} · ${o.hops?o.hops+' jump'+(o.hops>1?'s':''):'this system'}${o.eta?' · lands in '+o.eta+' s':o.ev.stage==='engaged'?' · fighting now':''}</span></div><button class="btn" data-act="opjoin" data-arg="${i}">${o.hops?'Set course':'Here'}</button></div>`).join(''):`<div class="empty">No strikes, convoys or attacks your side knows about right now.</div>`;
   {const cv=(S.traders||[]).filter(t=>t.kind==='haul'&&hostile(f,t.side)&&t.side!=='pirate'&&(HOP[P.sector][t.sector]||0)<=3&&(covered(t.sector)||(HOP[P.sector][t.sector]||0)<=1));h+=`<div class="h3" style="margin-top:16px">Convoy raids</div><p class="note" style="margin:0 0 8px">Enemy supply convoys moving within reach. Destroy the freighter to cut their logistics: Command pays the bounty, and half the hold spills as salvage.</p>`;
     h+=cv.length?`<div class="tblw"><table class="t"><thead><tr><th>Convoy</th><th>Now in</th><th>Bound for</th><th class="r">Bounty</th></tr></thead><tbody>${cv.map(t=>`<tr><td><b style="color:${sideCol(t.side)}">${esc(FACTIONS[t.side]?FACTIONS[t.side].short:'Brood')}</b> ${esc(t.why||'supplies')}<br><span class="mass" style="margin:0">${esc(haulWhat(t))}</span></td><td>${esc(DEF[t.sector].name)}${t.sector===P.sector?' (here)':''}</td><td>${esc(DEF[t.to].name)}</td><td class="r num">${fmt(raidBounty(t))} cr</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">No enemy convoys spotted within reach.</div>`}
+  {const me=P.pid||'me',cv=(S.traders||[]).filter(t=>t.kind==='haul'&&t.side===f&&cvLeft(t)>=1&&(HOP[P.sector][t.sector]||0)<=3);
+    h+=`<div class="h3" style="margin-top:16px">Convoy escort</div><p class="note" style="margin:0 0 8px">Our supply convoys under way. Sign on and fly with one: each jump it makes with you in the system it leaves or enters counts. With you there it is far harder to catch out of sight, but raiders may try an ambush. Command pays when it docks, if you were with it for at least ${Math.round(ESC_CV.need*100)}% of the jumps left when you signed on.</p>`;
+    h+=cv.length?`<div class="tblw"><table class="t"><thead><tr><th>Convoy</th><th>Now in</th><th>Bound for</th><th class="r">Jumps</th><th class="r">Pay</th><th></th></tr></thead><tbody>${cv.map(t=>{const E=t.esc,mine=E&&E.k===me;return`<tr><td>${esc(t.why||'supplies')}<br><span class="mass" style="margin:0">${esc(haulWhat(t))}</span></td><td>${esc(DEF[t.sector].name)}${t.sector===P.sector?' (here)':''}</td><td>${esc(DEF[t.to].name)}</td><td class="r num">${mine?`${E.hops}/${E.need}`:cvLeft(t)}</td><td class="r num">${fmt(cvPay(t,mine?Math.max(E.hops,E.need):Math.ceil(cvLeft(t)*ESC_CV.need)))} cr</td><td class="r">${mine?'<span class="mass" style="margin:0">Escorting</span>':E?`<span class="mass" style="margin:0">${esc(E.name||'Escorted')}</span>`:`<button class="btn" data-act="cvesc" data-arg="${t.id}">Escort</button>`}</td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">No friendly convoys under way within 3 jumps.</div>`}
   const L=(S.bcnMis&&S.bcnMis[f]||[]).filter(x=>S.T<x.until);h+=`<div class="h3" style="margin-top:16px">Beacon missions</div><p class="note" style="margin:0 0 8px">Command pays a bounty on top of the usual ${BCN_FLIP} cr flip bonus and ${BCN_RES} cr/min residual for flipping these beacons. Fly a Scout or Advanced Scout and hold within ${BCN_R} m for ${BCN_T} s.${isScoutCls(P.cls)?'':' <b>You are not flying a scout.</b>'}</p>`;
   if(!L.length)h+=`<div class="empty">No beacon missions posted. Command posts new ones every few minutes.</div>`;
   else{h+=`<div class="tblw"><table class="t"><thead><tr><th>Beacon</th><th>Held by</th><th class="r">Jumps</th><th class="r">Bounty</th><th class="r">Time left</th><th></th></tr></thead><tbody>`;
@@ -2554,7 +2592,7 @@ function spawnNPC(role,side,initial,lead){
 }
 // guard drones: carried in the hold as items, flown out as tiny escorts; whatever survives goes home with the ship
 function spawnFrigate(t,arrive){if(!W||t.live)return null;const side=t.side,fac=side==='player'?S.player.faction:side,tier=1;
-  const cl=t.cls||'frigate',e=makeNPC('frigate',side,cl,tier,t.load,`frig:${t.id}:${side}`);t.load={};t.live=true;e.fac=fac;e.st=shipStats(fac,cl,tier);e.hull=Math.min(t.hull,e.st.hull);e.shield=Math.min(t.shield||e.st.sCap,e.st.sCap);e.tok=t;e.wpn='kinetic';
+  const cl=t.cls||'frigate',e=makeNPC('frigate',side,cl,tier,t.load,`frig:${t.id}:${side}`);t.load={};t.live=true;e.fac=fac;e.st={...shipStats(fac,cl,tier),hull:capHullMax(t)};e.hull=Math.min(t.hull,e.st.hull);e.shield=Math.min(t.shield||e.st.sCap,e.st.sCap);e.tok=t;e.wpn='kinetic';
   e.turrets=(cl==='carrier'?[[0,.55,.55],[0,.55,-.45],[.6,0,.2],[-.6,0,.2],[0,-.5,.1],[0,-.5,-.5]]:cl==='escort'?[[0,.55,.55],[0,.55,-.45],[.6,0,.2],[-.6,0,.2],[0,-.5,.1],[0,-.5,-.5]]:[[0,.55,.55],[0,.55,-.45],[.6,0,0],[-.6,0,0],[0,-.5,.1]]).map(p=>({p,cool:rnd(.5)}));e.lanceCd=rnd(1,2);
   if(arrive){const g=pick(GATES[W.sid]);e.x=g.x*.9;e.y=g.y*.9;e.z=g.z*.9;fxWarp(e,sideCol(side));frigArriveFx(e)}else{const o=rdir(.3);e.x=o.x*1300;e.y=o.y*300;e.z=o.z*1300}
   faceInstant(e,-e.x,-e.y,-e.z);W.ents.push(e);e.pickets=[];
@@ -3172,11 +3210,11 @@ function fireLaser(e){if(e.cool>0||e.landed||e.stealth||(e.boot&&W.t<e.boot))ret
   if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg,e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1,e.side,'laser');if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
-  if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&(W.detach||W.t<(W.ejectT||0))))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;
+  if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&(W.detach||W.t<(W.ejectT||0))))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;const h0=e.hull,s0=e.shield,rec=()=>dmgRec(e,srcSide,at,(s0-Math.max(0,e.shield))+(h0-Math.max(0,e.hull)));
   // escorts are light capitals: a torpedo that connects guts one (about 4 hits at Mk I, 2 at Mk V)
   if(e.stealth){if(e.isPlayer)stealthOff(true);else{e.stealth=false;e.masked=false;e.maskR=0;e.boot=W.t+BOOT_T}}
   if(e.cls==='escort'&&(kind||(at&&at.kind))==='torpedo'){dmg*=ESC_TORP_MUL;stat('torpHit')}
-  if(e.cls==='frigate'){const k=kind||(at&&at.kind);if(k==='torpedo'){dmg*=4;stat('torpHit');stat('torpDmg',dmg)}else if(k!=='capital'){if(e.shield>0){e.shield=Math.max(0,e.shield-dmg*.6);e.shHitT=W.t;e.shHitA=.5;fxSpark(at||e,'#8fc8ff',3)}else{fxSpark(at||e,'#ffd9a0',2);e.hull-=dmg*capChip(k);if(srcSide==='player'&&W.t-(W.capT||-99)>8){W.capT=W.t;flash('Fighter weapons only chip capital-ship armour. It takes a lot of hits; torpedoes do the real damage.',true)}if(e.hull<=0)killShip(e,srcSide,at)}return}}
+  if(e.cls==='frigate'||e.cls==='carrier'){const k=kind||(at&&at.kind);if(k==='torpedo'){dmg*=4;stat('torpHit');stat('torpDmg',dmg)}else if(k!=='capital'){if(e.shield>0){e.shield=Math.max(0,e.shield-dmg*.6);e.shHitT=W.t;e.shHitA=.5;fxSpark(at||e,'#8fc8ff',3)}else{fxSpark(at||e,'#ffd9a0',2);e.hull-=dmg*capChip(k);if(srcSide==='player'&&W.t-(W.capT||-99)>8){W.capT=W.t;flash('Fighter weapons only chip capital-ship armour. It takes a lot of hits; torpedoes do the real damage.',true)}}rec();if(e.hull<=0)killShip(e,srcSide,at);return}}
   if(e.isPlayer&&at&&srcSide){let dx,dy,dz;if(at.src&&at.src.x!==undefined&&at.vx===undefined){dx=at.src.x-e.x;dy=at.src.y-e.y;dz=at.src.z-e.z}else if(at.vx!==undefined){dx=-at.vx;dy=-at.vy;dz=-at.vz}else{dx=at.x-e.x;dy=at.y-e.y;dz=at.z-e.z}
     const l=hyp(dx,dy,dz)||1;W.hitDirs=(W.hitDirs||[]).filter(h=>W.t-h.t<1.3);W.hitDirs.push({x:dx/l,y:dy/l,z:dz/l,t:W.t})}
   const sf=kind==='laser'?1.25:kind==='kinetic'?.85:1,hf=kind==='laser'?.75:kind==='kinetic'?1.15:1;
@@ -3184,7 +3222,7 @@ function damageShip(e,dmg,srcSide,at,kind){
     if(a>0){e.shHitT=W.t;e.shHitA=Math.min(1,a/(e.st.sCap*.25)+.35);e.hitPt=at?{x:at.x-e.x,y:at.y-e.y,z:at.z-e.z}:null;fxSpark(at||e,'#8fc8ff',4);if(e.isPlayer){W.shHit=.35;SFX.shield()}}
     if(e.shield<=0){e.shield=0;e.shBreakT=W.t;e.shDown=true;fxShieldBreak(e);if(e.isPlayer){flash('Shields down! Hold Shift to boost away.',true);SFX.shieldDown()}}}
   if(dmg>0){e.hull-=dmg*hf*(1-e.st.dr);fxSpark(at||e,'#ffd9a0',4);if(e.isPlayer){W.hurt=.25;W.shake=Math.max(W.shake||0,.45);SFX.hull()}}
-  if(e.hull<=0)killShip(e,srcSide,at);
+  rec();if(e.hull<=0)killShip(e,srcSide,at);
 }
 function killShip(e,src,at){
   e.alive=false;e.killed=true;if(e.role==='trader'&&e.home.startsWith('trader:'))traderLost(e);if(e.role==='scout'&&e.home.startsWith('scout:')){const id=e.home.split(':')[1];S.scouts=S.scouts.filter(t=>String(t.id)!==id);if(e.side===S.player.faction)feed(`Our scout was shot down in ${DEF[W.sid].name}.`,'bad')}fxBoom(e,e.st.radius*2.6,e.isPlayer?PLAYER_COL:sideCol(e.side));
@@ -3201,7 +3239,7 @@ function killShip(e,src,at){
   inv.addAll(crate,e.cargo);e.load={};e.cargo={};
   if(Object.keys(crate).length)s.crates.push({id:S.nextId++,x:Math.round(e.x),y:Math.round(e.y),z:Math.round(e.z),inv:crate,until:S.T+300});
   {const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null;
-  const kp=at&&at.src&&at.src.rp;if(src==='player'||kp)runAs(kp,()=>{S.player.kills++;weKill(e);if(e.role==='trader'&&e.tradeT&&e.tradeT.kind==='haul'&&hostile(S.player.faction,e.side)){const rb=raidBounty(e.tradeT);const got=transfer(S.player.faction,'player',rb);weAdd(S.player.faction,3);if(got)feed(`Convoy raid: +${fmt(got)} cr for cutting ${FACTIONS[e.side].short} supplies.`,'good')}const b=transfer(S.player.faction,'player',e.role==='drone'?10:e.role==='frigate'?600:25+20*e.tier);feed(`${e.side==='pirate'?'Unbound':FACTIONS[e.side].short} ${e.role==='miner'?'miner':e.role==='hauler'?'hauler':e.role==='builder'?'constructor':e.role==='drone'?'drone':e.role==='frigate'?'FRIGATE':'fighter'} destroyed.${b?` Bounty +${b} cr.`:''}`,'good')})
+  payKill(e,src,at)
 }
 function playerDeath(p0){
   const p=p0||W.player,P=S.player,s=S.sectors[W.sid],crate={};
@@ -3258,7 +3296,7 @@ function steer(e,tx,ty,tz,dt,arrive,mul){const dx=tx-e.x,dy=ty-e.y,dz=tz-e.z,d=h
 function brake(e,dt){const v=hyp(e.vx,e.vy,e.vz);if(v<1)return;const acc=Math.min(e.st.thrust,v/dt);e.vx-=e.vx/v*acc*dt;e.vy-=e.vy/v*acc*dt;e.vz-=e.vz/v*acc*dt}
 function faceDir(e,dx,dy,dz,dt){const L=hyp(dx,dy,dz);if(L<1e-6)return 0;dx/=L;dy/=L;dz/=L;qRot(e.q,0,0,1,_f);const ang=Math.acos(clamp(_f.x*dx+_f.y*dy+_f.z*dz,-1,1));qRot(e.q,0,1,0,_u);qLook(dx,dy,dz,_u.x,_u.y,_u.z,_tq);qTowards(e.q,_tq,e.st.turn*handling(e).turn*dt);return ang}
 const faceTo=(e,p,dt)=>faceDir(e,p.x-e.x,p.y-e.y,p.z-e.z,dt);
-function findHostile(e,range){let best=null,bd=range;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e)continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;if(!hostile(e.side,o.side))continue;const d=d3(o,e)*(o.role==='hauler'&&(e.role==='raider'||e.role==='pirate')?.5:1)*(o.side==='brood'&&e.side!=='brood'?.6:1)*(o.role==='frigate'?(isBmb(e.cls)?.35:1.6):1);if(d<bd){bd=d;best=o}}return best}
+function findHostile(e,range){let best=null,bd=range;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e)continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;if(!hostile(e.side,o.side))continue;const d=d3(o,e)*((o.role==='hauler'||o.tradeT&&o.tradeT.kind==='haul')&&(e.role==='raider'||e.role==='pirate')?.5:1)*(o.side==='brood'&&e.side!=='brood'?.6:1)*(o.role==='frigate'?(isBmb(e.cls)?.35:1.6):1);if(d<bd){bd=d;best=o}}return best}
 function bomberRun(e,OE,dt){const ai=e.ai,dx=OE.x-e.x,dy=OE.y-e.y,dz=OE.z-e.z,d=hyp(dx,dy,dz)||1;
   if(!ai.stand){const r=rdir(.8);ai.stand={x:OE.x+r.x*1500,y:OE.y+r.y*1500,z:OE.z+r.z*1500}}
   if(d>1700||d<1100)steer(e,ai.stand.x,ai.stand.y,ai.stand.z,dt,true,.8);else brake(e,dt*.5);
@@ -3734,7 +3772,7 @@ function physics(e,dt){if(e.inJump)return;
   e.x+=e.vx*dt;e.y+=e.vy*dt;e.z+=e.vz*dt;
   const r=hyp(e.x,e.y,e.z);if(r>3300*SPACE){e.vx-=e.x/r*400*dt;e.vy-=e.y/r*400*dt;e.vz-=e.z/r*400*dt}
   e.cool-=dt;if(!e.landed)e.energy=Math.min(e.st.eCap,e.energy+e.st.eRegen*dt*(e.boot&&W.t<e.boot?4:1));
-  if(!(S.sectors[W.sid].storm>S.T)&&W.t-e.lastHit>2.5&&!e.landed&&!e.stealth&&!(e.boot&&W.t<e.boot))e.shield=Math.min(e.st.sCap,e.shield+e.st.sCap*(e.cls==='frigate'?.012*pmul(e.tok,'shd'):e.cls==='escort'?.025*pmul(e.tok,'shd'):.09)*dt);
+  if(!(S.sectors[W.sid].storm>S.T)&&W.t-e.lastHit>2.5&&!e.landed&&!e.stealth&&!(e.boot&&W.t<e.boot))e.shield=Math.min(e.st.sCap,e.shield+e.st.sCap*(e.cls==='frigate'||e.cls==='carrier'?.012*pmul(e.tok,'shd'):e.cls==='escort'?.025*pmul(e.tok,'shd'):.09)*dt);
   if(e.shDown&&e.shield>e.st.sCap*.2){e.shDown=false;e.shUpT=W.t}
   if(e.side==='brood'&&W.t-e.lastHit>3&&e.hull<e.st.hull)e.hull=Math.min(e.st.hull,e.hull+e.st.hull*.025*dt);
   const s=S.sectors[W.sid],R=e.st.radius;
@@ -4864,6 +4902,9 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
   else if(act==='hbuy'){const k=S.contracts.find(x=>String(x.id)===arg),b=k&&fpBuyable(c,P,k);if(!b||b.n<=0){dockErr=k&&b&&b.need<=0?'You already have enough for that request.':'Nothing to buy here for that request, or no room in your hold.';}else{let got=0,spent=0;const pr0=mBuy(c,k.item);for(let i=0;i<b.n;i++){const pr=pr0;if(!(c.market[k.item]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k.item,1);inv.add(P.cargo,k.item,1);got++;spent+=pr}{const R=mR(c);if(R&&got){mkOf(R)[k.item]=(R.mk[k.item]||0)-got}}
     if(got){P.bought=P.bought||{};P.bought[k.item]=(P.bought[k.item]||0)+got;if(c.owner==='neutral'){const F=(P.fpBought=P.fpBought||{})[P.sector]=(P.fpBought||{})[P.sector]||{};F[k.item]=(F[k.item]||0)+got}P.route=k.st;dockErr=`✓ Bought ${got} ${ITEMS[k.item].name} into your hold for ${fmt(spent)} cr. Course set to ${S.stations[k.st]?S.stations[k.st].name:DEF[k.st].name}: launch and press J.`}}}
   else if(act==='deliver'){const k=S.contracts.find(x=>String(x.id)===arg);if(k&&k.st&&k.st!==P.sector){dockErr=`Deliver this one in person at ${S.stations[k.st]?S.stations[k.st].name:DEF[k.st].name}.`}else if(k&&k.st&&fpDeliverable(P,k,srcs)<k.n){dockErr=`You need ${k.n} ${ITEMS[k.item].name} that weren't bought here.`}else if(k&&!k.st&&deliverable(P,k.item,srcs)<k.n){const b=boughtOf(P,k.item);dockErr=`Contracts take goods you mined, salvaged or made. ${b?b+' '+ITEMS[k.item].name+' you bought on a market':'Consigned goods'} can't fill it.`}else if(k&&takeFrom({[k.item]:k.n},srcs)){inv.add(S.econ.stock[k.fac],k.item,k.n);const got=transfer(k.fac,'player',Math.round(k.reward*((P.lvl||0)>=2?1.1:1)));legBonus(pkey(),k.fac,'an Order');weAdd(k.fac,WE.order);S.contracts.splice(S.contracts.indexOf(k),1);dockErr=`✓ Contract complete. +${fmt(got)} cr.`;feed(`Contract delivered: +${fmt(got)} cr.`,'good')}}
+  else if(act==='cvesc'){const t=(S.traders||[]).find(x=>String(x.id)===String(arg)&&x.kind==='haul');if(!t||t.side!==P.faction||t.esc||cvLeft(t)<1){dockErr='That convoy no longer needs an escort.';return}
+    const k=P.pid||'me';for(const x of S.traders)if(x.esc&&x.esc.k===k)x.esc=null;const E=cvSign(t,k,P.name);if(t.sector!==P.sector)P.route=t.sector;
+    dockErr=`✓ Escort contract: the convoy is in ${DEF[t.sector].name}, bound for ${DEF[t.to].name}. Stay with it for ${E.need} jump${E.need>1?'s':''}.${t.sector!==P.sector?' Course set: launch and press J.':''}`}
   else if(act==='fort'){const o=c.o,r=fortRecipe(o.level+1);if(takeFrom(r,srcs)){const v=invVec(r);for(const e2 of RAWS)o.fort[e2]+=v[e2];o.level++;const os=oStats(o);o.shield=os.sMax;o.hull=os.hMax;dockErr=`✓ ${o.name} fortified to level ${o.level}.`}}
 }
 
