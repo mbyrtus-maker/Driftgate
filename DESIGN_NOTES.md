@@ -34,6 +34,87 @@ Each friendly station and outpost keeps its own vault. Goods stored at one stati
 
 ---
 
+## Assault ships and capturing structures (design, not built)
+
+### The idea
+Depots and outposts are captured by landing marines, not by parking a frigate. Assault ships carry them. A pilot calls one in, like a constructor; it flies to the breached target, unloads, and disappears. This replaces frigate capture, so holding ground comes from structures, and taking them is a combined-arms job: bombers break the defences, fighters clear the wing, assault ships land under cover.
+
+### Garrisons
+Each capturable structure has a garrison, counted in assault-ship loads. One assault ship carries one load.
+
+| Target | Loads |
+|---|---|
+| Outpost | 1 (2 if fortified to its top level) |
+| Depot, base | 1 |
+| Depot with a defence platform at level 2 or higher | +1 |
+| Depot with a fighter hangar at level 2 or higher | +1 |
+| **Most any target can need** | **3** |
+
+Core stations and freeports can't be captured, only razed. The target panel shows the garrison ("Garrison: 2 of 3 loads landed").
+
+### The limits match the garrisons
+Every limit equals the largest possible garrison, 3, so one well-organised assault can always take any target in one go:
+- **In flight:** a faction can have up to 3 assault ships flying at once.
+- **On a carrier:** a carrier can hold up to 3 assault ships, using 3 of its 6 bays.
+- **Per call:** a pilot can call in as many ships as the target's remaining garrison, up to 3. The comms menu shows the number ("Call in 2 assault ships: 2 loads left").
+- **AI sieges:** the AI sends exactly enough for the garrison.
+
+If the garrison grows during the assault (for example, a defence platform finishes building), the new number shows straight away, and the limits still cover it because nothing goes above 3.
+
+### Capturing
+- **Breached first:** a target can be landed on only once it is breached (see key points below): its shield generator is down and either its hull is below 50% or its power plant is down. Calling ships in before then is refused ("Breach the shield first").
+- **Landing:**
+  - The assault ship flies to a docking port and spends about 8 seconds unloading; it is most exposed then.
+  - Once unloaded it disappears and its load counts toward the garrison.
+  - A ship destroyed before it finishes unloading loses its marines.
+- **Progress:** landed loads hold for 3 minutes. If the rest don't land in time, the garrison is back at full strength.
+- **Capture:** when landed loads reach the garrison, the structure changes hands, as captureDepot does today. It keeps its fighters, works and half its stores.
+
+### Calling one in
+- **Through comms,** like a constructor. The faction launches assault ships from the nearest friendly station with a shipyard, each with a 2-fighter escort, paid from faction stores. A carrier in the system launches its own instead, which is much faster.
+- **Cooldown:** 3 minutes per pilot.
+- **Reward:** a capture gives the faction 10 War effort points, split among the pilots who escorted or flew in that system.
+- **Flying one yourself:** open question. Option: a pilot can take one from a carrier hangar and fly it in personally.
+
+### Off-screen
+A siege only captures if its force includes enough assault loads for the garrison and the target is breached. Otherwise it batters the target or razes it, as now. The Brood never captures; it razes.
+
+## Station and depot key points (design, not built)
+
+### The idea
+Stations and depots have key points that fighters and bombers can target and destroy individually: the shield generator, the power plant and each turret. Knocking them out is how a target gets breached without grinding down its whole hull. It gives fighters a real job against structures, and it's what opens the way for assault ships.
+
+### The key points
+| Key point | Health | Effect while destroyed |
+|---|---|---|
+| **Shield generator** | about 1,800 | Shield drops to zero and can't recharge. |
+| **Power plant** | about 2,400 | Turrets fire at half rate, the hangar can't launch, production and the missile battery stop, and the hull doesn't repair. |
+| **Turret** (each one, including defence-platform mounts) | about 300 | That turret is out. |
+
+- **Damage by weapon:** key points take more from fighters than armour does.
+
+| Weapon | Damage dealt |
+|---|---|
+| Fighter guns and lasers | 40% |
+| Missiles | 60% |
+| Torpedoes and capital guns | 100% |
+
+  A wing of fighters can strip the turrets and a heavy wing can bring down the shield generator, but the power plant really wants bombers.
+- **Shield first:** the shield generator and turrets can be hit with the shield up; that's the point. The power plant is armoured inside the hull and can only be hit once the shield is down.
+- **Repairs:** a destroyed key point is repaired by the crew after 90 seconds without hits. The repair takes 2–3 minutes and uses materials from the station's stores, so a starved station repairs slowly or not at all.
+- **Breach:** a target is breached when its shield generator is down and either its hull is below 50% or its power plant is down. That is the condition for assault-ship landings.
+
+### Targeting
+- Key points show on the station model: glowing emitters for the shield generator, a reactor housing for the power plant, and the turret mounts.
+- With a station or depot targeted, a key cycles through its key points (the station, shield generator, power plant, turrets). The target panel shows each one's health.
+- Locks and torpedoes go for the selected key point.
+- **AI:** bombers go for the shield generator, then the power plant; fighters strip turrets; defenders' hangar fighters prioritise whoever is hitting the generator.
+- **Off-screen:** a siege battle knocks out key points in proportion to the force (like wkAbstractHit), which feeds the breach and capture rules above.
+
+### Balance notes
+- Make sure a lone fighter can't breach a defended station: turrets and the hangar should punish one ship, while a wing of 4–6 should manage a depot in a few minutes.
+- Re-tune the factions with the fast simulator once captures depend on breaches.
+
 ## Fleet carrier (design, not built)
 
 ### The idea
