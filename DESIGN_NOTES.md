@@ -34,7 +34,7 @@ Each friendly station and outpost keeps its own vault. Goods stored at one stati
 
 ---
 
-## Capital roster: escorts and carriers, no frigates (design, not built)
+## Capital roster: escorts and carriers, no frigates (first version built; tuning live)
 
 ### The decision
 Frigates are removed. The capital roster becomes the **fleet carrier**, one per faction, as the main capital ship, with **escorts** as its smaller supporting capitals. This ends the race to frigates: ground is held by structures, taken by assault ships after bombers and fighters breach it, and capitals support that instead of deciding it.
@@ -74,7 +74,7 @@ Escorts stay light supporting capitals that guard the carrier and screen convoys
 3. **Remove frigates and pickets:** the escort upgrades and old-save conversion, then re-balance all four sides with the fast simulator.
 4. **Overgrowth** (independent, any time after step 1).
 
-## Cheaper forward depots (design, not built)
+## Cheaper forward depots (built)
 
 ### Why
 With frigates gone, systems are only held by structures, and taking one now needs a breach plus assault ships. That makes holding ground slower on both sides. Cheaper level 1 depots let factions and pilots claim systems faster, so the map keeps moving.
@@ -97,7 +97,7 @@ Today a depot costs 2 Depot Frames (20 plate, 12 wire, 6 coil) plus the construc
 - Levers: forward depot cost and build time, their shield and hull, and how eagerly the AI expands them.
 - Off-screen siege defence for a forward depot: about 800, against 1,300 for a full depot.
 
-## Assault ships and capturing structures (design, not built)
+## Assault ships and capturing structures (partly built: loads on carriers, escorts and AI sieges; pilot call-ins and visible assault ships still to come)
 
 ### The idea
 Depots and outposts are captured by landing marines, not by parking a frigate. Assault ships carry them. A pilot calls one in, like a constructor; it flies to the breached target, unloads, and disappears. This replaces frigate capture, so holding ground comes from structures, and taking them is a combined-arms job: bombers break the defences, fighters clear the wing, assault ships land under cover.
@@ -179,7 +179,7 @@ Stations and depots have key points that fighters and bombers can target and des
 - Make sure a lone fighter can't breach a defended station: turrets and the hangar should punish one ship, while a wing of 4–6 should manage a depot in a few minutes.
 - Re-tune the factions with the fast simulator once captures depend on breaches.
 
-## Fleet carrier (design, not built)
+## Fleet carrier (first version built: AI carriers with wings and assault loads, stand-off; own model, helm, landing and guests still to come)
 
 ### The idea
 A faction capital ship that fights with its fighters instead of guns. It jumps like a frigate and has no main cannon, lance or torpedoes. It carries 6 fighters or bombers, and its turrets defend against fighters and torpedoes. It replaces the picket fighters frigates and escorts carry today (see below).
@@ -238,7 +238,7 @@ In strategic battles a carrier counts as its hull plus its wing. Its wing adds s
 2. The economy stays exact: craft in its bays are kits held aboard, lost craft fall as debris, and refills come out of faction stores.
 3. Re-tune all four sides with the fast simulator after it lands.
 
-## Brood carrier (design, not built)
+## Brood carrier (first version built as the Hive Ship)
 The Brood's version is a living carrier, the **Hive Ship**: a swollen, living vessel that grows its own wing. It jumps like the Leviathan and has no lance or spitters of its own.
 
 - **Limit:** only one Hive Ship can exist at a time. The Brood grows it at The Bloom once it holds 4 or more systems.
@@ -248,7 +248,7 @@ The Brood's version is a living carrier, the **Hive Ship**: a swollen, living ve
 - **Counterplay:** kill the wing to stall it, or reach it with torpedoes. Its tendrils punish a single bomber, so a group is needed.
 - **Balance:** tune its biomass cost and regrowth rate with the fast simulator so the Brood stays near 20%.
 
-## Picket fighters removed from frigates and escorts (design, not built)
+## Picket fighters removed from frigates and escorts (built)
 - Frigates and escorts stop carrying pickets. The fleet carrier takes over carrying fighters for the fleet.
 - The `picket` item leaves the frigate kit. Factions stop making pickets, and anything already in stock or aboard is broken down into its materials, so nothing is created or lost.
 - To make up for it, frigates gain 2 more point-defence turrets, so they still have some answer to fighters without the pickets.
