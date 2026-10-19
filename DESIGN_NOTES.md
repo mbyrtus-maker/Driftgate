@@ -2,7 +2,39 @@
 
 Agreed designs. Each entry says what it is, how it works, and what must stay true. Entries marked (built) are in the game.
 
+## Design ethos
+Every system should follow these, and new work is checked against them.
+
+- **Credits go to pilots who fight and scout.** Scouts are paid for beacons. Fighters are paid for enemies destroyed, and larger enemies pay more. Damage earns a share of the credit, so you don't need the kill shot.
+- **Materials are real and they move.** Raw ore is mined, then turned into components at stations and depots with forges. Components are hauled to wherever they're needed to build station upgrades, ships and station works.
+- **Missions serve the war.** They're set up to flip beacons, take control of sectors, destroy enemy assets and disrupt enemy logistics.
+
 ---
+
+## Logistics (built)
+AI factions move their goods by freight convoy, so supply lines are real and can be cut.
+
+- **Depot stores.** Each faction depot keeps its own store (up to 260 mass). Its extraction goes there, and so does its forge output: a depot with production level 1 or higher turns ore into plates, conduit and coils, up to a small stock.
+- **Ore goes home.** When a depot holds more than 120 mass of raw ore, it ships the surplus to its faction's core station. A convoy carries up to 80 mass; AI haulers work at 70% of a pilot's efficiency.
+- **Components go out.** A depot that needs materials asks the core warehouse. That covers building works, expanding a forward depot and stocking a hangar. The warehouse ships what it can spare, keeping half of the next capital kit back.
+- **Carriers are supplied by convoy.** These convoys come from the nearest depot store or the core (see Carrier fabrication).
+- **Convoys are real freighters.** In a live system they fly as freighters and bulkers. Out of sight, each jump carries a risk:
+
+  | Risk on entering a system | Chance |
+  |---|---|
+  | Hostile capital present | 10% |
+  | Hostile station | 6% |
+  | Brood space | 5% |
+  | Outside the faction's territory | 3% |
+
+- **A destroyed freighter spills half its hold as a salvage crate.** The rest is wrecked into debris. Killing a hostile convoy pays a raid bounty and 3 War effort points.
+- **Raid board.** The Missions tab has a "Convoy raids" table that lists hostile convoys under way and what they carry.
+- **Ledger.** Depot stores and convoy holds are counted, so the economy stays exact.
+- **Measured** (fast simulator, per 2-hour game):
+  - about 245 ore runs, 88 supply runs and 52 carrier runs;
+  - 10 to 15 convoys lost;
+  - 7 to 10 depot works built.
+
 
 ## War effort (built)
 Human pilots earn their faction War effort points, which make its fleets fight harder in battles fought out of sight.
@@ -21,12 +53,13 @@ Human pilots earn their faction War effort points, which make its fleets fight h
 | Freighter shot down | 1 |
 | Constructor shot down | 3 |
 | Escort shot down | 6 |
-| Frigate shot down | 12 |
+| Carrier shot down | 12 |
+| Supply convoy shot down | 3 |
 
   Unbound pirate kills count half.
 - **Fade:** points shrink by two-thirds every 20 minutes.
-- **Effect:** a faction's strength in outpost assaults, station sieges and hunter-group strikes rises by up to 65%, as `0.65 × (1 − e^(−points/10))`. It applies on both sides of each fight.
-- **Calibration** (fast simulator, 384 games each): a typical engaged pilot (about 24 points an hour) lifts their faction from 28% to 38%, and a strong one (48 points an hour) by about 11 points. The levers are `WE.max`, `WE.scale` and `WE.tau`.
+- **Effect:** a faction's strength in outpost assaults, station sieges and hunter-group strikes rises by up to 80%, as `0.8 × (1 − e^(−points/10))`. It applies on both sides of each fight.
+- **Calibration** (fast simulator, 384 games each, on the logistics build): a typical engaged pilot (about 24 points an hour) lifts their faction from 26% to 34%. The levers are `WE.max`, `WE.scale` and `WE.tau`.
 - **Where it shows:** the faction's current bonus appears in the station campaign panel.
 
 ## Per-station vaults (built)
@@ -34,7 +67,7 @@ Each friendly station and outpost keeps its own vault. Goods stored at one stati
 
 ---
 
-## Capital roster: escorts and carriers, no frigates (first version built; tuning live)
+## Capital roster: escorts and carriers, no frigates (built)
 
 ### The decision
 Frigates are removed. The capital roster becomes the **fleet carrier**, one per faction, as the main capital ship, with **escorts** as its smaller supporting capitals. This ends the race to frigates: ground is held by structures, taken by assault ships after bombers and fighters breach it, and capitals support that instead of deciding it.
@@ -238,16 +271,23 @@ In strategic battles a carrier counts as its hull plus its wing. Its wing adds s
 2. The economy stays exact: craft in its bays are kits held aboard, lost craft fall as debris, and refills come out of faction stores.
 3. Re-tune all four sides with the fast simulator after it lands.
 
-### Wing replacements (built)
-A carrier with empty bays requests replacements every 20 seconds, in this order:
-1. **Ready fighters answer first.**
-   - Patrol fighters of its side in a live system acknowledge, fly to the carrier and land into the wing.
-   - A fighter waiting in the nearest friendly depot hangar (up to 4 jumps away) flies over.
-   - Otherwise, a pilot from the faction's muster pool does.
-2. **The closest builder builds one.** That's the nearest core station, or a full depot with a hangar or production level 2. It builds a basic craft (45 s) and sends it; flight time is 40 s per jump.
-3. **Short of materials, it posts an Order** in the Orders tab ("for the carrier X's replacement fighters"). Pilot deliveries go into faction stores, and the build follows.
+### Carrier fabrication (built; replaced the wing-replacement chain)
+Carriers build their own craft. The old system (ready fighters answering a request, then the nearest builder) has been removed.
 
-The Brood's Hive Ship regrows one craft about every 4 minutes from Brood stores (`BAL.hiveRegrow`). Craft in flight are counted in the ledger as fleets in muster.
+- **The store.** Each carrier keeps a store of materials aboard. It always tries to fill it completely: a full wing of heavy-craft kits, plus three assault loads for a faction carrier.
+- **The fabricator.** The carrier's deck fabricator turns one kit at a time into a fighter or bomber for an empty bay (14 s each, `BAL.carFab`). When the wing is full, it builds assault loads. In a live system the new craft launches from the deck.
+- **Supply.** When the store is short, the carrier asks every 30 s (`BAL.carAsk`). A convoy is sent from the nearest depot store or the core warehouse and can be intercepted on the way. If the faction can't cover the shortfall, it posts an Order ("for the carrier X to build fighters").
+- **Kits.** These don't use wire:
+
+  | Craft | Kit |
+  |---|---|
+  | Heavy or bomber | 6 plates, 2 coils |
+  | Striker | 5 plates, 1 coil |
+  | Anything else | 4 plates, 1 coil |
+
+- **Ledger and loss.** The store and the kit in the fabricator are counted in the ledger. If the carrier dies, they become debris.
+- **Brood.** The Hive Ship regrows one craft about every 4 minutes from its store (`BAL.hiveRegrow`).
+- **Measured:** an AI carrier holds 4.5 craft on average (target 4.5).
 
 Carriers have their own model: a flight deck with runway lights, a bow hangar mouth, side bays, an island bridge and four drives.
 
@@ -460,3 +500,19 @@ A stealth fighter that hits hard but can't fight while hidden. Stealth is a mode
 ### Open questions
 - Should a Brood win give everyone a small consolation so Brood galaxies don't feel wasted?
 - In multiplayer, can a host's record be trusted, or should Legend points only count in a pilot's own single-player galaxies until there is an account system?
+
+## Faction balance (current)
+These figures are from the fast simulator: 384 games, two-hour games, no human pilot.
+
+- **Result:** Halcyon, Varkesh, Brood and Ostrova all land between about 21% and 28%. Games are decided by holding systems or, at the two-hour deadline, by who holds the most.
+- **Levers:**
+
+  | Lever | Value | What it does |
+  |---|---|---|
+  | `BAL.brGraze` | 1.7 | Brood ore income |
+  | `BAL.ext.halcyon` | 0.7 | Halcyon extraction |
+  | `BAL.ext.varkesh` | 1.24 | Varkesh extraction |
+  | `BAL.ext.ostrova` | 1.22 | Ostrova extraction |
+  | `BAL.halProsp` | 0.5 | Halcyon prospecting chance |
+
+- **Why the Brood's graze rate came down:** with logistics, factions lose time and goods to convoys. At the old Brood income (3.5), the Brood won about 60% of games.

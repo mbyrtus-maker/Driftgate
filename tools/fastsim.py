@@ -2,8 +2,7 @@
 # usage: python3 fastsim.py FILE GAMES [HOURS=2.2] [TUNE_JS_FILE] [WORKERS=2] [OUT.json]
 import asyncio,json,sys,time,collections
 from playwright.async_api import async_playwright
-import os
-D=os.environ.get('DG_DIR',os.path.dirname(os.path.abspath(__file__))+'/../')
+D='/tmp/claude-0/-home-claude/e4eb29fe-538d-5f56-aa4d-b952797c2573/scratchpad/'
 FILE=sys.argv[1];GAMES=int(sys.argv[2]);H=float(sys.argv[3]) if len(sys.argv)>3 else 2.2
 TUNE=open(sys.argv[4]).read() if len(sys.argv)>4 and sys.argv[4] not in('','-') else ''
 WORKERS=int(sys.argv[5]) if len(sys.argv)>5 else 2;OUT=sys.argv[6] if len(sys.argv)>6 else None
@@ -20,7 +19,6 @@ async def boot(pg):
   await pg.evaluate("selFac='halcyon';document.getElementById('bLaunch').click()");await pg.wait_for_timeout(800)
   if TUNE:await pg.evaluate('c=>__dg.ev(c)',TUNE+';1')
   await pg.evaluate('c=>__dg.ev(c)',SETUP)
-  if os.environ.get('WRAP')=='1':await pg.evaluate('c=>__dg.ev(c)',"(()=>{const mk=makeFrigate;makeFrigate=function(side){return mk.apply(this,arguments)};const kf=killFrigateToken;killFrigateToken=function(t){return kf.apply(this,arguments)};return 1})()")
   if os.environ.get('CC')=='1':await pg.evaluate('c=>__dg.ev(c)',"(()=>{const st=strategicTick;strategicTick=function(){st.apply(this,arguments);controlCounts()};return 1})()")
 async def worker(b,n,res,wid):
   pg=await b.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)[:160]))
