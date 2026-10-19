@@ -52,7 +52,7 @@ A stealth fighter that hits hard but can't fight while hidden. Stealth is a mode
 - **Frame:** Light Fighter hull and shields, so it's fragile when caught.
 - **Stealth mode (its own key, K):**
   - **Visibility:** visible only within 600 m. Beyond that it drops off enemy radar and target lists, and missiles already chasing it lose their lock.
-  - **Shut down while hidden:** shields at zero, no weapons fire, no missile locks, no thrust or afterburner. It coasts on its momentum and can still turn.
+  - **Shut down while hidden:** shields at zero, no weapons fire, no missile locks and no afterburner. Normal thrusters still work, so it can manoeuvre and creep up on targets, just not boost.
 - **Breaking stealth:** pressing K again, or being hit, drops stealth. The ship then powers back up exactly as after lifting off an asteroid: 4 seconds before weapons work, and shields charge from empty after that.
 - **Scanning:** it counts as a scout for sensors. The system it's in, and its neighbours, show up in faction intel and on the map, so it can scout ahead and send updates. It cannot flip beacons.
 - **Limits:** it can't dock with or command capital ships.
