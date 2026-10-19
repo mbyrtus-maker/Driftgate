@@ -37,7 +37,7 @@ Each friendly station and outpost keeps its own vault. Goods stored at one stati
 ## Capital roster: escorts and carriers, no frigates (design, not built)
 
 ### The decision
-Frigates are removed. The capital roster becomes the **escort**, as the line capital ship, and the **fleet carrier**, one per faction. This ends the race to frigates: ground is held by structures, taken by assault ships after bombers and fighters breach it, and capitals support that instead of deciding it.
+Frigates are removed. The capital roster becomes the **fleet carrier**, one per faction, as the main capital ship, with **escorts** as its smaller supporting capitals. This ends the race to frigates: ground is held by structures, taken by assault ships after bombers and fighters breach it, and capitals support that instead of deciding it.
 
 ### What replaces each frigate job
 | Frigate job today | Replaced by |
@@ -49,12 +49,12 @@ Frigates are removed. The capital roster becomes the **escort**, as the line cap
 | What hunter groups chase, and the "enemy capital nearby" war footing | Escorts and carriers. |
 | Brood Leviathan | The Brood Prowler (its escort) and the Hive Ship (its carrier). |
 
-### Escort changes
-Escorts become the main capital, so they get sturdier:
-- Hull about 2,800 → 3,600.
-- The torpedo weakness drops from ×7 to ×4, so they're still the bomber's prey but not paper.
-- The limit rises to 3–4 per faction.
-- They keep their torpedoes, anti-fighter batteries and point defence.
+### Escort changes (kept small: the carrier is the main capital)
+Escorts stay light supporting capitals that guard the carrier and screen convoys, with only a modest upgrade:
+- Hull about 2,800 → 3,100.
+- The torpedo weakness drops from ×7 to ×5: still the bomber's natural prey.
+- The limit stays at 2 per faction (3 for Ostrova).
+- They keep their torpedoes, anti-fighter batteries and point defence. Their default job is to stay with the carrier, or to screen a stand-off position while its wing is away.
 
 ### Knock-on changes
 - **Victory:** systems are counted from structures only, so the 7-system hold and the 2-hour tiebreak need re-tuning. Captures get harder, and more games may run to the deadline.
