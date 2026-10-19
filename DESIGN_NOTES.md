@@ -4,6 +4,175 @@ Agreed designs. Each entry says what it is, how it works, and what must stay tru
 
 ---
 
+## War effort (built)
+Human pilots earn their faction War effort points, which make its fleets fight harder in battles fought out of sight.
+
+- **Sources:**
+
+| Action | Points |
+|---|---|
+| Order delivered | 2 |
+| Supply-drive delivery | 0.04 per unit |
+| Campaign move | 4 |
+| Beacon flip | 2 |
+| Beacon mission | 3 |
+| Fighter shot down | 1 |
+| Heavy fighter or bomber shot down | 1.5 |
+| Freighter shot down | 1 |
+| Constructor shot down | 3 |
+| Escort shot down | 6 |
+| Frigate shot down | 12 |
+
+  Unbound pirate kills count half.
+- **Fade:** points shrink by two-thirds every 20 minutes.
+- **Effect:** a faction's strength in outpost assaults, station sieges and hunter-group strikes rises by up to 65%, as `0.65 × (1 − e^(−points/10))`. It applies on both sides of each fight.
+- **Calibration** (fast simulator, 384 games each): a typical engaged pilot (about 24 points an hour) lifts their faction from 28% to 38%, and a strong one (48 points an hour) by about 11 points. The levers are `WE.max`, `WE.scale` and `WE.tau`.
+- **Where it shows:** the faction's current bonus appears in the station campaign panel.
+
+## Per-station vaults (built)
+Each friendly station and outpost keeps its own vault. Goods stored at one station stay there, so moving them means hauling them. The vault tab lists where else you have goods stored. Rewards that arrive while you're away (campaign items, frigate cargo) go to the vault where you last docked. A razed station takes its vaults down as debris. Old saves keep their single vault at the first station you dock at after updating.
+
+---
+
+## Fleet carrier (design, not built)
+
+### The idea
+A faction capital ship that fights with its fighters instead of guns. It jumps like a frigate and has no main cannon, lance or torpedoes. It carries 6 fighters or bombers, and its turrets defend against fighters and torpedoes. It replaces the picket fighters frigates and escorts carry today (see below).
+
+### Ship
+| | Fleet carrier | For comparison: frigate |
+|---|---|---|
+| Hull / shield | about 5,000 / 2,400 | 6,000 / 2,400 |
+| Main weapon | none | lance, torpedoes |
+| Turrets | 6 point-defence turrets that shoot down torpedoes and missiles and engage fighters within about 1.4 km | turrets plus lance |
+| Hangar | 6 craft: any mix of Light, Medium and Heavy Fighters and Bombers (Heavy Bombers at Mk III+) | 2 pickets |
+| Jump | own drive, same spin-up as a frigate | |
+| Speed | a little slower than a frigate | |
+
+- **Cost:** about a frigate's kit minus the lance and torpedo parts, plus hangar parts (more frames and coil). The fighters are extra: kits drawn from stores, like the fighter hangar works.
+- **Limit:** 1 per faction (the Brood gets none). It counts toward the capital cap alongside frigates and escorts.
+
+### How it fights
+- **Launching:** it launches its wing when hostiles come within about 4 km, two craft every few seconds. Bombers go for capitals, structures and Overgrowth; fighters screen the carrier and hunt enemy bombers.
+- **Recovery and rearming:** the wing lands again when the area is quiet. Landed craft rearm missiles and torpedoes from the carrier's stores and repair over a couple of minutes.
+- **Losses:** a craft shot down is gone; its kit falls as debris. The carrier refills empty bays from faction stores when it next visits a friendly station with a shipyard.
+- **Weakness:** on its own it is a big target. Its turrets keep fighters and torpedoes off it, but an enemy frigate's lance and torpedoes will hurt it. It needs either its wing in the air or a frigate alongside.
+
+### Commanding one (pilots)
+Pilot-owned carriers, from the shipyard like frigates and escorts, use the existing bridge and console. The orders tab gains a wing section:
+- **Wing stance:** Screen (stay within 2 km of the carrier), Attack my target, or Hold (stay docked).
+- **Loadout:** pick the 6 craft from your own vault kits, and the carrier fills them when docked.
+- **Bombing run:** pick a target in range and the bombers go. This is the best tool against Overgrowth, which capital ships can reach by jumping when gates are sealed.
+
+### Off-screen
+In strategic battles a carrier counts as its hull plus its wing. Its wing adds strength to assaults and sieges like a fighter group, and its point defence cuts the torpedoes that land on it, like an escort's screen. Use the fast simulator to tune its value so carriers don't tip the faction balance.
+
+### Rules
+1. It never carries a main gun or torpedoes of its own: all its hitting power is in its wing.
+2. The economy stays exact: craft in its bays are kits held aboard, lost craft fall as debris, and refills come out of faction stores.
+3. Re-tune all four sides with the fast simulator after it lands.
+
+## Picket fighters removed from frigates and escorts (design, not built)
+- Frigates and escorts stop carrying pickets. The fleet carrier takes over carrying fighters for the fleet.
+- The `picket` item leaves the frigate kit. Factions stop making pickets, and anything already in stock or aboard is broken down into its materials, so nothing is created or lost.
+- To make up for it, frigates gain 2 more point-defence turrets, so they still have some answer to fighters without the pickets.
+- Re-tune the Brood (its frigates carry Spawnling pickets) and each faction's capital strength with the fast simulator.
+
+## Guard drones that react in time (design, not built)
+**Problem:** you can kill a hauler before its drones do anything. Today a drone engages only when an attacker is its own target, or the ship it guards was hit in the last 5 seconds and the attacker is within 700 m. So a pilot shooting from 800 m, or killing the hauler in a single pass, never gets engaged.
+
+**Changes:**
+- **Wider triggers:** drones engage any hostile ship that:
+  - has the guarded ship targeted or missile-locked,
+  - has fired on it in the last 8 seconds, from up to 1.5 km, or
+  - comes within 600 m.
+- **Faster reaction:** drones re-check targets 5 times a second instead of about twice, and boost toward an attacker for the first 3 seconds.
+- **Warning:** when a hostile locks on or fires, the guarded ship's drones break formation at once, and the hauler turns away and boosts.
+- **Leash:** drones stay within 1.5 km of the ship they guard, as now, so they can't be pulled away and left behind.
+- **Pilot drones:** a pilot's own guard drones follow the same rules.
+
+## Station menus: a simpler layout (proposal)
+**What's confusing today:** four groups with a second row of sub-tabs (Economy: Market, Trade, Orders · Construction: Fabricate, Upgrades, Refits, Station works, Outpost · Hangar: Shipyard, Storage, Ship Bay · Missions). Several pairs sound alike: Market and Trade, Orders and Missions, Shipyard and Ship Bay, Fabricate and Upgrades. And your ship is split across three groups.
+
+**Proposal: five task tabs on one row, no sub-tabs.** Each tab is named for what you came to do:
+
+| Tab | What it holds (today's tabs) |
+|---|---|
+| **Trade** | Market and Trade merged: one list of goods with Sell and Buy beside each, your hold and vault counts, and the best price nearby. |
+| **Jobs** | Orders, Missions, supply drives and the campaign move in one list, sorted by pay. Filter chips: Haul · Mine · Fight · Scout. Shows what you can deliver right now. |
+| **My ship** | Your current ship at the top (repair, upgrades, refits, loadout), then your other ships (Ship Bay), then hulls for sale (Shipyard). |
+| **Vault** | Storage: hold and this station's vault side by side, plus where else you have goods stored. |
+| **Station** | Fabricate, station works (with the hangar), outpost controls and the capital programme: everything about the station itself. |
+
+- **Keys 1–5** switch tabs, and each kind of dock remembers your last tab.
+- **Dots on tabs** mark something you can act on now: a job you can deliver, an affordable upgrade, a full vault.
+- **First visit:** a one-line hint under the tabs ("Jobs: paid work for your faction. Trade: sell what you mined.").
+- Tabs that don't apply are hidden, not greyed out. For example, an outpost shows Trade, Jobs, Vault and Station.
+
+---
+
+## Brood Overgrowth (design, not built)
+
+### The idea
+The Brood can grow a living mass over a jump gate. While it stands, that gate is sealed in both directions: no pilots, fighter wings, freighters, miners or scouts can pass until someone destroys it. Capital ships (frigates and escorts) are not stopped, because they jump on their own drives without using gates. That makes capitals the natural answer to an Overgrowth: one can jump in beside it when nothing else can get through. Torpedoes are the right tool, and everything else helps more slowly.
+
+### How the Brood uses it
+- **Where:** gates on the edge of Brood space, picked for one of three reasons:
+  - **Cut reinforcements:** seal the gates a faction would use to relieve a system the Brood is about to attack.
+  - **Shield a hive:** seal gates leading into The Bloom or a hive system.
+  - **Strand a fleet:** seal the way home for a fighter wing or freighter convoy deep in Brood space. A frigate with them can still jump out, but it leaves its smaller ships behind.
+- **How many:** at most 2 Overgrowths at once, or 3 when the Brood holds 6 or more systems. After each planting there is an 8–12 minute wait.
+- **Cost:** each Overgrowth takes about 40 iron, 20 copper and 4 plate from Brood stores. The materials stay in the growth and fall as debris when it dies, so the economy stays exact.
+- **Never total isolation:** a faction's core home system always keeps at least one open gate.
+
+### Life of an Overgrowth
+| Stage | Time | Gate | Hit points |
+|---|---|---|---|
+| Spore seeding | 90 s | still open | 25% |
+| Grown | from 90 s | sealed both ways | 100% |
+| Mature | from 10 min | sealed | 100%; grows 2 Brood Mites a minute (up to 4) to guard it |
+
+- Seeding is the window to stop it cheaply: factions with an eye on the system get a warning ("Brood spores on the gate to Kestrel Drift").
+- **Which side:** the growth sits on one side of the gate. From the other side the gate shows as dark and sealed, with "Overgrowth on the far side". To clear it you must reach that side by another route.
+
+### Destroying it
+- **Health:** about 6,000, like a frigate hull. It has no shield.
+- **Damage by weapon:**
+
+| Weapon | Damage dealt |
+|---|---|
+| Torpedoes | 100% |
+| Capital guns and frigate lances | 75% |
+| Missiles and swarm pods | 40% |
+| Fighter guns and lasers | 15% |
+
+- **Regrowth:** left alone for 20 seconds, it regrows 1% of its health a second. Chipping at it with guns only works if the pressure is kept up, or if a wing does it together.
+- **Defences:** spore tendrils shoot down incoming torpedoes, catching about 30% of them, so a few bombers firing together beat one firing alone. Brood patrols in the system come to defend it.
+- **When it dies:** the gate reopens at once and its materials fall as debris. The faction that killed it gets a bounty and 6 War effort points.
+
+### How factions respond
+- AI factions treat an Overgrowth on a route into their space as a structure to clear. They send a bomber strike, reusing the hunter-group and siege machinery. They give it more priority the more of their space it cuts off.
+- Off-screen, it resolves like a hunter group against a frigate: torpedoes land, the tendrils and regrowth reduce the damage, and the strike either clears the gate or falls back.
+- AI routing, freighters, fighter offensives and the player's route planner treat a sealed gate the way they treat a collapsed gate today, except that it never reopens on a timer. Frigate and escort jumps ignore it.
+- A faction with a frigate nearby can jump it in to clear the growth: its lances deal 75%, and its escort's torpedoes 100%.
+
+### Look and interface
+- **Look:** a bulbous, pulsing mass wrapping the gate ring in Brood colours, with glowing spore sacs. While seeding, a thin film spreads over the ring.
+- **Map and radar:** sealed links show in Brood colour on the galaxy map. On radar it is a Brood target, and the target panel shows health and the weapon damage table.
+- **Feeds:** "The gate to X is sealed by Brood Overgrowth" for factions with an eye on it, and a cheer when it is cleared.
+
+### Balance rules (must hold when built)
+1. It must not lock a faction in: the home-gate rule above, and at most 2–3 at once.
+2. Torpedoes clear it in a reasonable time: 3–4 bombers in about a minute. Fighters alone should take a determined wing several minutes.
+3. Re-tune the Brood's win rate afterwards with the fast simulator. Expect the Brood to gain; pull it back with the existing Brood levers so it stays near 20%.
+4. Multiplayer: the host owns Overgrowth state, as with gate collapses, and sends it to pilots with the gate status.
+
+### Open questions
+- Should a pilot cut off on the sealed side be able to call help, for example by marking the growth so a friendly frigate jumps in to clear it?
+- Should Mature Overgrowths spread: after 20 minutes, a chance to seed a neighbouring gate?
+
+---
+
 ## Fighter hangar (built)
 A station works module that only depots can build. Each level adds 2 fighter bays, a heavier class and +10% depot hull and shields.
 
