@@ -60,7 +60,7 @@ AI factions move their goods by freight convoy, so supply lines are real and can
   | Outside the faction's territory | 3% |
 
 - **A destroyed freighter spills half its hold as a salvage crate.** The rest is wrecked into debris. Killing a hostile convoy pays a raid bounty and 3 War effort points.
-- **Raid board.** The Missions tab has a "Convoy raids" table that lists hostile convoys under way and what they carry.
+- **Raid board.** The Missions tab has a "Convoy raids" table that lists hostile convoys under way and what they carry. Each row's Intercept button sets your course to the first system on the convoy's remaining route you can reach in time. It allows one jump of slack, since a convoy spends about 45 s crossing each system. Failing that, it aims for the point on the route nearest you.
 - **Ledger.** Depot stores and convoy holds are counted, so the economy stays exact.
 - **Measured** (fast simulator, per 2-hour game):
   - about 245 ore runs, 88 supply runs and 52 carrier runs;
@@ -555,3 +555,8 @@ These figures are from the fast simulator: 384 games, two-hour games, no human p
   | `BAL.halProsp` | 0.5 | Halcyon prospecting chance |
 
 - **Why the Brood's graze rate came down:** with logistics, factions lose time and goods to convoys. At the old Brood income (3.5), the Brood won about 60% of games.
+
+## Victory bonus (built)
+- **Who earns it.** Every pilot who served a faction's campaign (helped at least one move) earns it when that faction wins the galaxy. Reaching 7 systems isn't enough; the faction has to hold them for 20 minutes and win.
+- **How it's paid.** The galaxy ends at the win, so the bonus is held in the device's legacy record. It is shown on the win screen and paid at the start of the next real galaxy: 3,000 cr, 2 Crystal Lattice and 1 Resonance Core into the starting vault, whatever faction the pilot picks. Flight school doesn't use it up.
+- **History.** It used to be paid the moment the faction first reached 7 systems.

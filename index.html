@@ -394,7 +394,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     </div>
   </section>
   <section class="sheet" id="win" hidden>
-    <div class="console" style="width:min(720px,100%)"><div class="brand"><h1 style="font-size:clamp(34px,6vw,64px)" id="winT"></h1><p id="winP"></p></div><div class="startfoot"><div class="ssum" id="winS"></div><div class="ssum" id="winL" hidden style="color:#ffd27a"></div><button class="btn pri" id="bNext" type="button">Begin the next galaxy</button></div></div>
+    <div class="console" style="width:min(720px,100%)"><div class="brand"><h1 style="font-size:clamp(34px,6vw,64px)" id="winT"></h1><p id="winP"></p></div><div class="startfoot"><div class="ssum" id="winS"></div><div class="ssum" id="winL" hidden style="color:#ffd27a"></div><div class="ssum" id="winV" hidden style="color:#ffd27a"></div><button class="btn pri" id="bNext" type="button">Begin the next galaxy</button></div></div>
   </section>
   <section class="sheet" id="dock" hidden>
     <div class="console">
@@ -939,7 +939,7 @@ function newGame(fac,cls,pname){
   for(const f of FAC_IDS){S.econ.stock[f]={fe:260,cu:260,ir:90,xc:10,plate:70,wire:70,coil:24,missile:20,torpedo:8,drone:16};S.econ.fleet[f]={plate:30,wire:24,coil:8,missile:6,torpedo:4};S.econ.treasury[f]=250000;S.ai[f]={next:40+rnd(40)}}
   S.econ.stock.pirate={fe:60,cu:30,plate:40,wire:30,coil:8,lattice:2,missile:4,torpedo:2};S.econ.fleet.pirate={};S.econ.treasury.pirate=20000;S.ai.pirate={next:110};
   broodInit();neutralInit();S.drift={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};for(const f of FAC_IDS)S.ai[f].build=rnd(70,160);
-  {const lg=loadLegacy(),f=lg.last;if(f&&S.econ.stock[f]){const st=S.econ.stock[f];for(const k in st)st[k]=Math.round(st[k]*1.4);if(FAC_IDS.includes(f))inv.addAll(st,YARD_COST);if(f===fac){S.player.credits+=4000;inv.addAll(S.player.vault,{plate:20,wire:20,coil:8,lattice:2})}S.legacy=f}}
+  {const lg=loadLegacy(),f=lg.last;if(f&&S.econ.stock[f]){const st=S.econ.stock[f];for(const k in st)st[k]=Math.round(st[k]*1.4);if(FAC_IDS.includes(f))inv.addAll(st,YARD_COST);if(f===fac){S.player.credits+=4000;inv.addAll(S.player.vault,{plate:20,wire:20,coil:8,lattice:2})}S.legacy=f}if(lg.vb)S.vbPend=1}
   if(pname){S.player.name=pname;legendStart(S.player,legPack(pname))}
   const st=shipStats(fac,S.player.cls,S.player.tiers,S.player.tune);S.player.hull=st.hull;S.player.shield=st.sCap;S.player.energy=st.eCap;
   const l=ledger();S.ledger0={tot:l.tot,credits:l.credits};
@@ -1353,7 +1353,7 @@ function victoryTick(){if(deadlineTick())return;const n=controlCounts(),need=VIC
   if(!S.victory||S.victory.side!==lead){S.victory={side:lead,since:S.T};feed(`${lead==='brood'?'⚠ The Brood':sideName(lead)} now controls ${n[lead]} of ${SECTOR_DEFS.length} systems. Hold ${VIC_NEED} for ${Math.round(WIN_TIME/60)} minutes and the galaxy is ${lead===S.player.faction?'yours':'theirs'}.`,lead===S.player.faction?'good':'bad');return}
   if(S.T-S.victory.since>=WIN_TIME)galaxyWon(lead)}
 function loadLegacy(){try{return JSON.parse(localStorage.getItem('driftgate.legacy')||'{}')||{}}catch(e){return{}}}
-function galaxyWon(side,how){if(!NET.cl)legAward(side);if(NET.host)for(const c of readyCl())send(c.L,{t:'won',side,how});const lg=loadLegacy();lg.wins=lg.wins||{};lg.wins[side]=(lg.wins[side]||0)+1;lg.last=side;try{localStorage.setItem('driftgate.legacy',JSON.stringify(lg));localStorage.removeItem(SAVE_KEY)}catch(e){}
+function galaxyWon(side,how){{const v=$('winV');if(v)v.hidden=true}if(!NET.cl)legAward(side);if(NET.host)for(const c of readyCl())send(c.L,{t:'won',side,how});const lg=loadLegacy();lg.wins=lg.wins||{};lg.wins[side]=(lg.wins[side]||0)+1;lg.last=side;try{localStorage.setItem('driftgate.legacy',JSON.stringify(lg));localStorage.removeItem(SAVE_KEY)}catch(e){}
   S.won=side;closeSheets&&closeSheets();const mine=side===S.player.faction,n=controlCounts()[side]||0;
   $('winT').textContent=side==='brood'?'The Bloom spreads':mine?'Victory':`${FACTIONS[side].short} rules`;
   const held=how==='tie'?`held the most systems (${n} of ${SECTOR_DEFS.length}) when the two-hour deadline arrived`:`held ${n} of ${SECTOR_DEFS.length} systems for ${Math.round(WIN_TIME/60)} minutes`;
@@ -1417,6 +1417,10 @@ function payKill(e,src,at){const D=e.dmg||{},kp=at&&at.src&&at.src.rp,killer=kp|
     const nm=`${e.side==='pirate'?'Unbound':FACTIONS[e.side]?FACTIONS[e.side].short:'Brood'} ${killNoun(e)}`,part=x<.995?` Your damage: ${pct}%.`:'';
     if(e.role==='trader'&&e.tradeT&&e.tradeT.kind==='haul'){const got=transfer(f,'player',Math.round(raidBounty(e.tradeT)*x));weAdd(f,3*x);if(got)feed(`Convoy raid: +${fmt(got)} cr for cutting ${FACTIONS[e.side].short} supplies.${part}`,'good')}
     const b=transfer(f,'player',Math.max(1,Math.round(bountyOf(e)*x)));feed(`${nm} destroyed${k===killer?'':' (shared kill)'}.${b?` Bounty +${b} cr.`:''}${part}`,'good')})}
+// where to catch a convoy: the first system on its remaining route you can reach in time (it spends ~45 s crossing each
+// system, so one jump of slack), else the point on its route nearest you
+function cvIntercept(t,from){const P=(t.path||[]).slice(t.leg);if(!P.length)return t.to;for(let i=0;i<P.length;i++)if((HOP[from][P[i]]??99)<=i+1)return P[i];
+  return P.slice().sort((a,b)=>(HOP[from][a]??99)-(HOP[from][b]??99)||(a===t.to)-(b===t.to))[0]}
 function raidBounty(t){return Math.round((invValue(t.load||{})*.25+120)/10)*10}
 function weHtml(f){const b=Math.round(weBonus(f)*100);return` War effort: <b>${b?'+'+b+'%':'none'}</b> in battles fought out of sight${b?'':''} (pilots earn it with Orders, supply drives, campaign moves, beacon flips and kills; it fades over about 20 minutes).`}
 function resolveAbstract(ev){
@@ -1877,7 +1881,7 @@ function missionsHtml(c,P,srcs){const f=P.faction,C=myCamp(),m=C&&C.mv,strike=m&
   const ops=friendlyOps();h+=`<div class="h3" style="margin-top:16px">Operations</div>`;
   h+=ops.length?ops.map((o,i)=>o.kind==='local'?'':`<div class="opr ${o.kind}"><div><b>${esc(o.label)}</b><br><span>${o.kind==='assist'?'Join the push':'Defend'} · ${o.hops?o.hops+' jump'+(o.hops>1?'s':''):'this system'}${o.eta?' · lands in '+o.eta+' s':o.ev.stage==='engaged'?' · fighting now':''}</span></div><button class="btn" data-act="opjoin" data-arg="${i}">${o.hops?'Set course':'Here'}</button></div>`).join(''):`<div class="empty">No strikes, convoys or attacks your side knows about right now.</div>`;
   {const cv=(S.traders||[]).filter(t=>t.kind==='haul'&&hostile(f,t.side)&&t.side!=='pirate'&&(HOP[P.sector][t.sector]||0)<=3&&(covered(t.sector)||(HOP[P.sector][t.sector]||0)<=1));h+=`<div class="h3" style="margin-top:16px">Convoy raids</div><p class="note" style="margin:0 0 8px">Enemy supply convoys moving within reach. Destroy the freighter to cut their logistics: Command pays the bounty, and half the hold spills as salvage.</p>`;
-    h+=cv.length?`<div class="tblw"><table class="t"><thead><tr><th>Convoy</th><th>Now in</th><th>Bound for</th><th class="r">Bounty</th></tr></thead><tbody>${cv.map(t=>`<tr><td><b style="color:${sideCol(t.side)}">${esc(FACTIONS[t.side]?FACTIONS[t.side].short:'Brood')}</b> ${esc(t.why||'supplies')}<br><span class="mass" style="margin:0">${esc(haulWhat(t))}</span></td><td>${esc(DEF[t.sector].name)}${t.sector===P.sector?' (here)':''}</td><td>${esc(DEF[t.to].name)}</td><td class="r num">${fmt(raidBounty(t))} cr</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">No enemy convoys spotted within reach.</div>`}
+    h+=cv.length?`<div class="tblw"><table class="t"><thead><tr><th>Convoy</th><th>Now in</th><th>Bound for</th><th class="r">Bounty</th><th></th></tr></thead><tbody>${cv.map(t=>`<tr><td><b style="color:${sideCol(t.side)}">${esc(FACTIONS[t.side]?FACTIONS[t.side].short:'Brood')}</b> ${esc(t.why||'supplies')}<br><span class="mass" style="margin:0">${esc(haulWhat(t))}</span></td><td>${esc(DEF[t.sector].name)}${t.sector===P.sector?' (here)':''}</td><td>${esc(DEF[t.to].name)}</td><td class="r num">${fmt(raidBounty(t))} cr</td><td class="r">${t.sector===P.sector?'<span class="mass" style="margin:0">Here: launch</span>':`<button class="btn sm" data-act="cvint" data-arg="${t.id}">Intercept</button>`}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">No enemy convoys spotted within reach.</div>`}
   {const me=P.pid||'me',cv=(S.traders||[]).filter(t=>t.kind==='haul'&&t.side===f&&cvLeft(t)>=1&&(HOP[P.sector][t.sector]||0)<=3);
     h+=`<div class="h3" style="margin-top:16px">Convoy escort</div><p class="note" style="margin:0 0 8px">Our supply convoys under way. Sign on and fly with one: each jump it makes with you in the system it leaves or enters counts. With you there it is far harder to catch out of sight, but raiders may try an ambush. Command pays when it docks, if you were with it for at least ${Math.round(ESC_CV.need*100)}% of the jumps left when you signed on.</p>`;
     h+=cv.length?`<div class="tblw"><table class="t"><thead><tr><th>Convoy</th><th>Now in</th><th>Bound for</th><th class="r">Jumps</th><th class="r">Pay</th><th></th></tr></thead><tbody>${cv.map(t=>{const E=t.esc,mine=E&&E.k===me;return`<tr><td>${esc(t.why||'supplies')}<br><span class="mass" style="margin:0">${esc(haulWhat(t))}</span></td><td>${esc(DEF[t.sector].name)}${t.sector===P.sector?' (here)':''}</td><td>${esc(DEF[t.to].name)}</td><td class="r num">${mine?`${E.hops}/${E.need}`:cvLeft(t)}</td><td class="r num">${fmt(cvPay(t,mine?Math.max(E.hops,E.need):Math.ceil(cvLeft(t)*ESC_CV.need)))} cr</td><td class="r">${mine?'<span class="mass" style="margin:0">Escorting</span>':E?`<span class="mass" style="margin:0">${esc(E.name||'Escorted')}</span>`:`<button class="btn" data-act="cvesc" data-arg="${t.id}">Escort</button>`}</td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">No friendly convoys under way within 3 jumps.</div>`}
@@ -1903,7 +1907,7 @@ function fpAct(act,arg,c,P,srcs){
 // a depot) or expands (builds a depot). A prep that succeeds makes the strike bigger and better armed. Pilots of that faction
 // see the next move on the HUD, press P to sign on, and help: deliver ore or consignments at the faction's docks (Economy → Orders),
 // or fly with the strike. Each move that succeeds pays the pilots who helped from the treasury; when the campaign reaches its
-// goal, every pilot who served it gets a victory bonus. The Brood and the Unbound have no campaign: they play for themselves.
+// goal and the faction wins the galaxy, every pilot who served it earns a victory bonus. The Brood and the Unbound have no campaign: they play for themselves.
 const DOCTRINE={
   halcyon:{name:'Trade Charter',why:'buy the frontier with depots and relays',prep:['haul','haul','mine'],haul:'plate',mine:'cu',w:{build:1.7,relay:3,forge:1,yard:1.2,neutral:2.6,depot:.8,hub:2.2,deep:1,contested:1}},
   varkesh:{name:'Iron Advance',why:'push the line forward one siege at a time',prep:['haul','mine','haul'],haul:'wire',mine:'ir',w:{build:.7,relay:1,forge:2.2,yard:1.4,neutral:1.4,depot:2.2,hub:1.2,deep:1.3,contested:2.1}},
@@ -2004,10 +2008,13 @@ function campEnd(f,P,ok,why){const m=P.mv;P.mv=null;P.gap=S.T+rnd(20,40);if(ok)P
 // the goal: hold VIC_NEED systems. Every pilot who served the campaign (helped at least one move) is paid once.
 function campGoal(){const n=controlCounts();for(const f of FAC_IDS){const P=campOf(f),have=n[f]||0;
     if(have<VIC_NEED){if(P.goal&&have<=VIC_NEED-2)P.goal=null;continue}if(P.goal)continue;P.goal=S.T;
-    facFeed(f,`★★ ${FACTIONS[f].name} holds ${have} systems: the ${DOCTRINE[f].name} has reached its goal. Hold them ${Math.round(WIN_TIME/60)} minutes to win the galaxy.`,'good');
-    for(const k in P.crew){if(P.paid[k])continue;P.paid[k]=S.T;const got=payKey(k,f,CAMP_GOAL),st=S.econ.stock[f],it={};for(const[i,c]of[['lattice',2],['core',1]]){const t=inv.take(st,i,c);if(t)it[i]=t}
-      const into=R=>inv.addAll(R.vault,it);if(isMe(k)||!NET.on)into(S.player);else runAs(k,()=>into(S.player));
-      keyFeed(k,`★★ Victory bonus for serving the ${DOCTRINE[f].name}: +${fmt(got)} cr${Object.keys(it).length?' and '+Object.entries(it).map(([i,c])=>c+' '+ITEMS[i].name).join(', ')+' to your vault':''}.`,'good');if(isMe(k))SFX.count(true)}}}
+    facFeed(f,`★★ ${FACTIONS[f].name} holds ${have} systems: the ${DOCTRINE[f].name} has reached its goal. Hold them ${Math.round(WIN_TIME/60)} minutes to win the galaxy${Object.keys(P.crew).length?'; every pilot who served the campaign earns a victory bonus when it does':''}.`,'good')}}
+// the victory bonus: when a faction wins the galaxy, every pilot who served its campaign earns it. This galaxy ends there,
+// so it waits in the legacy record and is paid into the pilot's starting vault in their next galaxy.
+const VIC_BONUS={cr:CAMP_GOAL,items:{lattice:2,core:1}};
+function vicServed(k,side){return FAC_IDS.includes(side)&&!!(S.plans&&S.plans[side]&&S.plans[side].crew[k]>0)}
+function vicLine(side){return`★★ Victory bonus for serving the ${DOCTRINE[side].name}: ${fmt(VIC_BONUS.cr)} cr, ${VIC_BONUS.items.lattice} Crystal Lattice and ${VIC_BONUS.items.core} Resonance Core. They're waiting in your vault in the next galaxy.`}
+function vicBank(side){try{const lg=loadLegacy();lg.vb={cr:(lg.vb&&lg.vb.cr||0)+VIC_BONUS.cr,items:{...VIC_BONUS.items},side};localStorage.setItem('driftgate.legacy',JSON.stringify(lg))}catch(e){}const el=$('winV');if(el){el.textContent=vicLine(side);el.hidden=false}}
 // ---- the pilot's side: sign on (P), set a course, deliver at the docks
 function campAccept(k,m){if(m.acc.includes(k))return false;m.acc.push(k);m.help[k]=m.help[k]||0;
   const ev=m.evId&&S.events.find(e=>e.id===m.evId);if(ev&&ev.stage==='inbound'){const s=pSect(k);ev.hold=Math.max(ev.hold||0,S.T+Math.min(220,40*(s?HOP[m.sector][s]:2)+60))}
@@ -2987,8 +2994,12 @@ function civHelp(e){let best=null,bd=2600;for(const c of W.ents){if(!c.npc||!c.a
 
 // ============================================================ input
 const keys={},mouse={x:0,y:0,l:false,r:false,aim:false,in:false},touch={on:false,ox:0,oy:0,dx:0,dy:0,id:null,fire:false,mine:false,boost:false,thrust:false};
-let coarse=matchMedia('(pointer:coarse)').matches;
-addEventListener('keydown',e=>{if(e.code==='F11'){e.preventDefault();toggleFull();return}
+let coarse=matchMedia('(pointer:coarse)').matches,touchLast=coarse;
+// prompts and the steering ring follow the input you used last: keys or the mouse mean keyboard wording, a tap means touch
+function touchUI(){return touchLast&&!touchOff}
+function actKey(){return touchUI()?'Act':'E'}
+addEventListener('pointermove',e=>{if(e.pointerType==='mouse')touchLast=false},{passive:true});
+addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefault();toggleFull();return}
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
   const c=e.code;if(running)auInit();
   if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();devCredits();return}
@@ -3039,7 +3050,7 @@ glc.addEventListener('mousedown',e=>{if(W&&((W.bridge&&!W.bridge.panel)||W.gunse
 addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;if(e.button===2)mouse.r=false});
 glc.addEventListener('contextmenu',e=>e.preventDefault());
 glc.addEventListener('wheel',e=>{e.preventDefault();cam.dist=clamp(cam.dist*Math.exp(e.deltaY*.0012),.6,3)},{passive:false});
-glc.addEventListener('touchstart',e=>{coarse=true;showTouch();for(const t of e.changedTouches){if(t.clientX<innerWidth*.6&&touch.id===null){touch.id=t.identifier;touch.on=true;touch.ox=t.clientX;touch.oy=t.clientY;touch.dx=touch.dy=0}}e.preventDefault()},{passive:false});
+glc.addEventListener('touchstart',e=>{coarse=true;touchLast=true;showTouch();for(const t of e.changedTouches){if(t.clientX<innerWidth*.6&&touch.id===null){touch.id=t.identifier;touch.on=true;touch.ox=t.clientX;touch.oy=t.clientY;touch.dx=touch.dy=0}}e.preventDefault()},{passive:false});
 glc.addEventListener('touchmove',e=>{for(const t of e.changedTouches)if(t.identifier===touch.id){touch.dx=t.clientX-touch.ox;touch.dy=t.clientY-touch.oy}e.preventDefault()},{passive:false});
 const tEnd=e=>{for(const t of e.changedTouches)if(t.identifier===touch.id){touch.id=null;touch.on=false;touch.dx=touch.dy=0}};
 glc.addEventListener('touchend',tEnd);glc.addEventListener('touchcancel',tEnd);
@@ -4463,7 +4474,7 @@ function drawOverlay(){
     else if(W.t-(p.shUpT===undefined?-9:p.shUpT)<1.5){c.fillStyle='#8fc8ff';c.fillText('SHIELDS ONLINE',cx,cy+ringR+18)}
     else if(p.shield<p.st.sCap*.3&&blink){c.fillStyle='#f0b24a';c.fillText('SHIELDS LOW',cx,cy+ringR+18)}
     c.font='600 11px "Saira Semi Condensed",sans-serif'}
-  if(!coarse){const sc=Math.min(VW,VH)*.42;c.strokeStyle='rgba(236,228,207,.18)';c.lineWidth=1;c.beginPath();c.arc(VW/2,VH/2,sc*.07,0,TAU);c.stroke();c.beginPath();c.arc(VW/2,VH/2,sc,0,TAU);c.setLineDash([2,10]);c.stroke();c.setLineDash([]);
+  if(!touchUI()){const sc=Math.min(VW,VH)*.42;c.strokeStyle='rgba(236,228,207,.18)';c.lineWidth=1;c.beginPath();c.arc(VW/2,VH/2,sc*.07,0,TAU);c.stroke();c.beginPath();c.arc(VW/2,VH/2,sc,0,TAU);c.setLineDash([2,10]);c.stroke();c.setLineDash([]);
     if(mouse.in&&mouse.aim){c.strokeStyle='rgba(236,228,207,.4)';c.beginPath();c.moveTo(VW/2,VH/2);c.lineTo(mouse.x,mouse.y);c.stroke();c.beginPath();c.arc(mouse.x,mouse.y,4,0,TAU);c.stroke()}}
   if(touch.on){c.strokeStyle='rgba(236,228,207,.35)';c.lineWidth=1.5;c.beginPath();c.arc(touch.ox,touch.oy,70,0,TAU);c.stroke();c.fillStyle='rgba(240,178,74,.6)';const m=Math.min(70,hyp(touch.dx,touch.dy)),a=Math.atan2(touch.dy,touch.dx);c.beginPath();c.arc(touch.ox+Math.cos(a)*m,touch.oy+Math.sin(a)*m,16,0,TAU);c.fill()}
 }
@@ -4727,7 +4738,7 @@ function hudUpdate(){
   let pr='',alert=false;
   if(flashMsg&&performance.now()-flashMsg.t<2600){pr=flashMsg.m;alert=flashMsg.alert}
   else if(W.docking)pr='';
-  else if(!P.docked&&!W.dead){const ch=dockChoice();if(ch&&ch.k==='frigate')pr=`${coarse?'Act':'E'} — board ${ch.e.tok.name}${fGuest(ch.e.tok)?' (take command or ride as a guest)':''}`;else if(ch&&ch.k==='land')pr=hyp(p.vx,p.vy,p.vz)>LAND_SPD?`Slow below ${LAND_SPD} m/s to land on this asteroid`:`${coarse?'Act':'E'} — land on the asteroid (power down, hide from radar)`;else if(ch&&ch.k==='turret')pr=`${coarse?'Act':'E'} — man the heavy bomber's turret`;const E=ch&&(ch.k==='station'||ch.k==='outpost')?ch.e:null;if(E){if(canDock(E))pr=`${coarse?'Act':'E'} — dock at ${E.type==='station'?E.name:E.o.name}`;else if(E.type==='outpost'&&(!E.o.owner||E.o.breached))pr=(P.cargo.beacon?'Hold the ring to claim this outpost.':'You need a Claim Beacon in your hold to claim this outpost.')}}
+  else if(!P.docked&&!W.dead){const ch=dockChoice();if(ch&&ch.k==='frigate')pr=`${actKey()} — board ${ch.e.tok.name}${fGuest(ch.e.tok)?' (take command or ride as a guest)':''}`;else if(ch&&ch.k==='land')pr=hyp(p.vx,p.vy,p.vz)>LAND_SPD?`Slow below ${LAND_SPD} m/s to land on this asteroid`:`${actKey()} — land on the asteroid (power down, hide from radar)`;else if(ch&&ch.k==='turret')pr=`${actKey()} — man the heavy bomber's turret`;const E=ch&&(ch.k==='station'||ch.k==='outpost')?ch.e:null;if(E){if(canDock(E))pr=`${actKey()} — dock at ${E.type==='station'?E.name:E.o.name}`;else if(E.type==='outpost'&&(!E.o.owner||E.o.breached))pr=(P.cargo.beacon?'Hold the ring to claim this outpost.':'You need a Claim Beacon in your hold to claim this outpost.')}}
   $('hPrompt').innerHTML=pr?`<span class="${alert?'alert':''}">${esc(pr)}</span>`:'';
   renderFeed();drawRadar();
 }
@@ -4882,6 +4893,8 @@ $('dock').addEventListener('click',e=>{
   if(act==='quit'){quitGame();return}
   if(act==='invite'){$('bInvite').click();dockErr=`Invite link copied: ${inviteURL(MP.code)}`;renderDock();return}
   if(act==='tab'){dockTab=arg;renderDock();return}
+  if(act==='cvint'){const t=(S.traders||[]).find(x=>String(x.id)===String(arg));if(!t){dockErr='That convoy is gone.';renderDock();return}const sid=cvIntercept(t,S.player.sector);S.player.route=sid;
+    dockErr=`✓ Intercept course set to ${DEF[sid].name}${sid===t.sector?', where the convoy is now':sid===t.to?', the convoy\'s destination':', on the convoy\'s route'}. Launch and press J.`;renderDock();return}
   if(act==='vcourse'){S.player.route=arg;dockErr=`✓ Course set to ${DEF[arg].name}. Launch and press J.`;renderDock();return}
   if(act==='opjoin'){joinOp(friendlyOps()[+arg]);dockErr=S.player.route?`✓ Course set to ${DEF[S.player.route].name}. Launch and press J.`:'';renderDock();return}
   if(NET.cl){netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
@@ -5050,7 +5063,9 @@ function serialize(){const o=W;W=LW;syncPlayer();W=o;if(NET.host)netSyncPilots()
 function save(){if(!S||NET.on||S.training)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(serialize()))}catch(e){}}
 function loadSave(){try{const t=localStorage.getItem(SAVE_KEY);if(!t)return null;const o=JSON.parse(t);return o&&o.v===2&&o.player?o:null}catch(e){return null}}
 function startWith(state){
-  migrate(state);if(S.player.rack===undefined)S.player.rack=0;if(!S.player.wpn)S.player.wpn='kinetic';running=true;$('start').hidden=true;$('hud').hidden=false;showTouch();
+  migrate(state);if(S.vbPend){S.vbPend=0;if(!S.training&&!NET.cl){const lg=loadLegacy(),vb=lg.vb;if(vb){delete lg.vb;try{localStorage.setItem('driftgate.legacy',JSON.stringify(lg))}catch(e){}devLedger(()=>{S.player.credits+=vb.cr||0;inv.addAll(S.player.vault,vb.items||{})});
+    feed(`★★ Victory bonus from the last galaxy${vb.side&&DOCTRINE[vb.side]?` (for serving the ${DOCTRINE[vb.side].name})`:''}: +${fmt(vb.cr||0)} cr, and ${Object.entries(vb.items||{}).map(([i,c])=>c+' '+ITEMS[i].name).join(', ')} in your vault.`,'good')}}}
+  if(S.player.rack===undefined)S.player.rack=0;if(!S.player.wpn)S.player.wpn='kinetic';running=true;$('start').hidden=true;$('hud').hidden=false;showTouch();
   enterSector(S.player.sector);
   if(S.player.docked==='turret')S.player.docked=null;
   if(S.player.docked==='bridge'){const F=W.ents.find(e=>e.role==='frigate'&&e.tok&&fMine(e.tok));S.player.docked=null;if(F)enterBridge(F)}
@@ -5142,8 +5157,8 @@ function legBonus(k,f,what){if(lvlOf(k)<9||!FAC_IDS.includes(f))return 0;const g
 function legFlownTick(dt){if(!S||S.training||NET.cl)return;S.flown=S.flown||{};for(const P of allPilots()){if(!P||!P.faction)continue;const k=P.pid||'me',o=S.flown[k]||(S.flown[k]={});o[P.faction]=(o[P.faction]||0)+dt}}
 function legEarned(k,side){const o=(S.flown||{})[k]||{};let best=null,bt=-1;for(const f in o)if(o[f]>bt){bt=o[f];best=f}return best===side&&(o[side]||0)>=LEG_MIN}
 // galaxy over: host / single player decides; each device records its own pilot
-function legAward(side){if(!S||S.training||NET.cl)return;for(const P of allPilots()){if(!P||!P.name)continue;const k=P.pid||'me',ok=FAC_IDS.includes(side)&&legEarned(k,side);
-    if(!NET.on||isMe(k))legGrant(P.name,side,ok,P.cls);else{const c=readyCl().find(x=>x.pid===k);if(c)send(c.L,{t:'legend',side,ok,cls:P.cls})}}}
+function legAward(side){if(!S||S.training||NET.cl)return;for(const P of allPilots()){if(!P||!P.name)continue;const k=P.pid||'me',ok=FAC_IDS.includes(side)&&legEarned(k,side),vb=vicServed(k,side);
+    if(!NET.on||isMe(k)){legGrant(P.name,side,ok,P.cls);if(vb)vicBank(side)}else{const c=readyCl().find(x=>x.pid===k);if(c)send(c.L,{t:'legend',side,ok,cls:P.cls,vb})}}}
 function legGrant(name,side,ok,cls){const d=legLoad(),r=legRec(name,d);if(!r)return;if(cls&&!LEG_CAPITAL.has(cls))r.lastCls=cls;let line='';
   if(ok){const l0=legLevel(r.pts);r.pts++;r.wins[side]=(r.wins[side]||0)+1;r.last={side,at:Date.now()};const l1=legLevel(r.pts);
     line=`★ Legend point earned: ${r.pts} total${l1?` · level ${l1} ${LEG_TITLES[l1-1]}`:''}.`;if(l1>l0)line+=` New perk — ${LEG_PERKS[l1-1]}`;else if(l1<10)line+=` ${LEG_LV[l1]-r.pts} more win${LEG_LV[l1]-r.pts>1?'s':''} to level ${l1+1}.`}
@@ -5218,7 +5233,7 @@ const TRAIN=[
   {x:'Press <kbd>M</kbd> for the galaxy map: territory, operations, beacons and every faction’s progress.',ok:()=>!$('map').hidden},
   {x:'A faction wins by holding <b>7 systems for 20 minutes</b>, or by holding the most systems at the <b>two-hour deadline</b>. Stations, depots and outposts hold a system; the others band together against whoever leads. Close the map (<kbd>M</kbd>).',ok:()=>$('map').hidden},
   {x:'Press <kbd>P</kbd> to read your faction’s campaign orders and sign on to its next move.',ok:()=>!!keys.KeyP},
-  {ack:1,ok:()=>!!S.training.ack,x:'<b>How a galaxy ends.</b> The moment a side holds 7 systems, a 20-minute clock starts (the chip at the top of the screen shows it); drop below 7 and it resets. Every pilot who helped a campaign move is paid a victory bonus when their faction first reaches 7. When the clock runs out that side wins. If no one manages that within <b>two hours</b>, the side holding the most systems at the deadline wins instead (ties go to most stations, then capital ships, then the richest stores). Either way this galaxy ends and a new one begins, with the winner starting 40% richer and with the parts for a capital shipyard. If it was your faction, you start with 4,000 extra credits and a crate of parts.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>How a galaxy ends.</b> The moment a side holds 7 systems, a 20-minute clock starts (the chip at the top of the screen shows it); drop below 7 and it resets. Every pilot who helped a campaign move earns a victory bonus when their faction wins (3,000 cr plus parts, paid into your vault at the start of the next galaxy). When the clock runs out that side wins. If no one manages that within <b>two hours</b>, the side holding the most systems at the deadline wins instead (ties go to most stations, then capital ships, then the richest stores). Either way this galaxy ends and a new one begins, with the winner starting 40% richer and with the parts for a capital shipyard. If it was your faction, you start with 4,000 extra credits and a crate of parts.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>The Brood can win too.</b> If the Bloom holds 7 systems for 20 minutes, the galaxy is consumed and the next one starts with a hungrier Brood. When anyone (the Brood included) gets close, the other powers call a truce and turn on them, so watch the map.'}]}];
 function trCur(){const T=S.training,L=TRAIN[T.i];return L?{L,s:L.steps[T.j]}:null}
 function trEnter(){const c=trCur();if(!c)return;const T=S.training;T.ack=0;if(T.j===0&&c.L.setup)try{c.L.setup()}catch(e){}if(c.s.setup)try{c.s.setup()}catch(e){}T.html=''}
@@ -5606,7 +5621,7 @@ function clientRecv(m){
     case 'nodock':case 'kick':if(S.player.docked){S.player.docked=null;$('dock').hidden=true}if(m.t==='nodock')flash('Docking refused by the station.',true);break;
     case 'chat':feed(`${m.n}: ${m.m}`,'chat');break;
     case 'won':if(S){S.won=m.side;galaxyWon(m.side,m.how)}break;
-    case 'legend':legGrant(MP.name||S.player.name,m.side,!!m.ok,m.cls);break;
+    case 'legend':legGrant(MP.name||S.player.name,m.side,!!m.ok,m.cls);if(m.vb)vicBank(m.side);break;
     case 'reset':running=false;if(W)exitSector();WORLDS={};LW=null;W=null;S=null;$('hud').hidden=true;$('dock').hidden=true;$('win').hidden=true;buildSectorScene(null);showStart();mpStatus('The host started a new galaxy. Choose your faction and ship, then Launch.');break;
   }}
 function mpClientStart(m){const first=!running;if(W)exitSector();WORLDS={};LW=null;W=null;
