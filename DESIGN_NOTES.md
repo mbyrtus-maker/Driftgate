@@ -7,7 +7,7 @@ Ideas that are agreed but not built yet. Each entry says what it is, how it shou
 ## Pilot leaderboard and Legendary status (not built)
 
 ### The idea
-Every time a pilot is part of a winning faction, they earn **1 Legend point**. A galaxy ends at most every 2 hours (the 8-system hold, or the 2-hour deadline), so points come slowly. Points raise a pilot through **10 Legendary levels**. Each level unlocks a **permanent perk**: once earned, a pilot keeps it in every galaxy from then on.
+Every time a pilot is part of a winning faction, they earn **1 Legend point**. A galaxy ends at most every 2 hours (the 8-system hold, or the 2-hour deadline), so points come slowly. Points raise a pilot through **10 Legendary levels**, from Victor to Legendary Ace. Each level unlocks a **permanent perk**: once earned, a pilot keeps it in every galaxy from then on.
 
 ### Earning a point
 - The pilot must have flown for the winning faction for **at least 30 minutes of game time** in that galaxy. This stops someone joining in the last minute to collect a point.
@@ -22,8 +22,8 @@ Other pilots see your standing next to your callsign on radar, in the contacts l
 |---|---|---|
 | 1–2 | none | faction colour |
 | 3–6 | **(Heroic Pilot)** | faction colour |
-| 7–9 | **(Legendary Ace)** | faction colour, brighter |
-| 10 | **(Legend)** | gold |
+| 7–9 | **(Legend)** | faction colour, brighter |
+| 10 | **(Legendary Ace)** | gold |
 
 ### Levels and permanent perks
 
@@ -38,9 +38,9 @@ Other pilots see your standing next to your callsign on radar, in the contacts l
 | 7 | Commander | 16 | **Command rank**: campaign bonuses pay 15% more, and your comms constructor needs 1 escort instead of 2. |
 | 8 | Pathfinder | 20 | **Scout's instinct**: in a Scout or Advanced Scout, beacons flip in 7 seconds instead of 10, and beacon bounties pay 20% more. |
 | 9 | Champion | 25 | **Reserve hull**: start each galaxy with a second hull in your Ship Bay (Medium Fighter or Medium Miner, your choice), and your faction's next frigate each galaxy is named after you. |
-| 10 | Legend | 30 | **Legend**: gold callsign, plus the **Wraith**, a Legend-only stealth fighter (below). |
+| 10 | Legendary Ace | 30 | **Legendary Ace**: gold callsign, plus the **Wraith**, a stealth fighter only Legendary Aces can fly (below). |
 
-The wins needed between levels grow (1, 1, 2, 2, 3, 3, 4, 4, 5, 5). With four sides near even odds and a galaxy every 2 hours or less, a regular pilot reaches Legend after roughly 150 to 250 hours of play.
+The wins needed between levels grow (1, 1, 2, 2, 3, 3, 4, 4, 5, 5). With four sides near even odds and a galaxy every 2 hours or less, a regular pilot reaches Legendary Ace after roughly 150 to 250 hours of play.
 
 The two Mk II perks are at levels 4 and 6. The second Mk II choice replaced a vault carry-over that had been at level 4.
 
