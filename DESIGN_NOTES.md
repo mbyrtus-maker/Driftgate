@@ -238,6 +238,19 @@ In strategic battles a carrier counts as its hull plus its wing. Its wing adds s
 2. The economy stays exact: craft in its bays are kits held aboard, lost craft fall as debris, and refills come out of faction stores.
 3. Re-tune all four sides with the fast simulator after it lands.
 
+### Wing replacements (built)
+A carrier with empty bays requests replacements every 20 seconds, in this order:
+1. **Ready fighters answer first.**
+   - Patrol fighters of its side in a live system acknowledge, fly to the carrier and land into the wing.
+   - A fighter waiting in the nearest friendly depot hangar (up to 4 jumps away) flies over.
+   - Otherwise, a pilot from the faction's muster pool does.
+2. **The closest builder builds one.** That's the nearest core station, or a full depot with a hangar or production level 2. It builds a basic craft (45 s) and sends it; flight time is 40 s per jump.
+3. **Short of materials, it posts an Order** in the Orders tab ("for the carrier X's replacement fighters"). Pilot deliveries go into faction stores, and the build follows.
+
+The Brood's Hive Ship regrows one craft about every 4 minutes from Brood stores (`BAL.hiveRegrow`). Craft in flight are counted in the ledger as fleets in muster.
+
+Carriers have their own model: a flight deck with runway lights, a bow hangar mouth, side bays, an island bridge and four drives.
+
 ## Brood carrier (first version built as the Hive Ship)
 The Brood's version is a living carrier, the **Hive Ship**: a swollen, living vessel that grows its own wing. It jumps like the Leviathan and has no lance or spitters of its own.
 
