@@ -55,7 +55,7 @@ Core stations and freeports can't be captured, only razed. The target panel show
 ### The limits match the garrisons
 Every limit equals the largest possible garrison, 3, so one well-organised assault can always take any target in one go:
 - **In flight:** a faction can have up to 3 assault ships flying at once.
-- **On a carrier:** a carrier can hold up to 3 assault ships, using 3 of its 6 bays.
+- **On a carrier:** a carrier has 3 assault bays of its own, separate from its 6 craft bays, so it can carry a full 3-load assault without giving up any fighters or bombers.
 - **Per call:** a pilot can call in as many ships as the target's remaining garrison, up to 3. The comms menu shows the number ("Call in 2 assault ships: 2 loads left").
 - **AI sieges:** the AI sends exactly enough for the garrison.
 
@@ -126,7 +126,7 @@ A faction capital ship that fights with its fighters instead of guns. It jumps l
 | Hull / shield | about 5,000 / 2,400 | 6,000 / 2,400 |
 | Main weapon | none | lance, torpedoes |
 | Turrets | 6 point-defence turrets that shoot down torpedoes and missiles and engage fighters within about 1.4 km | turrets plus lance |
-| Hangar | 6 craft: any mix of Light, Medium and Heavy Fighters and Bombers (Heavy Bombers at Mk III+) | 2 pickets |
+| Hangar | 6 craft bays: any mix of Light, Medium and Heavy Fighters and Bombers (Heavy Bombers at Mk III+), plus 3 separate assault bays for assault ships only | 2 pickets |
 | Jump | own drive, same spin-up as a frigate | |
 | Speed | a little slower than a frigate | |
 
@@ -149,7 +149,8 @@ Pilots can command a carrier, commissioned at a shipyard like a frigate or escor
 
 **Wing orders** (wing console)
 - **Wing stance:** Screen (stay within 2 km of the carrier), Attack my target, or Hold (stay docked).
-- **Loadout:** pick the 6 craft from your own vault kits, and the carrier fills them when docked.
+- **Loadout:** pick the 6 craft from your own vault kits, and the carrier fills them when docked. The 3 assault bays refill with assault ships from faction stores at a shipyard station.
+- **Assault:** launch 1–3 assault ships at a breached target in the system (see Assault ships); they come out of the assault bays, not the craft bays.
 - **Bombing run:** pick a target in range and the bombers go. This is the best tool against Overgrowth, which capital ships can reach by jumping when gates are sealed.
 
 **Multiplayer: owner commands, others are guests**
