@@ -1,9 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Driftgate: a 3D space trading and combat game for up to four pilots, playable in the browser.">
 <title>Driftgate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -813,7 +807,7 @@ function oresNoNu(d){if(!d.ores.nu)return d.ores;const o={...d.ores};delete o.nu
 const STN={free:{sMax:3600,hMax:10000,tur:6,dmg:16,range:1500},core:{sMax:3200,hMax:9000,tur:6,dmg:15,range:1500},depot:{sMax:2000,hMax:4000,tur:4,dmg:12,range:1300},hive:{sMax:4200,hMax:14000,tur:6,dmg:18,range:1600}};
 // balance levers, tuned by simulation so each of the four powers (the Brood included) wins about a quarter of galaxies
 // (tuned for the 2-hour deadline and the 20-minute hold over 18 rounds of simulated galaxies)
-const BAL={brBuild:.575,brOff:.675,brLevT:1200,brN:1,brHive:9,antiBrood:2.6,halProsp:1,halImp:.15,brGraze:3.95,coal:.35,ext:{halcyon:.87,varkesh:.89,ostrova:1.08}};   // ext: each faction's station mining rate
+const BAL={brBuild:.575,brOff:.64,brLevT:1200,brN:1,brHive:9,antiBrood:2.6,halProsp:1,halImp:.15,brGraze:3.95,coal:.35,devGap:1,ext:{halcyon:.87,varkesh:.89,ostrova:1.08}};   // ext: each faction's station mining rate
 const DEPOT_COST={frame:2},YARD_COST={frame:4,keel:4,lattice:4,plate:40},YARD_FEE=5000,FRIGATE_COST={keel:6,lattice:6,core:2,wire:10,picket:2,missile:4},YARD_TIME=180,FRIGATE_TIME=150,FRIG_CAP={player:3,brood:3},FRIG_HULL=6000;
 // the Escort: a light capital ship. Smaller and cheaper than a frigate, hurt by ordinary guns and missiles but heavily built; no
 // main cannon, instead six anti-fighter batteries and twin torpedo launchers. Holds a system like a frigate, jumps faster.
@@ -1064,7 +1058,7 @@ function strategicTick(){
     for(let i=s.ast.length-1;i>=0;i--){const a=s.ast[i];if(a.comet&&T>a.until){toDebris(s,a.ore);s.ast.splice(i,1);if(W&&W.tgt&&W.tgt.ref===a)W.tgt=null}}
   }
   diffuse();seamTick(2);scoutsTick();beaconTick();bcnMissionsTick();cReqTick();mkTick();coalTick();threatTick();capitalTick();victoryTick();campTick();for(const ev of S.events)announce(ev);
-  for(const f of FAC_IDS)factionIndustry(f);factionIndustry('brood');neutralIndustry();lifeTick();devTick();wkRepair();fpContracts();
+  for(const f of FAC_IDS)factionIndustry(f);factionIndustry('brood');neutralIndustry();lifeTick();devTick();hgTick();wkRepair();fpContracts();
   pirateIndustry();
   const h=S.outposts.hollow;
   if(h.owner){let got=0;for(const f of FAC_IDS){if(f===h.owner)continue;got+=transfer(f,h.owner,22)}if(h.owner==='player'){S.tollAcc+=got;if(S.tollAcc>=300){feed(`Hollow Relay tolls: +${fmt(S.tollAcc)} cr`,'good');S.tollAcc=0}}}
@@ -1290,9 +1284,11 @@ function resolveAbstract(ev){
   finishOffensive(ev);
 }
 function resolveSiege(ev){const Rr=S.stations[ev.st],s=S.sectors[ev.sector];if(!Rr||!hostile(ev.att,Rr.owner)){finishOffensive(ev);return}
-  const att=invValue(ev.force);let def=(Rr.kind==='core'?2600:Rr.kind==='free'?2000:1300)*(1+.2*(devOf(Rr).def+devOf(Rr).armor)),dforce=null;
+  const att=invValue(ev.force);let def=(Rr.kind==='core'?2600:Rr.kind==='free'?2000:1300)*(1+.2*(devOf(Rr).def+devOf(Rr).armor)+.1*(devOf(Rr).hangar||0)),dforce=null;
   if(FACTIONS[Rr.owner]){dforce={};const fl=S.econ.fleet[Rr.owner],warned=covOf(Rr.owner,true).has(ev.sector);for(let i=0;i<(Rr.kind==='core'?3:2)+(warned?1:0);i++){const ld=loadout('patrol',factionTier(Rr.owner));if(takeFrom(ld,[fl,S.econ.stock[Rr.owner]]))inv.addAll(dforce,ld)}def+=invValue(dforce)}
+  const hgN=(Rr.hg||[]).length;if(hgN)def+=Rr.hg.reduce((a,h)=>a+invValue(h.load),0)*.6;   // hangar fighters scramble to defend their depot
   const tor=ev.force.torpedo||0,win=Math.random()<att/(att+def*1.15)*Math.min(1,tor/8),loud=friendSide(Rr.owner)||covered(ev.sector);
+  if(hgN){const lf=win?rnd(.6,.95):rnd(.15,.4);Rr.hg=Rr.hg.filter(h=>{if(Math.random()<lf){toDebris(s,h.load);return false}return true})}
   loseInv(ev.force,win?rnd(.2,.45):rnd(.45,.8),s);
   if(dforce){loseInv(dforce,win?rnd(.5,.9):rnd(.2,.45),s);inv.addAll(S.econ.fleet[Rr.owner],dforce)}
   if(win){if(Rr.kind==='depot'||Rr.kind==='free')razeStation(ev.st,ev.att);else{wkAbstractHit(ev.st,ev.att,.6);const st=S.econ.stock[Rr.owner]||{},got={};for(const k in st){const m=Math.floor(st[k]*.1);if(m>0)got[k]=inv.take(st,k,m)}inv.addAll(S.econ.stock[ev.att]||S.econ.stock.pirate,got);Rr.hull=Math.max(1,Rr.hull*.4);
@@ -1425,15 +1421,17 @@ const DEV={
   store:[{plate:20,wire:10},{plate:30,wire:16,coil:4},{plate:45,wire:24,coil:8}],
   prod:[{plate:25,wire:15,coil:8,lattice:2},{plate:40,wire:20,coil:14,lattice:4,frame:1}],
   def:[{plate:15,coil:6,missile:8},{plate:24,coil:10,missile:12},{plate:34,coil:14,missile:16,torpedo:2}],
-  armor:[{plate:30,coil:4},{plate:45,coil:8,lattice:1},{plate:60,coil:12,lattice:3}]};
+  armor:[{plate:30,coil:4},{plate:45,coil:8,lattice:1},{plate:60,coil:12,lattice:3}],
+  hangar:[{plate:22,wire:12,coil:4},{plate:32,wire:18,coil:8,lattice:1},{plate:44,wire:24,coil:12,lattice:2},{plate:60,wire:30,coil:16,lattice:4,frame:1}]};
 const DEV_TXT={life:['Life support','houses the crew for more modules (2 more per level) and burns supplies every cycle'],store:['Storage facility','larger stores: more ore on hand, faster restocking'],
-  prod:['Production module','level 1: fabricate Lattice and Cores here · level 2: build hulls here'],def:['Defence platform','two more turret mounts per level, harder hitting · level 2+: a missile battery'],armor:['Hull & shield works','+25% station hull and shields per level']};
-const DEV_KEYS=['life','store','prod','def','armor'];
-function devOf(R){return R.dev||(R.dev={life:0,store:0,prod:0,def:0,armor:0})}   // nothing is pre-built: every module is earned with materials
-function devUsed(R){const d=devOf(R);return d.store+d.prod+d.def+d.armor}
+  prod:['Production module','level 1: fabricate Lattice and Cores here · level 2: build hulls here'],def:['Defence platform','two more turret mounts per level, harder hitting · level 2+: a missile battery'],armor:['Hull & shield works','+25% station hull and shields per level'],
+  hangar:['Fighter hangar','depots only: builds fighters from station stores and launches them when the depot is attacked · 2 bays and +10% depot hull and shields per level · L1 Light Fighters · L2 Medium · L3 Heavy Fighters and Bombers · L4 Heavy Bombers']};
+const DEV_KEYS=['life','store','prod','def','armor','hangar'];
+function devOf(R){return R.dev||(R.dev={life:0,store:0,prod:0,def:0,armor:0,hangar:0})}   // nothing is pre-built: every module is earned with materials
+function devUsed(R){const d=devOf(R);return d.store+d.prod+d.def+d.armor+(d.hangar||0)}
 function devCap(R){return 2+2*devOf(R).life}
-function devNext(R,k){const d=devOf(R),L=d[k]||0,T=DEV[k];if(L>=T.length)return null;if(k==='prod'&&R.kind==='core')return null;if(k!=='life'&&devUsed(R)>=devCap(R))return null;return T[L]}
-function applyDev(R){const d=devOf(R),b=STN[R.kind]||STN.depot,f=1+.25*d.armor,sR=R.sMax?R.shield/R.sMax:1,hR=R.hMax?R.hull/R.hMax:1;R.sMax=Math.round(b.sMax*f);R.hMax=Math.round(b.hMax*f);R.shield=R.sMax*sR;R.hull=R.hMax*hR;
+function devNext(R,k){const d=devOf(R),L=d[k]||0,T=DEV[k];if(L>=T.length)return null;if(k==='prod'&&R.kind==='core')return null;if(k==='hangar'&&R.kind!=='depot')return null;if(k!=='life'&&devUsed(R)>=devCap(R))return null;return T[L]}
+function applyDev(R){const d=devOf(R),b=STN[R.kind]||STN.depot,f=1+.25*d.armor+.1*(d.hangar||0),sR=R.sMax?R.shield/R.sMax:1,hR=R.hMax?R.hull/R.hMax:1;R.sMax=Math.round(b.sMax*f);R.hMax=Math.round(b.hMax*f);R.shield=R.sMax*sR;R.hull=R.hMax*hR;
   if(W&&W.stationEnt&&W.stationEnt.rec===R)devEnt(W.stationEnt)}
 function devBuild(R,k,srcs){const r=devNext(R,k);if(!r||!takeFrom(r,srcs))return false;inv.addAll(R.fort,r);devOf(R)[k]++;if(R.wk&&R.wk[k]!==undefined)R.wk[k]+=WK_HP[k];applyDev(R);return true}
 function starving(R){return R.starve&&S.T-R.starve<60}
@@ -1462,12 +1460,12 @@ function devMesh(fac,kind,d){const key='dev'+fac+kind+DEV_KEYS.map(k=>d[k]||0).j
 // defence platform hangs beneath it carrying the extra turrets, and a shipyard's slipway lies further out (with the hull in
 // its slip while a frigate is building). Only torpedoes and capital guns hurt them. Destroyed, a module loses every level
 // it had and its materials fall as debris; a shipyard takes any hull in its slip with it. Left alone, crews patch damage.
-const WK_KEYS=['life','store','prod','def','armor'];
-const WK_HP={life:1600,store:1300,prod:1500,def:1400,armor:1300,yard:5200,yardb:1800};
-const WK_MDL={life:'wk_life',store:'wk_store',prod:'wk_prod',def:'wk_def',armor:'wk_armor',yard:'wk_yard',yardb:'wk_yard'};
-const WKU={life:64,store:55,prod:72,def:62,armor:60,yard:207,yardb:207};
+const WK_KEYS=['life','store','prod','def','armor','hangar'];
+const WK_HP={life:1600,store:1300,prod:1500,def:1400,armor:1300,hangar:1500,yard:5200,yardb:1800};
+const WK_MDL={hangar:'hangar',life:'wk_life',store:'wk_store',prod:'wk_prod',def:'wk_def',armor:'wk_armor',yard:'wk_yard',yardb:'wk_yard'};
+const WKU={hangar:58,life:64,store:55,prod:72,def:62,armor:60,yard:207,yardb:207};
 const WK_SLIP=[0,-5,41.8];   // where the slip's centre sits in the shipyard model (metres, model space)      // unit half-size in metres (matches the model pack)
-const WK_NAME={life:'Habitat & life support',store:'Storage vaults',prod:'Production works',def:'Defence platform',armor:'Shield & hull works',yard:'Orbital shipyard',yardb:'Shipyard under construction'};
+const WK_NAME={hangar:'Fighter hangar',life:'Habitat & life support',store:'Storage vaults',prod:'Production works',def:'Defence platform',armor:'Shield & hull works',yard:'Orbital shipyard',yardb:'Shipyard under construction'};
 function wkFac(key){if(FACTIONS[key])return key;const pid=ykPid(key),P=pid&&S.pilots&&S.pilots[pid];return P?P.faction:S.player.faction}
 function wkOk(R){return R&&R.kind!=='hive'&&R.owner!=='brood'}
 // what stands in a system: one descriptor per built module, shipyard and shipyard under construction
@@ -1489,6 +1487,7 @@ function wkAngles(kind){const mk=kind==='depot'?'depot':'station',P=MDL.ready?md
 function wkLayout(kind,k,lvl,slot){const mk=kind==='depot'?'depot':'station',M=MDL.ready&&MDL.i[mk],s=M?M.s:(kind==='depot'?105:150),u=WKU[k];
   if(k==='def'){const y=-(s*(M?Math.max(.6,M.top):1)+u*1.5*SPREAD);return{yaw:0,parts:[[0,y,0]]}}
   const mid=wkAngles(kind),yard=k==='yard'||k==='yardb';
+  if(k==='hangar'){const a=mid[1]+3.25,parts=[];for(let i=0;i<lvl;i++){const r=(s*4.3+i*u*2.05)*SPREAD;parts.push([Math.cos(a)*r,-s*.12,Math.sin(a)*r])}return{yaw:-a,parts}}
   const a=yard?mid[1]+.4+(slot||0)*1.9:mid[{store:0,prod:1,life:2,armor:3}[k]],r=(yard?s*5.6:s*3.1+(lvl>1?u*.4:0))*SPREAD,y=yard?s*.15:-s*.3;
   const cx=Math.cos(a)*r,cz=Math.sin(a)*r,tx=-Math.sin(a),tz=Math.cos(a),n=yard?1:lvl,sp=u*2.3,parts=[];
   for(let i=0;i<n;i++){const o=(i-(n-1)/2)*sp;parts.push([cx+tx*o,y+(i%2?u*.35:0),cz+tz*o])}
@@ -1507,8 +1506,10 @@ function worksSync(){const SE=W.stationEnt;W.works=W.works||[];const want=SE&&SE
   for(const w of W.works)w.lowHp=wkHp(w)<wkMax(w)*.3}
 function worksIn(w2){return(w2||W).works||[]}
 // damage: torpedoes and capital guns only
+// fighter guns and missiles chip capital armour (frigate hulls, stations, works): a tenth of gun damage, a quarter of missile damage
+const CAP_CHIP={gun:.1,missile:.25};function capChip(k){return k==='missile'||k==='swarm'?CAP_CHIP.missile:CAP_CHIP.gun}
 function damageWorks(w,dmg,by,kind){if(NET.cl)return;const side=by==='player'?S.player.faction:by;if(w.fac==='neutral'&&side!=='brood')return;if(!side||!hostile(side,w.fac))return;
-  if(kind!=='torpedo'&&kind!=='capital'){if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Station works are armoured: only torpedoes and capital guns hurt them.',true)}return}
+  if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Station works are armoured: guns and missiles only chip them. Torpedoes do the real damage.',true)}}
   w.lastHit=W.t;const R=wkRec(w);if(R)distressCall(W.sid,R.name,R.owner,side);const hp=wkHp(w)-dmg;wkSet(w,Math.max(0,hp));if(Math.random()<.5)fxSpark(w.col[0],'#ffcf8a',4);
   if(hp<=0)wkDestroy(w,side)}
 function wkCost(k,L){const o={};for(let i=0;i<L;i++)inv.addAll(o,DEV[k][i]);return o}
@@ -1517,7 +1518,7 @@ function wkDestroy(w,by){const sid=w.sid,s=S.sectors[sid],nm=DEF[sid].name,mine=
     for(const ev of S.events)if((ev.type==='frigbuild'||ev.type==='escbuild')&&ev.stage==='building'&&(ev.yard||ev.att)===w.key){toDebris(s,ev.force);ev.force={};ev.stage='done';what='orbital shipyard and the frigate in its slip'}}
   else if(w.k==='yardb'){const ev=wkEv(w);if(!ev)return;toDebris(s,ev.force);ev.force={};ev.stage='done'}
   else{const R=wkRec(w);if(!R)return;const d=devOf(R),L=d[w.k]||0,c=wkCost(w.k,L),got={};for(const i in c){const n=Math.min(c[i],R.fort[i]||0);if(n>0)got[i]=inv.take(R.fort,i,n)}toDebris(s,got);
-    d[w.k]=0;if(R.wk)delete R.wk[w.k];applyDev(R);if(w.k==='life')R.starve=S.T}
+    d[w.k]=0;if(R.wk)delete R.wk[w.k];applyDev(R);if(w.k==='life')R.starve=S.T;if(w.k==='hangar'&&R.hg&&R.hg.length){for(const h of R.hg)toDebris(s,h.load);what+=` and ${R.hg.length} fighter${R.hg.length>1?'s':''} in its bays`;R.hg=[]}}
   const who=by?sideName(by):'attackers',owner=w.fac==='player'?'Your':FACTIONS[w.fac]?FACTIONS[w.fac].short:'The';
   if(mine||ours||covered(sid))feed(mine?`⚠ ${owner} ${what} in ${nm} ${what.includes(' and ')?'were':'was'} destroyed by ${who}.${w.k==='life'?' Its production and missile battery are offline for a minute, and it has crew room for fewer modules until the habitat is rebuilt.':''}`:`${owner} ${what} in ${nm} destroyed${ours?' by our forces':''}.`,mine?'bad':ours?'good':'news');
   if(WORLDS[sid])inW(WORLDS[sid],()=>{const e=(W.works||[]).find(x=>x.id===w.id)||w;for(const c of(e.col||[]).slice(0,4)){fxBoom(c,c.r*1.6,sideCol(w.fac));fxBoom(c,c.r,'#ffe2b0')}})}
@@ -1525,7 +1526,7 @@ function wkDestroy(w,by){const sid=w.sid,s=S.sectors[sid],nm=DEF[sid].name,mine=
 function wkAbstractHit(sid,by,chance){if(WORLDS[sid]||Math.random()>chance)return;const L=wkDescs(sid).filter(w=>hostile(by==='player'?S.player.faction:by,w.fac));if(!L.length)return;
   const w=L[Math.floor(Math.random()*L.length)],hp=wkHp(w)-rnd(700,1300);wkSet(w,Math.max(0,hp));if(hp<=0)wkDestroy(w,by)}
 // razing a station takes everything around it down too
-function wkRaze(sid){const s=S.sectors[sid];for(const key in S.yards||{}){const Y=S.yards[key];if(Y.sector!==sid)continue;toDebris(s,Y.fort);delete S.yards[key]}
+function wkRaze(sid){const s=S.sectors[sid];{const R=S.stations[sid];if(R&&R.hg){for(const h of R.hg)toDebris(s,h.load);R.hg=[]}}for(const key in S.yards||{}){const Y=S.yards[key];if(Y.sector!==sid)continue;toDebris(s,Y.fort);delete S.yards[key]}
   for(const ev of S.events)if((ev.type==='frigbuild'||ev.type==='yardbuild')&&ev.stage==='building'&&ev.sector===sid){toDebris(s,ev.force);ev.force={};ev.stage='done'}}
 // crews patch structures left alone for a minute and a half
 function wkRepair(){for(const id in S.stations){const R=S.stations[id];if(!R.wk||S.T-(R.wkHit||-1e9)<90)continue;const d=devOf(R);
@@ -1544,7 +1545,7 @@ function wkShot(b,ox,oy,oz){for(const w of worksIn()){if(!hostile(b.side,w.fac))
 function wkBlast(m,tp,BR){for(const w of worksIn()){if(!hostile(m.side,w.fac))continue;if(w.col.some(c=>d3(c,m)<BR+c.r))damageWorks(w,m.dmg*(tp?TORP_STATION:1),m.side,m.kind)}}
 // drawing
 function wkMesh(name,fac){const key='wk'+name+fac;return MESH[key]||(MESH[key]=mdlMesh(name,fac,MDL.i[name].s))}
-function drawWorks(t){if(!MDL.ready)return;for(const w of worksIn()){const nm=WK_MDL[w.k];if(!mdlHas(nm)||!w.parts)continue;const fac=w.fac,m=wkMesh(nm,fac),fr=wkHp(w)/wkMax(w),hurt=W.t-w.lastHit<.12,u=WKU[w.k];
+function drawWorks(t){if(!MDL.ready)return;for(const w of worksIn()){const nm=WK_MDL[w.k],hg=w.k==='hangar';if((!hg&&!mdlHas(nm))||!w.parts)continue;const fac=w.fac,m=hg?hgMesh(fac):wkMesh(nm,fac),fr=wkHp(w)/wkMax(w),hurt=W.t-w.lastHit<.12,u=WKU[w.k];
     const tint=fr<.5?[.62+fr*.5,.56+fr*.5,.54+fr*.5]:ONE3,em=hurt?[.35,.25,.15]:ZERO3;
     for(const p of w.parts){if(!inView(p.x,p.y,p.z,u*1.8))continue;mModel(MM,p.x,p.y,p.z,w.q,1,1,1);
       if(w.k==='yardb'){const pr=wkProg(w);drawMesh({buf:m.buf,n:Math.max(3,Math.floor(m.n*(.12+.88*pr)/3)*3),mode:m.mode},MM,[.82,.82,.85],em);if(W===LW&&Math.random()<.25){qRot(w.q,rnd(-.5,.5)*u,rnd(-.3,.3)*u,(-.8+1.4*pr)*u,_u);fxSpark({x:p.x+_u.x,y:p.y+_u.y,z:p.z+_u.z},'#ffe9b8',2)}}
@@ -1569,14 +1570,63 @@ function drawWorksFx(t){if(!MDL.ready)return;for(const w of worksIn()){if(!w.par
     const k=Math.min(H.n/3-1,n/3),zf=(H.data[k*30+2]+H.data[k*30+12]+H.data[k*30+22])/3*sc,p={};
     for(let i=0;i<10;i++){const a=i/10*TAU+t*.7;wkSlipPt(w,Math.cos(a)*sc*.26,Math.sin(a)*sc*.3,zf,p);sprite(p.x,p.y,p.z,(5+Math.random()*7),[1,.88,.6],.5+Math.random()*.5)}
     wkSlipPt(w,0,0,zf,p);sprite(p.x,p.y,p.z,sc*.55,[1,.75,.45],.12+.05*Math.sin(t*20))}}
+// ---- fighter hangar (depots): builds fighters from the station's stores into its bays and scrambles them when the depot is
+// attacked. Each level adds 2 bays and a heavier class: L1 Light Fighters (the free tier), L2 Medium, L3 Heavy Fighters and
+// Bombers, L4 Heavy Bombers. A fighter in a bay is its kit of goods held by the station, so the economy stays exact: launched,
+// the kit flies as the ship; shot down, it falls as debris; back in its bay, it is stored again.
+const HGR_CLS=[['interceptor'],['striker'],['heavy','heavy','bomber'],['gunboat']];
+const HGR_NAME={interceptor:'Light Fighter',striker:'Medium Fighter',heavy:'Heavy Fighter',bomber:'Bomber',gunboat:'Heavy Bomber'};
+function hgLvl(R){return R&&R.kind==='depot'?(devOf(R).hangar||0):0}
+function hgCap(R){return 2*hgLvl(R)}
+function hgSide(R){return R.owner}
+function hgSrcs(R){return R.owner==='player'?[R.stock]:[S.econ.stock[R.owner]].filter(Boolean)}
+function hgPick(L){const top=HGR_CLS[L-1];if(L===1||Math.random()<.55)return pick(top);return pick(HGR_CLS[Math.floor(Math.random()*(L-1))])}
+function hgTick(){for(const id in S.stations){const R=S.stations[id],L=hgLvl(R);if(!L||!wkOk(R)||R.owner==='neutral')continue;R.hg=R.hg||[];
+    const out=WORLDS[id]?WORLDS[id].ents.filter(e=>e.hgSid===id&&e.alive).length:0;if(R.hg.length+out>=hgCap(R)||starving(R))continue;if(R.hgT===undefined)R.hgT=S.T+rnd(30,60);if(S.T<R.hgT)continue;R.hgT=S.T+rnd(60,100);
+    const f=R.owner==='player'?S.player.faction:R.owner,cls=hgPick(L),tier=factionTier(f),ld=loadout('patrol',tier,cls),srcs=hgSrcs(R);
+    const capR=R.owner==='player'?{}:(capNeed(R.owner)||{});if(!Object.keys(ld).every(i=>srcs.reduce((a,x)=>a+(x[i]||0),0)>=ld[i]*1.5+(capR[i]||0)*.5))continue;
+    if(takeFrom(ld,srcs))R.hg.push({cls,tier,load:ld})}}
+// the hangar works standing in this system (the outermost hall launches)
+function hgWorks(){return(W.works||[]).find(w=>w.k==='hangar'&&w.parts&&w.parts.length)}
+function hgLive(dt){if(NET.cl)return;const SE=W.stationEnt,R=SE&&SE.rec;if(!R||R.kind!=='depot')return;const out=W.ents.filter(e=>e.hgSid===W.sid&&e.alive);if(!(R.hg&&R.hg.length)&&!out.length)return;
+  const side=SE.fac;let th=0;for(const e of W.ents)if(e.type==='ship'&&e.alive&&e.role!=='drone'&&hostile(side,e.side)&&!(e.isPlayer&&(S.player.docked||W.dead))&&!mHid(e,SE)&&d3(e,SE)<3400)th++;
+  if(W.t-(SE.lastHit||-99)<5)th=Math.max(th,1);
+  const w=hgWorks();
+  if(th){W.hgCalm=0;if(w&&R.hg&&R.hg.length&&!starving(R)&&W.t>(W.hgNext||0)&&out.length<th*2+1){W.hgNext=W.t+2.2;const h=R.hg.shift(),e=makeNPC('patrol',side,h.cls,h.tier,h.load,'hg:'+W.sid);e.hgSid=W.sid;
+      const p=w.parts[w.parts.length-1];qRot(w.q,1,0,0,_f);const u=WKU.hangar;e.x=p.x+_f.x*u*1.4;e.y=p.y+_f.y*u*1.4;e.z=p.z+_f.z*u*1.4;e.vx=_f.x*90;e.vy=_f.y*90;e.vz=_f.z*90;for(let k=0;k<12;k++)faceDir(e,_f.x,_f.y,_f.z,.5);
+      W.ents.push(e);fxSpark(e,sideCol(side),4);if(friendSide(side)&&W.t-(W.hgMsg||-99)>30){W.hgMsg=W.t;feed(`${SE.name} is scrambling its hangar fighters.`,'good')}}}
+  else{W.hgCalm=(W.hgCalm||0)+dt;if(W.hgCalm>20)for(const e of out)if(e.role!=='hgret'&&!(e.ai.tgt&&e.ai.tgt.alive)){e.role='hgret';e.ai.tgt=null}}}
+// a returning fighter flies back to the hangar and lands; a fight on the way sends it back out
+function hgReturn(e,dt){const w=hgWorks(),SE=W.stationEnt;if(!w||!SE||SE.rec&&SE.rec.kind!=='depot'){e.role='leave';return}
+  const t=findHostile(e,1800);if(t){e.role='patrol';e.ai.tgt=t;return}
+  const p=w.parts[w.parts.length-1];qRot(w.q,1,0,0,_f);const u=WKU.hangar,tx=p.x+_f.x*u*.9,ty=p.y+_f.y*u*.9,tz=p.z+_f.z*u*.9,d=steer(e,tx,ty,tz,dt,true,.8);faceDir(e,tx-e.x,ty-e.y,tz-e.z,dt);e.thrusting=d>60;
+  if(d<70){fxSpark(e,sideCol(e.side),2);despawn(e)}}
+// back in its bay (or, if the bays are gone or full, into the owner's stores)
+function hgDock(e){const sid=e.home.slice(3),R=S.stations[sid],own=R&&sideNorm(R.owner)===sideNorm(e.side);
+  const h=own&&R.owner==='player'?R.stock:S.econ.stock[e.side==='player'?S.player.faction:e.side];if(!h)return false;
+  if(own&&(R.hg||[]).length<hgCap(R)){(R.hg=R.hg||[]).push({cls:e.cls,tier:e.tier,load:e.load})}else inv.addAll(h,e.load);inv.addAll(h,e.cargo);e.load={};e.cargo={};return true}
+function hgHtml(R){const L=hgLvl(R);if(!L)return'';const c={};for(const h of R.hg||[])c[h.cls]=(c[h.cls]||0)+1;const list=Object.keys(c).map(k=>`${c[k]} ${HGR_NAME[k]||k}${c[k]>1?'s':''}`).join(', ');
+  return`<p class="note" style="margin:10px 0 0"><b>Fighter hangar</b> · ${(R.hg||[]).length} of ${hgCap(R)} bays filled${list?': '+list:''}. It builds a fighter every minute or two from ${R.owner==='player'?'the depot store':'its faction\'s stores'} and launches them when the depot is attacked. When the fighting stops, they fly back and land.</p>`}
+// the hangar hall: a long armoured shed, its bay mouth facing outward with a lit launch deck beyond
+function hgMesh(fac){const key='hgr'+fac;if(MESH[key])return MESH[key];const g=new GB(),pal=mdlPal(fac),C=pal.c,L=C[0],M=C[1],D=C[2],A=C[3],F=C[5],u=WKU.hangar;
+  g.set(0,0,0).box(u*1.7,u*.55,u*1.25,M);g.set(0,u*.31,0).box(u*1.6,u*.08,u*1.02,L);
+  for(let i=-2;i<=2;i++)g.set(i*u*.36,0,0).box(u*.07,u*.63,u*1.32,D);
+  g.set(u*.86,0,0).box(u*.04,u*.38,u*.92,[.03,.035,.045]);
+  g.set(u*.88,u*.21,0).box(u*.05,u*.04,u*.98,A,.6);g.set(u*.88,-u*.21,0).box(u*.05,u*.04,u*.98,A,.6);
+  for(const z of[-1,1])g.set(u*.88,0,z*u*.48).box(u*.05,u*.46,u*.04,A,.6);
+  g.set(u*1.3,-u*.24,0).box(u*.9,u*.04,u*.74,D);
+  for(let i=0;i<5;i++)for(const z of[-1,1])g.set(u*(.95+i*.17),-u*.21,z*u*.31).box(u*.05,u*.02,u*.05,F,.9);
+  g.set(-u*.5,u*.45,u*.3).cyl(u*.025,u*.02,u*.22,6,D);g.set(-u*.5,u*.57,u*.3).sphere(u*.04,4,8,A,.5);
+  g.set(-u*.95,0,0).box(u*.25,u*.3,u*.5,D);
+  return MESH[key]=g.upload()}
 // ---- AI works: every faction, and the Compact, adds a module now and then where it helps most, from stores it can spare
 function devPick(f,R){const d=devOf(R),front=NEIGH[R.sid].some(n=>{const o=sideNorm(sectorOwner(n));return o&&o!==f&&o!=='neutral'&&hostile(f,o)});const W2=[];
-  if(devUsed(R)>=devCap(R)-0)W2.push(['life',4]);W2.push(['store',R.kind==='core'?2.5:1],['def',front?3:1],['armor',front?2.5:.8]);if(R.kind!=='core')W2.push(['prod',R.owner==='neutral'?2:1.2]);
+  if(devUsed(R)>=devCap(R)-0)W2.push(['life',4]);W2.push(['store',R.kind==='core'?2.5:1],['def',front?3:1],['armor',front?2.5:.8]);if(R.kind!=='core')W2.push(['prod',R.owner==='neutral'?2:1.2]);if(R.kind==='depot')W2.push(['hangar',front?2.6:1.1]);
   return W2.filter(([k])=>devNext(R,k))}
-function devTick(){const T=S.T;for(const f of[...FAC_IDS,'neutral']){const A=S.ai[f];if(!A)continue;if(A.dev===undefined)A.dev=T+rnd(60,200);if(T<A.dev)continue;A.dev=T+(f==='neutral'?rnd(150,240):rnd(170,280));
-    const st=S.econ.stock[f];if(!st)continue;if(f!=='neutral'&&S.T<2400&&(!S.yards[f]||!S.frigates.some(x=>x.side===f)))continue;
+function devTick(){const T=S.T;for(const f of[...FAC_IDS,'neutral']){const A=S.ai[f];if(!A)continue;if(A.dev===undefined)A.dev=T+rnd(60,200);if(T<A.dev)continue;A.dev=T+(f==='neutral'?rnd(150,240):rnd(80,120)*BAL.devGap);
+    const st=S.econ.stock[f];if(!st)continue;const capR=f==='neutral'?{}:(capNeed(f)||{});   // keep back half of the next shipyard or frigate
     const opts=[];for(const id in S.stations){const R=S.stations[id];if(R.owner!==f)continue;for(const[k,w]of devPick(f,R))opts.push([[R,k],w])}if(!opts.length)continue;
-    const[R,k]=wpickArr(opts),r=devNext(R,k),spare=Object.keys(r).every(i=>(st[i]||0)>=r[i]*(i==='plate'||i==='wire'?1.6:1.25));if(!spare)continue;
+    const[R,k]=wpickArr(opts),r=devNext(R,k),spare=Object.keys(r).every(i=>(st[i]||0)>=r[i]*(f==='neutral'?(i==='plate'||i==='wire'?1.6:1.25):1.1)+(capR[i]||0)*.5);if(!spare)continue;
     if(devBuild(R,k,[st])){const lvl=devOf(R)[k];if(friendSide(f)||covered(R.sid)||f==='neutral')feed(`${R.name} has ${lvl>1?'upgraded its':'added a'} ${DEV_TXT[k][0]}${lvl>1?' to level '+lvl:''}.`,friendSide(f)?'info':'news')}}}
 // ---- life support: every station burns supplies each cycle (more crew, more modules, more burn). What it burns is recycled
 // into the outer drift, and the drift seeds fresh asteroids into depleted systems, so the economy still balances exactly.
@@ -1642,10 +1692,10 @@ function stHostile(SE,e){return hostile(SE.fac,e.side)}
 // ---- dock tabs: station works (build modules at your depots, see any station's), freeport refits
 function worksHtml(c,P,srcs,R){const d=devOf(R),mine=R.owner==='player';let h=`<p class="note" style="margin:0 0 12px">${esc(R.name)} · modules ${devUsed(R)} of ${devCap(R)} (life support houses the crew for more). Every module stands beside the station as its own structure: torpedoes and capital guns can destroy it, and a destroyed module loses all its levels (its materials fall as debris). Crews repair damage when the fighting stops. Life support burns ${(((R.kind==='hive'?1:Math.max(1,d.life))*(LS_RATE[R.kind]||1)*(1+.12*devUsed(R)))*6).toFixed(0)} t of ore a minute${starving(R)?' · <b style="color:var(--danger)">short of ore: production and missiles offline</b>':''}.${mine?' Builds draw from the depot store first, then your vault.':''}</p>`;
   h+=`<div class="tblw"><table class="t"><thead><tr><th>Module</th><th class="r">Level</th><th>Next level</th><th></th></tr></thead><tbody>`;
-  for(const k of DEV_KEYS){const L=d[k]||0,max=DEV[k].length,r=devNext(R,k),why=k==='prod'&&R.kind==='core'?'built in':L>=max?'max':!r?'needs more life support':'';
+  for(const k of DEV_KEYS){const L=d[k]||0,max=DEV[k].length,r=devNext(R,k),why=k==='prod'&&R.kind==='core'?'built in':k==='hangar'&&R.kind!=='depot'?'depots only':L>=max?'max':!r?'needs more life support':'';
     const hpS=L&&R.wk&&R.wk[k]!==undefined?Math.round(R.wk[k]/(WK_HP[k]*L)*100):null;
     h+=`<tr><td><b>${DEV_TXT[k][0]}</b>${hpS!==null?` <span class="req ${hpS<50?'no':'ok'}">structure ${hpS}%</span>`:''}<br><span class="mass" style="margin:0">${DEV_TXT[k][1]}</span></td><td class="r num">${L}/${k==='prod'&&R.kind==='core'?'—':max}</td><td>${r?Object.keys(r).map(i=>chip(i,r[i],countIn(i,srcs))).join(' '):`<span class="mass" style="margin:0">${why}</span>`}</td><td>${mine&&r?`<div class="act"><button class="btn sm" data-act="dev" data-arg="${k}" ${haveIn(r,srcs)?'':'disabled'}>Build</button></div>`:''}</td></tr>`}
-  return h+`</tbody></table></div>`+capProgHtml(R)}
+  return h+`</tbody></table></div>`+hgHtml(R)+capProgHtml(R)}
 // a faction's capital programme, shown at its home station: frigates are assembled from the whole faction stockpile
 function capProgHtml(R){const f=R.owner;if(!FACTIONS[f]||f==='brood'||FAC_HOME(f)!==R.sid)return'';const st=S.econ.stock[f]||{},Y=S.yards[f],yb=S.events.find(e=>e.type==='yardbuild'&&e.att===f&&e.stage==='building'),fb=S.events.find(e=>e.type==='frigbuild'&&e.att===f&&e.stage==='building'),n=S.frigates.filter(x=>x.side===f).length,cap=FRIG_CAP[f]||2;
   let h=`<div class="h3" style="margin-top:18px">${esc(FACTIONS[f].short)} capital programme</div><p class="note" style="margin:0 0 8px">Frigates are assembled here from the whole ${esc(FACTIONS[f].short)} stockpile, which every station, depot, miner and convoy of theirs feeds; a build starts only once the full kit is in stock, and the kit is taken at the start. ${n} of ${cap} frigates in service.</p>`;
@@ -2138,8 +2188,10 @@ function chatterRun(){if(!auOK()||!AU.on.sfx||!voice(3))return;const c=AU.ctx;le
     t+=d+(Math.random()<.2?.12+Math.random()*.22:.02+Math.random()*.05)}
   sq(t+.02)}
 // bridge ambience: console beeps and crew radio, quiet and irregular
-function bridgeAmb(dt,F){W.ambT=(W.ambT===undefined?2:W.ambT)-dt;if(W.ambT>0)return;const r=Math.random();if(r<.55)SFX.cbeep();else SFX.chatter();W.ambT=r<.55?1.6+Math.random()*4:3.5+Math.random()*6;
-  const T=F.tok;if(NET.cl&&T&&T.spin){const B=W.bridge;if(B)B.spinRef=B.spinRef}}
+// console beeps only once every 2 to 4 minutes; the low crew chatter keeps its own, quicker timer
+function bridgeAmb(dt,F){if(W.beepT===undefined)W.beepT=20+Math.random()*40;W.beepT-=dt;if(W.beepT<=0){SFX.cbeep();W.beepT=120+Math.random()*120}
+  W.ambT=(W.ambT===undefined?3:W.ambT)-dt;if(W.ambT<=0){SFX.chatter();W.ambT=8+Math.random()*10}{
+  const T=F.tok;if(NET.cl&&T&&T.spin){const B=W.bridge;if(B)B.spinRef=B.spinRef}}}
 // jump-drive countdown: a low drum that quickens and swells from spin-up to the jump
 // the jump-drive whir is only for your own frigates: the one you're aboard, or one of yours close by (AI frigates spin up often and would drone on)
 function drumTick(e,p,dt){if(MUTE)return;const aboard=W&&W.bridge&&W.bridge.f===e;if(!aboard&&!(e.tok&&fMine(e.tok)))return;const v=aboard?1:vAt(e);if(v<.15)return;if(!AU.whirIn||v>AU.whirIn.v)AU.whirIn={p,v}}
@@ -2192,12 +2244,13 @@ const SFX0={
   kinetic(v){if(smp(['kin1','kin2','kin3'],.5*v,.85))thump(120,46,.1,.07*v);else{thump(135,46,.12,.15*v);rumble(380,.09,.1*v)}},
   laserNpc(v){if(!smp(['npc1','npc2','npc3'],.3*v,1))thump(72,66,.2,.06*v,'sawtooth')},
   turret(v){if(!smp(['tur1','tur2'],.42*v,1.05)){thump(110,42,.14,.11*v);rumble(300,.1,.08*v)}},
-  boom(r,v){const k=clamp(r/110,.3,1.6),big=k>.75;
+  // capital-gun impacts land many times a second; play at most about three small blasts a second so they don't merge into a drone
+  boom(r,v){const k=clamp(r/110,.3,1.6),big=k>.75;if(r<=60){const n=AU.ctx?AU.ctx.currentTime:0;if(n-(AU.smB||-9)<.33)return;AU.smB=n}
     if(smp(big?'exB':k>.45?['ex2','ex3']:['ex1','exS1','exS2'],.7*v*Math.min(1.2,.6+k*.5)*(big?2.8:1),big?.9:1.1-k*.2)){if(big)smp(['sub1','sub2'],2.1*v*Math.min(1.3,k),1);thump(60,22,.4*k+.2,.17*v*k)}
     else{thump(68,22,.5*k+.25,.3*v*k);rumble(240,.45+.6*k,.4*v*Math.min(1.2,k),.7,55)}},
   missile(v,tp){if(smp(['msl1','msl2'],.5*v*(tp?1.5:1),tp?.7:1))thump(tp?48:66,tp?28:38,tp?1.1:.55,.1*v);else{rumble(tp?200:300,tp?1.5:.85,.24*v,1.1,tp?110:170);thump(tp?48:66,tp?28:38,tp?1.1:.55,.15*v)}},
-  shield(){if(!smp(['shd1','shd2','shd3'],.42,1.3)){thump(150,78,.16,.12,'triangle');rumble(360,.12,.08,2)}},
-  hull(){if(smp(['hul1','hul2','hul3'],.6,1))rumble(280,.18,.08);else{thump(92,36,.24,.22);rumble(280,.22,.16)}},
+  shield(){const n=AU.ctx?AU.ctx.currentTime:0;if(n-(AU.shdT||-9)<.12)return;AU.shdT=n;if(!smp(['shd1','shd2','shd3'],.42,1.3)){thump(150,78,.16,.12,'triangle');rumble(360,.12,.08,2)}},
+  hull(){const n=AU.ctx?AU.ctx.currentTime:0;if(n-(AU.hulT||-9)<.15)return;AU.hulT=n;if(smp(['hul1','hul2','hul3'],.6,1))rumble(280,.18,.08);else{thump(92,36,.24,.22);rumble(280,.22,.16)}},
   shieldDown(){if(smp('shdDn',.55,.65))smp('lowDown',.4,1,.15,0);else{thump(110,108,.26,.13,'triangle');setTimeout(()=>thump(82,80,.38,.13,'triangle'),270)}},
   beep(f,v){thump(f,f*.99,.08,.05*(v||1),'sine')},
   count(fin){if(fin){if(!smp('go',.4,1,0,0)){thump(988,984,.34,.15,'triangle');setTimeout(()=>thump(1318,1312,.22,.09,'sine'),80)}}else if(!smp('tick',.42,1,0,0))thump(659,656,.16,.14,'triangle')},
@@ -2208,7 +2261,7 @@ const SFX0={
   alarm(){if(!smp('alarm',.42,1,0,0)){thump(98,96,.22,.12,'triangle');setTimeout(()=>thump(73,72,.3,.12,'triangle'),240)}},
   clunk(){if(!smp(['clk1','hul3'],.5,1.1)){thump(88,48,.22,.17,'triangle');rumble(230,.18,.12)}},
   lance(v){if(smp('lance',.6*v,.55)){smp('sub2',.6*v,1.1);thump(58,22,1.3,.2*v)}else{thump(58,22,1.3,.34*v);thump(116,40,.35,.14*v,'triangle');rumble(150,1.1,.34*v,.8,38)}},
-  pd(v){if(SND.b.pd1&&auOK()){for(let i=0;i<4;i++)smp(['pd1','pd2'],.28*v,1.35,i*.07)}else for(let i=0;i<4;i++)setTimeout(()=>{thump(95,55,.08,.08*v,'square');thump(48,32,.11,.13*v);rumble(260,.07,.08*v,1.2)},i*70)},
+  pd(v){if(SND.b.pd1&&auOK()){for(let i=0;i<3;i++)smp(['pd1','pd2'],.24*v,1.35,i*.07)}else for(let i=0;i<3;i++)setTimeout(()=>{thump(95,55,.08,.08*v,'square');thump(48,32,.11,.13*v);rumble(260,.07,.08*v,1.2)},i*70)},
   drum(v,p){const k=.55+.75*p;thump(64-14*p,30,.55+.3*p,(.17+.25*p)*v*k);rumble(170,.45+.35*p,(.13+.22*p)*v*k,.9,45)},
   fjump(v){if(smp('warp',.55*v,.5)){smp('sub1',.7*v,.9,.15);thump(95,22,1.5,.3*v)}else{rumble(1400,1.3,.42*v,1.2,90);thump(95,22,1.5,.44*v);setTimeout(()=>thump(40,18,1.4,.32*v),160)}},
   arrive(v){if(smp('phase3',.4*v,.7)){smp('sub2',.5*v,1.3);thump(70,30,.8,.15*v)}else{thump(320,60,.45,.2*v,'triangle');rumble(1000,.7,.24*v,1,140);thump(70,30,.8,.22*v)}},
@@ -2315,7 +2368,7 @@ function closeWorld(w){const o=W;W=w;
   for(const t of S.scouts||[])if(t.sector===W.sid)t.live=false;for(const t of S.traders||[])if(t.sector===W.sid)t.live=false;
   delete WORLDS[w.sid];W=o===w?null:o;
 }
-function returnHome(e){const h=holder(e.home)||S.econ.stock[e.side]||S.econ.stock.pirate;inv.addAll(h,e.load);inv.addAll(h,e.cargo);e.load={};e.cargo={}}
+function returnHome(e){if(typeof e.home==='string'&&e.home.startsWith('hg:')&&hgDock(e))return;const h=holder(e.home)||S.econ.stock[e.side]||S.econ.stock.pirate;inv.addAll(h,e.load);inv.addAll(h,e.cargo);e.load={};e.cargo={}}
 function syncPlayer(){if(!W||!W.player)return;const p=W.player,P=S.player;P.x=p.x;P.y=p.y;P.z=p.z;P.vx=p.vx;P.vy=p.vy;P.vz=p.vz;P.q=[p.q.x,p.q.y,p.q.z,p.q.w];P.hull=p.hull;P.shield=p.shield;P.energy=p.energy}
 function refreshPlayerStats(){if(!W)return;const p=W.player,P=S.player;const old=p.st;p.st=shipStats(P.faction,P.cls,P.tiers,P.tune);p.cls=P.cls;if(old)p.hull=Math.min(p.st.hull,p.hull*(p.st.hull/old.hull));p.shield=Math.min(p.st.sCap,p.shield);p.energy=Math.min(p.st.eCap,p.energy)}
 function popCap(){return DEF[W.sid].kind==='void'?6:17}
@@ -2414,7 +2467,7 @@ function frigTurrets(e,dt){mdlFrigTurrets(e);const R=e.st.radius*1.1,C=e.tok&&fO
     if(mode!=='fighters')for(const m of W.missiles)if(m.kind==='torpedo'&&m.tgt===e&&hostile(e.side,m.side)){const d=d3(m,wp);if(d<bd){bd=d;t=m}}
     if(!t){bd=e.cls==='escort'?1400:1150;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o.role==='frigate'||!hostile(e.side,o.side))continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;const d=d3(o,wp);if(d<bd){bd=d;t=o}}}
     if(!t&&mode==='fighters'){bd=800;for(const m of W.missiles)if(m.kind==='torpedo'&&m.tgt===e&&hostile(e.side,m.side)){const d=d3(m,wp);if(d<bd){bd=d;t=m}}}
-    if(t){const es=e.cls==='escort';tu.cool=es?.3:.42;turretShot(wp,t,1300,es?15:10,e.side,12,'pd');if(W.t-(e.pdSnd||0)>.22){e.pdSnd=W.t;const v=vAt(e);if(v>.04)SFX.pd(Math.min(1,v*1.4))}}else tu.cool=.3}}
+    if(t){const es=e.cls==='escort';tu.cool=es?.3:.42;turretShot(wp,t,1300,es?15:10,e.side,12,'pd');if(W.t-(e.pdSnd||0)>2.2&&W.t-(W.pdG||-9)>1.1){const v=vAt(e);if(v>.04){e.pdSnd=W.t;W.pdG=W.t;SFX.pd(Math.min(1,v*1.4))}}}else tu.cool=.3}}
 function frigateThink(e,dt){const t=e.tok;if(!t||!S.frigates.includes(t)){e.role='leave';return}t.hull=e.hull;t.shield=e.shield;const C=fOwn(t)?fctl(t):null;
   frigTurrets(e,dt);
   const nx=frigHop(t);
@@ -3020,7 +3073,7 @@ function damageShip(e,dmg,srcSide,at,kind){
   // escorts are light capitals: a torpedo that connects guts one (about 4 hits at Mk I, 2 at Mk V)
   if(e.stealth){if(e.isPlayer)stealthOff(true);else{e.stealth=false;e.masked=false;e.maskR=0;e.boot=W.t+BOOT_T}}
   if(e.cls==='escort'&&(kind||(at&&at.kind))==='torpedo'){dmg*=ESC_TORP_MUL;stat('torpHit')}
-  if(e.cls==='frigate'){const k=kind||(at&&at.kind);if(k==='torpedo'){dmg*=4;stat('torpHit');stat('torpDmg',dmg)}else if(k!=='capital'){if(e.shield>0){e.shield=Math.max(0,e.shield-dmg*.6);e.shHitT=W.t;e.shHitA=.5;fxSpark(at||e,'#8fc8ff',3)}else{fxSpark(at||e,'#ffd9a0',2);if(srcSide==='player'&&W.t-(W.capT||-99)>8){W.capT=W.t;flash('Frigate armour shrugs off fighter weapons: guns drain its shield, only torpedoes break the hull.',true)}}return}}
+  if(e.cls==='frigate'){const k=kind||(at&&at.kind);if(k==='torpedo'){dmg*=4;stat('torpHit');stat('torpDmg',dmg)}else if(k!=='capital'){if(e.shield>0){e.shield=Math.max(0,e.shield-dmg*.6);e.shHitT=W.t;e.shHitA=.5;fxSpark(at||e,'#8fc8ff',3)}else{fxSpark(at||e,'#ffd9a0',2);e.hull-=dmg*capChip(k);if(srcSide==='player'&&W.t-(W.capT||-99)>8){W.capT=W.t;flash('Fighter weapons only chip frigate armour. It takes a lot of hits; torpedoes do the real damage.',true)}if(e.hull<=0)killShip(e,srcSide,at)}return}}
   if(e.isPlayer&&at&&srcSide){let dx,dy,dz;if(at.src&&at.src.x!==undefined&&at.vx===undefined){dx=at.src.x-e.x;dy=at.src.y-e.y;dz=at.src.z-e.z}else if(at.vx!==undefined){dx=-at.vx;dy=-at.vy;dz=-at.vz}else{dx=at.x-e.x;dy=at.y-e.y;dz=at.z-e.z}
     const l=hyp(dx,dy,dz)||1;W.hitDirs=(W.hitDirs||[]).filter(h=>W.t-h.t<1.3);W.hitDirs.push({x:dx/l,y:dy/l,z:dz/l,t:W.t})}
   const sf=kind==='laser'?1.25:kind==='kinetic'?.85:1,hf=kind==='laser'?.75:kind==='kinetic'?1.15:1;
@@ -3063,7 +3116,7 @@ function respawn(){if(W&&W.player){W.player.landed=null;W.player.stealth=false;W
   const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';droneTopUp(P,P.vault,P.faction);
   enterSector(P.sector);openDock();save();
 }
-function damageStation(E,dmg,by,kind){if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only scratch station armour. Torpedoes are needed: bring a Bomber.',true)}return}
+function damageStation(E,dmg,by,kind){if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
   E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
   if(!E.offline){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.offline=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! Its turrets are offline and the hull is exposed.`:`${E.name}'s shield collapsed. Its turrets are offline and the hull is exposed.`,mine?'bad':'warn')}
   if(!R||dmg<=0)return;R.hull-=dmg;if(Math.random()<.3)fxSpark({x:E.x+rnd(-60,60),y:E.y+rnd(-60,60),z:E.z+rnd(-60,60)},'#ffcf8a',3);
@@ -3213,6 +3266,7 @@ function npcThink(e,dt){
   if(e.role==='scout'){scoutThink(e,dt);return}
   if(e.role==='trader'){traderThink(e,dt);return}
   if(e.role==='builder'){if(W.t-e.lastHit<3)e.boosting=false;builderThink(e,dt);return}
+  if(e.role==='hgret'){hgReturn(e,dt);return}
   if(ai.tgt&&ai.tgt.type==='ship'&&!hostile(e.side,ai.tgt.side))ai.tgt=null;
   if(e.order&&orderThink(e,dt))return;
   const combat=e.role==='patrol'||e.role==='raider'||e.role==='pirate'||e.role==='strike'||e.role==='escort'||e.role==='screen';
@@ -3586,10 +3640,10 @@ function physics(e,dt){if(e.inJump)return;
   for(const E of[W.stationEnt,W.outpostEnt]){if(!E)continue;const dx=e.x-E.x,dy=e.y-E.y,dz=e.z-E.z,d=hyp(dx,dy,dz),rr=E.type==='station'?55:72;if(d<rr+R&&d>0){e.x=E.x+dx/d*(rr+R);e.y=E.y+dy/d*(rr+R);e.z=E.z+dz/d*(rr+R);const vn=(e.vx*dx+e.vy*dy+e.vz*dz)/d;if(vn<0){e.vx-=1.3*vn*dx/d;e.vy-=1.3*vn*dy/d;e.vz-=1.3*vn*dz/d}}}
   if(W.works&&W.works.length)wkCollide(e,R);
 }
-function turretShot(from,t,spd,dmg,side,len,snd){if(!snd){const v=vAt(from);if(v>.08&&W.t-(W.turSnd||0)>.14){W.turSnd=W.t;SFX.turret(v*.8)}}const lp=leadPoint({x:from.x,y:from.y,z:from.z,vx:0,vy:0,vz:0},t,spd);let dx=lp.x-from.x+rnd(-.03,.03)*d3(lp,from),dy=lp.y-from.y,dz=lp.z-from.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
+function turretShot(from,t,spd,dmg,side,len,snd){if(!snd){const v=vAt(from);if(v>.08&&W.t-(W.turSnd||0)>.45){W.turSnd=W.t;SFX.turret(v*.8)}}const lp=leadPoint({x:from.x,y:from.y,z:from.z,vx:0,vy:0,vz:0},t,spd);let dx=lp.x-from.x+rnd(-.03,.03)*d3(lp,from),dy=lp.y-from.y,dz=lp.z-from.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
   W.shots.push({x:from.x+dx*len,y:from.y+dy*len,z:from.z+dz*len,vx:dx*spd,vy:dy*spd,vz:dz*spd,dmg,side,src:null,ttl:1,col:sideCol(side),sty:'turret',snd});return{x:dx,y:dy,z:dz}}
 function structUpdate(dt){
-  const SE=W.stationEnt;
+  const SE=W.stationEnt;hgLive(dt);
   if(SE&&SE.rec){SE.rec.shield=SE.shield;if(!SE.offline&&W.t-SE.lastHit>8)SE.rec.hull=Math.min(SE.rec.hMax,SE.rec.hull+SE.rec.hMax*.004*dt)}
   if(SE){const storm=S.sectors[W.sid].storm>S.T;
     if(SE.offline&&W.t>SE.offline){SE.offline=0;SE.shield=SE.sMax*.3;feed(`${SE.name} has restored its shield and turrets.`,'news')}
@@ -3730,6 +3784,17 @@ function mdlTris(name,fac,s,g,pal){const M=MDL.i[name],n=M.n,P=new Int16Array(MD
     const ux=bx-ax,uy=by-ay,uz=bz-az,vx=cx-ax,vy=cy-ay,vz=cz-az;let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
     const r=R[t],c=Q.c[r],sh=SH[t]/100,em=Q.e[r];g.d.push(ax,ay,az,nx,ny,nz,c[0]*sh,c[1]*sh,c[2]*sh,em,bx,by,bz,nx,ny,nz,c[0]*sh,c[1]*sh,c[2]*sh,em,cx,cy,cz,nx,ny,nz,c[0]*sh,c[1]*sh,c[2]*sh,em)}
   return g}
+// engine flares: the model pack kept only the 3 largest glowing clusters, which on many hulls put every flare on one side.
+// If a hull's flares are lopsided, rebuild them from its glowing nozzle faces, keeping left/right pairs together (up to 6).
+function engFix(name){const M=MDL.i[name];if(!M||M.k!=='ship')return M?M.e:[];if(M.ef)return M.ef;const e=M.e,mir=(a,L)=>L.some(b=>Math.abs(b[0]+a[0])<.06&&Math.abs(b[1]-a[1])<.06&&Math.abs(b[2]-a[2])<.08);
+  if(e.every(a=>Math.abs(a[0])<=.04||mir(a,e)))return M.ef=e;
+  const n=M.n,P=new Int16Array(MDL.b,M.o,n*9),R=new Uint8Array(MDL.b,M.o+n*18,n),cl=[];
+  for(let i=0;i<n;i++){if(R[i]!==5)continue;const g=[0,0,0];let zmin=1;for(let v=0;v<3;v++){for(let j=0;j<3;j++)g[j]+=P[i*9+v*3+j]/32767/3;zmin=Math.min(zmin,P[i*9+v*3+2]/32767)}
+    let C=cl.find(C=>Math.hypot(C.s[0]/C.n-g[0],C.s[1]/C.n-g[1],C.s[2]/C.n-g[2])<.14);if(!C)cl.push(C={s:[0,0,0],n:0,p:[],z:1});for(let j=0;j<3;j++)C.s[j]+=g[j];C.n++;C.p.push(g);C.z=Math.min(C.z,zmin)}
+  const E=cl.map(C=>{const c=C.s.map(v=>v/C.n);let r=0;for(const q of C.p)r=Math.max(r,Math.hypot(q[0]-c[0],q[1]-c[1],q[2]-c[2]));return{c,n:C.n,r:Math.max(.04,Math.min(.16,r+.03)),z:C.z}}).sort((a,b)=>b.n-a.n),out=[];
+  const add=x=>{if(out.length<6&&!out.some(o=>Math.hypot(o[0]-x.c[0],o[1]-x.c[1])<.07))out.push([+x.c[0].toFixed(3),+x.c[1].toFixed(3),+(x.z-.01).toFixed(3),+x.r.toFixed(3)])};
+  for(const x of E){if(out.length>=6)break;if(x.n<2&&out.length>=2)continue;if(Math.abs(x.c[0])>.04&&out.length>4)continue;add(x);if(Math.abs(x.c[0])>.04)add({c:[-x.c[0],x.c[1],x.c[2]],n:x.n,r:x.r,z:x.z})}
+  return M.ef=out.length?out:e}
 function mdlMesh(name,fac,s){const g=mdlTris(name,fac,s,new GB());return g.upload()}
 // guns fire from where the model's turrets actually sit
 function mdlStationTurrets(SE){if(SE._mt||!MDL.ready||SE.fac==='brood')return;const M=MDL.i[SE.kind==='depot'?'depot':'station'];SE._mt=1;devEnt(SE);if(!M||!M.tp.length)return;SE.turrets.filter(t=>!t.mod).forEach((tu,i)=>{const m=M.tp[i%M.tp.length];tu.p=[m[0]*M.s,m[1]*M.s+3,m[2]*M.s]})}
@@ -3949,8 +4014,8 @@ const BROOD_MDL={interceptor:'b_skitter',picket:'b_mite',drone:'b_mite',striker:
 function shipMesh(fac,cls){
   if(cls==='escort'&&fac!=='brood')cls='frigate';if(cls==='wraith')cls='interceptor';
   const key=fac+cls;if(MESH[key])return MESH[key];
-  if(fac==='brood'){const bk=BROOD_MDL[cls];if(bk&&mdlHas(bk)){const L=new GB();L.seg([0,0,0],[0,0,0],[0,0,0]);return MESH[key]={hull:mdlMesh(bk,'brood',1),rim:L.upload(true),eng:MDL.i[bk].e.map(e=>e.slice()),mdl:true}}}
-  if(fac!=='brood'&&mdlHas(cls)){const L=new GB();L.seg([0,0,0],[0,0,0],[0,0,0]);return MESH[key]={hull:mdlMesh(cls,fac,1),rim:L.upload(true),eng:MDL.i[cls].e.map(e=>e.slice()),mdl:true}}
+  if(fac==='brood'){const bk=BROOD_MDL[cls];if(bk&&mdlHas(bk)){const L=new GB();L.seg([0,0,0],[0,0,0],[0,0,0]);return MESH[key]={hull:mdlMesh(bk,'brood',1),rim:L.upload(true),eng:engFix(bk).map(e=>e.slice()),mdl:true}}}
+  if(fac!=='brood'&&mdlHas(cls)){const L=new GB();L.seg([0,0,0],[0,0,0],[0,0,0]);return MESH[key]={hull:mdlMesh(cls,fac,1),rim:L.upload(true),eng:engFix(cls).map(e=>e.slice()),mdl:true}}
   const fk=fac==='pirate'?'pirate':fac,bc=MESH_BASE[cls]||cls;JR=mulberry(hashStr(key));const g=new GB(),L=new GB(),eng=[];if(!buildShipX(fk,bc,g,L,eng))buildShip(fk,bc,g,L,eng);
   if(bc!==cls){const fc=hexRGB(sideCol(fk)),D=[.3,.32,.36],S2=f=>{f(1);f(-1)};
     if(cls==='dredger')S2(s=>{g.set(.42*s,-.12,.55).box(.08,.08,.7,D);g.set(.42*s,-.12,.92).box(.07,.07,.07,fc,1);g.set(.52*s,0,-.2).box(.22,.3,.8,D)});
@@ -4779,7 +4844,7 @@ function ledger(){
   for(const k in S.econ.stock)invVec(S.econ.stock[k],L['Faction & Unbound stores']);
   for(const k in S.econ.fleet)invVec(S.econ.fleet[k],L['Fleets in muster']);for(const ev of S.events)if(ev.force)invVec(ev.force,L['Fleets in muster']);for(const f in S.ai||{})if(S.ai[f]&&S.ai[f].hm)invVec(S.ai[f].hm.force,L['Fleets in muster']);for(const t of S.scouts||[])invVec(t.load,L['Fleets in muster']);for(const t of S.traders||[])invVec(t.load,L['Fleets in muster']);for(const t of S.frigates||[])invVec(t.load,L['Fleets in muster']);
   for(const id in S.outposts){const o=S.outposts[id];invVec(o.stock,L.Outposts);invVec(o.fort,L.Outposts)}
-  for(const id in(S.stations||{})){const R=S.stations[id];invVec(R.fort,L.Stations);invVec(R.stock,L.Stations)}
+  for(const id in(S.stations||{})){const R=S.stations[id];invVec(R.fort,L.Stations);invVec(R.stock,L.Stations);for(const h of R.hg||[])invVec(h.load,L.Stations)}
   for(const k in(S.yards||{}))invVec(S.yards[k].fort||{},L.Stations);invVec(S.drift||{},L['Outer drift (recycling)']);
   for(const w of Object.values(WORLDS)){for(const e of w.ents)if(e.npc){invVec(e.load,L['Ships in this sector']);invVec(e.cargo,L['Ships in this sector'])}
     for(const m of w.missiles)invVec(m.inv,L['Ships in this sector'])}
@@ -5404,7 +5469,7 @@ function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.p
   w.scaffold=m.sc?{x:m.sc[0],y:m.sc[1],z:m.sc[2],owner:m.sc[3],prog:m.sc[4]}:null;
   for(const v of m.ev){
     if(v[0]==='s'){if(v[11]===me&&!v[12])continue;const src=v[11]?w.pup[v[11]]||null:null;w.shots.push({x:v[1],y:v[2],z:v[3],vx:v[4],vy:v[5],vz:v[6],ttl:v[7]/100,sty:v[8]||undefined,col:v[9],side:v[10],src,dmg:0});
-      if(v[13]==='pd'){if(w.t-(w.pdT||0)>.22){w.pdT=w.t;const vv=vAt({x:v[1],y:v[2],z:v[3]});if(vv>.04)SFX.pd(Math.min(1,vv*1.4))}}
+      if(v[13]==='pd'){if(w.t-(w.pdT||0)>1.1){w.pdT=w.t;const vv=vAt({x:v[1],y:v[2],z:v[3]});if(vv>.04)SFX.pd(Math.min(1,vv*1.4))}}
       else if(v[8]==='capital'){const vv=vAt({x:v[1],y:v[2],z:v[3]});if(vv>.04)SFX.lance(Math.min(1,vv*1.3))}
       else if(src&&w.t-(src.sndT||0)>.3){src.sndT=w.t;if(v[8]==='turret')SFX.turret(vAt(src)*.8);else SFX.kinetic(vAt(src)*.7)}}
     else if(v[0]==='b'){if(v[1]===me)continue;const src=w.pup[v[1]];if(src){w.beams.push({src,x:v[2],y:v[3],z:v[4],ttl:.11,col:v[5]});if(w.t-(src.sndT||0)>.45){src.sndT=w.t;SFX.laserNpc(vAt(src))}}}
@@ -5567,5 +5632,3 @@ const hot=window.claude?.hot;
 if(hot&&hot.ready)hot.ready(boot);else boot(hot?.data??{});
 })();
 </script>
-
-</html>

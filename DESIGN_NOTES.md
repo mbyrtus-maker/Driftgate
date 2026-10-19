@@ -4,6 +4,28 @@ Agreed designs. Each entry says what it is, how it works, and what must stay tru
 
 ---
 
+## Fighter hangar (built)
+A station works module that only depots can build. Each level adds 2 fighter bays, a heavier class and +10% depot hull and shields.
+
+| Level | Builds | Bays |
+|---|---|---|
+| 1 | Light Fighters (the free tier) | 2 |
+| 2 | adds Medium Fighters | 4 |
+| 3 | adds Heavy Fighters and Bombers | 6 |
+| 4 | adds Heavy Bombers (advanced) | 8 |
+
+- **Building:** every minute or two the hangar builds one fighter's kit from the owner's stores (the depot store for a pilot-owned depot). It keeps back enough for the faction's next shipyard or frigate.
+- **Launching:** when hostiles come within about 3.4 km, or the depot is hit, it scrambles a fighter every couple of seconds, up to about two per attacker.
+- **Returning:** 20 seconds after the last threat, the fighters fly back to the hangar and land. A fight on the way sends them back out.
+- **Unwatched sieges:** the fighters in the bays add to the depot's defence. Some are lost in every siege, more if the depot falls.
+- **Losses:** a destroyed hangar loses all its levels and every fighter in its bays, and the materials fall as debris. A captured depot keeps its fighters for the new owner.
+- **Economy:** a fighter in a bay is its kit of goods held by the station, so the ledger stays exact.
+
+## Fighter weapons against capitals (built)
+Fighter guns do 10% of their damage, and missiles 25%, to frigate hulls (once the shield is down), stations and station works. Torpedoes and capital guns are unchanged. A Mk I Heavy Fighter alone needs about 15 minutes to kill a frigate; four Mk V Heavy Fighters need under 2.
+
+---
+
 ## Pilot leaderboard and Legendary status (built)
 
 ### The idea
