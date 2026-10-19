@@ -50,7 +50,7 @@ A faction capital ship that fights with its fighters instead of guns. It jumps l
 | Speed | a little slower than a frigate | |
 
 - **Cost:** about a frigate's kit minus the lance and torpedo parts, plus hangar parts (more frames and coil). The fighters are extra: kits drawn from stores, like the fighter hangar works.
-- **Limit:** 1 per faction (the Brood gets none). It counts toward the capital cap alongside frigates and escorts.
+- **Limit:** only one carrier per faction can exist at a time, the Brood included (see Brood carrier below). A faction can't lay down a new one while its carrier is alive, and a pilot-owned carrier counts as that faction's one carrier. It counts toward the capital cap alongside frigates and escorts.
 
 ### How it fights
 - **Launching:** it launches its wing when hostiles come within about 4 km, two craft every few seconds. Bombers go for capitals, structures and Overgrowth; fighters screen the carrier and hunt enemy bombers.
@@ -59,10 +59,22 @@ A faction capital ship that fights with its fighters instead of guns. It jumps l
 - **Weakness:** on its own it is a big target. Its turrets keep fighters and torpedoes off it, but an enemy frigate's lance and torpedoes will hurt it. It needs either its wing in the air or a frigate alongside.
 
 ### Commanding one (pilots)
-Pilot-owned carriers, from the shipyard like frigates and escorts, use the existing bridge and console. The orders tab gains a wing section:
+Pilots can command a carrier, commissioned at a shipyard like a frigate or escort, as long as their faction has no carrier yet.
+
+**Helm and landing**
+- **Helm like a frigate's:** the carrier has a bridge you walk around, with the same helm and console: helm, nav and jump, plus a wing console in place of the frigate's weapons console.
+- **Landing aboard:** fly your ship into the carrier's landing bay. It lands, is drawn into the hangar and disappears from space; you walk onto the bridge. Your ship counts as one of the 6 hangar craft while it is aboard.
+- **Launching from the hangar:** from the bridge (or a launch console by the hangar door) pick any craft in the hangar, your own ship or one of the carrier's fighters or bombers. You launch from the bay like a fighter, with the carrier keeping its last helm orders (hold, follow you, or hold at a point) while you're out. Fly back in to land and return to the bridge.
+
+**Wing orders** (wing console)
 - **Wing stance:** Screen (stay within 2 km of the carrier), Attack my target, or Hold (stay docked).
 - **Loadout:** pick the 6 craft from your own vault kits, and the carrier fills them when docked.
 - **Bombing run:** pick a target in range and the bombers go. This is the best tool against Overgrowth, which capital ships can reach by jumping when gates are sealed.
+
+**Multiplayer: owner commands, others are guests**
+- Only the pilot who owns the carrier can take the helm or give wing orders.
+- Other pilots of the same faction can land aboard as guests. Their ships go into the hangar using free bays, and they can walk the bridge, watch the consoles and ride along through jumps. They can't take the helm or give wing orders.
+- Guests launch their own ship from the hangar whenever they like. If the carrier is destroyed with guests aboard, they eject in their own ships, as a frigate's crew does today.
 
 ### Off-screen
 In strategic battles a carrier counts as its hull plus its wing. Its wing adds strength to assaults and sieges like a fighter group, and its point defence cuts the torpedoes that land on it, like an escort's screen. Use the fast simulator to tune its value so carriers don't tip the faction balance.
@@ -71,6 +83,16 @@ In strategic battles a carrier counts as its hull plus its wing. Its wing adds s
 1. It never carries a main gun or torpedoes of its own: all its hitting power is in its wing.
 2. The economy stays exact: craft in its bays are kits held aboard, lost craft fall as debris, and refills come out of faction stores.
 3. Re-tune all four sides with the fast simulator after it lands.
+
+## Brood carrier (design, not built)
+The Brood's version is a living carrier, the **Broodmother**: a swollen hive-ship that grows its own wing. It jumps like the Leviathan and has no lance or spitters of its own.
+
+- **Limit:** only one Broodmother can exist at a time. The Brood grows it at The Bloom once it holds 4 or more systems.
+- **Hull:** high health (about 7,000), no shield. It regenerates slowly like other Brood growth, and its spore tendrils shoot down about 30% of incoming torpedoes.
+- **Wing:** up to 6 Brood craft (Mites, Thrashers and Sporemaw bombers). Lost craft are not refilled at a shipyard: the Broodmother regrows one every 90 seconds from biomass it carries, topped up by grazing in Brood space. Each regrown craft uses real materials from the Brood's stores, so the economy stays exact.
+- **Behaviour:** it hangs back while its wing does the fighting, and swarms Overgrowths it is defending and systems the Brood is attacking. With its wing gone and its biomass spent, it retreats to the nearest Brood system to regrow.
+- **Counterplay:** kill the wing to stall it, or reach it with torpedoes. Its tendrils punish a single bomber, so a group is needed.
+- **Balance:** tune its biomass cost and regrowth rate with the fast simulator so the Brood stays near 20%.
 
 ## Picket fighters removed from frigates and escorts (design, not built)
 - Frigates and escorts stop carrying pickets. The fleet carrier takes over carrying fighters for the fleet.
