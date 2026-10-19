@@ -582,6 +582,16 @@ On a carrier's bridge the Weapons station is the **Hangar** (carriers have no ma
 - **Per-craft orders.** Each flying craft can be given its own order, or set back to follow the wing.
 - **Strike target.** A list of hostile ships in range, bombers and capitals first. Picking one sets the wing to Strike.
 - **Point defence.** Torpedoes first, fighters first, or hold fire.
+- **Strike next door (sorties).** A carrier fights from one system back, so the Hangar lists every hostile station, depot or outpost in the neighbouring systems, plus hostile capital ships your sensors can see there, each with its condition and a Strike button. A sortie runs like this:
+  1. **Who goes.** Every flying craft goes, along with anything in the hangar, except craft you've given their own Guard order; they stay to screen the carrier.
+  2. **Through the gate.** The craft fly to the gate and go through, taking their kits with them so the ledger stays exact.
+  3. **The strike.** It lasts up to 3 minutes, and breaks off early once the target is down or half the craft are lost. You can call it back at any time.
+     - **Out of sight:** it plays out like an AI carrier's stand-off strike. It wears down shields, then hull, using wing power (bomber 1.6, heavy 1.2, others 1). The target counts as under siege, so its shields stop regenerating. A sortie still running counts toward capturing a depot it breaks, so assault loads aboard the carrier are used.
+     - **Defence fire:** each craft has a chance of being lost every 10 s: 0.8%, plus 1.2% at a depot (3% at a core station, 2.5% at a hive), plus 2% for each hostile capital.
+     - **If someone is in that system,** the craft arrive through its gate and fight there for real.
+  4. **Back home.** Survivors return through the gate and rejoin the wing. If the carrier has left the system they join its wing; if it's been destroyed their kits go back to faction stores.
+  5. **Bays.** Craft away on a sortie still count as occupied bays, so the fabricator doesn't build extras.
+- **Measured:** a 5-craft strike (2 bombers, 2 heavies, a striker) on a fresh depot broke it in about 2½ minutes, losing 0–2 craft, and captured it with the carrier's assault loads in 4 of 5 trials.
 - **Fabricator under command.** A faction carrier on loan to a pilot keeps fabricating and calling in supply convoys. Only a pilot's own carrier is restocked by hand.
 - **Saving.** A save made while the carrier is in your system keeps its wing.
 
