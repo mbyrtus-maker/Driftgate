@@ -698,3 +698,17 @@ A carrier spawned from the developer menu comes fully loaded: three fighters (li
 - **AI scouts.** They skip locked beacons and route toward beacons they can flip, or their own fading ones. Off-screen they re-secure their side's fading beacons where they are.
 - **Effect on the map.** In the churn test, AI factions hold about 2–6 beacons at a time, down from about 21. More of the map is neutral, beacon jobs come up more often, and beacon intel follows where scouts are actually active.
 
+## Capital wrecks (built)
+Carriers, escorts, and the Brood Hive Ship and Prowler leave a wreck when they die in a live system. Other kills still drop crates and debris as before.
+- **Contents.** The wreck holds exactly what would have gone into crates and debris: hold, store, kits, and the build materials it carries. A third of it, by raw-material mass, comes out as intact components (conduit, plate, coil). The rest is raw ore. Components are broken down or built up by their own recipes, so the ledger stays exact (it has a new **Capital wrecks** line).
+- **Salvage points.** Up to six:
+  - reactor core: conduit, rare ores and forge parts, plus some xenocrystal from a Brood hulk;
+  - drive block: coil and copper;
+  - two torn bulkheads: plate and iron;
+  - two cargo bays: everything else.
+  Any mining laser cuts them: the player's, remote pilots', and NPC miners'.
+- **Reactor core hazard.** Every unit cut out of the core heats it by the larger of 4.5% and 150% ÷ the core's starting size, and it cools 12% a second. At 100% it blows: up to 340 damage within 380 m, and its contents scatter as debris. Cutting the whole core out in one go always blows it, so it has to be mined in bursts. The target panel shows the core's heat, and a warning flashes at 60%.
+- **Life.** 5 minutes. Then whatever is left breaks up into the system's debris, which is the old behaviour.
+- **Brood advantage.** Brood miners always go for wrecks and digest them twice as fast. A wreck within 3 jumps of Brood space draws a Brood scavenger party through a gate after 20–90 s, sooner the closer it is. Faction miners also salvage wrecks some of the time.
+- **Map and alerts.** A feed alert announces each wreck. An amber ✕ with time left shows on the galaxy map in systems you have intel on, and the system panel lists each wreck's tonnage and time left.
+
