@@ -59,6 +59,13 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .holdline{font-size:12px;color:var(--dim)}
 .holdline b{color:var(--ivory);font-family:var(--f-mono);font-weight:400}
 .hbtns{display:flex;gap:6px}
+.sndpop{pointer-events:auto;position:absolute;top:44px;right:0;width:300px;background:rgba(5,7,13,.94);border:1px solid var(--line-hi);padding:10px 12px;z-index:40;font-size:13px}
+.sndpop .sph{font-family:var(--f-display);font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+.sprow{display:grid;grid-template-columns:86px 1fr 40px;align-items:center;gap:8px;margin:6px 0}
+.sprow label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.sprow input[type=range]{width:100%;accent-color:var(--amber);cursor:pointer}
+.sprow b{font-family:var(--f-mono);font-weight:400;text-align:right;color:var(--ivory)}
+.sndpop p{margin:6px 0 0;color:var(--dim);font-size:12px;line-height:1.4}
 .hbtn{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;background:rgba(5,7,13,.7);border:1px solid var(--line-hi);padding:4px 10px;cursor:pointer}
 .hbtn:hover,.hbtn:focus-visible{border-color:var(--amber);color:var(--amber);outline:none}
 #hBL{left:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:14px;align-items:flex-end}
@@ -321,7 +328,10 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     <div class="hud" id="hTR">
       <div class="cr"><small>CREDITS</small><span id="hCr">0</span></div>
       <div class="holdline">Hold <b id="hHold">0/0</b></div>
-      <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bFull" type="button" aria-label="Full screen">Full <kbd>F11</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button><button class="hbtn" id="bInvite" type="button" hidden>Invite</button><button class="hbtn" id="bQuit" type="button" aria-label="Save and quit">Quit</button></div>
+      <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music" aria-expanded="false">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bFull" type="button" aria-label="Full screen">Full <kbd>F11</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button><button class="hbtn" id="bInvite" type="button" hidden>Invite</button><button class="hbtn" id="bQuit" type="button" aria-label="Save and quit">Quit</button></div><div class="sndpop" id="sndPop" hidden><div class="sph">Sound</div>
+        <div class="sprow"><label><input type="checkbox" id="sfxOn"> Effects</label><input type="range" id="sfxVol" min="0" max="100" step="5" aria-label="Effects volume"><b id="sfxVolV"></b></div>
+        <div class="sprow"><label><input type="checkbox" id="musOn"> Music</label><input type="range" id="musVol" min="0" max="100" step="5" aria-label="Music volume"><b id="musVolV"></b></div>
+        <p>Music follows the space you're in: Halcyon, Ostrova, Varkesh, freeports, and open or Brood space. N cycles all on → music off → muted.</p></div>
     </div>
     <div class="hud" id="hBL">
       <canvas id="radar" width="680" height="600" aria-label="Radar"></canvas>
@@ -829,7 +839,11 @@ const ESC_NAMES=['Warden','Aegis','Bulwark','Vigil','Sentinel','Lancer','Ward','
 function broodCap(t){return isEsc(t)?'Prowler':isCar(t)?'Hive Ship':'Leviathan'}
 function escName(side){S.escSeq=(S.escSeq||0)+1;if(side==='brood')return`Prowler ${['I','II','III','IV','V','VI','VII','VIII','IX'][(S.escSeq-1)%9]}`;return`${ESC_NAMES[S.escSeq%ESC_NAMES.length]} ${['I','II','III','IV','V','VI','VII','VIII','IX'][Math.floor(S.escSeq/ESC_NAMES.length)%9]}`}
 function carName(side){return side==='brood'?'Hive Ship':`${pick(CAR_NAMES)} ${['I','II','III','IV','V'][Math.floor(Math.random()*5)]}`}
-function makeCarrier(side,sector,load,owner){const t={id:S.nextId++,side,sector,dest:null,cls:'carrier',hull:side==='brood'?7000:CAR_HULL,shield:side==='brood'?0:CAR_SHIELD,load,name:carName(side),hold:0,wing:[],aload:0};if(owner)t.owner=owner;else if(S.legFrig&&(S.legFrig[side]||[]).length){const nm=S.legFrig[side].shift();t.name=`Carrier “${nm}”`;facFeed(side,`${t.name} is named in honour of ${nm}.`,'good')}S.frigates.push(t);capRefill(t);if(WORLDS[sector])inW(WORLDS[sector],()=>spawnFrigate(t,true));return t}
+function makeCarrier(side,sector,load,owner,full){const t={id:S.nextId++,side,sector,dest:null,cls:'carrier',hull:side==='brood'?7000:CAR_HULL,shield:side==='brood'?0:CAR_SHIELD,load,name:carName(side),hold:0,wing:[],aload:0};if(owner)t.owner=owner;else if(S.legFrig&&(S.legFrig[side]||[]).length){const nm=S.legFrig[side].shift();t.name=`Carrier “${nm}”`;facFeed(side,`${t.name} is named in honour of ${nm}.`,'good')}S.frigates.push(t);if(full)carFullLoad(t);else capRefill(t);if(WORLDS[sector])inW(WORLDS[sector],()=>spawnFrigate(t,true));return t}
+// a carrier delivered fully loaded (the developer spawn): three fighters, three bombers and every assault bay filled, kits aboard
+function carFullLoad(t){const f=t.side==='player'?S.player.faction:t.side;t.wingInit=1;t.wing=[];const fi=f==='brood'?['interceptor','striker']:['interceptor','striker','heavy'];
+  for(let k=0;k<3;k++){const c=fi[k%fi.length];t.wing.push(c);inv.addAll(t.load,carKit(c))}for(let k=0;k<3;k++){t.wing.push('bomber');inv.addAll(t.load,carKit('bomber'))}
+  const cap=f==='brood'?0:CAR_ASSAULT;t.aload=0;while(t.aload<cap){inv.addAll(t.load,ASSAULT_LD);t.aload++}}
 // where a capital rearms: its faction's shipyard system (or home); the Brood's at The Bloom
 function capBase(t){const f=t.side==='player'?S.player.faction:t.side;return f==='brood'?'bl':S.yards[f]?S.yards[f].sector:FAC_HOME(f)}
 // a carrier's wing craft are built to a simple deck pattern: plate and coil, no wire (wire is the scarcest component)
@@ -2346,6 +2360,7 @@ function gateKey(a,b){return[a,b].sort().join('-')}
 // ============================================================ audio: everything synthesized, low and soft; a global low-pass caps brightness
 const AU={ctx:null,on:{sfx:true,music:false},voices:0};
 try{const v=JSON.parse(localStorage.getItem('driftgate.audio2')||'null');if(v&&typeof v.sfx==='boolean')AU.on=v}catch(e){}
+if(!(AU.on.mvol>=0))AU.on.mvol=45;if(!(AU.on.svol>=0))AU.on.svol=100;   // music and effects volume, 0-100
 function auSave(){try{localStorage.setItem('driftgate.audio2',JSON.stringify(AU.on))}catch(e){}}
 function auOK(){return!!(AU.ctx&&AU.ctx.state==='running')}
 function auInit(){
@@ -2356,7 +2371,7 @@ function auInit(){
   AU.master=c.createGain();AU.master.gain.value=.8;AU.master.connect(tone);
   AU.sfx=c.createGain();AU.sfx.gain.value=AU.on.sfx?1:0;AU.sfx.connect(AU.master);
   {const air=c.createBiquadFilter();air.type='lowpass';air.frequency.value=4800;air.Q.value=.4;air.connect(comp);const lim=c.createDynamicsCompressor();lim.threshold.value=-6;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.002;lim.release.value=.15;lim.connect(air);AU.sx=c.createGain();AU.sx.gain.value=AU.on.sfx?.75:0;AU.sx.connect(lim);sndLoad()}
-  AU.mus=c.createGain();AU.mus.gain.value=AU.on.music?.25:0;AU.mus.connect(AU.master);
+  AU.mus=c.createGain();AU.mus.gain.value=AU.on.music?.25*AU.on.mvol/45:0;AU.mus.connect(AU.master);
   const nb=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=nb.getChannelData(0);let b=0;for(let i=0;i<d.length;i++){b=(b+.02*(Math.random()*2-1))/1.02;d[i]=b*3.5}AU.noise=nb; // brown noise: weighted to the lows
   // engine bed: detuned low saw + triangle through a resonant low-pass, plus filtered noise for thrust and boost
   // drive: a pure sub-sine reactor hum with a slow beating partner (no harmonics, so nothing reads as a motor),
@@ -2518,25 +2533,28 @@ function musicStart(){const c=AU.ctx;AU.mf=c.createBiquadFilter();AU.mf.type='lo
 function musicTick(){if(!auOK())return;const c=AU.ctx;if(!AU.on.music||!musGen()){AU.mNext=c.currentTime+.4;return}while(AU.mNext<c.currentTime+1.5){playChord(CHORDS[AU.mIdx%CHORDS.length],AU.mNext,11);AU.mIdx++;AU.mNext+=9.5}}
 // ---- recorded ambient music: one track for each faction's space, one for freeports, one for open and Brood space, streamed from music/
 // beside the game (never embedded, so the page stays light). A track loads only when it's first needed, loops, and
-// crossfades over MUS_FADE s when you jump into space held by someone else. If a track can't load (say the page was
+// crossfades over MUS_FADE s when you jump into space held by someone else. Volume comes from the Sound panel. If a track can't load (say the page was
 // opened on its own, without its music folder), the generated score plays instead.
-const MUS_TRK={open:'music/open.mp3',freeport:'music/freeport.mp3',halcyon:'music/halcyon.mp3',ostrova:'music/ostrova.mp3',varkesh:'music/varkesh.mp3'},MUS_VOL=.45,MUS_FADE=4;
+const MUS_END=6,MUS_GAP=3;   // a track fades out over its last MUS_END s, rests MUS_GAP s, then plays again from the top
+const MUS_TRK={open:'music/open.mp3',freeport:'music/freeport.mp3',halcyon:'music/halcyon.mp3',ostrova:'music/ostrova.mp3',varkesh:'music/varkesh.mp3'},MUS_FADE=4;
 const MZ={el:{},bad:{}};
 function musKey(){if(!W||!W.sid||!S)return'open';try{if(isFreeport(W.sid))return'freeport'}catch(e){}let o=null;try{o=sectorOwner(W.sid)}catch(e){}if(o==='player')o=S.player.faction;return o&&o!=='open'&&MUS_TRK[o]?o:'open'}
 function musGen(){return!!MZ.bad[musKey()]}   // the generated score fills in only where the recorded track failed
-function musEl(k){let a=MZ.el[k];if(a)return a;a=new Audio();a.loop=true;a.preload='auto';a.volume=0;a._v=0;a.addEventListener('error',()=>{MZ.bad[k]=1});a.src=MUS_TRK[k];return MZ.el[k]=a}
+function musEl(k){let a=MZ.el[k];if(a)return a;a=new Audio();a.loop=false;a.preload='auto';a.volume=0;a._v=0;a._gap=0;a.addEventListener('error',()=>{MZ.bad[k]=1});a.addEventListener('ended',()=>{a._v=0;a._gap=MUS_GAP});a.src=MUS_TRK[k];return MZ.el[k]=a}
 function musRecTick(dt){const want=AU.on.music&&!document.hidden?musKey():null;if(want&&!MZ.bad[want])musEl(want);
-  for(const k in MZ.el){const a=MZ.el[k],tg=k===want&&!MZ.bad[k]?MUS_VOL:0;
+  for(const k in MZ.el){const a=MZ.el[k];let tg=k===want&&!MZ.bad[k]?1:0;
+    if(a._gap>0){a._gap-=dt;tg=0;if(a._gap<=0){a._gap=0;try{a.currentTime=0}catch(e){}}}
+    else if(tg&&isFinite(a.duration)&&a.duration>MUS_END*3)tg=Math.min(1,Math.max(0,(a.duration-a.currentTime)/MUS_END));   // fade out into the track's end
     if(tg>0&&a.paused&&!a._pp){a._pp=1;const pr=a.play();if(pr&&pr.then)pr.then(()=>{a._pp=0},()=>{a._pp=0;MZ.bad[k]=1});else a._pp=0}
-    a._v+=Math.sign(tg-a._v)*Math.min(Math.abs(tg-a._v),dt/MUS_FADE*MUS_VOL);try{a.volume=Math.max(0,Math.min(1,a._v))}catch(e){}
-    if(tg===0&&a._v<=0&&!a.paused)a.pause()}}
+    a._v+=Math.sign(tg-a._v)*Math.min(Math.abs(tg-a._v),dt/MUS_FADE);try{a.volume=Math.max(0,Math.min(1,a._v*AU.on.mvol/100))}catch(e){}
+    if(tg===0&&a._v<=0&&!a.paused&&!(k===want&&a._gap===0&&!MZ.bad[k]&&isFinite(a.duration)&&a.duration-a.currentTime<MUS_END))a.pause()}}
 function playChord(ch,t,len){const c=AU.ctx;
   ch.forEach((f,i)=>{for(const det of[-5,5]){const o=c.createOscillator(),g=c.createGain(),pk=i===0?.12:.045;o.type=i===0?'triangle':'sawtooth';o.frequency.value=f;o.detune.value=det;
     g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(pk,t+3.2);g.gain.setValueAtTime(pk,t+len-3.6);g.gain.linearRampToValueAtTime(.0001,t+len);o.connect(g);g.connect(AU.mf);o.start(t);o.stop(t+len+.1)}});
   for(let k=0;k<4;k++){const tb=t+.5+k*2.4,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=ch[0];g.gain.setValueAtTime(.0001,tb);g.gain.linearRampToValueAtTime(.09,tb+.06);g.gain.exponentialRampToValueAtTime(.0001,tb+1.8);o.connect(g);g.connect(AU.mus);o.start(tb);o.stop(tb+1.9)}
   if(Math.random()<.65){const tb=t+2+Math.random()*4.5,f=ch[1+Math.floor(Math.random()*3)]*2,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,tb);g.gain.linearRampToValueAtTime(.045,tb+.03);g.gain.exponentialRampToValueAtTime(.0001,tb+4.5);o.connect(g);g.connect(AU.mus);o.start(tb);o.stop(tb+4.6)}}
-function auToggle(){if(AU.on.sfx&&!AU.on.music)AU.on.music=true;else if(AU.on.sfx){AU.on.sfx=false;AU.on.music=false}else{AU.on.sfx=true;AU.on.music=false}auSave();auApply();flash(AU.on.sfx?(AU.on.music?'Sound effects and music on':'Sound effects on, music off'):'Sound off')}
-function auApply(){const b=$('bSnd');if(b)b.innerHTML=(AU.on.sfx?(AU.on.music?'Music':'Sound'):'Muted')+' <kbd>N</kbd>';if(!AU.ctx)return;const t=AU.ctx.currentTime;AU.sfx.gain.setTargetAtTime(AU.on.sfx?1:0,t,.1);if(AU.sx)AU.sx.gain.setTargetAtTime(AU.on.sfx?.75:0,t,.1);AU.mus.gain.setTargetAtTime(AU.on.music?.25:0,t,.3)}
+function auToggle(){if(AU.on.sfx&&!AU.on.music)AU.on.music=true;else if(AU.on.sfx){AU.on.sfx=false;AU.on.music=false}else{AU.on.sfx=true;AU.on.music=false}auSave();auApply();flash(AU.on.sfx?(AU.on.music?'Sound effects and music on':'Sound effects on, music off'):'Sound off');if(!$('sndPop').hidden)sndSync()}
+function auApply(){const b=$('bSnd');if(b)b.innerHTML=(AU.on.sfx?(AU.on.music?'Music':'Sound'):'Muted')+' <kbd>N</kbd>';if(!AU.ctx)return;const t=AU.ctx.currentTime;const sv=AU.on.svol/100;AU.sfx.gain.setTargetAtTime(AU.on.sfx?sv:0,t,.1);if(AU.sx)AU.sx.gain.setTargetAtTime(AU.on.sfx?.75*sv:0,t,.1);AU.mus.gain.setTargetAtTime(AU.on.music?.25*AU.on.mvol/45:0,t,.3)}
 
 // ============================================================ feed
 function feed(msg,kind='info'){if(CTX&&NET.host&&CTX!==NET.me){netMsg(CTX,'feed',msg,kind);return}if(MUTE&&!CTX)return;FEED.push({t:S?S.T:0,rt:performance.now(),msg,kind});if(FEED.length>60)FEED.shift();renderFeed()}
@@ -3138,7 +3156,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(c)&&running)e.preventDefault();
   if(keys[c])return;keys[c]=true;
   if(!running)return;
-  if(c==='Escape'){if(commsOpen()){closeComms();return}if(W&&W.bridge&&W.bridge.panel){closeConsole();return}closeSheets();return}
+  if(c==='Escape'){if(!$('sndPop').hidden){sndPanel(false);return}if(commsOpen()){closeComms();return}if(W&&W.bridge&&W.bridge.panel){closeConsole();return}closeSheets();return}
   if(c==='KeyM'){toggleMap();return}
   if(c==='KeyH'||c==='Slash'){toggleSheet('help');return}
   if(!$('map').hidden||!$('help').hidden)return;
@@ -5246,7 +5264,13 @@ function drawShip2D(c,fac,cls,cx,cy,s,dim){if(!G)return;const d=shipMesh(fac,cls
 $('facs').addEventListener('click',e=>{const b=e.target.closest('[data-fac]');if(!b)return;selFac=b.dataset.fac;showStart()});
 $('clsrow').addEventListener('click',e=>{const b=e.target.closest('[data-cls]');if(!b)return;selCls=b.dataset.cls;selRole=roleOf(selCls);showStart()});
 $('roles').addEventListener('click',e=>{const b=e.target.closest('[data-role]');if(!b)return;selRole=b.dataset.role;if(!ROLES[selRole].ships.includes(selCls))selCls=ROLES[selRole].ships[0];showStart()});
-$('bSnd').addEventListener('click',()=>{auInit();auToggle()});addEventListener('pointerdown',()=>{if(running)auInit()});
+$('bSnd').addEventListener('click',e=>{auInit();sndPanel($('sndPop').hidden)});
+function sndPanel(open){const P=$('sndPop');P.hidden=!open;$('bSnd').setAttribute('aria-expanded',String(open));if(open)sndSync();else if(P.contains(document.activeElement))document.activeElement.blur()}
+function sndSync(){$('sfxOn').checked=AU.on.sfx;$('musOn').checked=AU.on.music;$('sfxVol').value=AU.on.svol;$('musVol').value=AU.on.mvol;$('sfxVolV').textContent=AU.on.svol+'%';$('musVolV').textContent=AU.on.mvol+'%'}
+$('sfxOn').addEventListener('change',e=>{AU.on.sfx=e.target.checked;if(!AU.on.sfx)AU.on.music=false;auSave();auApply();sndSync();e.target.blur()});
+$('musOn').addEventListener('change',e=>{AU.on.music=e.target.checked;if(AU.on.music)AU.on.sfx=true;auSave();auApply();sndSync();e.target.blur()});
+for(const[id,k]of[['sfxVol','svol'],['musVol','mvol']]){const el=$(id);el.addEventListener('input',()=>{AU.on[k]=+el.value;auApply();sndSync()});el.addEventListener('change',()=>{auSave();el.blur()})}
+addEventListener('pointerdown',e=>{const P=$('sndPop');if(!P.hidden&&!P.contains(e.target)&&e.target!==$('bSnd')&&!$('bSnd').contains(e.target))sndPanel(false)});addEventListener('pointerdown',()=>{if(running)auInit()});
 $('bNext').addEventListener('click',()=>{if(NET.host){mpNewGalaxy();return}if(NET.cl){$('win').hidden=true;flash('Waiting for the host to start the next galaxy.');return}$('win').hidden=true;if(W)exitSector();W=null;S=null;running=false;$('hud').hidden=true;$('dock').hidden=true;buildSectorScene(null);showStart()});
 // ============================================================ Legendary status: points for galaxy wins, 10 levels, permanent perks
 // A pilot earns 1 Legend point when their faction wins a galaxy they flew for (30+ minutes of game time, most of their time
@@ -5909,7 +5933,7 @@ function devGunboat(){if(!W||!W.player)return 'Not in a system.';const p=W.playe
   devLedger(()=>{e=makeNPC('patrol',f,'gunboat',Math.max(1,factionTier(f)),{missile:4},'stock:'+f);W.ents.push(e)});qRot(p.q,0,0,1,_f);qRot(p.q,1,0,0,_r);e.x=p.x+_f.x*220-_r.x*120;e.y=p.y+20;e.z=p.z+_f.z*220-_r.z*120;e.vx=p.vx;e.vy=p.vy;e.vz=p.vz;qCopy(e.q,p.q);fxWarp(e,sideCol(f));
   e.order={kind:'escort',tgt:p,until:W.t+600,slot:0,by:true,pid:curPid()};feed(`${shipLabel(e)} has joined you. Pull alongside and press E to take its turret.`,'good');return `Spawned ${shipLabel(e)}.`}
 function devFrig(asHost,esc){if(NET.cl&&!asHost){netSend({t:'dev',k:esc?'fesc':'frig'});return `Asked the host for ${esc?'an escort':'a carrier'}…`}if(!W||!W.player)return 'Not in a system.';
-  const mk=esc?makeEscort:makeCarrier,t=devLedger(()=>NET.on?mk(S.player.faction,W.sid,{},curPid()):mk('player',W.sid,{})),e=W.ents.find(x=>x.alive&&x.tok===t);
+  const mk=esc?makeEscort:makeCarrier,t=devLedger(()=>NET.on?mk(S.player.faction,W.sid,{},curPid(),true):mk('player',W.sid,{},undefined,true)),e=W.ents.find(x=>x.alive&&x.tok===t);
   if(e){const p=W.player;qRot(p.q,0,0,1,_f);qRot(p.q,1,0,0,_r);const d=420+e.st.radius;e.x=p.x+_f.x*d+_r.x*160;e.y=p.y+_f.y*d+_r.y*160+60;e.z=p.z+_f.z*d+_r.z*160;e.vx=e.vy=e.vz=0;qCopy(e.q,p.q);
     for(const k of e.pickets||[]){const o=rdir();k.x=e.x+o.x*170;k.y=e.y+o.y*170;k.z=e.z+o.z*170}fxWarp(e,sideCol('player'))}
   feed(`${capName(t)==='carrier'?'Carrier':'Escort'} ${t.name} has joined you in ${DEF[W.sid].name}. Order it from the galaxy map (M).`,'good');return `Spawned ${capName(t)} ${t.name}.`}

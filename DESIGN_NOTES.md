@@ -676,6 +676,9 @@ A carrier destroyed in a live system used to lose its onboard store and the craf
   - open and Brood space share one (unbound, contested, deep, hive, junction).
 - **Choosing the track.** The track follows whoever holds the sector now (`sectorOwner`), so it changes when a system is captured. A freeport sector takes priority.
 - **Playback.** Files stream from `music/` beside the game, so the page stays light. Each loads only when first needed, then loops. Changing space crossfades over 4 s.
-- **Turning it on.** Music is still toggled with N (all on → music off → muted). When it's off, or the tab is hidden, the tracks fade out and pause.
+- **Repeating.** A track plays to its end and fades out over its last 6 s. After 3 s of silence it starts again from the top with a fade-in, for as long as you stay in that kind of space.
+- **Sound panel.** Click the Sound button to open it. It has on/off switches and volume sliders for effects and for music, saved between sessions. The music slider also sets the level of the fallback score. N still cycles all on → music off → muted. When music is off, or the tab is hidden, the tracks fade out and pause.
 - **Fallback.** If a track can't load (the page was opened without its `music/` folder), the old generated score plays instead.
 
+## Developer carrier spawn (built)
+A carrier spawned from the developer menu comes fully loaded: three fighters (light, medium, heavy), three bombers, and all three assault bays filled. The kits ride aboard and the ledger records them.
