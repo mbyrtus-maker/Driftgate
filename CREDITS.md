@@ -14,3 +14,12 @@ All recorded sound effects are CC0 or free for any use with no credit required. 
 - **SpaceSFX1** by messersm (OpenGameArt), CC0.
 
 `tools/` holds the scripts that build the model pack (`build_models.py`) and the sound pack (`build_snd.py`).
+
+## Music
+Ambient space tracks in `music/`, chosen by the player. The files look like Pixabay downloads, released under the Pixabay Content License, which allows use in games without attribution. They are re-encoded to 128 kbps with matched loudness.
+- `open.mp3` (open and Brood space): "Space" by Luceris (Pixabay #590393)
+- `halcyon.mp3` (Halcyon space): "Space" by Leberch (Pixabay #587944)
+- `ostrova.mp3` (Ostrova space): "Space Ambient" by Leberch (Pixabay #509783)
+- `varkesh.mp3` (Varkesh space): "Space" by Leberch (Pixabay #440026)
+- `freeport.mp3` (freeports): "Cinematic Space" by Leberch (Pixabay #510707)
+

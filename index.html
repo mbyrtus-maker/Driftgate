@@ -2514,8 +2514,22 @@ function auFrame(){if(!auOK())return;const c=AU.ctx,t=c.currentTime,E=AU.eng,fdt
 const CHORDS=[[55,110,130.81,164.81],[43.65,87.31,110,130.81],[65.41,98,130.81,164.81],[49,98,123.47,146.83],[55,110,130.81,164.81],[43.65,87.31,110,146.83],[41.2,82.41,123.47,146.83],[49,98,116.54,146.83]];
 function musicStart(){const c=AU.ctx;AU.mf=c.createBiquadFilter();AU.mf.type='lowpass';AU.mf.frequency.value=480;AU.mf.Q.value=.6;AU.mf.connect(AU.mus);
   const lfo=c.createOscillator();lfo.frequency.value=.04;const lg=c.createGain();lg.gain.value=160;lfo.connect(lg);lg.connect(AU.mf.frequency);lfo.start();
-  AU.mNext=c.currentTime+.4;AU.mIdx=0;setInterval(musicTick,500)}
-function musicTick(){if(!auOK())return;const c=AU.ctx;if(!AU.on.music){AU.mNext=c.currentTime+.4;return}while(AU.mNext<c.currentTime+1.5){playChord(CHORDS[AU.mIdx%CHORDS.length],AU.mNext,11);AU.mIdx++;AU.mNext+=9.5}}
+  AU.mNext=c.currentTime+.4;AU.mIdx=0;setInterval(musicTick,500);setInterval(()=>musRecTick(.1),100)}
+function musicTick(){if(!auOK())return;const c=AU.ctx;if(!AU.on.music||!musGen()){AU.mNext=c.currentTime+.4;return}while(AU.mNext<c.currentTime+1.5){playChord(CHORDS[AU.mIdx%CHORDS.length],AU.mNext,11);AU.mIdx++;AU.mNext+=9.5}}
+// ---- recorded ambient music: one track for each faction's space, one for freeports, one for open and Brood space, streamed from music/
+// beside the game (never embedded, so the page stays light). A track loads only when it's first needed, loops, and
+// crossfades over MUS_FADE s when you jump into space held by someone else. If a track can't load (say the page was
+// opened on its own, without its music folder), the generated score plays instead.
+const MUS_TRK={open:'music/open.mp3',freeport:'music/freeport.mp3',halcyon:'music/halcyon.mp3',ostrova:'music/ostrova.mp3',varkesh:'music/varkesh.mp3'},MUS_VOL=.45,MUS_FADE=4;
+const MZ={el:{},bad:{}};
+function musKey(){if(!W||!W.sid||!S)return'open';try{if(isFreeport(W.sid))return'freeport'}catch(e){}let o=null;try{o=sectorOwner(W.sid)}catch(e){}if(o==='player')o=S.player.faction;return o&&o!=='open'&&MUS_TRK[o]?o:'open'}
+function musGen(){return!!MZ.bad[musKey()]}   // the generated score fills in only where the recorded track failed
+function musEl(k){let a=MZ.el[k];if(a)return a;a=new Audio();a.loop=true;a.preload='auto';a.volume=0;a._v=0;a.addEventListener('error',()=>{MZ.bad[k]=1});a.src=MUS_TRK[k];return MZ.el[k]=a}
+function musRecTick(dt){const want=AU.on.music&&!document.hidden?musKey():null;if(want&&!MZ.bad[want])musEl(want);
+  for(const k in MZ.el){const a=MZ.el[k],tg=k===want&&!MZ.bad[k]?MUS_VOL:0;
+    if(tg>0&&a.paused&&!a._pp){a._pp=1;const pr=a.play();if(pr&&pr.then)pr.then(()=>{a._pp=0},()=>{a._pp=0;MZ.bad[k]=1});else a._pp=0}
+    a._v+=Math.sign(tg-a._v)*Math.min(Math.abs(tg-a._v),dt/MUS_FADE*MUS_VOL);try{a.volume=Math.max(0,Math.min(1,a._v))}catch(e){}
+    if(tg===0&&a._v<=0&&!a.paused)a.pause()}}
 function playChord(ch,t,len){const c=AU.ctx;
   ch.forEach((f,i)=>{for(const det of[-5,5]){const o=c.createOscillator(),g=c.createGain(),pk=i===0?.12:.045;o.type=i===0?'triangle':'sawtooth';o.frequency.value=f;o.detune.value=det;
     g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(pk,t+3.2);g.gain.setValueAtTime(pk,t+len-3.6);g.gain.linearRampToValueAtTime(.0001,t+len);o.connect(g);g.connect(AU.mf);o.start(t);o.stop(t+len+.1)}});
