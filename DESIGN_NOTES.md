@@ -673,7 +673,14 @@ A carrier destroyed in a live system used to lose its onboard store and the craf
 - **Tracks.** Each kind of space has its own recorded track:
   - Halcyon, Ostrova and Varkesh space each have one;
   - freeports have one;
-  - open and Brood space share one (unbound, contested, deep, hive, junction).
+  - Brood space has one, as do Brood hive systems even before the Brood take them;
+  - open space (unbound, contested, deep, junction) has one.
+- **Battle music.** It starts when your shots land on shields, or your own shields take fire; a hit on bare hull doesn't start it.
+  - Any further hit either way keeps it going.
+  - It cuts in over 1.5 s.
+  - It hands back to the space's own track 25 s after the last exchange of fire, or as soon as you dock.
+  - After 40 s of quiet, the next fight starts it from the top.
+  - A multiplayer guest gets the same behaviour: it watches its own shields, which the host updates.
 - **Choosing the track.** The track follows whoever holds the sector now (`sectorOwner`), so it changes when a system is captured. A freeport sector takes priority.
 - **Playback.** Files stream from `music/` beside the game, so the page stays light. Each loads only when first needed, then loops. Changing space crossfades over 4 s.
 - **Repeating.** A track plays to its end and fades out over its last 6 s. After 3 s of silence it starts again from the top with a fade-in, for as long as you stay in that kind of space.

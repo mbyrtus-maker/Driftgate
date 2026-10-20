@@ -331,7 +331,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music" aria-expanded="false">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bFull" type="button" aria-label="Full screen">Full <kbd>F11</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button><button class="hbtn" id="bInvite" type="button" hidden>Invite</button><button class="hbtn" id="bQuit" type="button" aria-label="Save and quit">Quit</button></div><div class="sndpop" id="sndPop" hidden><div class="sph">Sound</div>
         <div class="sprow"><label><input type="checkbox" id="sfxOn"> Effects</label><input type="range" id="sfxVol" min="0" max="100" step="5" aria-label="Effects volume"><b id="sfxVolV"></b></div>
         <div class="sprow"><label><input type="checkbox" id="musOn"> Music</label><input type="range" id="musVol" min="0" max="100" step="5" aria-label="Music volume"><b id="musVolV"></b></div>
-        <p>Music follows the space you're in: Halcyon, Ostrova, Varkesh, freeports, and open or Brood space. N cycles all on → music off → muted.</p></div>
+        <p>Music follows the space you're in: Halcyon, Ostrova, Varkesh, freeports, Brood space and open space. Battle music takes over when shields start taking fire. N cycles all on → music off → muted.</p></div>
     </div>
     <div class="hud" id="hBL">
       <canvas id="radar" width="680" height="600" aria-label="Radar"></canvas>
@@ -2531,23 +2531,29 @@ function musicStart(){const c=AU.ctx;AU.mf=c.createBiquadFilter();AU.mf.type='lo
   const lfo=c.createOscillator();lfo.frequency.value=.04;const lg=c.createGain();lg.gain.value=160;lfo.connect(lg);lg.connect(AU.mf.frequency);lfo.start();
   AU.mNext=c.currentTime+.4;AU.mIdx=0;setInterval(musicTick,500);setInterval(()=>musRecTick(.1),100)}
 function musicTick(){if(!auOK())return;const c=AU.ctx;if(!AU.on.music||!musGen()){AU.mNext=c.currentTime+.4;return}while(AU.mNext<c.currentTime+1.5){playChord(CHORDS[AU.mIdx%CHORDS.length],AU.mNext,11);AU.mIdx++;AU.mNext+=9.5}}
-// ---- recorded ambient music: one track for each faction's space, one for freeports, one for open and Brood space, streamed from music/
+// ---- recorded music: battle music while you're trading fire (see musHit); otherwise ambient, one track for each faction's space, one for freeports, one for Brood space and hives, one for open space, streamed from music/
 // beside the game (never embedded, so the page stays light). A track loads only when it's first needed, loops, and
 // crossfades over MUS_FADE s when you jump into space held by someone else. Volume comes from the Sound panel. If a track can't load (say the page was
 // opened on its own, without its music folder), the generated score plays instead.
 const MUS_END=6,MUS_GAP=3;   // a track fades out over its last MUS_END s, rests MUS_GAP s, then plays again from the top
-const MUS_TRK={open:'music/open.mp3',freeport:'music/freeport.mp3',halcyon:'music/halcyon.mp3',ostrova:'music/ostrova.mp3',varkesh:'music/varkesh.mp3'},MUS_FADE=4;
-const MZ={el:{},bad:{}};
-function musKey(){if(!W||!W.sid||!S)return'open';try{if(isFreeport(W.sid))return'freeport'}catch(e){}let o=null;try{o=sectorOwner(W.sid)}catch(e){}if(o==='player')o=S.player.faction;return o&&o!=='open'&&MUS_TRK[o]?o:'open'}
+const MUS_BHOLD=25,MUS_BFADE=1.5,MUS_BRESET=40;   // battle music: holds MUS_BHOLD s past the last exchange of fire, cuts in over MUS_BFADE s, starts from the top after MUS_BRESET s of quiet
+const MUS_TRK={battle:'music/battle.mp3',open:'music/open.mp3',brood:'music/brood.mp3',freeport:'music/freeport.mp3',halcyon:'music/halcyon.mp3',ostrova:'music/ostrova.mp3',varkesh:'music/varkesh.mp3'},MUS_FADE=4;
+const MZ={el:{},bad:{},bt:-1e9};
+const musNow=()=>performance.now()/1000;
+// a fight starts the battle track when your shots land on shields or your own shields take fire; any further hit either way keeps it going
+function musHit(shieldUp){const t=musNow();if(shieldUp||t-MZ.bt<MUS_BHOLD)MZ.bt=t}
+function musBattle(){if(!S||!W||!W.player||!W.player.alive||S.player.docked)return false;return musNow()-MZ.bt<MUS_BHOLD}
+function musKey(){if(!W||!W.sid||!S)return'open';if(musBattle())return'battle';try{if(isFreeport(W.sid))return'freeport'}catch(e){}let o=null;try{o=sectorOwner(W.sid)}catch(e){}if(o==='player')o=S.player.faction;if(DEF[W.sid]&&DEF[W.sid].kind==='hive')o='brood';return o&&o!=='open'&&MUS_TRK[o]?o:'open'}
 function musGen(){return!!MZ.bad[musKey()]}   // the generated score fills in only where the recorded track failed
 function musEl(k){let a=MZ.el[k];if(a)return a;a=new Audio();a.loop=false;a.preload='auto';a.volume=0;a._v=0;a._gap=0;a.addEventListener('error',()=>{MZ.bad[k]=1});a.addEventListener('ended',()=>{a._v=0;a._gap=MUS_GAP});a.src=MUS_TRK[k];return MZ.el[k]=a}
-function musRecTick(dt){const want=AU.on.music&&!document.hidden?musKey():null;if(want&&!MZ.bad[want])musEl(want);
+function musRecTick(dt){if(NET.cl&&W&&W.player){const sh=W.player.shield;if(MZ.lsh>0&&sh<MZ.lsh-.5&&W.player.alive)musHit(true);MZ.lsh=sh}   // a client's own shield hits arrive from the host
+  if(S&&S.player&&S.player.docked)MZ.bt=-1e9;const want=AU.on.music&&!document.hidden?musKey():null;if(want&&!MZ.bad[want])musEl(want);
   for(const k in MZ.el){const a=MZ.el[k];let tg=k===want&&!MZ.bad[k]?1:0;
     if(a._gap>0){a._gap-=dt;tg=0;if(a._gap<=0){a._gap=0;try{a.currentTime=0}catch(e){}}}
     else if(tg&&isFinite(a.duration)&&a.duration>MUS_END*3)tg=Math.min(1,Math.max(0,(a.duration-a.currentTime)/MUS_END));   // fade out into the track's end
-    if(tg>0&&a.paused&&!a._pp){a._pp=1;const pr=a.play();if(pr&&pr.then)pr.then(()=>{a._pp=0},()=>{a._pp=0;MZ.bad[k]=1});else a._pp=0}
-    a._v+=Math.sign(tg-a._v)*Math.min(Math.abs(tg-a._v),dt/MUS_FADE);try{a.volume=Math.max(0,Math.min(1,a._v*AU.on.mvol/100))}catch(e){}
-    if(tg===0&&a._v<=0&&!a.paused&&!(k===want&&a._gap===0&&!MZ.bad[k]&&isFinite(a.duration)&&a.duration-a.currentTime<MUS_END))a.pause()}}
+    if(tg>0&&a.paused&&!a._pp){a._pp=1;if(k==='battle'&&a._stopT&&musNow()-a._stopT>MUS_BRESET){try{a.currentTime=0}catch(e){}}const pr=a.play();if(pr&&pr.then)pr.then(()=>{a._pp=0},()=>{a._pp=0;MZ.bad[k]=1});else a._pp=0}
+    a._v+=Math.sign(tg-a._v)*Math.min(Math.abs(tg-a._v),dt/(want==='battle'?MUS_BFADE:MUS_FADE));try{a.volume=Math.max(0,Math.min(1,a._v*AU.on.mvol/100))}catch(e){}
+    if(tg===0&&a._v<=0&&!a.paused&&!(k===want&&a._gap===0&&!MZ.bad[k]&&isFinite(a.duration)&&a.duration-a.currentTime<MUS_END)){a.pause();a._stopT=musNow()}}}
 function playChord(ch,t,len){const c=AU.ctx;
   ch.forEach((f,i)=>{for(const det of[-5,5]){const o=c.createOscillator(),g=c.createGain(),pk=i===0?.12:.045;o.type=i===0?'triangle':'sawtooth';o.frequency.value=f;o.detune.value=det;
     g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(pk,t+3.2);g.gain.setValueAtTime(pk,t+len-3.6);g.gain.linearRampToValueAtTime(.0001,t+len);o.connect(g);g.connect(AU.mf);o.start(t);o.stop(t+len+.1)}});
@@ -3374,6 +3380,7 @@ function fireLaser(e){if(e.cool>0||e.landed||e.stealth||(e.boot&&W.t<e.boot))ret
   if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg,e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1,e.side,'laser');if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
+  {const me=W.player;if(me&&e.alive&&!e.ghost){if(e===me){if(srcSide&&srcSide!==me.side)musHit(e.shield>0)}else if(at&&(at.src===me||at===me))musHit(e.shield>0)}}
   if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&(W.detach||W.t<(W.ejectT||0))))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;const h0=e.hull,s0=e.shield,rec=()=>dmgRec(e,srcSide,at,(s0-Math.max(0,e.shield))+(h0-Math.max(0,e.hull)));
   // escorts are light capitals: a torpedo that connects guts one (about 4 hits at Mk I, 2 at Mk V)
   if(e.stealth){if(e.isPlayer)stealthOff(true);else{e.stealth=false;e.masked=false;e.maskR=0;e.boot=W.t+BOOT_T}}
@@ -3422,7 +3429,7 @@ function respawn(){if(W&&W.player){W.player.landed=null;W.player.stealth=false;W
   const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';droneTopUp(P,P.vault,P.faction);
   enterSector(P.sector);openDock();save();
 }
-function damageStation(E,dmg,by,kind){if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
+function damageStation(E,dmg,by,kind){if(by==='player'&&W.player&&d3(E,W.player)<3000)musHit(((E.shield||0)>0)||((E.rec&&E.rec.shield)||0)>0);if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
   E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
   if(!E.offline){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.offline=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! Its turrets are offline and the hull is exposed.`:`${E.name}'s shield collapsed. Its turrets are offline and the hull is exposed.`,mine?'bad':'warn')}
   if(!R||dmg<=0)return;R.hull-=dmg;if(Math.random()<.3)fxSpark({x:E.x+rnd(-60,60),y:E.y+rnd(-60,60),z:E.z+rnd(-60,60)},'#ffcf8a',3);
