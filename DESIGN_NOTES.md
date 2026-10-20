@@ -712,3 +712,13 @@ Carriers, escorts, and the Brood Hive Ship and Prowler leave a wreck when they d
 - **Brood advantage.** Brood miners always go for wrecks and digest them twice as fast. A wreck within 3 jumps of Brood space draws a Brood scavenger party through a gate after 20–90 s, sooner the closer it is. Faction miners also salvage wrecks some of the time.
 - **Map and alerts.** A feed alert announces each wreck. An amber ✕ with time left shows on the galaxy map in systems you have intel on, and the system panel lists each wreck's tonnage and time left.
 
+## Scout pings on capital ships (built)
+- **How.** In a Scout or Advanced Scout, keep an enemy carrier or escort (or the Brood's capitals) targeted within 4 km for 4 s. A HUD chip shows progress.
+- **Effect.** For 5 minutes, the scout's whole side sees the ship on the galaxy map (M), even without sensor cover, marked with a pulsing ring. Capital ships' Strategic and Helm maps ring it when it's in the same system and list every pinged enemy capital with its system, jumps away and time left. You can re-ping a ship once at least a minute of its tag has run.
+- **Pay.** If a pinged ship is destroyed while tagged, live or off-screen, the scout who pinged it gets 500 cr for a carrier or 300 cr for an escort, from their faction's treasury.
+- **Multiplayer.** A guest's ping goes to the host, which records it.
+
+## Legend points for a loss (built)
+- **Rule.** A win earns 1 Legend point, as before. A loss earns ½, under the same condition as a win: at least 30 minutes, and most of your time, flown for that faction.
+- **Records.** Losses are counted per faction. The leaderboard shows points (½ steps allowed). Level thresholds are unchanged, so old records carry over.
+
