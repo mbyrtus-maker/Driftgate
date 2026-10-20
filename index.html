@@ -1903,12 +1903,15 @@ function blkContracts(){for(const f of FAC_IDS){const st=S.econ.stock[f];if(!st)
     const item=wpickArr([['plate',3],['coil',2],['wire',2],['missile',1.2],['ir',1]].filter(([k])=>ITEMS[k])),n=item==='ir'?ri(20,40):item==='missile'?ri(4,8):item==='coil'?ri(5,10):ri(10,20),reward=Math.ceil(baseValue(item)*n*rnd(BLK_PAY[0],BLK_PAY[1])/10)*10;
     S.contracts.push({id:S.nextId++,fac:f,st:sid,blk:1,why,foe:blkFoe(f,sid),item,n,reward,until:S.T+BLK_T});
     facFeed(f,`⚠ Blockade run: ${R.name} in ${DEF[sid].name} is ${why} and needs ${n} ${ITEMS[item].name}. ${fmt(reward)} cr for delivery in person (Economy → Orders). Expect enemy patrols on the way in.`,'warn')}}
-// every frame: a pilot carrying blockade cargo through hostile space near the station draws an interdiction wing (at most every 3 minutes per system)
-function blkHunt(){if(NET.cl||!W||!W.player||S.player.docked||(W.blkHunt&&W.t-W.blkHunt<180))return;const P=S.player,f=P.faction,T=territory(f);if(T.has(W.sid))return;
-  const k=S.contracts.find(c=>c.blk&&c.fac===f&&(c.st===W.sid||NEIGH[c.st].includes(W.sid))&&(P.cargo[c.item]||0)>=Math.min(c.n,5));if(!k)return;
-  W.blkHunt=W.t;const foe=k.foe&&hostile(f,k.foe)?k.foe:blkFoe(f,k.st);if(!foe)return;let n=0;const p=W.player;
+// every frame, in every open system: any pilot (host or guest) carrying blockade cargo through hostile space near the station
+// draws an interdiction wing that hunts them (at most every 3 minutes per pilot per system)
+function blkHunt(){if(NET.cl||!W)return;const L=[];if(W===LW&&W.player&&W.player.alive&&!S.player.docked)L.push([S.player,W.player,null]);for(const e of W.ents)if(e.rp&&e.alive&&S.pilots&&S.pilots[e.rp])L.push([S.pilots[e.rp],e,e.rp]);
+  for(const[P,p,pid]of L)blkHuntOne(P,p,pid)}
+function blkHuntOne(P,p,pid){const f=P.faction,T=territory(f);if(T.has(W.sid))return;const hk=W.sid;P.blkT=P.blkT||{};if(P.blkT[hk]&&S.T-P.blkT[hk]<180)return;
+  const k=S.contracts.find(c=>c.blk&&c.fac===f&&(c.st===W.sid||NEIGH[c.st].includes(W.sid))&&((P.cargo||{})[c.item]||0)>=Math.min(c.n,5));if(!k)return;
+  P.blkT[hk]=S.T;const foe=k.foe&&hostile(f,k.foe)?k.foe:blkFoe(f,k.st);if(!foe)return;let n=0;
   for(let i=0;i<(k.st===W.sid?3:2);i++){const e=spawnNPC('patrol',foe);if(!e)break;const o=rdir();e.x=p.x+o.x*1800;e.y=p.y+o.y*400;e.z=p.z+o.z*1800;e.ai.tgt=p;e.hunt=1;n++}
-  if(n)feed(`⚠ Blockade: a ${foe==='brood'?'Brood':FACTIONS[foe].short} interdiction wing (${n}) is hunting your cargo for ${S.stations[k.st].name}.`,'bad')}
+  if(n)keyFeed(pid||pkey(),`⚠ Blockade: a ${foe==='brood'?'Brood':FACTIONS[foe].short} interdiction wing (${n}) is hunting your cargo for ${S.stations[k.st].name}.`,'bad')}
 const FP_REBUILD={plate:40,wire:30,coil:10};
 function fpRebuild(){const D=S.fpDown||{},st=S.econ.stock.neutral;if(!st)return;for(const sid in D){if(S.stations[sid]){delete D[sid];continue}if(S.T-D[sid]<1200||!haveIn(FP_REBUILD,[st])||frigatesIn(sid).some(t=>t.side==='brood'))continue;
     takeFrom(FP_REBUILD,[st]);const R=makeStation(sid,'neutral','free',{x:0,y:0,z:0},{...FP_REBUILD});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R);R.hull=R.hMax*.5;delete D[sid];
@@ -1981,7 +1984,7 @@ function ordersHtml(c,P,srcs){const C=myCamp(),m=C&&C.mv,econ=m&&(m.kind==='mine
   h+=resupHtml(P)+convoyHtml(c,P);return h}
 function convoyHtml(c,P){if(!isHaulCls(P.cls)||c.owner!==P.faction)return'';const C=P.convoy;let h=`<div class="h3" style="margin-top:14px">Convoy</div>`;
   if(C)return h+`<p class="note" style="margin:0 0 8px">Running to <b>${esc(DEF[C.dest].name)}</b> · ${C.live?'escorts in flight':C.ships.length+' escorts ready to launch with you'} · ${C.jumps} jump${C.jumps===1?'':'s'} so far · ${fmtT(Math.max(0,C.until-S.T))} left. Dock at a friendly station there to finish.</p><div class="act"><button class="btn sm" data-act="convoyoff">Call it off</button></div>`;
-  const ok=P.route&&P.route!==P.sector;return h+`<p class="note" style="margin:0 0 8px">Call a ${esc(FACTIONS[P.faction].short)} escort wing for your run: two fighters (three if the route leaves friendly space) form up on you, jump with you, and go home when you dock at a friendly station in the destination. Other pilots who fly escort are paid ${CVY_PAY} cr a jump. ${ok?`Course: <b>${esc(DEF[P.route].name)}</b>.`:'Set a course on the map first.'}${NET.cl?' (Convoys can be called by the host for now.)':''}</p><div class="act"><button class="btn sm" data-act="convoy" ${ok&&invMass(P.cargo)>=10&&!NET.cl?'':'disabled'}>Call a convoy</button></div>`}
+  const ok=P.route&&P.route!==P.sector;return h+`<p class="note" style="margin:0 0 8px">Call a ${esc(FACTIONS[P.faction].short)} escort wing for your run: two fighters (three if the route leaves friendly space) form up on you, jump with you, and go home when you dock at a friendly station in the destination. Other pilots who fly escort are paid ${CVY_PAY} cr a jump. ${ok?`Course: <b>${esc(DEF[P.route].name)}</b>.`:'Set a course on the map first.'}</p><div class="act"><button class="btn sm" data-act="convoy" ${ok&&invMass(P.cargo)>=10?'':'disabled'}>Call a convoy</button></div>`}
 function resupHtml(P){const L=(S.frigates||[]).filter(t=>isCar(t)&&t.side!=='brood'&&(t.side===P.faction||(t.side==='player'&&P===S.player))&&Object.keys(carNeed(t)).length);if(!L.length)return'';
   let h=`<div class="h3" style="margin-top:14px">Front-line resupply</div><p class="note" style="margin:0 0 8px">Fly these materials out and land on the carrier's flight deck: they unload straight into its store, so it can build fighters at once. Paid ${RESUP_RATE}× base value from the treasury, times a front-line bonus (up to ×${RESUP_MAX}) when the carrier is outside friendly space, near hostiles or under fire.</p>`;
   for(const t of L){const n=carNeed(t),fm=frontMul(t),j=HOP[P.sector][t.sector]||0,have=Object.keys(n).filter(k=>(P.cargo[k]||0)>0);h+=`<div class="opr"><div><b>${esc(t.name)}</b> · ${esc(DEF[t.sector].name)} (${j?j+' jump'+(j>1?'s':''):'here'})${fm>1.01?` · <b style="color:var(--amber)">front-line ×${fm.toFixed(1)}</b>`:''}<br><span>needs ${Object.keys(n).map(k=>`${n[k]} ${esc(ITEMS[k].name)}`).join(', ')}${have.length?` · <b style="color:var(--ok)">you're carrying ${have.map(k=>esc(ITEMS[k].name)).join(', ')}</b>`:''}</span></div></div>`}return h}
@@ -2695,7 +2698,7 @@ function addStationEnt(R){const k=R.fwd?STN.fdepot:STN[R.kind],TUR=[[0,104,0],[0
   const e={type:'station',rec:R,q:tr(),sMax:R.sMax,shield:R.shield,offline:0,lastHit:-99,range:k.range,turrets:TUR.slice(0,k.tur).map(p=>({p,aim:{x:0,y:0,z:1},cool:rnd(.6)})),x:R.x,y:R.y,z:R.z,fac:R.owner,name:R.name,r:120,cool:0,core:R.kind!=='depot',kind:R.kind,sc:R.owner==='brood'&&R.kind==='depot'?.65:1};
   devEnt(e);W.ents.push(e);W.stationEnt=e;return e}
 function exitSector(){if(W&&W.player&&W.player.stealth){W.player.stealth=false;W.player.masked=false;W.player.maskR=0;if(NET.cl)netSend({t:'stealth',on:0})}if(W&&W.player&&W.player.landed){W.player.landed=null;W.player.masked=false;if(NET.cl)netSend({t:'land',on:0})}if(W&&W.docking){W.docking=null;dockHydStop()}
-  if(!W)return;if(LW)W=LW;syncPlayer();if(S.player.convoy&&W.player){convoyJump();convoyPack()}const w=W;
+  if(!W)return;if(LW)W=LW;syncPlayer();if(S.player.convoy&&W.player&&!NET.cl){convoyJump();convoyPack()}const w=W;
   if(w.player){for(const d of w.player.drones||[])if(d.alive&&w.ents.includes(d))despawn(d);const i=w.ents.indexOf(w.player);if(i>=0)w.ents.splice(i,1);w.player.alive=false;w.player=null}
   w.bridge=null;w.gunseat=null;w.tgt=null;LW=null;
   if(!worldBusy(w))closeWorld(w);
@@ -3214,7 +3217,7 @@ function launchPlayerDrones(){if(!W||S.player.docked||W.dead||NET.cl)return;cons
 // pilots of the faction who keep within 4 km of the hauler at each jump are paid CVY_PAY a jump from the treasury.
 const CVY_PAY=120,CVY_LIFE=1800;
 function isHaulCls(c){return c==='courier'||c==='freighter'||c==='bulker'}
-function convoyCall(){const P=S.player,f=P.faction;if(P.convoy)return'A convoy is already running.';if(!isHaulCls(P.cls))return'Convoys are for hauling ships: Light Hauler, Freighter or Heavy Hauler.';
+function convoyCall(){const P=S.player,f=P.faction;if(P.convoy)return'A convoy is already running.';if(P.docked!=='station')return'Call a convoy while docked at a friendly station.';if(!isHaulCls(P.cls))return'Convoys are for hauling ships: Light Hauler, Freighter or Heavy Hauler.';
   if(!P.route||P.route===P.sector)return'Set a course first (Map → a system → Set course).';if(invMass(P.cargo)<10)return'Load some cargo first: convoys escort a hold worth guarding.';
   const path=trPath(P.sector,P.route)||[P.route],T=territory(f),out=path.some(x=>!T.has(x)),n=out?3:2,tier=factionTier(f),srcs=[S.econ.fleet[f],S.econ.stock[f]].filter(Boolean),ships=[];
   for(let i=0;i<n;i++){let cl=pickFighter('patrol'),ld=loadout('patrol',tier,cl);if(!haveIn(ld,srcs)){cl='interceptor';ld=loadout('patrol',tier,cl)}if(!takeFrom(ld,srcs))break;ships.push({cls:cl,tier,load:{...ld}})}
@@ -3222,16 +3225,16 @@ function convoyCall(){const P=S.player,f=P.faction;if(P.convoy)return'A convoy i
   P.convoy={id:S.nextId++,f,from:P.sector,dest:P.route,ships,live:false,T0:S.T,until:S.T+CVY_LIFE,jumps:0,esc:{}};
   facFeed(f,`📦 ${P.name||'A pilot'} is running a convoy from ${DEF[P.sector].name} to ${DEF[P.route].name}${out?' through hostile space':''}. Fly escort (keep within 4 km at each jump) for ${CVY_PAY} cr a jump.`,'info');
   return`✓ Convoy called: ${ships.length} ${FACTIONS[f].short} fighters will form up on you when you launch. Dock at a friendly station in ${DEF[P.route].name} to finish.`}
-function convoyLaunch(){const P=S.player,C=P.convoy;if(!C||C.live||!W||!W.player||P.docked||W.dead||NET.cl)return;const p=W.player;C.live=true;
+function convoyLaunch(){const P=S.player,C=P.convoy;if(!C||C.live||!W||!W.player||!W.player.alive||P.docked||NET.cl)return;const p=W.player;C.live=true;
   C.ships.forEach((t,i)=>{const e=makeNPC('patrol',C.f,t.cls,t.tier,t.load,'stock:'+C.f);e.cvy=C.id;e.ai.retireAt=1e12;const o=rdir();e.x=p.x+o.x*160;e.y=p.y+o.y*60;e.z=p.z+o.z*160;qCopy(e.q,p.q);e.vx=p.vx;e.vy=p.vy;e.vz=p.vz;if(t.hp)e.hull=Math.max(1,e.st.hull*t.hp);
-    e.order={kind:'escort',tgt:p,until:1e12,slot:i,by:true,pid:NET.me||null};W.ents.push(e)});C.ships=[]}
+    e.order={kind:'escort',tgt:p,until:1e12,slot:i,by:true,pid:CTX||NET.me||null};W.ents.push(e)});C.ships=[]}
 // pack the living escorts back into kits (between systems, or when docked); the dead are simply gone, their wrecks already spilled
-function convoyPack(){const C=S.player.convoy;if(!C||!C.live||!W)return;for(const e of W.ents.slice())if(e.cvy===C.id){if(e.alive)C.ships.push({cls:e.cls,tier:e.tier,load:{...e.load},hp:e.hull/e.st.hull});e.load={};e.alive=false;const i=W.ents.indexOf(e);if(i>=0)W.ents.splice(i,1)}C.live=false}
-function convoyJump(){const P=S.player,C=P.convoy;if(!C||!W||!W.player)return;const p=W.player;for(const e of W.ents)if(e.rp&&e.alive){const Q=S.pilots&&S.pilots[e.rp];if(Q&&Q.faction===C.f&&d3(e,p)<4000)C.esc[e.rp]=(C.esc[e.rp]||0)+1}C.jumps++}
-function convoyEnd(ok,why){const P=S.player,C=P.convoy;if(!C)return;convoyPack();for(const t of C.ships)inv.addAll(S.econ.fleet[C.f]||S.econ.stock[C.f],t.load);
+function convoyPack(){const C=S.player.convoy;if(!C||!C.live||!W||NET.cl)return;for(const e of W.ents.slice())if(e.cvy===C.id){if(e.alive)C.ships.push({cls:e.cls,tier:e.tier,load:{...e.load},hp:e.hull/e.st.hull});e.load={};e.alive=false;const i=W.ents.indexOf(e);if(i>=0)W.ents.splice(i,1)}C.live=false}
+function convoyJump(){const P=S.player,C=P.convoy;if(!C||!W||!W.player||NET.cl)return;const p=W.player;for(const e of W.ents){if(e===p||!e.alive||!(e.rp||e.isPlayer))continue;const k=e.rp||NET.me||'me',Q=e.rp?S.pilots&&S.pilots[e.rp]:(S.pilots&&S.pilots[NET.me])||null,fac=Q?Q.faction:e.fac;if(fac===C.f&&d3(e,p)<4000)C.esc[k]=(C.esc[k]||0)+1}C.jumps++}
+function convoyEnd(ok,why){const P=S.player,C=P.convoy;if(!C||NET.cl)return;convoyPack();for(const t of C.ships)inv.addAll(S.econ.fleet[C.f]||S.econ.stock[C.f],t.load);
   let paid=0;if(ok)for(const k in C.esc){const got=payKey(k,C.f,CVY_PAY*C.esc[k]);if(got){paid+=got;keyFeed(k,`📦 Convoy escort for ${P.name||'a pilot'} complete: +${fmt(got)} cr.`,'good')}}
   feed(ok?`📦 Convoy arrived at ${DEF[C.dest].name} after ${C.jumps} jump${C.jumps===1?'':'s'}. The escorts head home${paid?`; escort pilots were paid ${fmt(paid)} cr`:''}.`:`📦 Convoy ended: ${why||'called off'}. The surviving escorts head home.`,ok?'good':'warn');P.convoy=null}
-function convoyChip(){const C=S.player.convoy;if(!C)return null;const n=C.live&&W?W.ents.filter(e=>e.cvy===C.id&&e.alive).length:C.ships.length;return[`📦 Convoy to ${DEF[C.dest].name} · ${n} escort${n===1?'':'s'}`,n?'good':'warn']}
+function convoyChip(){const C=S.player.convoy;if(!C)return null;if(NET.cl)return[`📦 Convoy to ${DEF[C.dest].name}${C.live?' · escorts with you':' · '+C.ships.length+' escorts aboard'}`,'good'];const n=C.live&&W?W.ents.filter(e=>e.cvy===C.id&&e.alive).length:C.ships.length;return[`📦 Convoy to ${DEF[C.dest].name} · ${n} escort${n===1?'':'s'}`,n?'good':'warn']}
 function recallPlayerDrones(){if(!W||!W.player)return;for(const d of W.player.drones||[])if(d.alive&&W.ents.includes(d))despawn(d);W.player.drones=[]}
 function deployDrones(e){e.drones=[];const n=e.load.drone||0;for(let i=0;i<n;i++){inv.take(e.load,'drone',1);const d=makeNPC('drone',e.side,'drone',1,{drone:1},e.home);d.wpn='kinetic';d.mom=e;d.ai.orb=i/n*TAU;
   const o=rdir();d.x=e.x+o.x*60;d.y=e.y+o.y*60;d.z=e.z+o.z*60;qCopy(d.q,e.q);d.vx=e.vx;d.vy=e.vy;d.vz=e.vz;e.drones.push(d);W.ents.push(d)}}
@@ -3590,7 +3593,7 @@ function killShip(e,src,at){
   payKill(e,src,at)
 }
 function playerDeath(p0){
-  if(!p0&&S.player.convoy)convoyEnd(false,'your ship was destroyed');
+  if(S.player.convoy&&!NET.cl)convoyEnd(false,'your ship was destroyed');
   const p=p0||W.player,P=S.player,s=S.sectors[W.sid],crate={};
   inv.addAll(crate,P.cargo);P.cargo={};P.rack=0;P.mslT=0;
   if(!shipBare(P)){shipStrip(P,crate);feed('Your ship\'s fitted upgrades were blown out into the wreck. Fly back and scoop the salvage before it drifts off (7 minutes).','bad')}
@@ -4032,7 +4035,7 @@ function tryDock(){if(W&&W.docking){abortDocking('Docking aborted.');return fals
   if(hyp(p.vx,p.vy,p.vz)>180){flash('Too fast to dock. Slow below 180 m/s.');return false}
   return startDocking(E,E.type);
 }
-function finishDock(E){const p=W.player;if(p.stealth){p.stealth=false;p.masked=false;p.maskR=0}SFX.clunk();recallPlayerDrones();{const C=S.player.convoy;if(C){convoyPack();const fr=E.type==='station'?E.fac:E.o&&E.o.owner;if(W.sid===C.dest&&(fr===S.player.faction||fr==='neutral'))convoyEnd(true)}}S.player.docked=E.type==='station'?'station':E.o.id;p.vx=p.vy=p.vz=0;p.x=E.x;p.y=E.y-E.r-40;p.z=E.z;W.tgt=null;ghostSync();if(NET.cl)netSend({t:'dock',d:S.player.docked});openDock();save();return true}
+function finishDock(E){const p=W.player;if(p.stealth){p.stealth=false;p.masked=false;p.maskR=0}SFX.clunk();recallPlayerDrones();{const C=S.player.convoy;if(C&&!NET.cl){convoyPack();const fr=E.type==='station'?E.fac:E.o&&E.o.owner;if(W.sid===C.dest&&(fr===S.player.faction||fr==='neutral'))convoyEnd(true)}}S.player.docked=E.type==='station'?'station':E.o.id;p.vx=p.vy=p.vz=0;p.x=E.x;p.y=E.y-E.r-40;p.z=E.z;W.tgt=null;ghostSync();if(NET.cl)netSend({t:'dock',d:S.player.docked});openDock();save();return true}
 function seatOk(e){const p=W.player;if(hyp(p.vx-e.vx,p.vy-e.vy,p.vz-e.vz)>140){flash('Match speed with the heavy bomber to board its turret (under 140 m/s relative).');return false}
   if(e.tur&&e.tur.gunner&&e.tur.gunner!=='local'){flash('That turret is already manned.',true);return false}return true}
 // ---- docking ports: the tips of a structure's arms, found from the model (farthest points around its vertical axis).
@@ -4202,7 +4205,7 @@ function worldUpdate(dt){
   if(NET.host)netWorld(dt);
   groupsUpdate();
   for(const e of W.ents.slice()){if(e.npc&&e.alive)npcThink(e,dt)}
-  beaconWorld(dt);wreckWorld(dt);blkHunt();if(S.player.convoy&&S.T>S.player.convoy.until)convoyEnd(false,'it ran out of time');
+  beaconWorld(dt);wreckWorld(dt);blkHunt();if(W===LW||!LW)for(const Q of allPilots())if(Q&&Q.convoy&&S.T>Q.convoy.until){const k=Q===S.player?null:Object.keys(S.pilots||{}).find(id=>S.pilots[id]===Q);runAs(k,()=>convoyEnd(false,'it ran out of time'))}
   for(const e of gunboatsIn())tickTurret(e,dt);
   for(const e of W.ents.slice()){if(e.type==='ship'&&e.alive&&!(e.isPlayer&&(S.player.docked||W.dead||W.docking)))physics(e,dt)}
   structUpdate(dt);shotsUpdate(dt);missilesUpdate(dt);
@@ -5280,7 +5283,7 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
   else if(fpAct(act,arg,c,P,srcs)){}
   else if(act==='hbuy'){const k=S.contracts.find(x=>String(x.id)===arg),b=k&&fpBuyable(c,P,k);if(!b||b.n<=0){dockErr=k&&b&&b.need<=0?'You already have enough for that request.':'Nothing to buy here for that request, or no room in your hold.';}else{let got=0,spent=0;const pr0=mBuy(c,k.item);for(let i=0;i<b.n;i++){const pr=pr0;if(!(c.market[k.item]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k.item,1);inv.add(P.cargo,k.item,1);got++;spent+=pr}{const R=mR(c);if(R&&got){mkOf(R)[k.item]=(R.mk[k.item]||0)-got}}
     if(got){P.bought=P.bought||{};P.bought[k.item]=(P.bought[k.item]||0)+got;if(c.owner==='neutral'){const F=(P.fpBought=P.fpBought||{})[P.sector]=(P.fpBought||{})[P.sector]||{};F[k.item]=(F[k.item]||0)+got}P.route=k.st;dockErr=`✓ Bought ${got} ${ITEMS[k.item].name} into your hold for ${fmt(spent)} cr. Course set to ${S.stations[k.st]?S.stations[k.st].name:DEF[k.st].name}: launch and press J.`}}}
-  else if(act==='convoy'){dockErr=convoyCall()}else if(act==='convoyoff'){convoyEnd(false,'you called it off');dockErr='Convoy called off.'}
+  else if(act==='convoy'){if(NET.cl){netSend({t:'convoy',dest:P.route});dockErr='Asked command for an escort wing…'}else dockErr=convoyCall()}else if(act==='convoyoff'){if(NET.cl)netSend({t:'convoyoff'});else convoyEnd(false,'you called it off');dockErr='Convoy called off.'}
   else if(act==='deliver'){const k=S.contracts.find(x=>String(x.id)===arg);if(k&&k.st&&k.st!==P.sector){dockErr=`Deliver this one in person at ${S.stations[k.st]?S.stations[k.st].name:DEF[k.st].name}.`}else if(k&&k.st&&fpDeliverable(P,k,srcs)<k.n){dockErr=`You need ${k.n} ${ITEMS[k.item].name} that weren't bought here.`}else if(k&&!k.st&&deliverable(P,k.item,srcs)<k.n){const b=boughtOf(P,k.item);dockErr=`Contracts take goods you mined, salvaged or made. ${b?b+' '+ITEMS[k.item].name+' you bought on a market':'Consigned goods'} can't fill it.`}else if(k&&takeFrom({[k.item]:k.n},srcs)){inv.add(S.econ.stock[k.fac],k.item,k.n);if(k.blk){const R2=S.stations[k.st];if(R2&&R2.hMax)R2.hull=Math.min(R2.hMax,(R2.hull||0)+R2.hMax*.1);feed(`⚠ Blockade run complete: ${R2?R2.name:'the station'} is resupplied.`,'good')}const got=transfer(k.fac,'player',Math.round(k.reward*((P.lvl||0)>=2?1.1:1)));legBonus(pkey(),k.fac,'an Order');weAdd(k.fac,WE.order);S.contracts.splice(S.contracts.indexOf(k),1);dockErr=`✓ Contract complete. +${fmt(got)} cr.`;feed(`Contract delivered: +${fmt(got)} cr.`,'good')}}
   else if(act==='cvesc'){const t=(S.traders||[]).find(x=>String(x.id)===String(arg)&&x.kind==='haul');if(!t||t.side!==P.faction||t.esc||cvLeft(t)<1){dockErr='That convoy no longer needs an escort.';return}
     const k=P.pid||'me';for(const x of S.traders)if(x.esc&&x.esc.k===k)x.esc=null;const E=cvSign(t,k,P.name);if(t.sector!==P.sector)P.route=t.sector;
@@ -5793,6 +5796,8 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'order':{if(m.k==='build'){runAs(pid,()=>requestBuild());break}if(m.k==='help'){runAs(pid,()=>pilotDistress());break}const e=MP.rp[pid],w=e?worldOf(e):WORLDS[P.sector],k=m.k==='guard'?'guard':'escort';if(!w)break;runAs(pid,()=>{const T=m.id==='me'?W.player:entInWorld(w,String(m.id||''));if(T&&!hostile(S.player.faction,T.side==='player'?S.player.faction:T.side))issueOrder(k,T)});break}
     case 'fcon':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(!t)break;if(m.a==='take'){if(!t.owner&&t.side===S.pilots[pid].faction)runAs(pid,()=>fTake(t));sendFtok(c);break}const a0=String(m.a||'');if(!(a0.startsWith('crewoff')||(t.owner===pid)||crewCan(t,pid,a0)))break;const ent=m.e?entInWorld(WORLDS[t.sector],String(m.e)):null;runAs(pid,()=>fconApply(t,String(m.a||'').slice(0,40),ent));sendFtok(c);break}
     case 'fdest':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(t&&t.owner===pid&&DEF[m.dest]){t.dest=String(m.dest);t.jumpTo=null}sendFtok(c);break}
+    case 'convoy':{const P=S.pilots&&S.pilots[pid];if(!P)break;if(m.dest&&DEF[m.dest])P.route=String(m.dest);netMsg(pid,'flash',runAs(pid,()=>convoyCall()));break}
+    case 'convoyoff':{if(S.pilots&&S.pilots[pid]&&S.pilots[pid].convoy)runAs(pid,()=>convoyEnd(false,'you called it off'));break}
     case 'resup':{const t=(S.frigates||[]).find(x=>x.id===m.id),P=S.pilots&&S.pilots[pid];if(t&&P)runAs(pid,()=>carResupply(t,P,pid));break}
     case 'ping':{const t=(S.frigates||[]).find(x=>x.id===m.id),P=S.pilots&&S.pilots[pid];if(t&&P&&isScoutCls(P.cls))capPing(t,P.faction,pid);break}
     case 'dev':{if(m.k==='efrig'||m.k==='levi'||m.k==='eesc'){netMsg(pid,'flash',runAs(pid,()=>devEnemyFrig(String(m.side||''),m.k==='levi',m.k==='eesc')));break}
@@ -5875,8 +5880,8 @@ function spawnRP(pid){const P=S.pilots[pid];if(!P)return null;setTimeout(()=>cre
   const e={type:'ship',rp:pid,pname:pilotLabel(P),trail:P.trail||null,id:'p_'+pid,side:P.faction,fac:P.faction,cls:P.cls,tier:Math.max(...Object.values(P.tiers)),st,x:P.x||0,y:P.y||0,z:P.z||0,vx:P.vx||0,vy:P.vy||0,vz:P.vz||0,q,
     hull:clamp(P.hull||st.hull,1,st.hull),shield:clamp(P.shield||0,0,st.sCap),energy:st.eCap,cool:0,lastHit:-99,mineAcc:0,alive:true,wpn:P.wpn||'kinetic',tuned:Object.values(P.tune||{}).some(v=>v>0),drones:[],role:'pilot'};
   w.ents.push(e);MP.rp[pid]=e;inW(w,()=>{const n=(P.bay&&P.bay.drone)||0;for(let i=0;i<n;i++){inv.take(P.bay,'drone',1);const d=makeNPC('drone',P.faction,'drone',1,{drone:1},'pbay:'+pid);d.st=shipStats(P.faction,'drone',P.tiers.weapon);d.hull=d.st.hull;d.shield=d.st.sCap;d.wpn='kinetic';d.mom=e;d.ai.orb=i/Math.max(1,n)*TAU;
-    const o=rdir();d.x=e.x+o.x*50;d.y=e.y+o.y*50;d.z=e.z+o.z*50;qCopy(d.q,e.q);d.vx=e.vx;d.vy=e.vy;d.vz=e.vz;e.drones.push(d);W.ents.push(d)}});return e}
-function despawnRP(pid,keepWorld){const e=MP.rp[pid];if(!e)return;delete MP.rp[pid];const P=S.pilots[pid],w=worldOf(e);
+    const o=rdir();d.x=e.x+o.x*50;d.y=e.y+o.y*50;d.z=e.z+o.z*50;qCopy(d.q,e.q);d.vx=e.vx;d.vy=e.vy;d.vz=e.vz;e.drones.push(d);W.ents.push(d)}});if(P.convoy)runAs(pid,()=>convoyLaunch());return e}
+function despawnRP(pid,keepWorld){const e=MP.rp[pid];if(!e)return;{const P0=S.pilots[pid];if(P0&&P0.convoy&&P0.convoy.live)runAs(pid,()=>convoyPack())}delete MP.rp[pid];const P=S.pilots[pid],w=worldOf(e);
   if(w)inW(w,()=>{for(const d of e.drones||[])if(d.alive&&W.ents.includes(d))despawn(d);const i=W.ents.indexOf(e);if(i>=0)W.ents.splice(i,1);if(W.tgt&&W.tgt.ref===e)W.tgt=null;if(W.pbuild&&W.pbuild.pid===pid)W.pbuild=null});
   e.alive=false;if(P){P.hull=e.hull;P.shield=e.shield}
   if(w&&!keepWorld&&w!==LW&&!worldBusy(w))closeWorld(w)}
@@ -5897,13 +5902,13 @@ function hMissile(pid,m){const e=MP.rp[pid],P=S.pilots[pid];if(!e)return;inW(wor
   if(m.k==='s'){if((P.swarm||0)>0&&CLASSES[P.cls].swarm&&T.type==='ship'){P.swarm--;launchSwarm(e,T,P.tiers.weapon)}}
   else if(P.rack>0){const n=CLASSES[P.cls].twin?Math.min(2,P.rack,m.n|0||1):1;P.rack-=n;for(let i=0;i<n;i++)launchMissile(e,T,P.tiers.weapon,CLASSES[P.cls].torp?'torpedo':'missile',n>1?(i?1:-1):0)}})}
 function poseFrom(P,m){for(const k of['x','y','z','vx','vy','vz'])if(typeof m[k]==='number'&&isFinite(m[k]))P[k]=m[k];if(Array.isArray(m.q)&&m.q.length===4)P.q=m.q}
-function hJump(pid,m){const P=S.pilots[pid],from=P.sector,to=String(m.to);if(!GATES[from]||!GATES[from].some(g=>g.to===to))return;
+function hJump(pid,m){const P=S.pilots[pid],from=P.sector,to=String(m.to);if(!GATES[from]||!GATES[from].some(g=>g.to===to))return;if(P.convoy&&MP.rp[pid])runAs(pid,()=>convoyJump());
   runAs(pid,()=>{const h=S.outposts.hollow;if((from==='ho'||to==='ho')&&h.owner&&h.owner!=='player'&&h.owner!==S.player.faction){const n=transfer('player',h.owner,40);if(n)feed(`Paid ${n} cr gate toll to ${sideName(h.owner)} at Hollow Relay.`,'news')}});
   P.sector=to;despawnRP(pid);poseFrom(P,m);delete MP.inp[pid];if(!WORLDS[to])openWorld(to);if(!P.docked)spawnRP(pid);netRoster()}
 function hDock(c,m){const pid=c.pid,P=S.pilots[pid],e=MP.rp[pid];if(!e)return;const w=worldOf(e);let ok=false;
   inW(w,()=>{if(m.d==='station'){const SE=W.stationEnt;ok=!!SE&&SE.fac===P.faction&&d3(SE,e)<520}else{const OE=W.outpostEnt;ok=!!OE&&OE.o.id===m.d&&!OE.o.breached&&OE.o.owner===P.faction&&d3(OE,e)<520}});
   if(!ok){send(c.L,{t:'nodock'});return}
-  despawnRP(pid,true);P.docked=m.d;P.vx=P.vy=P.vz=0;delete MP.inp[pid];netRoster()}
+  despawnRP(pid,true);P.docked=m.d;P.vx=P.vy=P.vz=0;delete MP.inp[pid];if(P.convoy&&P.sector===P.convoy.dest)runAs(pid,()=>convoyEnd(true));netRoster()}
 function hUndock(pid,m){const P=S.pilots[pid];if(!P.docked)return;if(P.docked==='turret')hSeatClear(pid);P.docked=null;delete P.bridgeId;poseFrom(P,m);if(!WORLDS[P.sector])openWorld(P.sector);spawnRP(pid);netRoster()}
 // a station or outpost a pilot was docked at is gone or lost: put them back in space
 function netKickDocked(sid,kind,keep){if(!NET.host)return;for(const c of readyCl()){const P=S.pilots[c.pid];if(!P||P.sector!==sid||!P.docked)continue;if(keep&&P.faction===keep)continue;if(kind==='station'?P.docked!=='station':P.docked!==kind)continue;

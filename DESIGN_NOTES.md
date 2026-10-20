@@ -743,5 +743,5 @@ Carriers, escorts, and the Brood Hive Ship and Prowler leave a wreck when they d
 - **The flight.** The escorts launch with you, fly escort, and jump with you: between systems they ride along as kits, like guard drones.
 - **Ending.** Docking at a friendly station (or a freeport) in the destination ends the convoy, and the survivors go home to faction stores. Destroyed escorts are lost. The convoy also ends if you die or after 30 minutes.
 - **Escort pay.** Other pilots of your faction who stay within 4 km at each jump are paid 120 cr a jump from the treasury.
-- **Multiplayer.** For now, only the host or a single-player pilot can call a convoy.
+- **Multiplayer.** Every pilot can call a convoy. The host runs a guest's convoy: the guest's request goes to the host, and the escorts launch with the guest's ship, pack up when it leaves a system or docks, count its jumps, and go home when it docks at the destination. Escort pay counts any pilot of the faction (host or guest) within 4 km at each jump. Blockade interceptor wings hunt guests carrying blockade cargo as well as the host.
 
