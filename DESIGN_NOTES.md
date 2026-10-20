@@ -635,3 +635,32 @@ Assault ships aren't used up. At a capture they land their marines and fly home.
 
 ## Fixed: a destroyed carrier's store
 A carrier destroyed in a live system used to lose its onboard store and the craft half-built in its fabricator; they vanished from the economy. They now spill with the rest of its hold: half as salvage, the rest as debris. Found by the full-frame soak test (16 plates and 14 coils missing in one 40-minute run). Five more soaks since, 25–60 game minutes each, came back clean.
+
+## Capital ship models (built)
+- **Fleet carrier** (`tools/capitals.py`). It's assembled from Kenney Space Kit parts. Its lines follow space carriers, inspired by Wing Commander's capital ships rather than an ocean carrier:
+  - a long armoured hull, with a twin enclosed flight deck that launches through bow bay doors;
+  - twin side launch pods on struts, each with its own bay door;
+  - a recovery bay facing astern, and a two-deck command tower with a bridge dome, mast and dish;
+  - a drive block of four heavy drives, plus a lighter drive on each pod;
+  - six point-defence turrets.
+
+  Its turret mounts come from the model.
+- **Escort.** Also built from Kenney parts. It's a lean torpedo destroyer:
+  - an armoured prow and twin forward torpedo tubes;
+  - three point-defence turrets a side on flank sponsons;
+  - a small bridge dome, one ventral assault bay, and a main drive with two auxiliaries.
+- **Brood Hive Ship** (`b_hive`, the Brood carrier):
+  - a swollen brood-queen abdomen caged by bone arches, with glowing brood sacs between them;
+  - birthing pores down the flanks, some with nymph craft half out;
+  - a horned, armoured head with mandibles, eyes and a glowing maw, behind a ribbed waist;
+  - aft membrane fins, vestigial legs, and trailing tendrils around twin drive vents.
+- **Brood Prowler** (`b_prowler`, the Brood escort):
+  - a hammer head with eyes at the tips;
+  - twin bone spore-torpedo launchers with glowing mouths;
+  - a dorsal sail of spines strung with membrane;
+  - three spitter polyps a side (its point defence);
+  - folded mantis forelimbs, hooked legs, and tail fins.
+- **Retired from the pack:** the frigate and the Leviathan. The code-built carrier remains only as a fallback.
+- **Engine glow.** Capitals build their drives first, and only those triangles may glow. This stops flat aft faces of the hull from reading as engines.
+- **Bridge consoles** speak per ship. A carrier's Strategic map and bridge HUD show the wing's strike target and orders, and clicking a hostile sends the wing. An escort's show its torpedo target and range.
+- **Size.** The model pack grew from 706 KB to 806 KB (base64).

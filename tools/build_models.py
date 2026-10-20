@@ -4,6 +4,7 @@ import numpy as np
 from mdl import load_glb,load_obj,tri_colors
 from station import Comp,piece,build_station
 from frigate import build_frigate
+from capitals import build_carrier,build_escort
 from rockbase import build_rockbase
 from brood import BROOD_MODELS
 from works import WORKS
@@ -32,6 +33,9 @@ def ql_model(i):
         if n[1]>.55 and abs(ce[0])<.09*mx:R.append((ACC,.95));continue
         R.append((LIGHT,.94+.06*np.sign(n[1])))
     return P,M['N'],R
+def cap_model(build,name):
+    M=build();MOUNTS[name]=M.get('mounts',[]);GLOW_N[name]=M['glow_n']
+    return M['P'],M['N'],[kenney_role(c) for c in M['cols']]
 def comp(parts,name=None):
     def b():
         S=Comp()
@@ -62,7 +66,7 @@ MODELS={
  'courier':('ship',lambda:glb_model('craft_cargoA')),'freighter':('ship',lambda:glb_model('craft_cargoB')),
  'bulker':('ship',lambda:comp([('craft_cargoB',(0,0,0),0,1),('barrels_rail',(.95,.1,-.1),0,.8),('barrels_rail',(-.95,.1,-.1),0,.8),('barrels',(0,.85,-.4),0,.7)])),
  'constructor':('ship',lambda:comp([('craft_cargoA',(0,0,0),0,1.1),('structure',(0,.85,-.35),0,.8),('machine_wireless',(0,1.65,-.35),0,.7),('pipe_supportLow',(.9,.1,.4),0,.5),('pipe_supportLow',(-.9,.1,.4),0,.5)])),
- 'frigate':('ship',lambda:comp_model(build_frigate,'frigate')),
+ 'carrier':('ship',lambda:cap_model(build_carrier,'carrier')),'escort':('ship',lambda:cap_model(build_escort,'escort')),   # the frigate (retired) is no longer packed
  'station':('struct',lambda:comp_model(build_station,'station')),
  'depot':('struct',lambda:comp([('hangar_roundGlass',(0,0,0),0,1.3),('hangar_roundGlass',(0,0,0),H,1.3,True)]+[x for i in range(3) for x in [('corridor_window',(math.sin(i*2.094)*2.4,-.5,math.cos(i*2.094)*2.4),i*2.094,1),('hangar_smallA',(math.sin(i*2.094)*4.0,-.5,math.cos(i*2.094)*4.0),i*2.094+H,1),('turret_single',(math.sin(i*2.094)*4.0,.55,math.cos(i*2.094)*4.0),i*2.094,1)]]+[('satelliteDish',(0,1.8,0),0,1.2)],'depot')),
  'forge':('struct',lambda:comp([('machine_generatorLarge',(0,0,0),0,2.2),('machine_generatorLarge',(0,0,0),H,2.2,True),('rocket_fuelA',(0,1.5,0),0,1.6)]+[x for i in range(4) for x in [('pipe_straight',(math.sin(i*1.571)*2.0,-.3,math.cos(i*1.571)*2.0),i*1.571,1.1),('machine_barrelLarge',(math.sin(i*1.571)*3.2,-.6,math.cos(i*1.571)*3.2),i*1.571,1.1),('chimney_detailed',(math.sin(i*1.571+.785)*1.6,.9,math.cos(i*1.571+.785)*1.6),0,.9)]])),
@@ -70,7 +74,9 @@ MODELS={
  'rockbase':('struct',rockbase),
  'yard':('struct',lambda:comp([('hangar_largeA',(0,0,0),0,1.6),('hangar_largeA',(0,0,0),H,1.6,True),('platform_large',(2.6,-.2,0),H/2,1.3),('platform_large',(-2.6,-.2,0),H/2,1.3),('supports_high',(2.6,.0,1.1),0,1),('supports_high',(-2.6,.0,-1.1),0,1),('barrels_rail',(2.6,0,-.6),0,.9),('craft_cargoA',(-2.6,0,.5),H/2,.7),('machine_generator',(0,1.7,0),0,1)])),
 }
-for _k,_f in BROOD_MODELS.items():MODELS[_k]=('ship',_f);GLOW_N[_k]=0   # Brood: glow comes from their sacs and vents, not the stern rule
+for _k,_f in BROOD_MODELS.items():
+    if _k=='b_leviathan':continue   # the old frigate-class Leviathan isn't packed: the Hive Ship replaced it
+    MODELS[_k]=('ship',_f);GLOW_N[_k]=0   # Brood: glow comes from their sacs and vents, not the stern rule
 for _k,_v in WORKS.items():MODELS[_k]=('struct',_v[0] if len(_v)>2 else (lambda f:lambda:comp_model(f))(_v[0]))
 FIT={'rockbase':230,'station':150,'depot':105,'forge':120,'relay':120,'yard':120,**{k:v[1] for k,v in WORKS.items()}}
 def pack():
@@ -101,7 +107,7 @@ def pack():
                 else:cl.append({'c':g.copy(),'n':1,'p':[g]})
             cl.sort(key=lambda C:-C['n'])
             for C in cl[:3]:
-                ce=C['c']/C['n'];rad=max(.04,min(.08 if name=='frigate' else .2,max(np.linalg.norm(p-ce) for p in C['p'])+.03));cz=min(float(p[2]) for p in C['p']);ez=zlo if cz-zlo<.06 else cz-.01;ENGZ.append((name,round(float(zlo),3),round(cz,3)));eng.append([round(float(ce[0]),3),round(float(ce[1]),3),round(float(ez),3),round(float(rad),3)])
+                ce=C['c']/C['n'];rad=max(.04,min(.08 if name in('frigate','carrier','escort') else .2,max(np.linalg.norm(p-ce) for p in C['p'])+.03));cz=min(float(p[2]) for p in C['p']);ez=zlo if cz-zlo<.06 else cz-.01;ENGZ.append((name,round(float(zlo),3),round(cz,3)));eng.append([round(float(ce[0]),3),round(float(ce[1]),3),round(float(ez),3),round(float(rad),3)])
             if not eng:eng=[[0,0,round(float(zlo),3),.1]]
         while len(blob)%4:blob+=b'\0'
         off=len(blob);blob+=q.tobytes();blob+=bytes(roles);blob+=bytes(int(np.clip(s*100,0,255)) for s in shades)
