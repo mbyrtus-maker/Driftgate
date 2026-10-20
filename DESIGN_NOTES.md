@@ -722,3 +722,26 @@ Carriers, escorts, and the Brood Hive Ship and Prowler leave a wreck when they d
 - **Rule.** A win earns 1 Legend point, as before. A loss earns ½, under the same condition as a win: at least 30 minutes, and most of your time, flown for that faction.
 - **Records.** Losses are counted per faction. The leaderboard shows points (½ steps allowed). Level thresholds are unchanged, so old records carry over.
 
+## Hauling for the war (built)
+### Front-line resupply
+- **Unloading.** Land on a friendly carrier's flight deck carrying materials its store lacks (kits for its wing and assault ships). They unload straight into its store, so the fabricator can start at once instead of waiting for a faction shipment.
+- **Pay.** It comes from the faction treasury at 1.5× base value, times a front-line bonus capped at ×2.2:
+  - +0.3 when the carrier is outside friendly space;
+  - +0.6 with hostiles within 5 km;
+  - +0.4 if it has been hit in the last 90 s.
+- **Orders.** An open Order for that carrier pays its own rate if that's higher, and shrinks by what you deliver. Economy → Orders lists which carriers need what, where they are, and their current bonus.
+- **Multiplayer.** A guest's delivery goes through the host.
+
+### Blockade runs
+- **Which stations.** A faction station is eligible if it's under siege (a hostile offensive on it), blockaded (a hostile capital in its system), or cut off behind the lines (no friendly system next door). Up to two blockade runs per faction are open at a time.
+- **The contract.** Deliver plate, coil, conduit, missiles or iridium in person, for 3.6–4.6× value. Anything you own counts, including goods bought on a market elsewhere. A delivery also patches 10% of the station's hull.
+- **Interdiction.** Carrying the cargo through hostile space next to the station, or inside it, draws an interdiction wing: two fighters, or three in the station's own system. It hunts you, at most once every 3 minutes per system.
+- **Expiry.** A run is cancelled when the station stops being cut off or besieged.
+
+### Player convoys
+- **Calling one.** In a hauling ship, docked at a friendly station with a course set and at least 10 t aboard, call a convoy from Economy → Orders. The faction assigns two escort fighters from its stores, or three if the route leaves friendly space.
+- **The flight.** The escorts launch with you, fly escort, and jump with you: between systems they ride along as kits, like guard drones.
+- **Ending.** Docking at a friendly station (or a freeport) in the destination ends the convoy, and the survivors go home to faction stores. Destroyed escorts are lost. The convoy also ends if you die or after 30 minutes.
+- **Escort pay.** Other pilots of your faction who stay within 4 km at each jump are paid 120 cr a jump from the treasury.
+- **Multiplayer.** For now, only the host or a single-player pilot can call a convoy.
+
