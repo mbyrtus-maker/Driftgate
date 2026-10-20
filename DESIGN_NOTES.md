@@ -623,3 +623,15 @@ Spawns a friendly carrier or escort, or an enemy carrier, escort or Brood Hive S
 - **The frame loop can't die.** Each part of a frame (simulation, camera, 3D, HUD, bridge console, audio) runs in its own error guard, and the next frame is scheduled first. A bug shows a one-line flash and is logged once per kind to the console and to `window.__dgErr` (the last 20), instead of freezing the game.
 - **`wrapA`** can no longer loop forever on an infinite angle.
 - **Full-frame soak test** (`test/t252_soak.py`): it runs 3D, HUD, map, every dock tab, bridge consoles, carrier orders and sorties, dev spawns and system hops for 25–40 game minutes, tracking errors and any ledger change caused by each action.
+
+## Assault ships return (built; replaces "assault ships disappear")
+Assault ships aren't used up. At a capture they land their marines and fly home.
+
+- **Depot capture.** Each assault ship has a 20% chance of being shot down; its materials fall as debris. Survivors are back aboard their carrier or escort after 60 s. Until then they don't count toward another capture (the Hangar shows "ready of total, n flying back").
+- **Outpost capture.** It uses one assault ship, with a 10% risk.
+- **AI siege groups.** Survivors go home with the group and back into faction stores. Lost ones fall as debris.
+- **Fabricator.** A carrier's fabricator only rebuilds the assault ships that were lost.
+- **Balance check** (384 games): Ostrova 27%, Brood 25%, Varkesh 25%, Halcyon 23%.
+
+## Fixed: a destroyed carrier's store
+A carrier destroyed in a live system used to lose its onboard store and the craft half-built in its fabricator; they vanished from the economy. They now spill with the rest of its hold: half as salvage, the rest as debris. Found by the full-frame soak test (16 plates and 14 coils missing in one 40-minute run). Five more soaks since, 25–60 game minutes each, came back clean.
