@@ -771,5 +771,7 @@ There are 12 lessons and 67 steps. Hands-on steps check what you did; "Got it" c
   - Varkesh 34%, Halcyon 26%, Ostrova 20%, Brood 20%.
   - 51% end by hold.
 
+- **Follow-up, 1,000 games on the current build:** Halcyon 27.3%, Varkesh 26.0%, Brood 23.7%, Ostrova 23.0%. Each figure is ±2.6–2.8 points at 95% confidence, so Ostrova's gap to an even 25% is inside the noise, and no lever was changed.
+
 All four sides stay within the 20–34% band. No faction runs away, and the Brood remain a real contender. The live-only features (wrecks, convoys, front-line resupply, blockade interceptors) don't run in the strategic sim.
 
