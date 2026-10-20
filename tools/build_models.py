@@ -35,7 +35,11 @@ def ql_model(i):
     return P,M['N'],R
 def cap_model(build,name):
     M=build();MOUNTS[name]=M.get('mounts',[]);GLOW_N[name]=M['glow_n']
-    return M['P'],M['N'],[kenney_role(c) for c in M['cols']]
+    if M.get('pts'):PTS[name]=M['pts']
+    if M.get('eng'):ENGX[name]=M['eng']
+    R=[kenney_role(c) for c in M['cols']]
+    for k in M.get('win',[]):R[k]=(WIN,1.0)   # lit gallery panels
+    return M['P'],M['N'],R
 def comp(parts,name=None):
     def b():
         S=Comp()
@@ -47,6 +51,7 @@ def rockbase():
     M=build_rockbase();MOUNTS['rockbase']=M['mounts'];PTS['rockbase']=M['ports']
     return M['P'],M['N'],list(M['rock'])+[kenney_role(c) for c in M['cols']]
 GLOW_N={}
+ENGX={}   # explicit engine flares (model space x,y,z,r) for builders that place their drives exactly
 ENGZ=[]  # models where only the first N triangles may become engine glow (bolted-on parts stay unlit)
 def scout2():
     # the Advanced Scout: the scout hull with a missile pod slung under each wing, a swarm box on the spine and a sensor dish aft
@@ -111,6 +116,7 @@ def pack():
             if not eng:eng=[[0,0,round(float(zlo),3),.1]]
         while len(blob)%4:blob+=b'\0'
         off=len(blob);blob+=q.tobytes();blob+=bytes(roles);blob+=bytes(int(np.clip(s*100,0,255)) for s in shades)
+        if name in ENGX:eng=[[round(float(v),3) for v in list((np.array(m[:3])-c)/half)+[m[3]/half]] for m in ENGX[name]]
         tp=[[round(float(x),3) for x in (np.array(m)-c)/half] for m in MOUNTS.get(name,[])]
         pt=[[round(float(x),3) for x in (np.array(m)-c)/half] for m in PTS.get(name,[])]
         idx[name]={'o':off,'n':len(T),'k':kind,'s':FIT.get(name,1),'e':eng,'tp':tp,'top':round(float(T[:,:,1].max()),3),**({'pt':pt} if pt else {})}

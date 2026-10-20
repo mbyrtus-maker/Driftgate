@@ -637,14 +637,18 @@ Assault ships aren't used up. At a capture they land their marines and fly home.
 A carrier destroyed in a live system used to lose its onboard store and the craft half-built in its fabricator; they vanished from the economy. They now spill with the rest of its hold: half as salvage, the rest as debris. Found by the full-frame soak test (16 plates and 14 coils missing in one 40-minute run). Five more soaks since, 25–60 game minutes each, came back clean.
 
 ## Capital ship models (built)
-- **Fleet carrier** (`tools/capitals.py`). It's assembled from Kenney Space Kit parts. Its lines follow space carriers, inspired by Wing Commander's capital ships rather than an ocean carrier:
-  - a long armoured hull, with a twin enclosed flight deck that launches through bow bay doors;
-  - twin side launch pods on struts, each with its own bay door;
-  - a recovery bay facing astern, and a two-deck command tower with a bridge dome, mast and dish;
-  - a drive block of four heavy drives, plus a lighter drive on each pod;
-  - six point-defence turrets.
+- **Fleet carrier** (`tools/capitals.py`, `build_carrier`). It's assembled from Kenney Space Kit parts in the escort's kit style, with lines after Wing Commander's Concordia:
+  - a broad, low flight-deck bow of twin hangar bays; the bays' open fronts are the launch mouths;
+  - escort-style sponsons with point defence down the bow flanks;
+  - a narrow waist under a roofed spine, with turret sponsons;
+  - a tall aft hull with a tower that steps up in corridor tiers to a domed bridge with a dish;
+  - engine nacelles on pylons, so the stern is the broadest part;
+  - three main drives in a triangle (one over two), plus a drive on each nacelle.
 
-  Its turret mounts come from the model.
+  Its turret mounts, engine flares and deck landing spots come from the model.
+  - **Docking.** Players land on the bow flight deck from above, at two spots fore and two aft. They board the bridge, then lift straight off the deck.
+  - **Escort docking.** The escort uses hull berths found from its model.
+  - **Other designs.** Earlier and alternate carriers (Bengal-style, smooth Concordia, slab concept) are kept in `capitals.py` for reference, unused.
 - **Escort.** Also built from Kenney parts. It's a lean torpedo destroyer:
   - an armoured prow and twin forward torpedo tubes;
   - three point-defence turrets a side on flank sponsons;
