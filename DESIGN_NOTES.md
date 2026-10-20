@@ -602,3 +602,24 @@ On a carrier's bridge the Weapons station is the **Hangar** (carriers have no ma
 
 ## Developer menu (Ctrl+Alt+D)
 Spawns a friendly carrier or escort, or an enemy carrier, escort or Brood Hive Ship (side picker).
+
+## Escort bridge stations (built)
+- **Helm (every capital ship).** The Helm shows the sector's tactical map, the same one as Strategic: click empty space to move, click a hostile to target it. Helm controls, the jump drive and course plotting sit beside it.
+- **Escort Weapons.** It shows what the escort carries:
+  - **Twin torpedo bays.** A homing pair every 12 s at 3/6 power, 2.7 km range. The launchers reload by themselves and use no stores. Modes: Automatic, Selected target, Hold fire, Launch now.
+  - **Point defence.** Six turrets: torpedoes first, fighters first, or hold fire.
+  - **Fighter screen.**
+
+  There's no capital-battery text and no pickets section. The bridge HUD card reads "Torpedo target", using the torpedo range.
+- **Engineering's third power slot** depends on the ship:
+
+  | Ship | Third slot |
+  |---|---|
+  | Escort | Torpedo bays |
+  | Carrier | Flight deck: build speed. Fabricator time is divided by power ÷ 3, with a floor of 0.34 |
+  | Others | Capital battery |
+
+## Robustness
+- **The frame loop can't die.** Each part of a frame (simulation, camera, 3D, HUD, bridge console, audio) runs in its own error guard, and the next frame is scheduled first. A bug shows a one-line flash and is logged once per kind to the console and to `window.__dgErr` (the last 20), instead of freezing the game.
+- **`wrapA`** can no longer loop forever on an infinite angle.
+- **Full-frame soak test** (`test/t252_soak.py`): it runs 3D, HUD, map, every dock tab, bridge consoles, carrier orders and sorties, dev spawns and system hops for 25–40 game minutes, tracking errors and any ledger change caused by each action.
