@@ -786,3 +786,16 @@ The Medium Hauler's speed went from 0.86 to 0.95, while its hold stays at 100 t.
 
 It's now the workhorse between the quick Light Hauler and the crawling Heavy Hauler. The extra speed helps on every run, including part-full ones, and cuts time exposed to raiders. Off-screen convoy timing uses a fixed hop time, so the strategic balance is unchanged.
 
+## Job sizes and partial delivery (built)
+- **Size bands.** Delivery contracts, freeport requests and blockade runs each pick a band when posted:
+  - **Small** (50%): the old sizes, which fit a Light Hauler.
+  - **Medium** (33%): 60–100 t.
+  - **Large** (17%): 100–180 t.
+
+  Only common goods (iron, copper and iridium ore, and plate) come in the medium and large bands. Scarce parts always stay small.
+- **Pay and time.** The rate per unit never changes, so a big job pays more only because it moves more. Medium jobs get 1.5× the usual time to fill, and large jobs 2×.
+- **Partial delivery.** Any job can be delivered in parts, each at least a quarter of the job or 10 units, whichever is less. Each part is paid pro-rata from the remaining reward, and the job stays posted with what's left. Several pilots can fill one job.
+  - War effort and the Contractor perk's 150 cr bonus are pro-rata too, so splitting a job never earns more than delivering it whole.
+  - A blockade delivery patches station hull in proportion to its share.
+- **Orders screen.** Each job shows its tonnage, how much has already been delivered, and a warning when it's bigger than your hold.
+
