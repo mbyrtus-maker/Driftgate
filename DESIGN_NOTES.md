@@ -775,3 +775,14 @@ There are 12 lessons and 67 steps. Hands-on steps check what you did; "Got it" c
 
 All four sides stay within the 20–34% band. No faction runs away, and the Brood remain a real contender. The live-only features (wrecks, convoys, front-line resupply, blockade interceptors) don't run in the strategic sim.
 
+## Medium Hauler speed (built)
+The Medium Hauler's speed went from 0.86 to 0.95, while its hold stays at 100 t.
+
+| Hull | Price | Hold | Speed | Cargo moved per hour vs Light |
+|---|---|---|---|---|
+| Light Hauler | free | 60 t | 1.05 | — |
+| Medium Hauler | 2,100 cr | 100 t | 0.95 | +51% (was +37%) |
+| Heavy Hauler | 4,700 cr | 180 t | 0.72 | +106% |
+
+It's now the workhorse between the quick Light Hauler and the crawling Heavy Hauler. The extra speed helps on every run, including part-full ones, and cuts time exposed to raiders. Off-screen convoy timing uses a fixed hop time, so the strategic balance is unchanged.
+
