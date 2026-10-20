@@ -745,3 +745,31 @@ Carriers, escorts, and the Brood Hive Ship and Prowler leave a wreck when they d
 - **Escort pay.** Other pilots of your faction who stay within 4 km at each jump are paid 120 cr a jump from the treasury.
 - **Multiplayer.** Every pilot can call a convoy. The host runs a guest's convoy: the guest's request goes to the host, and the escorts launch with the guest's ship, pack up when it leaves a system or docks, count its jumps, and go home when it docks at the destination. Escort pay counts any pilot of the faction (host or guest) within 4 km at each jump. Blockade interceptor wings hunt guests carrying blockade cargo as well as the host.
 
+## Training (rebuilt)
+There are 12 lessons and 67 steps. Hands-on steps check what you did; "Got it" cards cover what can't be practised safely in the training galaxy. Together they cover:
+1. **Flight:** gates and the sound panel.
+2. **Weapons:** bounties, swarms and wings.
+3. **Mining and trade:** ores, hulls and drones.
+4. **The station:** vaults.
+5. **Scouts and beacons:** lock and fade, pings, sensors.
+6. **Hugging a rock.**
+7. **Salvage and wrecks:** a practice hulk to mine, crates and galaxy events.
+8. **Hauling for the war:** Orders, front-line resupply, blockade runs, convoys.
+9. **Logistics and raiding:** convoy raids and escort, war effort.
+10. **Comms and capital ships:** comms, landing on the deck, Take command, Hangar and Helm tabs, escorts, crewing, the shipyard.
+11. **Fighting for territory:** structures, stations, depots and fighter hangars, outposts, operations, the Brood, special hulls.
+12. **Winning the war:** map, victory rules, the Brood, Legend points, multiplayer.
+
+`test/t214_train.py` walks all 67 steps.
+
+## Balance check (after the beacon, wreck and hauling changes)
+200 strategic-only galaxies (2.2 h cap) on the current build, against the build from before the beacon lock:
+- **Current build:**
+  - Halcyon 30%, Varkesh 28%, Ostrova 22%, Brood 21%.
+  - 54% of galaxies end by a 7-system hold, 46% at the deadline.
+- **Previous build:**
+  - Varkesh 34%, Halcyon 26%, Ostrova 20%, Brood 20%.
+  - 51% end by hold.
+
+All four sides stay within the 20–34% band. No faction runs away, and the Brood remain a real contender. The live-only features (wrecks, convoys, front-line resupply, blockade interceptors) don't run in the strategic sim.
+
