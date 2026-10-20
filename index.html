@@ -531,7 +531,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Crewing together.</b> In multiplayer, a pilot docked at the same station as a squadmate's Heavy Bomber can sign on to its turret (Hangar, then Shipyard): when the pilot launches you go with them, straight into the turret. Any pilot of your faction can dock with a squadmate's carrier or escort as crew. From the Strategic console the commander can give a crew member one station (Helm, Weapons or Engineering). While it's assigned only that crew member can use it, even the commander can't, and the crew member can't use anything else. It returns to the commander the moment the crew member steps away from the console or leaves the bridge. The command chair goes with the Helm.</p>
             <p><b>Escorts.</b> A light capital ship commissioned at a capital shipyard (1 Capital Keel, 2 Crystal Lattice, 1 Resonance Core, 10 conduit, 24 plates, 8 coil, 2 missiles; 90 s in the slip). Quick on the helm, with fast jumps. It has no main cannon: six anti-fighter batteries tear into fighters and torpedoes, and twin torpedo launchers hit capital ships, stations, station works and heavy craft. It carries one assault ship, guards the carrier, and screens friendly capital ships from bomber strikes. Dock with it to fly it: its bridge has the same helm and consoles as the carrier's, with the battery controls driving the torpedo launchers.</p>
             <p><b>Hugging a rock.</b> Slow below 70 m/s next to an asteroid and press E to land on it. Everything but your radar powers down: no engines, guns, missiles or shields, and no recharge. Enemy ships, turrets and stations lose you unless they come within 320 m, and missiles chasing you lose their lock. Press E to lift off: the ship reboots, so guns and launchers stay cold for 4 s while energy surges back, and shields start charging from empty once the boot is done. You can turn in place to watch while landed.</p>
-            <p><b>Sector beacons.</b> Every system has a beacon (◆ on the map, filled in the colour of the team holding it) set well away from the centre: press Tab to target it. Fly a Scout or Advanced Scout within 250 m of it and hold there for 10 seconds to flip it to your faction. While your faction holds it, that system is scanned for your side all the time and its market prices reach your Trade screen live. Flipping one pays you a one-off bonus of 250 cr from your faction's treasury, then 20 cr every minute until another team's scout flips it back. Two teams' scouts on the same beacon block each other. AI scouts flip beacons too.</p>
+            <p><b>Sector beacons.</b> Every system has a beacon (◆ on the map, filled in the colour of the team holding it) set well away from the centre: press Tab to target it. Fly a Scout or Advanced Scout within 250 m of it and hold there for 10 seconds to flip it to your faction. While your faction holds it, that system is scanned for your side all the time and its market prices reach your Trade screen live. Flipping one pays you a one-off bonus of 250 cr from your faction's treasury, then 20 cr every minute while your side holds it. A flipped beacon is secured for 3 minutes: nobody can flip it. Then it fades for 2 minutes: an enemy scout can flip it, a friendly scout can hold it again to re-secure it for another 3 minutes, and if nobody does it drops back to neutral. In a system your side holds (home space, or your station or outpost there) the local crew keeps your beacon secured; out in contested and open space a scout has to keep coming back. Two teams' scouts on the same beacon block each other. AI scouts flip beacons too.</p>
             <p><b>Wings.</b> Combat ships fly in wings of three or more and share targets. When a wing is cut down to one or two ships, the survivors break off and run for home.</p>
             <p><b>Shields.</b> Hits flare blue on your shield bubble and the screen edges. When the shield collapses it bursts outward, the edges glow red and the shield bar blinks: boost away with Shift. Shields start recharging 2.5 s after the last hit, except in an ion storm.</p>
             <p>To jump, line up in front of a gate ring with your nose pointing straight through it (within 20°) and hold steady: the gate counts down 5 seconds, then flings you through. Turn away or fly off and the countdown resets. Autopilot (J) lines up for you. Gates through Hollow Verge charge a toll to whoever holds the Hollow Relay.</p>
@@ -2249,7 +2249,7 @@ function scoutsTick(){S.scouts=S.scouts||[];const pf=S.player.faction;
   for(let i=S.scouts.length-1;i>=0;i--){const t=S.scouts[i];if(t.live)continue;const d=DEF[t.sector];
     let risk=d.kind==='hive'?.3:0;const rk=t.cls==='scout2'?.6:1;const oid=OUT_BY_SECTOR[t.sector];if(oid&&S.outposts[oid].owner&&hostile(t.side,S.outposts[oid].owner))risk+=.05;const Rs=S.stations[t.sector];if(Rs&&hostile(t.side,Rs.owner))risk+=.08;if(d.kind==='den')risk+=.04;
     if(Math.random()<risk*rk){toDebris(S.sectors[t.sector],t.load);S.scouts.splice(i,1);if(t.side===pf)feed(`Contact lost with our scout in ${d.name}.`,'warn');continue}
-    if(Math.random()<.25){const terr=territory(t.side),opts=NEIGH[t.sector].map(n=>{const dn=DEF[n];let w=1;if(!covOf(t.side,true).has(n))w+=2;if(broodNear(n))w+=1.5;if(dn.kind==='hive')w*=.25;if(dn.kind==='den')w*=.4;if(dn.home===t.side&&dn.kind==='core')w*=.2;if(S.scouts.some(o=>o!==t&&o.side===t.side&&o.sector===n))w*=.3;if(S.beacons&&S.beacons[n]&&S.beacons[n].owner!==t.side)w+=1.5;return[n,w]});
+    if(Math.random()<.25){const terr=territory(t.side),opts=NEIGH[t.sector].map(n=>{const dn=DEF[n];let w=1;if(!covOf(t.side,true).has(n))w+=2;if(broodNear(n))w+=1.5;if(dn.kind==='hive')w*=.25;if(dn.kind==='den')w*=.4;if(dn.home===t.side&&dn.kind==='core')w*=.2;if(S.scouts.some(o=>o!==t&&o.side===t.side&&o.sector===n))w*=.3;if(S.beacons&&S.beacons[n]&&bcnCan(S.beacons[n],t.side))w+=1.5;return[n,w]});
       const to=wpickArr(opts);t.sector=to;if(WORLDS[to])inW(WORLDS[to],()=>spawnScout(t,true))}}}
 function spawnScout(t,arrive){const e=makeNPC('scout',t.side,t.cls||'scout',factionTier(t.side),t.load,`scout:${t.id}:${t.side}`);t.load={};t.live=true;
   if(arrive){const g=pick(GATES[W.sid]);e.x=g.x*.93;e.y=g.y*.93;e.z=g.z*.93;fxWarp(e,sideCol(t.side))}else Object.assign(e,randPos(800*SPACE,2600*SPACE));faceInstant(e,-e.x,-e.y*.2,-e.z);W.ents.push(e);return e}
@@ -2262,12 +2262,19 @@ function scoutThink(e,dt){const ai=e.ai;let th=null,bd=1400;for(const o of W.ent
 // station within BCN_R of it for BCN_T seconds flips it to its faction. The holder's side scans that system continuously,
 // and the pilot who flipped it is paid a one-off bonus plus a small residual every minute until another team's scout flips it.
 // Every credit comes out of the flipping faction's treasury, so the economy stays zero-sum.
-const BCN_R=250,BCN_T=10,BCN_FLIP=250,BCN_RES=20,BCN_EVERY=60;
+const BCN_R=250,BCN_T=10,BCN_FLIP=250,BCN_RES=20,BCN_EVERY=60,BCN_LOCK=180,BCN_FADE=120;
+// A held beacon is secured for BCN_LOCK s after it is flipped or re-secured: nobody can flip it. Then it fades for BCN_FADE s:
+// an enemy scout can flip it, and a friendly scout can re-secure it (the same hold) for another BCN_LOCK s. If nobody does,
+// it lapses back to neutral, and its scan and residual stop.
+function bcnSec(B){return B.sec!=null?B.sec:(B.T||0)}
+function bcnState(B){if(!B||!B.owner)return'open';const a=S.T-bcnSec(B);return a<BCN_LOCK?'locked':a<BCN_LOCK+BCN_FADE?'fading':'lapsed'}
+function bcnLeft(B){const a=S.T-bcnSec(B);return Math.max(0,a<BCN_LOCK?BCN_LOCK-a:BCN_LOCK+BCN_FADE-a)}
+function bcnCan(B,side){const st=bcnState(B);return side===B.owner?st==='fading':st!=='locked'}   // can this side make progress on it right now?
 function isScoutCls(cls){return cls==='scout'||cls==='scout2'}
 function beaconPos(sid){const gs=GATES[sid]||[];let p,k=0;do{p=randPos(1500*SPACE,2350*SPACE);p.y=Math.round(p.y*.5)}while(k++<40&&gs.some(g=>d3(g,p)<800*SPREAD));return p}
 // every system has a beacon: it scans the system for its holder and feeds them that system's market prices
 function bcnAllowed(d){return true}
-function beaconInit(){S.beacons=S.beacons||{};for(const id in S.beacons)if(!bcnAllowed(DEF[id]))delete S.beacons[id];for(const d of SECTOR_DEFS){if(!bcnAllowed(d)||S.beacons[d.id])continue;const p=beaconPos(d.id);S.beacons[d.id]={x:p.x,y:p.y,z:p.z,owner:null,by:null,T:0,pay:0}}S.bcnV=(S.bcnV||0)+1}
+function beaconInit(){S.beacons=S.beacons||{};for(const id in S.beacons)if(!bcnAllowed(DEF[id]))delete S.beacons[id];for(const d of SECTOR_DEFS){if(!bcnAllowed(d)||S.beacons[d.id])continue;const p=beaconPos(d.id);S.beacons[d.id]={x:p.x,y:p.y,z:p.z,owner:null,by:null,T:0,pay:0}}for(const id in S.beacons){const B=S.beacons[id];if(B.owner&&B.sec==null)B.sec=S.T}S.bcnV=(S.bcnV||0)+1}
 // who may flip: the side a ship flies for, if it is a scout hull and free to act
 function bcnFlipper(e){if(e.type!=='ship'||!e.alive||e.inJump||e.ghost)return null;
   if(e.isPlayer){if(W!==LW||S.player.docked||W.dead||W.docking||W.detach||!isScoutCls(S.player.cls))return null;return{side:S.player.faction,by:pkey()}}
@@ -2277,32 +2284,50 @@ function bcnFlipper(e){if(e.type!=='ship'||!e.alive||e.inJump||e.ghost)return nu
 function beaconWorld(dt){const B=S.beacons&&S.beacons[W.sid];if(!B)return;const F=W.bcnF||(W.bcnF={side:null,t:0,by:null,cont:false});
   let side=null,by=null,many=false;for(const e of W.ents){if(e.type!=='ship'||d3(e,B)>BCN_R)continue;const f=bcnFlipper(e);if(!f)continue;if(side&&side!==f.side){many=true;continue}if(!side||(!by&&f.by)){side=f.side;by=f.by}}
   F.cont=many;if(many)return;                                   // two teams' scouts on it: nobody makes progress
-  if(!side||side===B.owner){F.t=Math.max(0,F.t-dt*2);if(F.t<=0)F.side=null;return}
+  if(!side||!bcnCan(B,side)){F.t=Math.max(0,F.t-dt*2);if(F.t<=0)F.side=null;return}
   if(F.side!==side){F.side=side;F.t=0;F.by=null}F.by=by||F.by;F.t+=dt*(F.by&&lvlOf(F.by)>=1?BCN_T/7:1);
-  if(F.t>=BCN_T){const who=F.by;F.t=0;F.side=null;F.by=null;beaconFlip(W.sid,side,who)}}
+  if(F.t>=BCN_T){const who=F.by;F.t=0;F.side=null;F.by=null;if(side===B.owner)beaconSecure(W.sid,side,who);else beaconFlip(W.sid,side,who)}}
 function beaconFlip(sid,side,by){const B=S.beacons[sid];if(!B||B.owner===side)return;const old=B.owner,oldBy=B.by,nm=DEF[sid].name;
-  B.owner=side;B.by=by||null;B.T=S.T;B.pay=S.T;S.bcnV=(S.bcnV||0)+1;bcnMissionPay(sid,side,by);
+  B.owner=side;B.by=by||null;B.T=S.T;B.sec=S.T;B.pay=S.T;S.bcnV=(S.bcnV||0)+1;bcnMissionPay(sid,side,by);
   if(oldBy&&oldBy!==by)keyFeed(oldBy,`Your beacon in ${nm} was flipped by ${by?(S.pilots&&S.pilots[by]?S.pilots[by].name:'a '+FACTIONS[side].short+' pilot'):'a '+FACTIONS[side].short+' scout'}. Its scan and your residual have stopped.`,'warn');
-  if(by){weAdd(side,WE.beacon);const got=payKey(by,side,Math.round(BCN_FLIP*(lvlOf(by)>=1?1.2:1)));keyFeed(by,`◆ Beacon in ${nm} flipped for ${FACTIONS[side].short}: +${fmt(got)} cr. It scans ${nm} for your side and pays you ${BCN_RES} cr a minute until another team's scout flips it.`,'good');if(isMe(by)){SFX.count(true);flash(`Beacon flipped for ${FACTIONS[side].short}. +${fmt(got)} cr`)}}
+  if(by){weAdd(side,WE.beacon);const got=payKey(by,side,Math.round(BCN_FLIP*(lvlOf(by)>=1?1.2:1)));keyFeed(by,`◆ Beacon in ${nm} flipped for ${FACTIONS[side].short}: +${fmt(got)} cr. It's secured for ${BCN_LOCK/60} minutes; then it fades, and a friendly scout must re-secure it within ${BCN_FADE/60} minutes or it drops to neutral. It scans ${nm} for your side and pays you ${BCN_RES} cr a minute while your side holds it.`,'good');if(isMe(by)){SFX.count(true);flash(`Beacon flipped for ${FACTIONS[side].short}. +${fmt(got)} cr`)}}
   else if(old&&!oldBy&&friendSide(old)&&S.player.sector===sid)facFeed(old,`◆ ${FACTIONS[side].short} scout flipped our beacon in ${nm}.`,'warn');
   if(W&&W.sid===sid&&!MUTE)fxSpark(B,sideCol(side),14);
   if(NET.host)for(const c of readyCl())send(c.L,{t:'bcn',sid,b:B,v:S.bcnV})}
-// strategic tick: residual pay, and AI scouts out of sight flip beacons where they wander
+function bcnSend(sid){if(NET.host)for(const c of readyCl())send(c.L,{t:'bcn',sid,b:S.beacons[sid],v:S.bcnV})}
+// a friendly scout holds a fading beacon: secured again for BCN_LOCK s; a pilot who re-secures it takes over its residual
+function beaconSecure(sid,side,by){const B=S.beacons[sid];if(!B||B.owner!==side)return;const nm=DEF[sid].name,oldBy=B.by;B.sec=S.T;
+  if(by&&oldBy!==by){B.by=by;B.pay=S.T;if(oldBy)keyFeed(oldBy,`◆ Your beacon in ${nm} was re-secured by ${S.pilots&&S.pilots[by]?S.pilots[by].name:'another pilot'}: its residual now pays them.`,'info')}
+  S.bcnV=(S.bcnV||0)+1;if(by){keyFeed(by,`◆ Beacon in ${nm} re-secured for ${FACTIONS[side].short}: locked for another ${BCN_LOCK/60} minutes${B.by===by?`, paying you ${BCN_RES} cr a minute`:''}.`,'good');if(isMe(by)){SFX.count(true);flash(`Beacon re-secured: ${BCN_LOCK/60} minutes`)}}
+  if(W&&W.sid===sid&&!MUTE)fxSpark(B,sideCol(side),8);bcnSend(sid)}
+// in a system its side holds (home space, or its station or outpost there) the local crew keeps the beacon secured; out in
+// contested and open space only a scout can
+function bcnCrew(sid,f){let o=sectorOwner(sid);if(o==='player')o=S.player.faction;return!!f&&o===f}
+// nobody re-secured it before the fade ran out: back to neutral
+function beaconLapse(sid){const B=S.beacons[sid];if(!B||!B.owner)return;const old=B.owner,oldBy=B.by,nm=DEF[sid].name;B.owner=null;B.by=null;B.T=S.T;B.sec=null;S.bcnV=(S.bcnV||0)+1;
+  if(oldBy)keyFeed(oldBy,`◆ Your beacon in ${nm} lapsed to neutral: no scout re-secured it in time. Its scan and your residual have stopped.`,'warn');
+  else if(friendSide(old)&&S.player.sector===sid)facFeed(old,`◆ Our beacon in ${nm} has lapsed to neutral.`,'warn');
+  if(W&&W.sid===sid&&!MUTE)fxSpark(B,[.7,.7,.7],8);bcnSend(sid)}
+// strategic tick: residual pay, lapses, and AI scouts out of sight flip or re-secure beacons where they wander
 function beaconTick(){if(NET.cl||!S.beacons)return;
-  for(const sid in S.beacons){const B=S.beacons[sid];if(!B.owner||!B.by)continue;
-    while(S.T-B.pay>=BCN_EVERY){B.pay+=BCN_EVERY;const k=B.by;if(!isMe(k)&&NET.on&&!(S.pilots&&S.pilots[k]))break;const got=payKey(k,B.owner,BCN_RES);if(got&&isMe(k)&&Math.floor((S.T-B.T)/BCN_EVERY)%5===1)feed(`◆ Beacon residuals: ${DEF[sid].name} keeps paying ${BCN_RES} cr a minute.`,'info')}}
-  for(const t of S.scouts||[]){if(t.live)continue;const B=S.beacons[t.sector];if(!B||B.owner===t.side)continue;const Rs=S.stations[t.sector],guarded=Rs&&Rs.owner&&hostile(t.side,Rs.owner);
+  for(const sid in S.beacons){const B=S.beacons[sid];if(!B.owner)continue;const end=bcnSec(B)+BCN_LOCK+BCN_FADE;
+    if(B.by)while(S.T-B.pay>=BCN_EVERY&&B.pay+BCN_EVERY<=end){B.pay+=BCN_EVERY;const k=B.by;if(!isMe(k)&&NET.on&&!(S.pilots&&S.pilots[k]))break;const got=payKey(k,B.owner,BCN_RES);if(got&&isMe(k)&&Math.floor((S.T-B.T)/BCN_EVERY)%5===1)feed(`◆ Beacon residuals: ${DEF[sid].name} keeps paying ${BCN_RES} cr a minute.`,'info')}
+    const st=bcnState(B);if(st!=='locked'&&bcnCrew(sid,B.owner))beaconSecure(sid,B.owner,null);else if(st==='lapsed')beaconLapse(sid)}
+  for(const t of S.scouts||[]){if(t.live)continue;const B=S.beacons[t.sector];if(!B)continue;if(B.owner===t.side){if(bcnState(B)==='fading'&&Math.random()<.35)beaconSecure(t.sector,t.side,null);continue}if(bcnState(B)==='locked')continue;const Rs=S.stations[t.sector],guarded=Rs&&Rs.owner&&hostile(t.side,Rs.owner);
     if(Math.random()<(guarded?.08:.22))beaconFlip(t.sector,t.side,null)}}
 // a live AI scout makes for an enemy or empty beacon in its system when nothing is chasing it
-function scoutBeaconGoal(e){const B=S.beacons&&S.beacons[W.sid];if(!B||B.owner===e.side)return null;return B}
+function scoutBeaconGoal(e){const B=S.beacons&&S.beacons[W.sid];if(!B||!bcnCan(B,e.side))return null;return B}
 // client: show your own progress while the host decides
 function beaconLocal(dt){const B=S.beacons&&S.beacons[W.sid],p=W.player;const F=W.bcnF||(W.bcnF={side:null,t:0,cont:false});
-  if(!B||!p||S.player.docked||!isScoutCls(S.player.cls)||B.owner===S.player.faction||d3(p,B)>BCN_R){F.t=Math.max(0,F.t-dt*2);if(!F.t)F.side=null;return}
+  if(!B||!p||S.player.docked||!isScoutCls(S.player.cls)||!bcnCan(B,S.player.faction)||d3(p,B)>BCN_R){F.t=Math.max(0,F.t-dt*2);if(!F.t)F.side=null;return}
   F.side=S.player.faction;F.t=Math.min(BCN_T,F.t+dt*((S.player.lvl||0)>=1?BCN_T/7:1))}
 function beaconChip(){const B=S.beacons&&S.beacons[W.sid],p=W.player;if(!B||!p||S.player.docked)return null;const d=d3(p,B);if(d>BCN_R*3)return null;const F=W.bcnF||{};
-  if(B.owner===S.player.faction&&d<=BCN_R)return[`Beacon held by ${FACTIONS[B.owner].short}${B.by&&isMe(B.by)?' · yours, paying '+BCN_RES+' cr/min':''}`,'good'];
+  const st=bcnState(B),left=fmtT(bcnLeft(B));
+  if(B.owner===S.player.faction&&d<=BCN_R){if(st==='fading'&&isScoutCls(S.player.cls))return[`Beacon fading: re-securing ${Math.round(clamp((F.t||0)/BCN_T,0,1)*100)}% · hold within ${BCN_R} m · ${left} to neutral`,'warn'];
+    return[`Beacon held by ${FACTIONS[B.owner].short} · ${st==='locked'?'secured '+left:'fading: a scout must re-secure it within '+left}${B.by&&isMe(B.by)?' · yours, paying '+BCN_RES+' cr/min':''}`,st==='locked'?'good':'warn']}
   if(!isScoutCls(S.player.cls))return d<=BCN_R?['Beacon: only a Scout or Advanced Scout can flip it','warn']:null;
   if(F.cont)return['Beacon contested: another team\'s scout is on it','bad'];
+  if(B.owner&&st==='locked'&&d<=BCN_R*3)return[`Beacon secured by ${FACTIONS[B.owner].short}: it can be flipped in ${left}`,'bad'];
   if(d>BCN_R)return[`Beacon ${fmt(Math.round(d-BCN_R))} m out of flip range (${BCN_R} m)`,'warn'];
   return[`Flipping beacon ${Math.round(clamp((F.t||0)/BCN_T,0,1)*100)}% · hold within ${BCN_R} m`,'warn']}
 function planBuild(f){const terr=territory(f),busy=new Set(S.events.filter(e=>e.type==='build').map(e=>e.sector)),c=[],pf=S.player.faction;
@@ -4870,7 +4895,8 @@ function hudUpdate(){
   {const H=handling(p);if(H.L>.2&&!P.docked)sc.push([`Laden ${Math.round(H.L*100)}% · ${HEAVY_CLS.has(P.cls)?'heavy':'slower'} handling −${Math.round((1-H.turn)*100)}% turn`,H.L>.65&&HEAVY_CLS.has(P.cls)?'bad':'warn'])}
   $('hChips').innerHTML=chips.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');$('hSChips').innerHTML='';{const h=P.docked||W.bridge?'':sc.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');if($('hML').innerHTML!==h)$('hML').innerHTML=h}
   {const el=$('hBcn'),B=S.beacons&&S.beacons[W.sid],on=!!B&&isScoutCls(P.cls)&&!P.docked;el.hidden=!on;if(on){const d=Math.round(d3(p,B)),F=W.bcnF||{},mine=B.owner===P.faction,col=B.owner?sideCol(B.owner):'#ece4cf',flip=F.side&&F.t>0?` · flipping ${Math.round(clamp(F.t/BCN_T,0,1)*100)}%`:'';
-    const h=`◆ Beacon: <b style="color:${col}">${B.owner?esc(FACTIONS[B.owner].short):'unclaimed'}</b>${mine&&B.by&&isMe(B.by)?` · yours, paying ${BCN_RES} cr/min`:mine?' · your side':B.owner?' · flip it back':' · flip it for your side'}${flip}${F.cont?' · <b style="color:var(--danger)">contested</b>':''} · ${d<=BCN_R?'in range':fmt(d)+' m'}`;if(el.innerHTML!==h)el.innerHTML=h}}campHud();
+    const st=bcnState(B),left=fmtT(bcnLeft(B)),sts=st==='locked'?` · secured ${left}`:st==='fading'?(mine?` · <b style="color:var(--amber)">fading: re-secure within ${left}</b>`:` · fading: flip it now (${left})`):'';
+    const h=`◆ Beacon: <b style="color:${col}">${B.owner?esc(FACTIONS[B.owner].short):'unclaimed'}</b>${mine&&B.by&&isMe(B.by)?` · yours, paying ${BCN_RES} cr/min`:mine?' · your side':B.owner?(st==='locked'?'':' · flip it back'):' · flip it for your side'}${sts}${flip}${F.cont?' · <b style="color:var(--danger)">contested</b>':''} · ${d<=BCN_R?'in range':fmt(d)+' m'}`;if(el.innerHTML!==h)el.innerHTML=h}}campHud();
   $('hCr').textContent=fmt(P.credits);$('hHold').textContent=`${invMass(P.cargo)}/${p.st.cargo} t`;
   $('hShip').textContent=W.gunseat&&gsEnt()?`Gunner · ${gsEnt().pname?gsEnt().pname+'\'s ':''}${hullName(gsEnt().fac,'gunboat')}`:P.cls==='gunboat'&&p.tur?`${FACTIONS[P.faction].hulls[P.cls]} · Heavy Bomber · gunner: ${p.tur.gname||(p.tur.gunner&&p.tur.gunner!=='local'?(S.pilots&&S.pilots[p.tur.gunner]?S.pilots[p.tur.gunner].name:'pilot'):'AI')}`:W.bridge?`${W.bridge.f.tok.name} · ${W.bridge.f.tok.cls==='escort'?'Escort':'Carrier'} bridge`:`${FACTIONS[P.faction].hulls[P.cls]} · ${CLASSES[P.cls].name}`;
   const bar=(id,v,m)=>{const el=$(id);el.querySelector('.fl').style.width=clamp(v/m*100,0,100)+'%';el.querySelector('.v').textContent=Math.round(v)};
@@ -5150,7 +5176,7 @@ function drawMap(){
     {const V=vaultList(S.player).find(v=>v.sid===d.id&&v.m>0);if(V){c.fillStyle=V.open?PLAYER_COL:'#9a8f7a';c.font='700 9px "Saira Semi Condensed",sans-serif';c.textAlign='left';c.fillText('▣ VAULT',x+r+5,y-r+6)}}
     {const ns=(S.scouts||[]).filter(t=>t.side===S.player.faction&&t.sector===d.id).length;if(ns){c.fillStyle='#7ad9a7';c.font='600 10px "Saira Semi Condensed",sans-serif';c.textAlign='right';c.fillText('◇'.repeat(ns)+' SCOUT',x-r-4,y-r+4)}}
     if(isFreeport(d.id)){c.fillStyle=NEUTRAL.col;c.font='700 10px "Saira Semi Condensed",sans-serif';c.textAlign='center';c.fillText('FREEPORT',x,y-r-6);c.fillStyle=NEUTRAL.col;c.beginPath();c.arc(x,y,5,0,TAU);c.fill()}
-    {const B=S.beacons&&S.beacons[d.id];if(B){const bx=x-r*.95,by=y-r*1.0,col=B.owner?sideCol(B.owner):'#6b7186',me=B.by&&isMe(B.by),k=8.5;c.beginPath();c.moveTo(bx,by-k);c.lineTo(bx+k*.75,by);c.lineTo(bx,by+k);c.lineTo(bx-k*.75,by);c.closePath();c.fillStyle=B.owner?col:'#0c1222';c.fill();c.strokeStyle=me?PLAYER_COL:B.owner?'#070b16':col;c.lineWidth=me?2.2:1.4;c.stroke();if(me){c.strokeStyle=hexA(PLAYER_COL,.45+.3*Math.sin(t*4));c.lineWidth=1;c.beginPath();c.arc(bx,by,k+4,0,TAU);c.stroke()}}}
+    {const B=S.beacons&&S.beacons[d.id];if(B){const bx=x-r*.95,by=y-r*1.0,col=B.owner?sideCol(B.owner):'#6b7186',me=B.by&&isMe(B.by),k=8.5;c.beginPath();c.moveTo(bx,by-k);c.lineTo(bx+k*.75,by);c.lineTo(bx,by+k);c.lineTo(bx-k*.75,by);c.closePath();c.fillStyle=B.owner?col:'#0c1222';c.fill();c.strokeStyle=me?PLAYER_COL:B.owner?'#070b16':col;c.lineWidth=me?2.2:1.4;c.stroke();{const st=bcnState(B);if(st==='locked'){c.strokeStyle=col;c.lineWidth=1.6;c.beginPath();c.arc(bx,by,k+2.5,-Math.PI/2,-Math.PI/2+TAU*bcnLeft(B)/BCN_LOCK);c.stroke()}else if(st==='fading'){c.strokeStyle=hexA(col,.35+.35*Math.sin(t*5));c.lineWidth=1.4;c.setLineDash([2,2]);c.beginPath();c.arc(bx,by,k+2.5,0,TAU);c.stroke();c.setLineDash([])}}if(me){c.strokeStyle=hexA(PLAYER_COL,.45+.3*Math.sin(t*4));c.lineWidth=1;c.beginPath();c.arc(bx,by,k+4,0,TAU);c.stroke()}}}
     if(S.player.sector===d.id){c.strokeStyle=PLAYER_COL;c.lineWidth=2;c.beginPath();c.arc(x,y,r+10+Math.sin(t*3)*2,0,TAU);c.stroke()}
     if(NET.on)MP.roster.filter(q=>q[0]!==MP.pid&&q[3]===d.id).forEach((q,i)=>{c.font='600 10px "Saira Semi Condensed",sans-serif';c.textAlign='center';c.fillStyle=sideCol(q[2]);c.fillText('▲ '+q[1]+(q[4]?' (docked)':''),x,y+r+31+i*12)});
     c.font='600 12px "Saira Semi Condensed",sans-serif';c.textAlign='center';c.fillStyle='#ece4cf';c.fillText(d.name.toUpperCase(),x,y+r+17);
@@ -5171,7 +5197,7 @@ function renderMapSide(){
   let h=`<div><div class="h3" style="color:${sideCol(sectorOwner(mapSel))}">${esc(d.name)}</div><div class="kv"><span>Control</span><b>${sectorOwner(mapSel)?sideName(sectorOwner(mapSel)):'Unclaimed'} · ${d.kind}</b>`;
   {const Rs=S.stations[mapSel];h+=Rs?`<span>${esc(Rs.name)}</span><b>${Rs.kind==='hive'?'hive':Rs.kind} · hull ${Math.round(Rs.hull/Rs.hMax*100)}%</b>`:`<span>Station</span><b>${d.kind==='hive'?'—':'none · a Constructor can build here'}</b>`}
   if(o)h+=`<span>${esc(o.name)}</span><b>Level ${o.level}${o.breached?' · breached':''}</b><span>Role</span><b>${o.type}</b>`;
-  {const B=S.beacons&&S.beacons[mapSel];if(B)h+=`<span>Beacon</span><b style="color:${B.owner?sideCol(B.owner):'inherit'}">${B.owner?FACTIONS[B.owner].short+(B.T?' · held '+fmtT(S.T-B.T):''):'unclaimed'}${B.by&&isMe(B.by)?' · yours, '+BCN_RES+' cr/min':''}</b>`}
+  {const B=S.beacons&&S.beacons[mapSel];if(B)h+=`<span>Beacon</span><b style="color:${B.owner?sideCol(B.owner):'inherit'}">${B.owner?FACTIONS[B.owner].short+(B.T?' · held '+fmtT(S.T-B.T):'')+(bcnState(B)==='locked'?' · secured '+fmtT(bcnLeft(B)):' · fading, neutral in '+fmtT(bcnLeft(B))):'unclaimed'}${B.by&&isMe(B.by)?' · yours, '+BCN_RES+' cr/min':''}</b>`}
   for(const e of RAWS)h+=`<span>${ITEMS[e].name} in fields</span><b>${fmt(fields[e])} t</b>`;
   {const V=vaultList(S.player).filter(v=>v.sid===mapSel);for(const v of V)h+=`<span>Your vault${V.length>1?' · '+esc(vaultName(v.k)):''}</span><b>${fmt(v.m)} t · ${fmt(v.val)} cr${v.open?'':' · '+esc(vaultWhy(v.k,S.player))}</b>`}
   h+=`<span>Drifting debris</span><b>${fmt(s.debris.fe+s.debris.cu+s.debris.ir+s.debris.xc)} t</b><span>Salvage crates</span><b>${s.crates.length}</b><span>Gates to</span><b>${NEIGH[mapSel].map(n=>DEF[n].name).join(', ')}</b></div>`;

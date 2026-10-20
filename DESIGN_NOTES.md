@@ -689,3 +689,12 @@ A carrier destroyed in a live system used to lose its onboard store and the craf
 
 ## Developer carrier spawn (built)
 A carrier spawned from the developer menu comes fully loaded: three fighters (light, medium, heavy), three bombers, and all three assault bays filled. The kits ride aboard and the ledger records them.
+
+## Beacon lock and decay (built)
+- **Secured.** For 3 minutes after a flip, nobody can flip the beacon. The map marker shows a ring that empties as the lock runs out.
+- **Fading.** For the next 2 minutes, an enemy scout can flip it. A friendly scout can re-secure it with the normal hold (10 s, or 7 s with the Pathfinder perk), which starts a fresh 3-minute lock. A pilot who re-secures a beacon takes over its residual. The map marker pulses while it fades.
+- **Lapsed.** If nobody re-secures it, it drops to neutral and its scan and residual stop. Residuals pay only up to the moment it lapses.
+- **Held space.** In a system the holder's side holds (its home space, or its station or outpost there), the local crew keeps the beacon secured. Out in contested and open space, only a scout can keep it.
+- **AI scouts.** They skip locked beacons and route toward beacons they can flip, or their own fading ones. Off-screen they re-secure their side's fading beacons where they are.
+- **Effect on the map.** In the churn test, AI factions hold about 2–6 beacons at a time, down from about 21. More of the map is neutral, beacon jobs come up more often, and beacon intel follows where scouts are actually active.
+
