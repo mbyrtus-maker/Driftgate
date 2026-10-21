@@ -565,7 +565,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Winning the galaxy.</b> A side that controls 7 systems for 20 minutes wins. If no one has done that after two hours of play, the side holding the most systems at that moment wins (ties go to most stations and depots, then capital ships, then the richest stores); the HUD counts down the last 30 minutes and shows who leads. The nine quiet systems (thin fields, little traffic) don't raise that bar, but holding one with a depot or outpost counts toward it. The galaxy resets, and the winner starts the next one with a finished capital shipyard and 40% richer stores; if it was your faction, you start with 4,000 extra credits and a crate of parts.</p>
             <p><b>Capital ships.</b> At your faction's main station you can build a Capital Shipyard (4 Depot Frames, 4 Capital Keels, 4 Crystal Lattice, 40 plates and 5,000 cr). It commissions one Fleet Carrier per faction (6 Keels, 4 Lattice, 2 Resonance Cores, 12 conduit, 4 frames, 10 coil) and Escorts. The carrier has no main gun: six point-defence turrets, a wing of 6 fighters and bombers, and 3 assault ships for capturing depots. It builds its own craft aboard from a store of materials and asks its faction for more; supply convoys fly out to it. AI carriers wait one system back from their target and strike through the gate. Fighter guns chip a capital's armour at a tenth of their damage; torpedoes and capital guns do the real damage. The Brood grows a Hive Ship and Prowlers in The Bloom.</p>
             <p><b>Vantium.</b> A dense, green-veined sixth ore that every Capital Keel needs (8 per keel), so no shipyard, carrier or escort gets built without it. It lies in only four fields: the three contested forge systems (Kestrel Drift, The Shoal, Cinder Reach), each between two powers, and the richest field in Hollow Verge, the hub all three border. Like Aurorite it only re-forms in its own fields. Factions push for those systems when they run short, and the Freeport Compact sells a little at a steep price.</p>
-            <p><b>Aurorite.</b> A fifth ore that exists only in the three deep-space sectors (Ashen Expanse, Glass Shallows, Lantern Deep), glowing teal in the rock. It never re-forms anywhere else: dust from wrecks drifts back toward deep space. Fabricate it into Aurora Tuning (2 Aurorite + 1 Flux Coil) and attune each component once in the Upgrades tab: +6% to engines, holds and blast rigs, or +3% to shields, guns, armour and power (one Aurora Tuning each). Fully tuned, a ship wins about 55% of fights against the same ship untuned. Whoever holds depots in deep space mines Aurorite, and their fighters start showing up tuned.</p>
+            <p><b>Aurorite.</b> A fifth ore that exists only in the three deep-space sectors (Ashen Expanse, Glass Shallows, Lantern Deep), glowing teal in the rock. It never re-forms anywhere else: dust from wrecks drifts back toward deep space. Fabricate it into Aurora Tuning (2 Aurorite + 1 Flux Coil) and attune each component once in the Upgrades tab: +6% to engines, holds and blast rigs, or +4% to shields, guns, armour and power (one Aurora Tuning each). Fully tuned, a ship wins about 55% of fights against the same ship untuned. Whoever holds depots in deep space mines Aurorite, and their fighters start showing up tuned.</p>
             <p><b>Missiles and swarms.</b> Missiles and swarm micro-missiles hit 1.8× harder once a target's shield is down, so break shields with guns and finish with missiles. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts carry a swarm launcher with 2 pods (fire with 3): eight micro-missiles fan out at your target and anything flying near it. Flares fool only about half of them. AI heavy fighters and bombers sometimes carry one too.</p>
             <p><b>Constructors.</b> Factions send escorted constructor convoys to build forward depots in sectors without a station, and to rebuild lost frontier depots. A forward depot costs one Depot Frame and is lightly built (2 turrets, 2 module slots); its faction expands it into a full depot when it can spare a second frame. Constructors are flown only by faction command. To get a depot built, fly to a system with no station, make sure the area is mostly clear (no more than one hostile within 3 km, no hostile capital ship in the system) and call one in through comms (I, then 3). If command has no constructor ready it assembles one as soon as its stores allow, then it sets out from the nearest friendly station and jumps system by system to you, always with an escort of at least two fighters. The site doesn't have to stay clear while it travels, but the convoy has to survive to build.</p>
             <p><b>Logistics.</b> Each faction's core station is its warehouse; each depot keeps its own store. A depot mines into its store, runs its life support, works and fighter hangar from it, and (with a production module) turns ore into plates, conduit and coil. Freight convoys carry surplus ore to the warehouse and components out to depots that are building and to carriers in the field. Convoys are real freighters: they can be caught on the way, and a destroyed freighter spills half its hold as salvage. The Missions tab lists enemy convoys within reach under Convoy raids, with a bounty for each, and our own convoys under Convoy escort: sign on, fly with one, and Command pays when it docks.</p>
@@ -695,23 +695,23 @@ const ITEMS={
 // strength with a weakness. Fitted variants go down with the ship: half spill into the crate as salvage, the rest is lost as debris.
 const VAR_RECIPE={plate:2,coil:2,lattice:1};
 const UNB_VARS={scanbaf:{slot:'power',name:'Scan baffles',spec:'unb',gain:'Patrol scans 30% less likely to see through false colours',cost:'−10% energy capacity',m:{eCap:.9},f:{scanK:.7},recipe:{plate:3,wire:3}},
-  jamemit:{slot:'weapon',name:'Jammer emitters',spec:'unb',gain:'Jammers fill the bar 45% faster',cost:'−15% damage in normal fire',m:{dmg:.85},f:{jamK:1.45},recipe:{plate:3,wire:3}},
+  jamemit:{slot:'weapon',name:'Jammer emitters',spec:'unb',gain:'Jammers fill the bar 45% faster',cost:'−10% damage in normal fire',m:{dmg:.9},f:{jamK:1.45},recipe:{plate:3,wire:3}},
   longharp:{slot:'payload',name:'Long harpoons',spec:'unb',gain:'Harpoon tethers stretch the hook to 600 m',cost:'−25% rack size',f:{tetherR:600,rackK:.75},recipe:{plate:3,wire:3}},
   tcutter:{slot:'payload',name:'Tether cutter',spec:'jam',gain:'Flares also break shock-harpoon tethers',cost:'−25% rack size',f:{tetherCut:1,rackK:.75},recipe:{plate:3,wire:3}}};
 const VARIANTS={
   sprint:{slot:'engine',name:'Sprint drive',gain:'+25% top speed, afterburner lasts longer',cost:'−20% turn',m:{maxSpd:1.25,turn:.8},f:{boostK:.8}},
   vector:{slot:'engine',name:'Vector drive',gain:'+30% turn',cost:'−12% top speed',m:{turn:1.3,maxSpd:.88}},
   longburn:{slot:'engine',name:'Long-burn drive',gain:'Afterburner uses 40% less energy',cost:'−15% acceleration',m:{thrust:.85},f:{boostK:.6}},
-  surge:{slot:'power',name:'Surge core',gain:'+50% energy capacity',cost:'Recharge pauses for half a second after firing or boosting',m:{eCap:1.5},f:{surge:.5}},
+  surge:{slot:'power',name:'Surge core',gain:'+50% energy capacity',cost:'Recharge runs at half speed for a second after firing or boosting',m:{eCap:1.5},f:{surge:1,surgeK:.5}},
   steady:{slot:'power',name:'Steady core',gain:'+35% energy recharge',cost:'−25% energy capacity',m:{eRegen:1.35,eCap:.75}},
-  bastion:{slot:'shield',name:'Bastion',gain:'+25% shield capacity',cost:'Recharge waits 5 s after a hit, not 2.5 s',m:{sCap:1.25},f:{shDelay:5}},
+  bastion:{slot:'shield',name:'Bastion',gain:'+35 shield capacity',cost:'Recharge waits 5 s after a hit, not 2.5 s',a:{sCap:35},f:{shDelay:5}},
   flicker:{slot:'shield',name:'Flicker',gain:'Recharge starts after 1.5 s and runs 60% faster',cost:'−30% shield capacity',m:{sCap:.7},f:{shDelay:1.5,shRegK:1.6}},
   tunedk:{slot:'shield',name:'Tuned emitter (kinetic)',gain:'Shields take 30% less from kinetic fire',cost:'Shields take 20% more from lasers',f:{tuned:'kinetic'}},
   tunedl:{slot:'shield',name:'Tuned emitter (laser)',gain:'Shields take 30% less from lasers',cost:'Shields take 20% more from kinetic fire',f:{tuned:'laser'}},
-  heavyc:{slot:'weapon',name:'Heavy cannons',gain:'+40% damage per shot',cost:'−30% fire rate, 15% slower shells',m:{dmg:1.4,rof:.7},f:{shotSpd:977.5}},
+  heavyc:{slot:'weapon',name:'Heavy cannons',gain:'+35% damage per shot',cost:'−30% fire rate, 15% slower shells',m:{dmg:1.35,rof:.7},f:{shotSpd:977.5}},
   rapid:{slot:'weapon',name:'Rapid fire',gain:'+45% fire rate',cost:'−25% damage, higher energy drain',m:{rof:1.45,dmg:.75}},
   longbar:{slot:'weapon',name:'Long barrel',gain:'+30% range, shells fly 15% faster',cost:'−5% fire rate',m:{rof:.95},f:{shotTtl:1.3,shotSpd:1322.5}},
-  ablative:{slot:'armor',name:'Ablative plating',gain:'+20% hull',cost:'−10% speed, acceleration and turn',m:{hull:1.2,maxSpd:.9,thrust:.9,turn:.9}},
+  ablative:{slot:'armor',name:'Ablative plating',gain:'+35 hull',cost:'−10% speed, acceleration and turn',m:{maxSpd:.9,thrust:.9,turn:.9},a:{hull:35}},
   lightframe:{slot:'armor',name:'Light frame',gain:'+15% turn and acceleration',cost:'−10% hull',m:{hull:.9,turn:1.15,thrust:1.15}},
   reactive:{slot:'armor',name:'Reactive plating',gain:'+12% damage reduction',cost:'−10% shields',m:{sCap:.9},a:{dr:.12}},
   bulk:{slot:'cargo',name:'Bulk hold',gain:'+50% hold',cost:'Always handles as at least half laden',m:{cargo:1.5},f:{ladenMin:.5}},
@@ -721,13 +721,13 @@ const VARIANTS={
   smart:{slot:'payload',name:'Smart seekers',gain:'−40% lock time',cost:'−20% missile damage',f:{lockK:.6,mslK:.8}},
   faraday:{slot:'armor',name:'Faraday plating',spec:'jam',gain:'Jam bar 50% larger, so a take lasts longer',cost:'−10% hull',m:{hull:.9},f:{jamBarK:1.5},recipe:{plate:3,wire:3}},
   fastboot:{slot:'power',name:'Fast-reboot reactor',spec:'jam',gain:'Jam bar drains after 0.75 s at 25% a second',cost:'−15% energy capacity',m:{eCap:.85},f:{jamDelay:.75,jamRate:.25},recipe:{plate:3,wire:3}},
-  snapback:{slot:'shield',name:'Snap-back emitter',spec:'jam',gain:'When a Jam bar first appears, shields jump back to 30% (once a minute)',cost:'−12% shield capacity',m:{sCap:.88},f:{snapBack:1},recipe:{plate:3,wire:3}},
+  snapback:{slot:'shield',name:'Snap-back emitter',spec:'jam',gain:'When a Jam bar first appears, shields jump back to 30% (once a minute)',cost:'−8% shield capacity',m:{sCap:.92},f:{snapBack:1},recipe:{plate:3,wire:3}},
   sealed:{slot:'cargo',name:'Sealed hold',spec:'jam',gain:'A hooked hold gives up half its contents, not all',cost:'−15% hold',m:{cargo:.85},f:{sealed:1},recipe:{plate:3,wire:3}},
   shredder:{slot:'weapon',name:'Shredder rounds',spec:'brood',gain:'Kinetic +35% to Brood hulls; a hit stops their regrowth for 10 s',cost:'Kinetic −15% against faction shields',f:{broodK:1.35,regenStop:10,facShK:.85},recipe:{plate:3,wire:3}},
-  cautery:{slot:'weapon',name:'Cautery lance',spec:'brood',gain:'Lasers +40% to Bloom Nodes and Seeders',cost:'Lasers −20% against other ships',f:{cautery:1},recipe:{plate:3,wire:3}},
-  incendiary:{slot:'payload',name:'Incendiary warheads',spec:'brood',gain:'Missiles +50% to Bloom Nodes and Seeders',cost:'Missiles −25% against other ships',f:{incend:1},recipe:{plate:3,wire:3}},
+  cautery:{slot:'weapon',name:'Cautery lance',spec:'brood',gain:'Lasers +40% to Bloom Nodes and Seeders',cost:'Lasers −12% against other ships',f:{cautery:1},recipe:{plate:3,wire:3}},
+  incendiary:{slot:'payload',name:'Incendiary warheads',spec:'brood',gain:'Missiles +50% to Bloom Nodes and Seeders',cost:'Missiles −15% against other ships',f:{incend:1},recipe:{plate:3,wire:3}},
   sporeseal:{slot:'armor',name:'Spore-sealed plating',spec:'brood',gain:'Latching spores stack to 1, not 3',cost:'−8% hull',m:{hull:.92},f:{sporeCap:1},recipe:{plate:3,wire:3}},
-  hazetune:{slot:'shield',name:'Haze-tuned emitter',spec:'brood',gain:'Ignores the Bloom haze recharge penalty',cost:'−10% shields everywhere',m:{sCap:.9},f:{hazeImm:1},recipe:{plate:3,wire:3}},
+  hazetune:{slot:'shield',name:'Haze-tuned emitter',spec:'brood',gain:'Ignores the Bloom haze recharge penalty',cost:'−6% shields everywhere',m:{sCap:.94},f:{hazeImm:1},recipe:{plate:3,wire:3}},
   scentbaf:{slot:'engine',name:'Scent baffles',spec:'brood',gain:'Blood scent ignores you above 25% hull',cost:'−8% top speed',m:{maxSpd:.92},f:{scentImm:1},recipe:{plate:3,wire:3}},
   ...UNB_VARS,
   shaped:{slot:'drill',name:'Shaped charges',gain:'On-point window 8 m instead of 5 m',cost:'An on-point charge releases at most 80%',f:{blWin:8,blRelCap:.8}},
@@ -817,7 +817,7 @@ const SHAPES={
     freighter:[[1.0,.3],[.9,-.3],[-.8,-.6],[-1.0,.1],[-.7,.6]]},
 };
 // Aurorite tuning: once per component, +6% to engines, holds and blast rigs, but only TUNE_CMB to shields, guns, armour and power
-const TUNE_CMB=.03;
+const TUNE_CMB=0.04;
 const TUNE_MAX=1,TUNE_STEP=.06,tuneItems=l=>l*(l+1)/2;
 function shipStats(fac,cls,T,U){const B=shipStatsBase(fac,cls,T);if(!U)return B;const u=s=>typeof U==='number'?U:(U[s]||0),m=s=>1+TUNE_STEP*u(s);
   B.thrust*=m('engine');B.maxSpd*=m('engine');B.turn*=1+TUNE_STEP*.5*u('engine');const mc=s=>1+TUNE_CMB*u(s);B.eCap*=mc('power');B.eRegen*=mc('power');B.sCap*=mc('shield');B.dmg*=mc('weapon');B.hull*=mc('armor');B.drill*=m('drill');B.cargo=Math.round(B.cargo*m('cargo'));return applyVariants(applyLegend(applyRefits(B,U),cls,U),U)}
@@ -1140,12 +1140,13 @@ function tunedK(e,kind){const t=e.st&&e.st.tuned;if(!t||(kind!=='kinetic'&&kind!
 function vrLose(P,crate,s){const vr=vrOf(P.tune);for(const sl in vr){const id='v_'+vr[sl];if(!ITEMS[id])continue;if(Math.random()<.5)inv.add(crate,id,1);else toDebris(s,{[id]:1})}if(P.tune)P.tune.vr={}}
 
 // combat Mk curve: how many old-style Mk steps each Mk is worth for hull, shields, armour, guns, energy and missiles, so an
-// upgrade is an edge, not a wall. Same pilot skill, same hull: Mk I beats Mk II about 37% of the time, Mk III 32%, Mk IV 27%,
-// Mk V 22%. Engines, holds, mining lasers and payload reloads keep their full steps.
-let MK_LV=[0,0,.45,.85,.85,.85],MK_K=1;const MK_TOP=3;/* Mk I-III only (IV and V retired); stronger steps so one Mk is worth more than any one variant */let SWARM_K=.35,MSL_K=1;/* swarm micro-missiles were deciding dogfights on their own: now harassment more than a kill */const mkL=t=>MK_LV[clamp(Math.round(t),1,5)]*MK_K;
+// upgrade is an edge, not a wall. Same pilot skill, same hull: Mk I beats Mk II about 40% of the time and Mk III about 35%, on
+// every hull: MK_HULL gives heavy hulls (longer fights) a smaller step. Engines, holds, blast rigs and payload reloads keep their full steps.
+let MK_LV=[0,0,0.178,0.36,0.36,0.36],MK_K=1;const MK_HULL={interceptor:0.9,striker:0.76,heavy:[0.8,0.58],bomber:0.93,gunboat:0.87,wraith:0.52,raider:0.72,corsair:0.91,plunderer:0.48};const MK_TOP=3;/* Mk I-III only (IV and V retired); stronger steps so one Mk is worth more than any one variant */let SWARM_K=.35,MSL_K=1;/* swarm micro-missiles were deciding dogfights on their own: now harassment more than a kill */const mkL=t=>MK_LV[clamp(Math.round(t),1,5)]*MK_K;
+function mkH(cls,t){const v=MK_HULL[cls];if(v==null)return(CLASSES[cls]&&CLASSES[cls].mkK)||1;return Array.isArray(v)?v[t>=3?1:0]:v}
 function shipStatsBase(fac,cls,T){
   const t=s=>typeof T==='number'?T:T[s];
-  const C=CLASSES[cls],F=(FACTIONS[fac]&&FACTIONS[fac].trait)||{},tr=k=>F[k]||1,c=s=>mkL(t(s))*(C.mkK||1);   // C.mkK evens out how much each hull gains per Mk
+  const C=CLASSES[cls],F=(FACTIONS[fac]&&FACTIONS[fac].trait)||{},tr=k=>F[k]||1,c=s=>mkL(t(s))*mkH(cls,t(s));   // C.mkK evens out how much each hull gains per Mk
   return{thrust:225*SPEED_K*(C.acc||1)*(1+.16*(t('engine')-1)),maxSpd:285*SPEED_K*C.speed*(1+.11*(t('engine')-1)),turn:C.turn*(1+.06*(t('engine')-1)),
     eCap:110*(1+.25*c('power'))*tr('energy'),eRegen:22*(1+.22*c('power'))*tr('energy'),
     sCap:172*C.shield*(1+.32*c('shield'))*tr('shield'),hull:2*C.hull*(1+.22*c('armor'))*tr('hull'),dr:.05*c('armor'),
@@ -4034,7 +4035,7 @@ function fireLaser(e){if(jamDark(e))return;if(e.cool>0||e.landed||e.stealth||(e.
   if(e.energy<cost){if(e.isPlayer&&W.t-(W.lowEMsg||0)>2.5){flash('Lasers need energy. Let the reactor recharge or switch to kinetic (1).');W.lowEMsg=W.t}return}
   e.cool=1/LASER_ROF;e.energy-=cost;e.lastFire=W.t;const R=laserRay(e,LASER_RANGE),dmg=e.st.dmg*.5;
   if(e.isPlayer)AU.lasT=W.t;else if(W.t-(e.sndT||0)>.45){e.sndT=W.t;SFX.laserNpc(vAt(e))}
-  if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg*(e.st.cautery?(R.hit.ref.side==='brood'&&R.hit.ref.role==='builder'?1.4:.8):1),e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1*(e.st.cautery&&R.hit.ref.fac==='brood'?1.4:1),e.side,'laser',e);if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
+  if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg*(e.st.cautery?(R.hit.ref.side==='brood'&&R.hit.ref.role==='builder'?1.4:.88):1),e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1*(e.st.cautery&&R.hit.ref.fac==='brood'?1.4:1),e.side,'laser',e);if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FAC(S.player.faction).col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
   {const me=W.player;if(me&&e.alive&&!e.ghost){if(e===me){if(srcSide&&srcSide!==me.side)musHit(e.shield>0)}else if(at&&(at.src===me||at===me))musHit(e.shield>0)}}
@@ -4064,12 +4065,12 @@ function wptsIn(sec){const o=[];for(const w of(sec&&sec.wrecks)||[])for(const p 
 function mineFind(sec,id){return sec.ast.find(a=>a.id===id)||wptsIn(sec).find(p=>p.id===id)||null}
 function wreckOf(sec,p){return((sec&&sec.wrecks)||[]).find(w=>w.pts.includes(p))||null}
 // ============================================================ blast mining (pilots): scan a rock, fire charges at its fault points from up to 300 m, back off
-// and detonate (3) or cancel (4), then hold F by the ore cloud to collect it. Each charge releases one fault-point section of the
-// rock: 90% of it on point, 50% near, 25% off. Charges come from a magazine with a long reload, so placement, not time on the rock,
-// sets a miner's pay. Wreck sections crack at their joint, and a reactor core needs every charge on point or it all blows.
+// and detonate (3) or cancel (4), then hold F by the ore cloud to collect it. Each charge blows off one chunk of its fault-point
+// section (up to the launcher's size: 7, 9 or 14 units) and releases 90% of it on point, 50% near, 25% off, so a full hold takes
+// several charges and placement, not time on the rock, sets a miner's pay. Wreck sections crack at their joint, and a reactor core needs every charge on point or it all blows.
 // Nothing is made or lost: unreleased ore, and nuggets left when a cloud thins out, go to the system's debris pool.
 const BL={spd:300,near:15,blastR:120,cloudLife:90,collectR:250,coreR:600,coreDmg:520,chgDmg:22,stationR:400,scanT:20,eyeR:100};
-const BL_HULL={skiff:{n:2,reload:110,coll:6,cd:1},prospector:{n:3,reload:115,coll:9,cd:.5},dredger:{n:4,reload:150,coll:12,cd:.34}};
+const BL_HULL={skiff:{n:5,reload:90,coll:6,cd:1,k:7},prospector:{n:6,reload:100,coll:9,cd:.5,k:9},dredger:{n:7,reload:110,coll:12,cd:.34,k:14}};
 const BL_REL={on:.9,near:.5,off:.25};
 function blHull(cls){return BL_HULL[cls]||null}
 function blTier(P){return(P&&P.tiers&&P.tiers.drill)||1}
@@ -4123,8 +4124,8 @@ function blDetonate(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]
       const best=Math.max(...cs.map(c=>blRate(c.q,P))),f=best*Math.max(0,1-.1*(cs.length-1)),rel={};for(const k in T.ore){const r=Math.round(T.ore[k]*f);if(r>0)rel[k]=r;const d=T.ore[k]-r;if(d>0)toDebris(s,{[k]:d})}
       T.ore={};T.last=0;got+=blCloud(s,at,rel,R0,cs.length-1,o)}
     else{const n=blPts(T).length,secQ={};let extra=0;for(const c of cs){const r=blRate(c.q,P);if(c.pi in secQ){extra++;secQ[c.pi]=Math.max(secQ[c.pi],r)}else secQ[c.pi]=r}
-      const nc=Object.keys(secQ).length,f=Object.values(secQ).reduce((a,b)=>a+b,0)/nc*Math.max(0,1-.1*extra),rel={};
-      for(const k of Object.keys(T.ore)){const cK=Math.min(T.ore[k],Math.round(T.ore[k]*nc/n)),r=Math.round(cK*f);T.ore[k]-=cK;if(T.ore[k]<=0)delete T.ore[k];if(r>0)rel[k]=r;if(cK-r>0)toDebris(s,{[k]:cK-r})}
+      const nc=Object.keys(secQ).length,f=Object.values(secQ).reduce((a,b)=>a+b,0)/nc*Math.max(0,1-.1*extra),rel={},hk=blHull(P.cls),tot0=oreTotal(T),fr=Math.min(nc/n,hk&&hk.k?hk.k*nc/Math.max(1,tot0):1);
+      for(const k of Object.keys(T.ore)){const cK=Math.min(T.ore[k],Math.round(T.ore[k]*fr)),r=Math.round(cK*f);T.ore[k]-=cK;if(T.ore[k]<=0)delete T.ore[k];if(r>0)rel[k]=r;if(cK-r>0)toDebris(s,{[k]:cK-r})}
       if(oreTotal(T)<=0)removeAst(s,T);else T.fpv=(T.fpv||0)+1;got+=blCloud(s,at,rel,R0,extra,o)}
     if(!MUTE){fxBoom(at,R0*1.6,'#ffd9a0');SFX.crack&&SFX.crack()}
     for(const x of W.ents.slice())if(x.type==='ship'&&x.alive){const d=d3(x,at);if(d<BL.blastR)damageShip(x,BL.chgDmg*cs.length*(1-d/BL.blastR)+5,e.side,at,'blast')}}
@@ -4359,7 +4360,7 @@ const TORP_SMALL=.3;
 function detonate(m,i){if(m.harp){W.missiles.splice(i,1);harpHit(m);return}if(m.jt){W.missiles.splice(i,1);jtHit(m);return}const s=S.sectors[W.sid],tp=m.kind==='torpedo',sw=m.kind==='swarm',BR=tp?110:sw?26:70;W.missiles.splice(i,1);fxBoom(m,tp?130:sw?28:55,m.col);if(tp)fxBoom(m,80,'#ffe2b0');
   for(const e of W.ents.slice()){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead))continue;if(!hostile(m.side,e.side))continue;const d=d3(e,m);if(d<BR+e.st.radius){
     const bare=!tp&&e.shield<=e.st.sCap*.05,mul=bare?BARE_MUL:1;if(bare){fxSpark(e,'#ff9a6a',sw?3:8);if(m.side==='player'&&W.t-(W.bareT||-9)>1.5){W.bareT=W.t;flash('Shields down: missiles hit for ×1.8!')}}
-    damageShip(e,(m.incend?(e.side==='brood'&&e.role==='builder'?1.5:.75):1)*m.dmg*mul*(d<e.st.radius+28?1:.45)*(tp&&e.role!=='frigate'?TORP_SMALL:1),m.side,m)}}
+    damageShip(e,(m.incend?(e.side==='brood'&&e.role==='builder'?1.5:.85):1)*m.dmg*mul*(d<e.st.radius+28?1:.45)*(tp&&e.role!=='frigate'?TORP_SMALL:1),m.side,m)}}
   if(m.tgt&&m.tgt.type==='station'&&W.stationEnt===m.tgt&&hostile(m.side,m.tgt.fac)&&d3(m.tgt,m)<240)damageStation(m.tgt,m.dmg*(tp?TORP_STATION:1)*(m.incend&&m.tgt.fac==='brood'?1.5:1),m.side,m.kind,m.src);
   if(W.works&&W.works.length)wkBlast(m,tp,BR);
   const T=m.tgt;if(T&&T.type==='outpost'&&!T.o.breached&&T.o.owner&&hostile(m.side,T.o.owner)&&d3(T,m)<(tp?230:170))damageOutpost(T,m.dmg*(tp?3:1.5));
@@ -4526,7 +4527,7 @@ try{if('speechSynthesis' in window){speechSynthesis.getVoices();speechSynthesis.
 function apTarget(){if(W.tgt&&validTgt(W.tgt)&&W.tgt.kind!=='ship')return W.tgt;if(W.tgt&&W.tgt.kind==='ship'&&!hostile('player',W.tgt.ref.side)&&validTgt(W.tgt))return W.tgt;const g=routeNext();return g?{kind:'gate',ref:g}:null}
 function toggleAutopilot(){if(!W||S.player.docked)return;if(apOn){apOn=false;flash('Autopilot off.');return}const T=apTarget();if(!T){flash('Autopilot needs a destination: target a gate, station or rock (Tab cycles), or set a course on the map (M).',true);return}
   if(T.kind==='ship'&&hostile('player',T.ref.side)){flash('Autopilot will not fly at hostiles.',true);return}apOn=true;W.tgt=T;flash('Autopilot engaged. Steer or thrust to take back control.')}
-function autopilot(p,dt){const T=apTarget();if(!T){apOn=false;return false}W.tgt=T;const R=T.ref;let stand=0,arrive=true;
+function autopilot(p,dt){const T=apTarget();if(!T||!T.ref){apOn=false;if(T&&!T.ref)W.tgt=null;return false}W.tgt=T;const R=T.ref;let stand=0,arrive=true;
   if(T.kind==='gate'){const g=R,d=gateAxis(g),z=gateZone(g,p);if(W.gc||(z.inZone&&z.along>-420)){faceDir(p,d.x,d.y,d.z,dt);p.thrusting=false;if(!W.gc&&z.cos>.9)brake(p,dt*.6);return true}
     const ax=g.x-d.x*300,ay=g.y-d.y*300,az=g.z-d.z*300,ex=ax-p.x,ey=ay-p.y,ez=az-p.z,de=hyp(ex,ey,ez)||1,er=faceDir(p,ex,ey,ez,dt);if(er<.6)steer(p,ax,ay,az,dt,true,1);else brake(p,dt*.4);p.thrusting=er<.6;return true}else if(T.kind==='station'||T.kind==='outpost')stand=230;else if(T.kind==='ast')stand=astR(R)+140;else if(T.kind==='ship')stand=180;else if(T.kind==='beacon')stand=90;else stand=0;
   const dx=R.x-p.x,dy=R.y-p.y,dz=R.z-p.z,d=hyp(dx,dy,dz)||1,tx=R.x-dx/d*stand,ty=R.y-dy/d*stand,tz=R.z-dz/d*stand;
@@ -4772,7 +4773,7 @@ function physics(e,dt){if(e.inJump)return;
   const v=hyp(e.vx,e.vy,e.vz);if(v>cap){const k=Math.min(1,(pl?(e.boosting?2:.75):3)*dt),f=1-k+k*cap/v;e.vx*=f;e.vy*=f;e.vz*=f}
   e.x+=e.vx*dt;e.y+=e.vy*dt;e.z+=e.vz*dt;
   const r=hyp(e.x,e.y,e.z);if(r>3300*SPACE){e.vx-=e.x/r*400*dt;e.vy-=e.y/r*400*dt;e.vz-=e.z/r*400*dt}
-  e.cool-=dt;if(!e.landed)e.energy=Math.min(e.st.eCap,e.energy+e.st.eRegen*dt*(e.boot&&W.t<e.boot?4:1)*(e.st.surge&&W.t-(e.lastFire||-9)<e.st.surge?0:1));
+  e.cool-=dt;if(!e.landed)e.energy=Math.min(e.st.eCap,e.energy+e.st.eRegen*dt*(e.boot&&W.t<e.boot?4:1)*(e.st.surge&&W.t-(e.lastFire||-9)<e.st.surge?(e.st.surgeK||0):1));
   if(!(S.sectors[W.sid].storm>S.T)&&W.t-e.lastHit>(e.st.shDelay||2.5)&&!e.landed&&!e.stealth&&!(e.boot&&W.t<e.boot))e.shield=Math.min(e.st.sCap,e.shield+e.st.sCap*(e.cls==='frigate'||e.cls==='carrier'?.012*pmul(e.tok,'shd'):e.cls==='escort'?.025*pmul(e.tok,'shd'):.09*(e.st.shRegK||1))*dt*(W.haze&&e.side!=='brood'&&!e.st.hazeImm?.85:1));
   if(e.shDown&&e.shield>e.st.sCap*.2){e.shDown=false;e.shUpT=W.t}
   jamDrain(e,dt);if(e.spores&&e.spores.length&&e.side!=='brood'){e.spores=e.spores.filter(t=>t>W.t);if(e.spores.length&&e.hull>1)e.hull=Math.max(1,e.hull-.5*e.spores.length*dt)}
@@ -5902,7 +5903,7 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
   else if(act==='make'){const[k,n]=arg.split(':');const r=ITEMS[k].recipe,fee=c.fee?Math.ceil(baseValue(k)*.06):0;let made=0;const lim=n==='max'?999:1;
     while(made<lim&&haveIn(r,srcs)&&P.credits>=fee){takeFrom(r,srcs);inv.add(c.storage,k,1);if(fee)transfer('player',c.wallet,fee);made++}
     dockErr=made?`✓ Fabricated ${made} ${ITEMS[k].name}.`:(P.credits<fee?'Not enough credits for the labour fee.':'Missing materials.')}
-  else if(act==='tune'){const l=(P.tune=P.tune||{})[arg]||0;if(l<TUNE_MAX){if(takeFrom({tune:l+1},srcs)){P.tune[arg]=l+1;refreshPlayerStats();dockErr=`✓ ${SLOT[arg].name} Aurora-tuned ${'✦'.repeat(l+1)} (+${Math.round(TUNE_STEP*100*(l+1))}%).`;feed(`${SLOT[arg].name} Aurora-tuned to level ${l+1}.`,'good')}else dockErr=`Needs ${l+1} Aurora Tuning (2 Aurorite + 1 Flux Coil each). Aurorite is only found in deep space.`}}
+  else if(act==='tune'){const l=(P.tune=P.tune||{})[arg]||0;if(l<TUNE_MAX){if(takeFrom({tune:l+1},srcs)){P.tune[arg]=l+1;refreshPlayerStats();dockErr=`✓ ${SLOT[arg].name} Aurora-tuned ${'✦'.repeat(l+1)} (+${Math.round((['power','shield','weapon','armor'].includes(arg)?TUNE_CMB:TUNE_STEP)*100*(l+1))}%).`;feed(`${SLOT[arg].name} Aurora-tuned to level ${l+1}.`,'good')}else dockErr=`Needs ${l+1} Aurora Tuning (2 Aurorite + 1 Flux Coil each). Aurorite is only found in deep space.`}}
   else if(act==='vfit'){const[sl,id]=String(arg).split(':'),V=VARIANTS[id];if(!V||V.slot!==sl||!SLOT[sl])return;if(V.spec==='unb'&&!S.unb)return;if(V.spec==='unb'&&!countIn('v_'+id,srcs)){dockErr='Unbound parts come from the haven black market.';return}if(!V.spec&&(P.tiers[sl]||1)<2){dockErr=`General variants open at Mk II. Upgrade the ${SLOT[sl].name} first (specialists fit at any Mk).`;return}
     P.tune=P.tune||{};P.tune.vr=P.tune.vr||{};if(P.tune.vr[sl]===id)return;const item='v_'+id;
     if(countIn(item,srcs)>0)takeFrom({[item]:1},srcs);else if(haveIn(V.recipe,srcs))takeFrom(V.recipe,srcs);else{dockErr=`Missing parts for the ${V.name}.`;return}
@@ -6244,7 +6245,7 @@ const TRAIN=[
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Bounties, swarms and wings.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships, shared by damage dealt. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts also carry a swarm launcher (<kbd>3</kbd>): eight micro-missiles that fan out at your target. Shields recharge 2.5 s after the last hit. Combat ships fly in wings, and when a wing is cut down to one or two ships the survivors run for home.'}]},
  {t:'Mining and trade',setup:trMiner,steps:[
   {x:'Only mining ships carry a blast rig, so training has moved you into a <b>Light Miner</b>. Press <kbd>R</kbd> to target the nearest asteroid and fly to it.',ok:()=>W.tgt&&W.tgt.kind==='ast'},
-  {x:'Mining is blasting. Fault-point rings show on the rock: aim at one until it turns green and press <kbd>F</kbd> to fire a charge. Back off 120 m and press <kbd>3</kbd> to detonate (<kbd>4</kbd> cancels). Then hold <kbd>F</kbd> by the ore cloud and collect <b>3 ore</b>. Charges on point release the most; your magazine reloads slowly, so placement sets your pay. Every plate and coil in Driftgate was mined from a rock that already existed: nothing is created.',setup:()=>{S.training.v.ore=trOre()},ok:()=>trOre()-(S.training.v.ore||0)>=3},
+  {x:'Mining is blasting. Fault-point rings show on the rock: aim at one until it turns green and press <kbd>F</kbd> to fire a charge. Back off 120 m and press <kbd>3</kbd> to detonate (<kbd>4</kbd> cancels). Then hold <kbd>F</kbd> by the ore cloud and collect <b>3 ore</b>. Each charge blows off one chunk of the rock, so a full hold takes several charges. Charges on point release the most, so placement sets your pay. Every plate and coil in Driftgate was mined from a rock that already existed: nothing is created.',setup:()=>{S.training.v.ore=trOre()},ok:()=>trOre()-(S.training.v.ore||0)>=3},
   {x:'Fly back to the station (<kbd>Tab</kbd> to target it, <kbd>J</kbd> for autopilot) and press <kbd>E</kbd> to dock.',ok:()=>S.player.docked==='station'},
   {x:'Open <b>Economy → Market</b> and sell your ore. Prices follow each station’s real stock, so a glut sells cheap and a shortage pays well.',setup:()=>{S.training.v.ore=trOre();S.training.v.cr=S.player.credits},ok:()=>trOre()<S.training.v.ore&&S.player.credits>S.training.v.cr},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Ores and hulls.</b> Ferrite, cuprite, iridium and xenocrystal are common. <b>Aurorite</b> exists only in the three deep-space systems and tunes components (+6% a level). <b>Vantium</b> lies in four contested fields, and every Capital Keel needs it. Bigger mining and hauling hulls, bought at a core Shipyard, carry more charge launchers (and bigger magazines) or bigger holds, plus <b>guard drones</b> that launch with you and defend your ship. Haulers don’t mine.'}]},
