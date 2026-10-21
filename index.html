@@ -689,7 +689,36 @@ const ITEMS={
   picket:{name:'Picket Kit',recipe:{plate:3,wire:2,coil:1},col:'#e8d8a0'},
   frame:{name:'Depot Frame',recipe:{plate:10,wire:6,coil:3},col:'#c8d2e0'},
 };
-const ITEM_ORDER=['fe','cu','ir','xc','au','nu','plate','wire','coil','lattice','core','beacon','missile','torpedo','swarm','drone','frame','keel','picket'];
+
+// ============================================================ ship upgrade choices: from Mk II each system takes one variant, a real part built from
+// materials (an item, so the ledger counts it), fitted per ship in tune.vr and free to swap at any dock with Upgrades. A variant buys a
+// strength with a weakness. Fitted variants go down with the ship: half spill into the crate as salvage, the rest is lost as debris.
+const VAR_RECIPE={plate:2,coil:2,lattice:1};
+const VARIANTS={
+  sprint:{slot:'engine',name:'Sprint drive',gain:'+25% top speed, afterburner lasts longer',cost:'−20% turn',m:{maxSpd:1.25,turn:.8},f:{boostK:.8}},
+  vector:{slot:'engine',name:'Vector drive',gain:'+30% turn',cost:'−12% top speed',m:{turn:1.3,maxSpd:.88}},
+  longburn:{slot:'engine',name:'Long-burn drive',gain:'Afterburner uses 40% less energy',cost:'−15% acceleration',m:{thrust:.85},f:{boostK:.6}},
+  surge:{slot:'power',name:'Surge core',gain:'+50% energy capacity',cost:'Recharge pauses for half a second after firing or boosting',m:{eCap:1.5},f:{surge:.5}},
+  steady:{slot:'power',name:'Steady core',gain:'+35% energy recharge',cost:'−25% energy capacity',m:{eRegen:1.35,eCap:.75}},
+  bastion:{slot:'shield',name:'Bastion',gain:'+45% shield capacity',cost:'Recharge waits 4.5 s after a hit, not 2.5 s',m:{sCap:1.45},f:{shDelay:4.5}},
+  flicker:{slot:'shield',name:'Flicker',gain:'Recharge starts after 1 s and runs twice as fast',cost:'−30% shield capacity',m:{sCap:.7},f:{shDelay:1,shRegK:2}},
+  tunedk:{slot:'shield',name:'Tuned emitter (kinetic)',gain:'Shields take 30% less from kinetic fire',cost:'Shields take 20% more from lasers',f:{tuned:'kinetic'}},
+  tunedl:{slot:'shield',name:'Tuned emitter (laser)',gain:'Shields take 30% less from lasers',cost:'Shields take 20% more from kinetic fire',f:{tuned:'laser'}},
+  heavyc:{slot:'weapon',name:'Heavy cannons',gain:'+40% damage per shot',cost:'−30% fire rate, 15% slower shells',m:{dmg:1.4,rof:.7},f:{shotSpd:977.5}},
+  rapid:{slot:'weapon',name:'Rapid fire',gain:'+45% fire rate',cost:'−25% damage, higher energy drain',m:{rof:1.45,dmg:.75}},
+  longbar:{slot:'weapon',name:'Long barrel',gain:'+30% range',cost:'−10% fire rate',m:{rof:.9},f:{shotTtl:1.3}},
+  ablative:{slot:'armor',name:'Ablative plating',gain:'+40% hull',cost:'−10% speed and acceleration',m:{hull:1.4,maxSpd:.9,thrust:.9}},
+  lightframe:{slot:'armor',name:'Light frame',gain:'+10% turn and acceleration',cost:'−15% hull',m:{hull:.85,turn:1.1,thrust:1.1}},
+  reactive:{slot:'armor',name:'Reactive plating',gain:'+12% damage reduction',cost:'−10% shields',m:{sCap:.9},a:{dr:.12}},
+  bulk:{slot:'cargo',name:'Bulk hold',gain:'+50% hold',cost:'Always handles as at least half laden',m:{cargo:1.5},f:{ladenMin:.5}},
+  stable:{slot:'cargo',name:'Stabilised hold',gain:'Half the laden handling penalty',cost:'−20% hold',m:{cargo:.8,ladenK:.5}},
+  deepmag:{slot:'payload',name:'Deep magazine',gain:'+50% missiles in the rack',cost:'Always flies as at least a third laden',f:{rackK:1.5,ladenMin:1/3}},
+  quickcyc:{slot:'payload',name:'Quick-cycle rack',gain:'Reloads twice as fast',cost:'−40% rack size',f:{reloadK:.5,rackK:.6}},
+  smart:{slot:'payload',name:'Smart seekers',gain:'−40% lock time',cost:'−20% missile damage',f:{lockK:.6,mslK:.8}},
+};
+const VAR_BY_SLOT={};for(const id in VARIANTS){const V=VARIANTS[id];V.id=id;V.recipe=V.recipe||VAR_RECIPE;(VAR_BY_SLOT[V.slot]=VAR_BY_SLOT[V.slot]||[]).push(id);
+  ITEMS['v_'+id]={name:V.name,recipe:V.recipe,col:'#9fe0c8',variant:id}}
+const ITEM_ORDER=['fe','cu','ir','xc','au','nu','plate','wire','coil','lattice','core','beacon','missile','torpedo','swarm','drone','frame','keel','picket'];for(const id in VARIANTS)ITEM_ORDER.push('v_'+id);
 // missiles, torpedoes and swarm pods are magazines on a cooldown now: no one buys, sells or fabricates them on the market
 const MUNITIONS=new Set(['missile','torpedo','swarm']);
 const CRAFTABLE=['plate','wire','coil','lattice','core','beacon','missile','torpedo','swarm','tune','frame','keel'];
@@ -767,11 +796,24 @@ const SHAPES={
 const TUNE_CMB=.03;
 const TUNE_MAX=2,TUNE_STEP=.06,tuneItems=l=>l*(l+1)/2;
 function shipStats(fac,cls,T,U){const B=shipStatsBase(fac,cls,T);if(!U)return B;const u=s=>typeof U==='number'?U:(U[s]||0),m=s=>1+TUNE_STEP*u(s);
-  B.thrust*=m('engine');B.maxSpd*=m('engine');B.turn*=1+TUNE_STEP*.5*u('engine');const mc=s=>1+TUNE_CMB*u(s);B.eCap*=mc('power');B.eRegen*=mc('power');B.sCap*=mc('shield');B.dmg*=mc('weapon');B.hull*=mc('armor');B.drill*=m('drill');B.cargo=Math.round(B.cargo*m('cargo'));return applyLegend(applyRefits(B,U),cls,U)}
+  B.thrust*=m('engine');B.maxSpd*=m('engine');B.turn*=1+TUNE_STEP*.5*u('engine');const mc=s=>1+TUNE_CMB*u(s);B.eCap*=mc('power');B.eRegen*=mc('power');B.sCap*=mc('shield');B.dmg*=mc('weapon');B.hull*=mc('armor');B.drill*=m('drill');B.cargo=Math.round(B.cargo*m('cargo'));return applyVariants(applyLegend(applyRefits(B,U),cls,U),U)}
+function vrOf(U){return(U&&typeof U==='object'&&U.vr)||{}}
+function applyVariants(B,U){const vr=vrOf(U);for(const sl in vr){const V=VARIANTS[vr[sl]];if(!V||V.slot!==sl)continue;
+  for(const k in V.m||{})B[k]=(B[k]||(k==='ladenK'?1:0))*V.m[k];for(const k in V.a||{})B[k]=(B[k]||0)+V.a[k];for(const k in V.f||{})B[k]=V.f[k]}
+  if(B.cargo)B.cargo=Math.round(B.cargo);return B}
+// a pilot's fitted-variant factor for things computed from the pilot record rather than ship stats (rack size, reloads, lock time)
+function vK(P,key){let k=1;const vr=vrOf(P&&P.tune);for(const sl in vr){const V=VARIANTS[vr[sl]];if(V&&V.f&&V.f[key]!=null)k*=V.f[key]}return k}
+function pRack(P){return Math.round(rackCapC(P.cls,P.tiers.weapon)*vK(P,'rackK'))}
+function vrInv(R){const o={};const vr=vrOf(R&&R.tune);for(const sl in vr)if(VARIANTS[vr[sl]])inv.add(o,'v_'+vr[sl],1);return o}
+// shields tuned against one weapon type take less from it and more from the other
+function tunedK(e,kind){const t=e.st&&e.st.tuned;if(!t||(kind!=='kinetic'&&kind!=='laser'))return 1;return kind===t?1/1.3:1.2}
+// a destroyed ship's fitted variants: each one either spills into the crate whole, or breaks up into the system's debris
+function vrLose(P,crate,s){const vr=vrOf(P.tune);for(const sl in vr){const id='v_'+vr[sl];if(!ITEMS[id])continue;if(Math.random()<.5)inv.add(crate,id,1);else toDebris(s,{[id]:1})}if(P.tune)P.tune.vr={}}
+
 // combat Mk curve: how many old-style Mk steps each Mk is worth for hull, shields, armour, guns, energy and missiles, so an
 // upgrade is an edge, not a wall. Same pilot skill, same hull: Mk I beats Mk II about 37% of the time, Mk III 32%, Mk IV 27%,
 // Mk V 22%. Engines, holds, mining lasers and payload reloads keep their full steps.
-let MK_LV=[0,0,.17,.29,.46,.72],MK_K=1;let SWARM_K=.35,MSL_K=1;/* swarm micro-missiles were deciding dogfights on their own: now harassment more than a kill */const mkL=t=>MK_LV[clamp(Math.round(t),1,5)]*MK_K;
+let MK_LV=[0,0,.17,.29,.46,.72],MK_K=1;const MK_TOP=3;let SWARM_K=.35,MSL_K=1;/* swarm micro-missiles were deciding dogfights on their own: now harassment more than a kill */const mkL=t=>MK_LV[clamp(Math.round(t),1,5)]*MK_K;
 function shipStatsBase(fac,cls,T){
   const t=s=>typeof T==='number'?T:T[s];
   const C=CLASSES[cls],F=(FACTIONS[fac]&&FACTIONS[fac].trait)||{},tr=k=>F[k]||1,c=s=>mkL(t(s))*(C.mkK||1);   // C.mkK evens out how much each hull gains per Mk
@@ -795,10 +837,10 @@ const rackCapC=(cls,t)=>CLASSES[cls].torp?2+t:Math.round((4+2*(t-1))*CLASSES[cls
 const MAG_T={missile:20,torpedo:35,swarm:30};
 // Payload Bay upgrades stop at a floor per weapon; only Aurora tuning (deep-space Aurorite) pushes below it
 const MAG_FLOOR={missile:10,torpedo:20,swarm:15};
-function reloadT(P,k){const t=(P.tiers&&P.tiers.payload)||1,u=(P.tune&&P.tune.payload)||0;return Math.max(1,Math.round(Math.max(MAG_FLOOR[k],MAG_T[k]*(1-.15*(t-1))))-2*u)}
+function reloadT(P,k){const t=(P.tiers&&P.tiers.payload)||1,u=(P.tune&&P.tune.payload)||0;return Math.max(1,Math.round(Math.max(MAG_FLOOR[k],MAG_T[k]*(1-.15*(t-1)))*vK(P,'reloadK'))-2*u)}
 function swarmCap(P){return(CLASSES[P.cls]&&CLASSES[P.cls].swarm)||0}
-function magInit(P){if(!P||P.magV)return;if(P.rack>0&&P.vault)inv.add(P.vault,rackItem(P.cls),P.rack);P.rack=rackCapC(P.cls,P.tiers.weapon);P.swarm=swarmCap(P);P.mslT=0;P.swT=0;P.magV=1}
-function magTick(P,dt){if(!P||!P.tiers)return;if(!P.magV)magInit(P);const cap=rackCapC(P.cls,P.tiers.weapon),sc=swarmCap(P);if(P.rack>cap)P.rack=cap;if(P.swarm>sc)P.swarm=sc;
+function magInit(P){if(!P||P.magV)return;if(P.rack>0&&P.vault)inv.add(P.vault,rackItem(P.cls),P.rack);P.rack=pRack(P);P.swarm=swarmCap(P);P.mslT=0;P.swT=0;P.magV=1}
+function magTick(P,dt){if(!P||!P.tiers)return;if(!P.magV)magInit(P);const cap=pRack(P),sc=swarmCap(P);if(P.rack>cap)P.rack=cap;if(P.swarm>sc)P.swarm=sc;
   if(P.rack<cap){if(!(P.mslT>0))P.mslT=reloadT(P,CLASSES[P.cls].torp?'torpedo':'missile');P.mslT-=dt;if(P.mslT<=0){P.rack=cap;P.mslT=0;if(P===S.player&&!MUTE&&running)feed(`${CLASSES[P.cls].torp?'Torpedo bay':'Missile rack'} reloaded.`,'info')}}else P.mslT=0;
   if(sc&&(P.swarm||0)<sc){if(!(P.swT>0))P.swT=reloadT(P,'swarm');P.swT-=dt;if(P.swT<=0){P.swarm=sc;P.swT=0}}else P.swT=0}
 
@@ -838,7 +880,7 @@ const SPREAD=1.2; // spacing rules that don't scale with SPACE (belt gaps, rock 
 const GATES={};SECTOR_DEFS.forEach(d=>{GATES[d.id]=NEIGH[d.id].map(n=>{const e=DEF[n],a=Math.atan2(e.y-d.y,e.x-d.x),h=Math.round(((hashStr(d.id+n)%2400)-1200)*1.25);return{to:n,x:Math.round(Math.cos(a)*2500*SPACE),y:h,z:Math.round(Math.sin(a)*2500*SPACE)}})});
 const OUTPOST_DEFS={kestrel:{sector:'ke',name:'Kestrel Forge',type:'forge'},shoal:{sector:'sh',name:'Shoal Forge',type:'forge'},cinder:{sector:'ci',name:'Cinder Forge',type:'forge'},hollow:{sector:'ho',name:'Hollow Relay',type:'relay'},wrack:{sector:'wr',name:'Wrack Salvage Yard',type:'yard'}};
 const OUT_BY_SECTOR={};for(const k in OUTPOST_DEFS)OUT_BY_SECTOR[OUTPOST_DEFS[k].sector]=k;
-const TYPE_TEXT={forge:'Forge · Lattice, Cores, Mk IV–V fitting',relay:'Relay · gate tolls and strike-group intel',yard:'Salvage Yard · harvests sector debris'};
+const TYPE_TEXT={forge:'Forge · Lattice and Cores',relay:'Relay · gate tolls and strike-group intel',yard:'Salvage Yard · harvests sector debris'};
 function oStats(o){const L=o.level;return{sMax:400+350*L,hMax:900+450*L,dmg:7+3*L,rof:1.6+.3*L,range:950}}
 function sideCol(s){return s==='player'?PLAYER_COL:s==='neutral'?NEUTRAL.col:s==='pirate'?PIRATE.col:FACTIONS[s]?FACTIONS[s].col:'#7f8aa3'}
 function sideName(s){return s==='player'?'You':s==='neutral'?NEUTRAL.short:s==='pirate'?'The Unbound':FACTIONS[s]?FACTIONS[s].short:'Unclaimed'}
@@ -1064,10 +1106,10 @@ function baseTiers(){const t={};for(const sl of SLOTS)t[sl.id]=1;return t}
 function baseKit(){const o={};for(const sl of SLOTS)inv.addAll(o,sl.base);return o}
 function shipRec(P){return{cls:P.cls,tiers:{...P.tiers},tune:JSON.parse(JSON.stringify(P.tune||{})),bay:{...(P.bay||{})},rack:P.rack|0,swarm:P.swarm||0,hullInv:{...(P.hullInv||{})},stored:S.T}}
 function shipLoad(P,r){P.cls=r.cls;P.tiers={...baseTiers(),...r.tiers};P.tune=JSON.parse(JSON.stringify(r.tune||{}));P.bay={...(r.bay||{})};P.rack=r.rack|0;P.swarm=r.swarm||0;P.mslT=0;P.swT=0;P.hullInv={...(r.hullInv||{})}}
-function shipBare(R){const t=R.tune||{};return SLOTS.every(sl=>(R.tiers[sl.id]||1)<=1&&!(t[sl.id]>0))&&!Object.keys(t.rf||{}).length}
+function shipBare(R){const t=R.tune||{};return SLOTS.every(sl=>(R.tiers[sl.id]||1)<=1&&!(t[sl.id]>0))&&!Object.keys(t.rf||{}).length&&!Object.keys(t.vr||{}).length}
 // strip a ship back to Mk I: every part above Mk I and the Aurora tunings go into `into` (refits can't be removed and are lost)
 function shipStrip(R,into){for(const sl of SLOTS){const t=R.tiers[sl.id]||1;if(t>1){const a=compInv(sl.id,t),b=compInv(sl.id,1);for(const k in a){const n=a[k]-(b[k]||0);if(n>0)inv.add(into,k,n)}R.tiers[sl.id]=1}
-    const l=(R.tune||{})[sl.id]||0;if(l){inv.add(into,'tune',tuneItems(l));R.tune[sl.id]=0}}if(R.tune&&R.tune.rf)R.tune.rf={}}
+    const l=(R.tune||{})[sl.id]||0;if(l){inv.add(into,'tune',tuneItems(l));R.tune[sl.id]=0}}if(R.tune&&R.tune.rf)R.tune.rf={};if(R.tune&&R.tune.vr){inv.addAll(into,vrInv(R));R.tune.vr={}}}
 // a fresh starter frame needs its Mk I components: the station's faction supplies them (with the free hull), your vault if it can't
 function issueKit(store,fac){const k=baseKit(),srcs=[fac&&S.econ.stock[fac],fac&&S.econ.fleet[fac],store].filter(Boolean);if(!haveIn(k,srcs))return false;takeFrom(k,srcs);return true}
 function shipsCount(P){return(P.ships||[]).length}
@@ -1097,7 +1139,12 @@ function newGame(fac,cls,pname){
 
 function broodInit(){S.econ.stock.brood={fe:420,cu:300,ir:160,xc:40,plate:50,wire:40,coil:14,missile:10,torpedo:10,frame:2};S.econ.fleet.brood={plate:30,wire:20,coil:8,missile:6,torpedo:6};S.econ.treasury.brood=0;S.ai.brood={next:S.T+150,build:S.T+260}}
 // older saves: add the new sectors, station records and the Brood, then shift the conservation baseline by exactly what was added
-function migrate(st){S=st;for(const ev of S.events||[])if(ev.type==='wingfly'&&ev.stage!=='done'){const f=sideNorm(ev.side);inv.addAll(S.econ.stock[f]||S.econ.stock.pirate,ev.force||{});ev.force={};ev.stage='done'}if(!S.capV&&S.frigates){S.capV=1;for(const t of S.frigates.slice()){if(isEsc(t)||isCar(t))continue;const h=t.owner&&S.pilots&&S.pilots[t.owner]?S.pilots[t.owner].vault:t.side==='player'?S.player.vault:S.econ.stock[t.side];if(h)inv.addAll(h,t.load);else toDebris(S.sectors[t.sector],t.load);t.load={};S.frigates.splice(S.frigates.indexOf(t),1)}for(const ev of S.events||[])if(ev.type==='frigbuild'&&ev.stage==='building'){const h=S.econ.stock[ev.att]||S.player.vault;inv.addAll(h,ev.force);ev.force={};ev.stage='done'}}for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.cls==='constructor')P.cls='courier';fpMigrate();beaconInit();if((S.seamV||0)<2&&S.sectors){S.seamV=2;seamClear()}for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.tiers&&!P.tiers.payload)P.tiers.payload=1;magInit(S.player);for(const k in S.pilots||{})magInit(S.pilots[k]);S.frigates=S.frigates||[];for(const t of S.frigates)t.live=false;S.yards=S.yards||{brood:{sector:'bl'}};S.player.hullInv=S.player.hullInv||{};S.player.bay=S.player.bay||{};S.scouts=S.scouts||[];for(const t of S.scouts)t.live=false;for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;for(const id in S.sectors){if(S.sectors[id].debris.au===undefined)S.sectors[id].debris.au=0}for(const id in S.outposts){if(S.outposts[id].fort.au===undefined)S.outposts[id].fort.au=0}S.player.tune=S.player.tune||{};for(const id in S.sectors){const sc=S.sectors[id];if(sc.debris.nu===undefined)sc.debris.nu=0}for(const id in S.outposts){const o=S.outposts[id];if(o.fort.nu===undefined)o.fort.nu=0}if(S.drift&&S.drift.nu===undefined)S.drift.nu=0;const L0=ledger();let ch=false;
+
+function mkCapMigrate(){const pl=[S.player,...Object.values(S.pilots||{})].filter((P,i,a)=>P&&a.indexOf(P)===i);let n=0;
+  for(const P of pl){const to=P.vault||(P.vault={});for(const R of[P,...(P.ships||[])]){if(!R.tiers)continue;for(const sl of SLOTS){const t=R.tiers[sl.id]||1;if(t<=MK_TOP)continue;
+    const a=compInv(sl.id,t),b=compInv(sl.id,MK_TOP);for(const k in a){const d=a[k]-(b[k]||0);if(d>0)inv.add(to,k,d)}R.tiers[sl.id]=MK_TOP;n++}}}
+  if(n&&S.player)feed(`Mk IV and V are retired: ${n} system${n>1?'s were':' was'} set to Mk III and the extra parts went into your vault. Build a variant with them in Upgrades.`,'info')}
+function migrate(st){S=st;mkCapMigrate();for(const ev of S.events||[])if(ev.type==='wingfly'&&ev.stage!=='done'){const f=sideNorm(ev.side);inv.addAll(S.econ.stock[f]||S.econ.stock.pirate,ev.force||{});ev.force={};ev.stage='done'}if(!S.capV&&S.frigates){S.capV=1;for(const t of S.frigates.slice()){if(isEsc(t)||isCar(t))continue;const h=t.owner&&S.pilots&&S.pilots[t.owner]?S.pilots[t.owner].vault:t.side==='player'?S.player.vault:S.econ.stock[t.side];if(h)inv.addAll(h,t.load);else toDebris(S.sectors[t.sector],t.load);t.load={};S.frigates.splice(S.frigates.indexOf(t),1)}for(const ev of S.events||[])if(ev.type==='frigbuild'&&ev.stage==='building'){const h=S.econ.stock[ev.att]||S.player.vault;inv.addAll(h,ev.force);ev.force={};ev.stage='done'}}for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.cls==='constructor')P.cls='courier';fpMigrate();beaconInit();if((S.seamV||0)<2&&S.sectors){S.seamV=2;seamClear()}for(const P of[S.player,...Object.values(S.pilots||{})])if(P&&P.tiers&&!P.tiers.payload)P.tiers.payload=1;magInit(S.player);for(const k in S.pilots||{})magInit(S.pilots[k]);S.frigates=S.frigates||[];for(const t of S.frigates)t.live=false;S.yards=S.yards||{brood:{sector:'bl'}};S.player.hullInv=S.player.hullInv||{};S.player.bay=S.player.bay||{};S.scouts=S.scouts||[];for(const t of S.scouts)t.live=false;for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;for(const id in S.sectors){if(S.sectors[id].debris.au===undefined)S.sectors[id].debris.au=0}for(const id in S.outposts){if(S.outposts[id].fort.au===undefined)S.outposts[id].fort.au=0}S.player.tune=S.player.tune||{};for(const id in S.sectors){const sc=S.sectors[id];if(sc.debris.nu===undefined)sc.debris.nu=0}for(const id in S.outposts){const o=S.outposts[id];if(o.fort.nu===undefined)o.fort.nu=0}if(S.drift&&S.drift.nu===undefined)S.drift.nu=0;const L0=ledger();let ch=false;
   for(const d of SECTOR_DEFS)if(!S.sectors[d.id]){S.sectors[d.id]=genSector(d);ch=true}
   if(!S.stations){S.stations={};for(const d of SECTOR_DEFS)if(d.home)makeStation(d.id,d.home,d.kind==='core'?'core':'depot',{x:0,y:0,z:0},d.kind==='core'?{}:{...DEPOT_COST});ch=true}
   if(!S.stations.bl){makeStation('bl','brood','hive',{x:0,y:0,z:0},{});ch=true}
@@ -2252,7 +2299,7 @@ function campAct(act,c,P,srcs){const C=myCamp(),m=C&&C.mv,f=P.faction,k=pkey();i
 // HUD card under the system name
 // HUD cooldowns: missile/torpedo magazine, swarm pods, flares and the distress beacon, each as a bar that fills to ready
 function cdItem(lbl,val,p,left){const r=p>=1;return`<span class="cd${r?' rdy':''}">${lbl}${val!=null?` <u>${val}</u>`:''}<i><b style="width:${Math.round(clamp(p,0,1)*100)}%"></b></i><u>${r?'ready':Math.ceil(left)+'s'}</u></span>`}
-function cdsHtml(){const P=S.player,p=W.player,torp=CLASSES[P.cls].torp,cap=rackCapC(P.cls,P.tiers.weapon),out=[];
+function cdsHtml(){const P=S.player,p=W.player,torp=CLASSES[P.cls].torp,cap=pRack(P),out=[];
   {const T=reloadT(P,torp?'torpedo':'missile'),l=P.rack<cap?(P.mslT||T):0;out.push(cdItem(torp?'Torps':'Missiles',`${P.rack}/${cap}`,P.rack>=cap?1:1-l/T,l))}
   const sc=swarmCap(P);if(sc){const T=reloadT(P,'swarm'),l=(P.swarm||0)<sc?(P.swT||T):0;out.push(cdItem('Swarm',`${P.swarm||0}/${sc}`,(P.swarm||0)>=sc?1:1-l/T,l))}
   {const l=W.flareCd||0;out.push(cdItem('Flares',null,1-l/5,l))}
@@ -3562,11 +3609,11 @@ function drawGunnerOverlay(c,t){const G=W.gunseat,e=gsEnt();if(!e)return;const c
   c.font='500 12px "Saira Semi Condensed",sans-serif';c.fillStyle='#cfd6e4';c.fillText(`${bl?'Blocked by the hull · ':''}Hull ${Math.round(e.hull/e.st.hull*100)}% · Shield ${Math.round(e.shield/(e.st.sCap||1)*100)}% · Missiles ${e.isPlayer||!e.rp?turretRack(e).get():'—'} · Click/Space fire · C missile · E climb out`,cx,cy+90)}
 function fire(e){
   if(e.train)return;
-  if(e.landed||e.stealth||(e.boot&&W.t<e.boot))return;if(e.cool>0||e.energy<e.st.shotCost)return;e.cool=1/e.st.rof;e.energy-=e.st.shotCost;
+  if(e.landed||e.stealth||(e.boot&&W.t<e.boot))return;if(e.cool>0||e.energy<e.st.shotCost)return;e.cool=1/e.st.rof;e.energy-=e.st.shotCost;e.lastFire=W.t;
   if(e.isPlayer)SFX.kinetic(1);else if(W.t-(e.sndT||0)>.3){e.sndT=W.t;SFX.kinetic(vAt(e)*.7)}
   qRot(e.q,0,0,1,_f);qRot(e.q,1,0,0,_r);const r=e.st.radius;e.barrel=(e.barrel||1)*-1;const off=e.barrel*r*.42;
   const sty=e.side==='pirate'?'scrap':FACTIONS[e.fac].shot;
-  W.shots.push({x:e.x+_f.x*r+_r.x*off,y:e.y+_f.y*r+_r.y*off,z:e.z+_f.z*r+_r.z*off,vx:e.vx+_f.x*SHOT_SPD,vy:e.vy+_f.y*SHOT_SPD,vz:e.vz+_f.z*SHOT_SPD,dmg:e.st.dmg,side:e.side,src:e,ttl:SHOT_TTL,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side),sty});
+  W.shots.push({x:e.x+_f.x*r+_r.x*off,y:e.y+_f.y*r+_r.y*off,z:e.z+_f.z*r+_r.z*off,vx:e.vx+_f.x*(e.st.shotSpd||SHOT_SPD),vy:e.vy+_f.y*(e.st.shotSpd||SHOT_SPD),vz:e.vz+_f.z*(e.st.shotSpd||SHOT_SPD),dmg:e.st.dmg,side:e.side,src:e,ttl:SHOT_TTL*(e.st.shotTtl||1),col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side),sty});
 }
 // lasers bite harder into shields, kinetic slugs into hull; missiles hit both evenly
 function setWeapon(w){if(!S||!running)return;if(S.player.wpn===w)return;S.player.wpn=w;flash(w==='laser'?'Lasers: instant hit, no lead, heavy energy draw. Strong against shields.':'Kinetic cannons: lead the target, light energy draw. Strong against hull.')}
@@ -3579,7 +3626,7 @@ function laserRay(e,range){qRot(e.q,0,0,1,_f);const fx=_f.x,fy=_f.y,fz=_f.z,r=e.
   return{hit,x:ox+fx*best,y:oy+fy*best,z:oz+fz*best,d:best}}
 function fireLaser(e){if(e.cool>0||e.landed||e.stealth||(e.boot&&W.t<e.boot))return;const cost=e.st.shotCost*1.6;
   if(e.energy<cost){if(e.isPlayer&&W.t-(W.lowEMsg||0)>2.5){flash('Lasers need energy. Let the reactor recharge or switch to kinetic (1).');W.lowEMsg=W.t}return}
-  e.cool=1/LASER_ROF;e.energy-=cost;const R=laserRay(e,LASER_RANGE),dmg=e.st.dmg*.5;
+  e.cool=1/LASER_ROF;e.energy-=cost;e.lastFire=W.t;const R=laserRay(e,LASER_RANGE),dmg=e.st.dmg*.5;
   if(e.isPlayer)AU.lasT=W.t;else if(W.t-(e.sndT||0)>.45){e.sndT=W.t;SFX.laserNpc(vAt(e))}
   if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg,e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1,e.side,'laser');if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side)})}
@@ -3592,7 +3639,7 @@ function damageShip(e,dmg,srcSide,at,kind){
   if(e.cls==='frigate'||e.cls==='carrier'){const k=kind||(at&&at.kind);if(k==='torpedo'){dmg*=4;stat('torpHit');stat('torpDmg',dmg)}else if(k!=='capital'){if(e.shield>0){e.shield=Math.max(0,e.shield-dmg*.6);e.shHitT=W.t;e.shHitA=.5;fxSpark(at||e,'#8fc8ff',3)}else{fxSpark(at||e,'#ffd9a0',2);e.hull-=dmg*capChip(k);if(srcSide==='player'&&W.t-(W.capT||-99)>8){W.capT=W.t;flash('Fighter weapons only chip capital-ship armour. It takes a lot of hits; torpedoes do the real damage.',true)}}rec();if(e.hull<=0)killShip(e,srcSide,at);return}}
   if(e.isPlayer&&at&&srcSide){let dx,dy,dz;if(at.src&&at.src.x!==undefined&&at.vx===undefined){dx=at.src.x-e.x;dy=at.src.y-e.y;dz=at.src.z-e.z}else if(at.vx!==undefined){dx=-at.vx;dy=-at.vy;dz=-at.vz}else{dx=at.x-e.x;dy=at.y-e.y;dz=at.z-e.z}
     const l=hyp(dx,dy,dz)||1;W.hitDirs=(W.hitDirs||[]).filter(h=>W.t-h.t<1.3);W.hitDirs.push({x:dx/l,y:dy/l,z:dz/l,t:W.t})}
-  const sf=kind==='laser'?1.25:kind==='kinetic'?.85:1,hf=kind==='laser'?.75:kind==='kinetic'?1.15:1;
+  const sf=(kind==='laser'?1.25:kind==='kinetic'?.85:1)*tunedK(e,kind),hf=kind==='laser'?.75:kind==='kinetic'?1.15:1;
   if(e.shield>0){const eff=dmg*sf,a=Math.min(e.shield,eff);e.shield-=a;dmg=(eff-a)/sf;
     if(a>0){e.shHitT=W.t;e.shHitA=Math.min(1,a/(e.st.sCap*.25)+.35);e.hitPt=at?{x:at.x-e.x,y:at.y-e.y,z:at.z-e.z}:null;fxSpark(at||e,'#8fc8ff',4);if(e.isPlayer){W.shHit=.35;SFX.shield()}}
     if(e.shield<=0){e.shield=0;e.shBreakT=W.t;e.shDown=true;fxShieldBreak(e);if(e.isPlayer){flash('Shields down! Hold Shift to boost away.',true);SFX.shieldDown()}}}
@@ -3676,7 +3723,7 @@ function playerDeath(p0){
   if(S.player.convoy&&!NET.cl)convoyEnd(false,'your ship was destroyed');
   const p=p0||W.player,P=S.player,s=S.sectors[W.sid],crate={};
   inv.addAll(crate,P.cargo);P.cargo={};P.rack=0;P.mslT=0;
-  if(!shipBare(P)){shipStrip(P,crate);feed('Your ship\'s fitted upgrades were blown out into the wreck. Fly back and scoop the salvage before it drifts off (7 minutes).','bad')}
+  vrLose(P,crate,s);if(!shipBare(P)){shipStrip(P,crate);feed('Your ship\'s fitted upgrades were blown out into the wreck. Fly back and scoop the salvage before it drifts off (7 minutes).','bad')}
   if(!START_HULLS.includes(P.cls)&&CLASSES[P.cls]){const lost=P.cls,to=starterFor(lost),nm=FACTIONS[P.faction].hulls[lost];inv.addAll(crate,P.hullInv||{});P.hullInv={};
     const nc=CLASSES[to].drones||0;P.bay=P.bay||{};if((P.bay.drone||0)>nc){inv.add(crate,'drone',P.bay.drone-nc);P.bay.drone=nc}
     P.cls=to;P.rack=0;P.mslT=0;P.swarm=0;P.swT=0;if(p0)p0.cls=to;
@@ -3723,7 +3770,7 @@ function damageOutpost(E,dmg){if(NET.cl)return;
 const HEAVY_CLS=new Set(['skiff','prospector','dredger','courier','freighter','bulker','constructor']);
 function ladenOf(e){const cg=e.isPlayer?(S.player&&S.player.cargo):e.cargo;if(!cg||!e.st||!e.st.cargo)return 0;let m=0;for(const k in cg)m+=mass(k)*cg[k];return clamp(m/e.st.cargo,0,1)}
 const H_ONE={L:0,turn:1,ag:1,thr:1,spd:1,lat:1,kick:1};
-function handling(e){const L=ladenOf(e)*((e.st&&e.st.ladenK)||1);if(!L)return H_ONE;return HEAVY_CLS.has(e.cls)?{L,turn:1-.55*L,ag:1-.5*L,thr:1-.45*L,spd:1-.15*L,lat:1-.55*L,kick:1-.5*L}:{L,turn:1-.18*L,ag:1-.15*L,thr:1-.18*L,spd:1-.05*L,lat:1-.2*L,kick:1-.2*L}}
+function handling(e){const L=Math.max(ladenOf(e),(e.st&&e.st.ladenMin)||0)*((e.st&&e.st.ladenK)||1);if(!L)return H_ONE;return HEAVY_CLS.has(e.cls)?{L,turn:1-.55*L,ag:1-.5*L,thr:1-.45*L,spd:1-.15*L,lat:1-.55*L,kick:1-.5*L}:{L,turn:1-.18*L,ag:1-.15*L,thr:1-.18*L,spd:1-.05*L,lat:1-.2*L,kick:1-.2*L}}
 function steer(e,tx,ty,tz,dt,arrive,mul){const dx=tx-e.x,dy=ty-e.y,dz=tz-e.z,d=hyp(dx,dy,dz)||1,H=handling(e);let sp=e.st.maxSpd*(mul||1)*H.spd;if(arrive&&d<420)sp*=d/420;const dvx=dx/d*sp-e.vx,dvy=dy/d*sp-e.vy,dvz=dz/d*sp-e.vz,dv=hyp(dvx,dvy,dvz)||1;const acc=Math.min(e.st.thrust*H.thr,dv/dt);e.vx+=dvx/dv*acc*dt;e.vy+=dvy/dv*acc*dt;e.vz+=dvz/dv*acc*dt;e.thrusting=dv>25;return d}
 function brake(e,dt){const v=hyp(e.vx,e.vy,e.vz);if(v<1)return;const acc=Math.min(e.st.thrust,v/dt);e.vx-=e.vx/v*acc*dt;e.vy-=e.vy/v*acc*dt;e.vz-=e.vz/v*acc*dt}
 function faceDir(e,dx,dy,dz,dt){const L=hyp(dx,dy,dz);if(L<1e-6)return 0;dx/=L;dy/=L;dz/=L;qRot(e.q,0,0,1,_f);const ang=Math.acos(clamp(_f.x*dx+_f.y*dy+_f.z*dz,-1,1));qRot(e.q,0,1,0,_u);qLook(dx,dy,dz,_u.x,_u.y,_u.z,_tq);qTowards(e.q,_tq,e.st.turn*handling(e).turn*dt);return ang}
@@ -3740,7 +3787,7 @@ function fight(e,t,dt){
   const ai=e.ai;if(ai.lt!==t){ai.lt=t;ai.lead=rnd(.6,1.25)}
   // a pilot-grade AI (e.flares: duel tests) flares incoming missiles the way a player would: 30 energy, 5 s apart, and it
   // saves them for missiles and torpedoes rather than wasting them on a swarm
-  if(e.flares&&(ai.flareAt||0)<=W.t&&e.energy>=30&&W.missiles.some(m=>m.tgt===e&&m.kind!=='swarm'&&d3(m,e)<700)){e.energy-=30;deployFlares(e);ai.flareAt=W.t+5}const dx=t.x-e.x,dy=t.y-e.y,dz=t.z-e.z,d=hyp(dx,dy,dz)||1,lp0=e.wpn==='laser'?t:leadPoint(e,t,SHOT_SPD),lp={x:t.x+(lp0.x-t.x)*ai.lead,y:t.y+(lp0.y-t.y)*ai.lead,z:t.z+(lp0.z-t.z)*ai.lead};
+  if(e.flares&&(ai.flareAt||0)<=W.t&&e.energy>=30&&W.missiles.some(m=>m.tgt===e&&m.kind!=='swarm'&&d3(m,e)<700)){e.energy-=30;deployFlares(e);ai.flareAt=W.t+5}const dx=t.x-e.x,dy=t.y-e.y,dz=t.z-e.z,d=hyp(dx,dy,dz)||1,lp0=e.wpn==='laser'?t:leadPoint(e,t,e.st.shotSpd||SHOT_SPD),lp={x:t.x+(lp0.x-t.x)*ai.lead,y:t.y+(lp0.y-t.y)*ai.lead,z:t.z+(lp0.z-t.z)*ai.lead};
   const amp=.03-.006*((e.aimT||e.tier||1)-1);ai.jx=(ai.jx||0)*.97+rnd(-amp,amp);ai.jy=(ai.jy||0)*.97+rnd(-amp,amp);if(!ai.bT||W.t>ai.bT){ai.bOn=!ai.bOn;ai.bT=W.t+(ai.bOn?rnd(.7,1.4):rnd(.8,1.6))}
   const err=faceDir(e,lp.x-e.x+ai.jx*d,lp.y-e.y+ai.jy*d,lp.z-e.z,dt);
   const want=t.type==='outpost'||t.type==='station'?560:400;
@@ -3760,10 +3807,10 @@ function updateLock(dt){const L=W.lock,P=S.player,p=W.player,T=lockable(W.tgt);i
   if(L.ref!==T){L.ref=T;L.p=0;L.locked=false}
   if(!T||P.rack<=0){L.p=0;L.locked=false;return}
   qRot(p.q,0,0,1,_f);const dx=T.x-p.x,dy=T.y-p.y,dz=T.z-p.z,d=hyp(dx,dy,dz)||1;let ang=Math.acos(clamp((_f.x*dx+_f.y*dy+_f.z*dz)/d,-1,1));
-  if(T.type==='ship'){const lp=leadPoint(p,T,SHOT_SPD),lx=lp.x-p.x,ly=lp.y-p.y,lz=lp.z-p.z,ll=hyp(lx,ly,lz)||1;ang=Math.min(ang,Math.acos(clamp((_f.x*lx+_f.y*ly+_f.z*lz)/ll,-1,1)))}
+  if(T.type==='ship'){const lp=leadPoint(p,T,p.st.shotSpd||SHOT_SPD),lx=lp.x-p.x,ly=lp.y-p.y,lz=lp.z-p.z,ll=hyp(lx,ly,lz)||1;ang=Math.min(ang,Math.acos(clamp((_f.x*lx+_f.y*ly+_f.z*lz)/ll,-1,1)))}
   const RNG=CLASSES[P.cls].torp?TORP_RANGE:MISSILE_RANGE,ok=L.locked?(ang<.5&&d<RNG*1.25):(ang<LOCK_CONE&&d<RNG);
   if(ok&&!L.locked&&W.t-(L.bT||0)>.5-.35*L.p){L.bT=W.t;SFX.beep(150+L.p*60)}
-  if(ok){if(!L.locked){L.p+=dt/lockTime(P.tiers.weapon,CLASSES[P.cls].torp);if(L.p>=1){L.p=1;L.locked=true;SFX.beep(220,1.4);setTimeout(()=>SFX.beep(220,1.4),140);flash(CLASSES[P.cls].torp?'Torpedo lock. Press C to launch.':'Missile lock. Press C or middle-click to launch.')}}}
+  if(ok){if(!L.locked){L.p+=dt/(lockTime(P.tiers.weapon,CLASSES[P.cls].torp)*vK(P,'lockK'));if(L.p>=1){L.p=1;L.locked=true;SFX.beep(220,1.4);setTimeout(()=>SFX.beep(220,1.4),140);flash(CLASSES[P.cls].torp?'Torpedo lock. Press C to launch.':'Missile lock. Press C or middle-click to launch.')}}}
   else{L.locked=false;L.p=Math.max(0,L.p-dt*.5)}
   L.d=d}
 function fireMissile(){if(!W||!running||S.player.docked||W.dead||W.docking)return;if(W.player&&W.player.stealth)return;if(W.player&&(W.player.landed||(W.player.boot&&W.t<W.player.boot))){flash(W.player.landed?'Systems are powered down. Lift off first (E).':'Systems rebooting…',true);return}const P=S.player,L=W.lock;
@@ -3772,7 +3819,7 @@ function fireMissile(){if(!W||!running||S.player.docked||W.dead||W.docking)retur
   if(W.mslCd>0)return;W.mslCd=CLASSES[P.cls].torp?1.2:.5;const n=CLASSES[P.cls].twin?Math.min(2,P.rack):1;P.rack-=n;if(NET.cl){netSend({t:'msl',tg:netTid(L.ref),k:'m',n});SFX.missile(1,!!CLASSES[P.cls].torp)}else for(let i=0;i<n;i++)launchMissile(W.player,L.ref,P.tiers.weapon,CLASSES[P.cls].torp?'torpedo':'missile',n>1?(i?1:-1):0)}
 function launchMissile(e,tgt,tier,kind,ox,free){kind=kind||'missile';const tp=kind==='torpedo';qRot(e.q,0,0,1,_f);qRot(e.q,0,1,0,_u);qRot(e.q,1,0,0,_r);const r=e.st.radius,o=(ox||0)*r*.85,fx=_f.x,fy=_f.y,fz=_f.z,ux=_u.x+_r.x*o/(r*.6||1),uy=_u.y+_r.y*o/(r*.6||1),uz=_u.z+_r.z*o/(r*.6||1),kick=tp?90:170;
   if(tp&&tgt&&tgt.role==='frigate')stat('torpFired');
-  W.missiles.push({kind,x:e.x+fx*r*.4-ux*r*.6,y:e.y+fy*r*.4-uy*r*.6,z:e.z+fz*r*.4-uz*r*.6,vx:e.vx+fx*kick-ux*40,vy:e.vy+fy*kick-uy*40,vz:e.vz+fz*kick-uz*40,side:e.side,src:e,tgt,ttl:MK[kind].ttl,dmg:tp?torpDmg(tier):missileDmg(tier),hp:tp?110:0,inv:e.isPlayer||e.rp||free?{}:{[kind]:1},col:e.isPlayer?PLAYER_COL:sideCol(e.side),smoke:0,checked:false});
+  W.missiles.push({kind,x:e.x+fx*r*.4-ux*r*.6,y:e.y+fy*r*.4-uy*r*.6,z:e.z+fz*r*.4-uz*r*.6,vx:e.vx+fx*kick-ux*40,vy:e.vy+fy*kick-uy*40,vz:e.vz+fz*kick-uz*40,side:e.side,src:e,tgt,ttl:MK[kind].ttl,dmg:tp?torpDmg(tier):missileDmg(tier)*((e.st&&e.st.mslK)||1),hp:tp?110:0,inv:e.isPlayer||e.rp||free?{}:{[kind]:1},col:e.isPlayer?PLAYER_COL:sideCol(e.side),smoke:0,checked:false});
   fxSpark(e,'#ffd9a0',tp?8:4);SFX.missile(e.isPlayer?1:vAt(e)*.8,tp);
   if(tp&&tgt&&tgt.type==='outpost'&&(tgt.o.owner==='player'||tgt.o.owner===S.player.faction)&&!e.isPlayer&&W.t-(W.torpWarn||-9)>6){W.torpWarn=W.t;feed(`Torpedoes inbound on ${tgt.o.name}! Shoot them down.`,'bad')}}
 // a swarm pod splits into eight darting micro-missiles: most chase the target, the rest whoever flies near it
@@ -3993,7 +4040,7 @@ function playerUpdate(dt){
     if(man){apOn=false;flash('Autopilot off.')}else{p.wx=p.wy=p.wz=0;autopilot(p,dt);levelRoll(p,dt);if(keys.Space||mouse.l||touch.fire){if(P.wpn==='laser')fireLaser(p);else fire(p)}updateLock(dt);pickupAndGates(p,P,st);return}}
   const trk=keys.KeyZ&&W.tgt&&validTgt(W.tgt);
   const si=trk?{yaw:0,pitch:0}:steerInput();let roll=0;if(keys.KeyA)roll-=1;if(keys.KeyD)roll+=1;
-  if(trk){const T=W.tgt.ref,lp=W.tgt.kind==='ship'&&hostile('player',T.side)&&P.wpn!=='laser'?leadPoint(p,T,SHOT_SPD):T;faceDir(p,lp.x-p.x,lp.y-p.y,lp.z-p.z,dt)}
+  if(trk){const T=W.tgt.ref,lp=W.tgt.kind==='ship'&&hostile('player',T.side)&&P.wpn!=='laser'?leadPoint(p,T,p.st.shotSpd||SHOT_SPD):T;faceDir(p,lp.x-p.x,lp.y-p.y,lp.z-p.z,dt)}
   // rotation with angular inertia: rates ease toward the stick instead of snapping
   const C=CLASSES[P.cls],H=handling(p),tr=st.turn*.9*H.turn,ag=7*(C.agile||1)*H.ag,ka=Math.min(1,ag*dt);
   p.wy=(p.wy||0)+(si.yaw*tr-(p.wy||0))*ka;p.wx=(p.wx||0)+(si.pitch*tr-(p.wx||0))*ka;p.wz=(p.wz||0)+(roll*st.turn*1.15*H.turn-(p.wz||0))*Math.min(1,ag*1.3*dt);
@@ -4007,7 +4054,7 @@ function playerUpdate(dt){
   const bHeld=(keys.ShiftLeft||keys.ShiftRight||touch.boost)&&fwd>0;if(!bHeld)p.bLock=false;
   const bm=C.boost||1,boost=bHeld&&!p.stealth&&!p.bLock&&(p.boosting?p.energy>0:p.energy>=15);if(p.boosting&&bHeld&&!boost&&p.energy<=0){p.bLock=true;flash('Afterburner out of energy. Let go of Shift to let it recharge.')}
   if(boost&&!p.boosting){SFX.boost();const kick=70*bm*H.kick;qRot(p.q,0,0,1,_f);p.vx+=_f.x*kick;p.vy+=_f.y*kick;p.vz+=_f.z*kick;W.shake=Math.max(W.shake||0,.35);fxSpark({x:p.x-_f.x*20,y:p.y-_f.y*20,z:p.z-_f.z*20},FACTIONS[P.faction].col,6)}
-  p.boosting=boost;if(boost){p.energy=Math.max(0,p.energy-30*dt*(CLASSES[P.cls].bcost||1));W.shake=Math.max(W.shake||0,.12)}
+  p.boosting=boost;if(boost){p.energy=Math.max(0,p.energy-30*dt*(CLASSES[P.cls].bcost||1)*(st.boostK||1));p.lastFire=W.t;W.shake=Math.max(W.shake||0,.12)}
   qRot(p.q,0,0,1,_f);const thr=st.thrust*(boost?2.3*bm:1)*H.thr;p.thrusting=fwd>0;
   const v=hyp(p.vx,p.vy,p.vz),vf=p.vx*_f.x+p.vy*_f.y+p.vz*_f.z;
   if(fwd>0){const capF=st.maxSpd*(boost?1.95*bm:1)*H.spd;if(vf<capF){const a=Math.min(thr*dt,capF-vf);p.vx+=_f.x*a;p.vy+=_f.y*a;p.vz+=_f.z*a}}
@@ -4218,8 +4265,8 @@ function physics(e,dt){if(e.inJump)return;
   const v=hyp(e.vx,e.vy,e.vz);if(v>cap){const k=Math.min(1,(pl?(e.boosting?2:.75):3)*dt),f=1-k+k*cap/v;e.vx*=f;e.vy*=f;e.vz*=f}
   e.x+=e.vx*dt;e.y+=e.vy*dt;e.z+=e.vz*dt;
   const r=hyp(e.x,e.y,e.z);if(r>3300*SPACE){e.vx-=e.x/r*400*dt;e.vy-=e.y/r*400*dt;e.vz-=e.z/r*400*dt}
-  e.cool-=dt;if(!e.landed)e.energy=Math.min(e.st.eCap,e.energy+e.st.eRegen*dt*(e.boot&&W.t<e.boot?4:1));
-  if(!(S.sectors[W.sid].storm>S.T)&&W.t-e.lastHit>2.5&&!e.landed&&!e.stealth&&!(e.boot&&W.t<e.boot))e.shield=Math.min(e.st.sCap,e.shield+e.st.sCap*(e.cls==='frigate'||e.cls==='carrier'?.012*pmul(e.tok,'shd'):e.cls==='escort'?.025*pmul(e.tok,'shd'):.09)*dt);
+  e.cool-=dt;if(!e.landed)e.energy=Math.min(e.st.eCap,e.energy+e.st.eRegen*dt*(e.boot&&W.t<e.boot?4:1)*(e.st.surge&&W.t-(e.lastFire||-9)<e.st.surge?0:1));
+  if(!(S.sectors[W.sid].storm>S.T)&&W.t-e.lastHit>(e.st.shDelay||2.5)&&!e.landed&&!e.stealth&&!(e.boot&&W.t<e.boot))e.shield=Math.min(e.st.sCap,e.shield+e.st.sCap*(e.cls==='frigate'||e.cls==='carrier'?.012*pmul(e.tok,'shd'):e.cls==='escort'?.025*pmul(e.tok,'shd'):.09*(e.st.shRegK||1))*dt);
   if(e.shDown&&e.shield>e.st.sCap*.2){e.shDown=false;e.shUpT=W.t}
   if(e.side==='brood'&&W.t-e.lastHit>3&&e.hull<e.st.hull)e.hull=Math.min(e.st.hull,e.hull+e.st.hull*.025*dt);
   const s=S.sectors[W.sid],R=e.st.radius;
@@ -4874,7 +4921,7 @@ function drawOverlay(){
   if(W.tgt&&validTgt(W.tgt)){const T=W.tgt.ref,P=proj(T.x,T.y,T.z),col=W.tgt.kind==='ship'?(hostile('player',T.side)?'#ff5d4f':'#7ad9a7'):'#f0b24a';
     if(!P.behind&&P.x>0&&P.y>0&&P.x<VW&&P.y<VH){const r=Math.max(12,projR(P.d,tRad(W.tgt)))+6;c.strokeStyle=col;c.lineWidth=2;for(const[dx,dy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){c.beginPath();c.moveTo(P.x+dx*r,P.y+dy*r-dy*9);c.lineTo(P.x+dx*r,P.y+dy*r);c.lineTo(P.x+dx*r-dx*9,P.y+dy*r);c.stroke()}
       c.textAlign='left';c.fillStyle=col;c.fillText(fmt(Math.round(d3(T,p)))+' m',P.x+r+6,P.y-r+8)}
-    if(W.tgt.kind==='ship'&&hostile('player',T.side)&&S.player.wpn!=='laser'){const lp=leadPoint(p,T,SHOT_SPD),L=proj(lp.x,lp.y,lp.z);if(!L.behind){c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();c.moveTo(L.x,L.y-8);c.lineTo(L.x+8,L.y);c.lineTo(L.x,L.y+8);c.lineTo(L.x-8,L.y);c.closePath();c.stroke()}}}
+    if(W.tgt.kind==='ship'&&hostile('player',T.side)&&S.player.wpn!=='laser'){const lp=leadPoint(p,T,p.st.shotSpd||SHOT_SPD),L=proj(lp.x,lp.y,lp.z);if(!L.behind){c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();c.moveTo(L.x,L.y-8);c.lineTo(L.x+8,L.y);c.lineTo(L.x,L.y+8);c.lineTo(L.x-8,L.y);c.closePath();c.stroke()}}}
   {const las=S.player.wpn==='laser',LRy=las?laserRay(p,LASER_RANGE):null,onH=!!(LRy&&LRy.hit&&(LRy.hit.kind==='ship'||LRy.hit.kind==='outpost'));
     qRot(p.q,0,0,1,_f);const A=proj(p.x+_f.x*900,p.y+_f.y*900,p.z+_f.z*900);
     if(!A.behind){const col=las?(onH?'#ff5d4f':'rgba(165,222,255,.95)'):'rgba(240,178,74,.9)';c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();
@@ -5009,7 +5056,7 @@ function drawCockpit(c,p,t){const P=S.player,F=CK_FAC[P.faction]||CK_FAC.halcyon
   const bar=(x,y,ww,f,col)=>{c.fillStyle='rgba(255,255,255,.08)';c.fillRect(x,y,ww,4);c.fillStyle=col;c.fillRect(x,y,ww*clamp(f,0,1),4)};
   const lab=(s,x,y,col,al)=>{c.textAlign=al||'left';c.fillStyle=col||'rgba(140,145,165,.9)';c.fillText(s,x,y)};
   c.font='600 10px "JetBrains Mono",monospace';c.textBaseline='middle';
-  const holdF=invMass(P.cargo)/(p.st.cargo||1),aliveDr=(p.drones||[]).filter(d=>d.alive).length,bay=(P.bay&&P.bay.drone)||0,cap=rackCapC(P.cls,P.tiers.weapon);
+  const holdF=invMass(P.cargo)/(p.st.cargo||1),aliveDr=(p.drones||[]).filter(d=>d.alive).length,bay=(P.bay&&P.bay.drone)||0,cap=pRack(P);
   let px=VW/2-rowW/2;
   for(const kd of kinds){const x=px,ww=kw(kd),cx=x+ww/2,ty=sy;if(kd!=='scope')box(x,sy,ww,shh);px+=ww+gap;
     if(kd==='speed'){const sp=hyp(p.vx,p.vy,p.vz),capS=p.st.maxSpd*1.95*(CLASSES[P.cls].boost||1);c.font='600 15px "JetBrains Mono",monospace';lab(Math.round(sp),cx,ty+shh*.38,p.boosting?'#ffd27a':'#ece4cf','center');
@@ -5147,7 +5194,7 @@ function hudUpdate(){
   const bar=(id,v,m)=>{const el=$(id);el.querySelector('.fl').style.width=clamp(v/m*100,0,100)+'%';el.querySelector('.v').textContent=Math.round(v)};
   if(W.gunseat&&gsEnt()){const F=gsEnt();bar('bS',F.shield,F.st.sCap);bar('bH',F.hull,F.st.hull);bar('bE',F.energy||0,F.st.eCap)}else if(W.bridge){const F=W.bridge.f;bar('bS',F.shield,F.st.sCap);bar('bH',F.hull,F.st.hull);bar('bE',F.energy,F.st.eCap)}else{bar('bS',p.shield,p.st.sCap);bar('bH',p.hull,p.st.hull);bar('bE',p.energy,p.st.eCap)}
   $('bS').classList.toggle('down',p.shield<=.5&&!P.docked);$('bH').classList.toggle('down',p.hull<p.st.hull*.35&&!P.docked);$('bS').classList.toggle('low',p.shield>.5&&p.shield<p.st.sCap*.3);
-  $('hSpd').textContent=Math.round(hyp(p.vx,p.vy,p.vz))+' m/s';$('hFA').textContent=P.fa?'ON':'OFF';$('hMsl').textContent=`${P.rack}/${rackCapC(P.cls,P.tiers.weapon)}${swarmCap(P)?` · swarm ${P.swarm||0}/${swarmCap(P)}`:''}${CLASSES[P.cls].drones?` · drones ${(p.drones||[]).filter(d=>d.alive).length}/${CLASSES[P.cls].drones}`:''}`;$('hMslL').textContent=CLASSES[P.cls].torp?'Torpedoes':'Missiles';$('hWpn').textContent=P.wpn==='laser'?'LASER':'KINETIC';$('hWpn').style.color=P.wpn==='laser'?'#a5deff':'var(--amber)';
+  $('hSpd').textContent=Math.round(hyp(p.vx,p.vy,p.vz))+' m/s';$('hFA').textContent=P.fa?'ON':'OFF';$('hMsl').textContent=`${P.rack}/${pRack(P)}${swarmCap(P)?` · swarm ${P.swarm||0}/${swarmCap(P)}`:''}${CLASSES[P.cls].drones?` · drones ${(p.drones||[]).filter(d=>d.alive).length}/${CLASSES[P.cls].drones}`:''}`;$('hMslL').textContent=CLASSES[P.cls].torp?'Torpedoes':'Missiles';$('hWpn').textContent=P.wpn==='laser'?'LASER':'KINETIC';$('hWpn').style.color=P.wpn==='laser'?'#a5deff':'var(--amber)';
   {const BRf=W.bridge&&W.bridge.f,ref=BRf||(W.gunseat&&gsEnt())||p,selR=BRf?batteryTgt(BRf):W.tgt&&W.tgt.ref;
    const all=W.ents.filter(e=>e.type==='ship'&&e.alive&&!e.isPlayer&&e!==ref&&seenShip(e)&&(e.role!=='drone'||(e.ai.tgt===p&&hostile('player',e.side)))),nh=all.filter(e=>hostile('player',e.side)).length;
     const stOf=e=>{if(hostile('player',e.side))return e.ai&&e.ai.tgt===p?['on you','b']:e.ai&&e.ai.tgt&&!e.ai.tgt.isPlayer&&friendSide(e.ai.tgt.side)?['hitting ally','w']:null;if(W.t-e.lastHit<3&&hostile(e.side,e.lastHitBy))return['under fire','b'];if(e.role==='flee')return['retreating','w'];if(e.order&&e.order.tgt)return[(e.order.kind==='guard'?'guarding ':'escorting ')+(e.order.tgt===p?'you':'ally'),'g'];if(e.ord)return[e.ord,'g'];if(e.ai&&e.ai.tgt&&e.ai.tgt.alive&&hostile(e.side,e.ai.tgt.side))return['engaging','g'];if(e.role==='escort')return['escorting','g'];if(e.role==='screen')return['screening','g'];if(e.role==='scout')return['scouting','g'];if(e.role==='builder')return['building','g'];if(e.escortG&&escortHauler(grpLead(e.escortG)||{}))return['escorted','g'];return null};
@@ -5259,19 +5306,20 @@ function renderDock(){
     h+=`</tbody></table></div>`;
   }else if(dockTab==='ship'||dockTab==='upg'){
     const st=p.st;if(dockTab==='upg'){
-    h+=`<div class="grid2" style="margin-bottom:10px"><div class="note">Upgrading folds parts permanently into a component. Mk II–III fit at any friendly dock; Mk IV–V need a Forge. Upgrades belong to this ship: store it in the Ship Bay to keep it, and if it's destroyed its upgrades are left in the wreck.</div>
+    h+=`<div class="grid2" style="margin-bottom:10px"><div class="note">Upgrading folds parts permanently into a component. Mk II and III fit at any friendly dock, and from Mk II each system takes one variant: a part that buys a strength with a weakness, free to swap here. Upgrades belong to this ship: store it in the Ship Bay to keep it, and if it's destroyed its upgrades are left in the wreck.</div>
       <div class="kv"><span>Top speed</span><b>${Math.round(st.maxSpd)} m/s</b><span>Shield / Hull</span><b>${Math.round(st.sCap)} / ${Math.round(st.hull)}</b><span>Energy · regen</span><b>${Math.round(st.eCap)} · ${st.eRegen.toFixed(1)}/s</b><span>Kinetic · laser DPS</span><b>${Math.round(st.dmg*st.rof)} · ${Math.round(st.dmg*.5*LASER_ROF)}</b><span>Mining · Hold</span><b>${(st.drill*mineP(S.player.cls)).toFixed(2)} t/s · ${st.cargo} t</b></div></div><div class="slots">`;
     const stat={engine:`${Math.round(st.maxSpd)} m/s · thrust ${Math.round(st.thrust)}`,power:`${Math.round(st.eCap)} energy · ${st.eRegen.toFixed(1)}/s`,shield:`${Math.round(st.sCap)} shield`,weapon:`kinetic ${Math.round(st.dmg*st.rof)} dps · laser ${Math.round(st.dmg*.5*LASER_ROF)} dps`,armor:`${Math.round(st.hull)} hull · ${Math.round(st.dr*100)}% reduction`,drill:`${(st.drill*mineP(P.cls)).toFixed(2)} t/s`,cargo:`${st.cargo} t`,payload:`${CLASSES[P.cls].torp?'torpedo':'missile'} reload ${Math.round(reloadT(P,CLASSES[P.cls].torp?'torpedo':'missile'))} s${swarmCap(P)?` · swarm ${Math.round(reloadT(P,'swarm'))} s`:''}`};
-    for(const sl of SLOTS){const t=P.tiers[sl.id];let rq='',btn='';
-      if(t<5){const r=upgRecipe(sl.id,t+1),fee=c.fee?Math.ceil(invValue(r)*.08):0,needF=t+1>=4&&!c.forge;rq=Object.keys(r).map(i=>chip(i,r[i],countIn(i,srcs))).join('')+(fee?`<span class="req ${P.credits>=fee?'ok':'no'}">${fee} cr fee</span>`:'')+(needF?'<span class="req no">Forge only</span>':'');
+    for(const sl of SLOTS){const t=P.tiers[sl.id];let rq='',btn='',vrow='';
+      if(t<MK_TOP){const r=upgRecipe(sl.id,t+1),fee=c.fee?Math.ceil(invValue(r)*.08):0,needF=false;rq=Object.keys(r).map(i=>chip(i,r[i],countIn(i,srcs))).join('')+(fee?`<span class="req ${P.credits>=fee?'ok':'no'}">${fee} cr fee</span>`:'')+(needF?'<span class="req no">Forge only</span>':'');
         btn=`<button class="btn" data-act="upg" data-arg="${sl.id}" ${!needF&&haveIn(r,srcs)&&P.credits>=fee?'':'disabled'}>To Mk ${ROMAN[t+1]}</button>`}else rq='<span class="ss" style="color:var(--amber)">Fully upgraded</span>';
       {const l=(P.tune||{})[sl.id]||0;if(l<TUNE_MAX){const need=l+1;btn+=` <button class="btn" data-act="tune" data-arg="${sl.id}" title="Aurora Tuning: ${sl.id==='payload'?'2 s off every reload':'+'+Math.round(TUNE_STEP*100)+'% on this component'} (uses ${need} Aurora Tuning)" ${countIn('tune',srcs)>=need?'':'disabled'}>Attune ✦${need} · ${need}</button>`}}
-      h+=`<div class="slot"><div><div class="sn">${sl.name}</div><div class="ss">${stat[sl.id]}</div></div><div><div class="mk">Mk ${ROMAN[t]}${(P.tune||{})[sl.id]?`<span style="color:#6ff2cf;font-size:.55em;vertical-align:middle" title="Aurora tuning"> ${'✦'.repeat(P.tune[sl.id])}</span>`:''}</div><div class="pips">${[1,2,3,4,5].map(i=>`<i class="${i<=t?'on':''}"></i>`).join('')}</div></div><div class="rq">${rq}</div><div>${btn}</div></div>`}
+      {const vl=VAR_BY_SLOT[sl.id]||[],vr=(P.tune&&P.tune.vr)||{},fv=vr[sl.id];if(vl.length)vrow=t<2?`<div class="note" style="margin:4px 0 0">Variants open at Mk II.</div>`:`<div class="act" style="margin-top:4px;flex-wrap:wrap">${vl.map(id=>{const V=VARIANTS[id],own=countIn('v_'+id,srcs),on=fv===id,can=own>0||haveIn(V.recipe,srcs);return on?`<button class="btn sm pri" data-act="vrem" data-arg="${sl.id}" title="${esc(V.gain+' · '+V.cost)} · click to remove">✓ ${esc(V.name)}</button>`:`<button class="btn sm" data-act="vfit" data-arg="${sl.id}:${id}" ${can?'':'disabled'} title="${esc(V.gain+' · '+V.cost)} · ${own?own+' spare':esc(Object.keys(V.recipe).map(k=>V.recipe[k]+' '+ITEMS[k].name).join(', '))}">${esc(V.name)}${own?' ·'+own:''}</button>`}).join('')}</div>`;else vrow=''}
+      h+=`<div class="slot"><div><div class="sn">${sl.name}</div><div class="ss">${stat[sl.id]}</div></div><div><div class="mk">Mk ${ROMAN[t]}${(P.tune||{})[sl.id]?`<span style="color:#6ff2cf;font-size:.55em;vertical-align:middle" title="Aurora tuning"> ${'✦'.repeat(P.tune[sl.id])}</span>`:''}</div><div class="pips">${[1,2,3].map(i=>`<i class="${i<=t?'on':''}"></i>`).join('')}</div></div><div class="rq">${rq}</div><div>${btn}</div>${vrow?`<div style="grid-column:1/-1">${vrow}</div>`:''}</div>`}
     h+=`</div>`;
     }if(dockTab==='ship'){
     const miss=st.hull-p.hull,rc=c.fee?Math.ceil(miss*1.5):0;
     h+=`<div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap"><button class="btn" data-act="repair" ${miss<1||P.credits<rc?'disabled':''}>Repair hull${rc?` · ${fmt(rc)} cr`:''}</button><span class="note">Hull ${Math.round(p.hull)} / ${Math.round(st.hull)}. Shields and energy recharge free while docked.</span></div>`;
-    {const torp=CLASSES[P.cls].torp,it=rackItem(P.cls),cap=rackCapC(P.cls,P.tiers.weapon),have=countIn(it,srcs);h+=`<div class="h3" style="margin-top:22px">${torp?'Torpedo bay':'Missile rack'} · ${P.rack} / ${cap}${P.mslT>0?` · reloading ${Math.ceil(P.mslT)} s`:''}</div><p class="note" style="margin-top:0">${torp?'Torpedoes':'Missiles'} reload on their own: once the ${torp?'bay':'rack'} is below full it refills completely after ${Math.round(reloadT(P,torp?'torpedo':'missile'))} s. Nothing to build or load. Size grows with Weapons Mk, and so does damage; upgrade the Payload Bay to reload faster (15% per Mk, down to 10 s for missiles, 20 s for torpedoes, 15 s for swarm pods; each Aurora tuning level takes 2 s more off).${swarmCap(P)?` Swarm launcher: ${P.swarm||0} / ${swarmCap(P)} pods, refilling after ${Math.round(reloadT(P,'swarm'))} s.`:''}</p>`}
+    {const torp=CLASSES[P.cls].torp,it=rackItem(P.cls),cap=pRack(P),have=countIn(it,srcs);h+=`<div class="h3" style="margin-top:22px">${torp?'Torpedo bay':'Missile rack'} · ${P.rack} / ${cap}${P.mslT>0?` · reloading ${Math.ceil(P.mslT)} s`:''}</div><p class="note" style="margin-top:0">${torp?'Torpedoes':'Missiles'} reload on their own: once the ${torp?'bay':'rack'} is below full it refills completely after ${Math.round(reloadT(P,torp?'torpedo':'missile'))} s. Nothing to build or load. Size grows with Weapons Mk, and so does damage; upgrade the Payload Bay to reload faster (15% per Mk, down to 10 s for missiles, 20 s for torpedoes, 15 s for swarm pods; each Aurora tuning level takes 2 s more off).${swarmCap(P)?` Swarm launcher: ${P.swarm||0} / ${swarmCap(P)} pods, refilling after ${Math.round(reloadT(P,'swarm'))} s.`:''}</p>`}
     {const cap=CLASSES[P.cls].drones||0;if(cap){const nb=(P.bay&&P.bay.drone)||0;h+=`<div class="h3" style="margin-top:22px">Drone bay · ${nb} / ${cap}</div><div class="note" style="margin-bottom:8px">Guard drones launch with you and defend your ship. Load Guard Drones from your hold or ${c.storageName.toLowerCase()}; lost drones are gone.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="bayload" ${nb<cap&&countIn('drone',srcs)>0?'':'disabled'}>Load drone (${countIn('drone',srcs)} available)</button><button class="btn" data-act="bayunload" ${nb>0?'':'disabled'}>Unload drone</button></div>`}}
     if(c.hulls&&P.sector===FAC_HOME(P.faction)){const Y=S.yards[yk()]||S.yards[P.faction],yb=S.events.find(e=>e.type==='yardbuild'&&e.att===yk()),fb=S.events.find(e=>e.type==='frigbuild'&&e.att===yk()),mine=S.frigates.filter(fMine);
       h+=`<div class="h3" style="margin-top:22px">Capital shipyard</div>`;
@@ -5296,11 +5344,11 @@ function renderDock(){
     const row=(R,i,isCur)=>{const st=shipStats(P.faction,R.cls,R.tiers,R.tune),rf=Object.keys((R.tune||{}).rf||{}).map(k=>REFITS[k]?REFITS[k].name:k),dr=(R.bay||{}).drone||0,dc=CLASSES[R.cls].drones||0;
       let s=`<div class="bayc${isCur?' cur':''}"><div class="bayh"><div><b>${HN(R.cls)}</b> <em>${CLASSES[R.cls].name}</em>${isCur?' <span class="req ok">flying now</span>':''}</div><div class="bays">${Math.round(st.maxSpd)} m/s · ${Math.round(st.sCap)} shield · ${Math.round(st.hull)} hull · ${st.cargo} t${dc?` · drones ${dr}/${dc}`:''}${rf.length?` · ${esc(rf.join(', '))}`:''}</div></div><div class="bayslots">`;
       for(const sl of SLOTS){const t=R.tiers[sl.id]||1,l=(R.tune||{})[sl.id]||0;s+=`<div class="bsl"><span>${sl.name}</span><b>Mk ${mk(t)}${l?' '+'✦'.repeat(l):''}</b>`;
-        if(!isCur&&t<5){const rc=upgRecipe(sl.id,t+1),fee=c.fee?Math.ceil(invValue(rc)*.08):0,needF=t+1>=4&&!c.forge,ok=!needF&&haveIn(rc,srcs)&&P.credits>=fee;s+=`<button class="btn sm" data-act="bupg" data-arg="${i}:${sl.id}" ${ok?'':'disabled'} title="${esc(Object.keys(rc).map(k=>rc[k]+' '+ITEMS[k].name).join(', ')+(fee?` + ${fee} cr`:'')+(needF?' · Forge only':''))}">Mk ${mk(t+1)}</button>`}
+        if(!isCur&&t<MK_TOP){const rc=upgRecipe(sl.id,t+1),fee=c.fee?Math.ceil(invValue(rc)*.08):0,needF=false,ok=!needF&&haveIn(rc,srcs)&&P.credits>=fee;s+=`<button class="btn sm" data-act="bupg" data-arg="${i}:${sl.id}" ${ok?'':'disabled'} title="${esc(Object.keys(rc).map(k=>rc[k]+' '+ITEMS[k].name).join(', ')+(fee?` + ${fee} cr`:'')+(needF?' · Forge only':''))}">Mk ${mk(t+1)}</button>`}
         s+=`</div>`}
       s+=`</div>${isCur?'':`<div class="act" style="margin-top:8px"><button class="btn pri" data-act="bfly" data-arg="${i}">Fly this ship</button><button class="btn" data-act="bsell" data-arg="${i}">Sell${START_HULLS.includes(R.cls)?'':' for '+fmt(Math.floor(hullPrice(R.cls)*TRADE_IN))+' cr'}</button></div>`}</div>`;return s};
     h+=`<div class="h3">Your current ship</div>`+row(cur,-1,true)+`<div class="act" style="margin:8px 0 18px"><button class="btn" data-act="bstore" ${P.ships.length<BAY_MAX&&!curBare?'':'disabled'}>Store this ship in the bay</button><span class="note" style="margin-left:8px">${curBare?'A bare starter isn\'t worth a slot.':P.ships.length>=BAY_MAX?'The bay is full.':'You take a fresh '+HN(starterFor(P.cls))+' and your hold goes to the vault.'}</span></div>`;
-    h+=`<div class="h3">In the bay · ${P.ships.length} / ${BAY_MAX}</div>`+(P.ships.length?P.ships.map((R,i)=>row(R,i,false)).join(''):'<div class="empty">No ships stored yet.</div>')+`<p class="note" style="margin-top:10px">Bay upgrades use parts from your hold and vault${c.forge?'':'; Mk IV–V need a Forge'}. Hover an upgrade button for its cost.</p>`;
+    h+=`<div class="h3">In the bay · ${P.ships.length} / ${BAY_MAX}</div>`+(P.ships.length?P.ships.map((R,i)=>row(R,i,false)).join(''):'<div class="empty">No ships stored yet.</div>')+`<p class="note" style="margin-top:10px">Bay upgrades use parts from your hold and vault. Hover an upgrade button for its cost.</p>`;
   }else if(dockTab==='storage'){
     const keysAll=ITEM_ORDER.filter(k=>(P.cargo[k]||0)+(c.storage[k]||0)>0);
     h+=`<p class="note" style="margin:0 0 12px">${c.storageName==='Vault'?`Your vault here at ${esc(vaultName(P.vaultAt||P.sector))}. Each station and outpost keeps its own vault: goods stored here stay here.${Object.values(P.vaults||{}).some(x=>invMass(x)>0)?' Your goods at other stations are listed under Stored elsewhere, below.':''}`:'This outpost\'s store is yours. It also collects the ore your outpost skims from the sector each cycle.'} Hold space: ${p.st.cargo-invMass(P.cargo)} t free.</p>`;
@@ -5344,8 +5392,13 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
     while(made<lim&&haveIn(r,srcs)&&P.credits>=fee){takeFrom(r,srcs);inv.add(c.storage,k,1);if(fee)transfer('player',c.wallet,fee);made++}
     dockErr=made?`✓ Fabricated ${made} ${ITEMS[k].name}.`:(P.credits<fee?'Not enough credits for the labour fee.':'Missing materials.')}
   else if(act==='tune'){const l=(P.tune=P.tune||{})[arg]||0;if(l<TUNE_MAX){if(takeFrom({tune:l+1},srcs)){P.tune[arg]=l+1;refreshPlayerStats();dockErr=`✓ ${SLOT[arg].name} Aurora-tuned ${'✦'.repeat(l+1)} (+${Math.round(TUNE_STEP*100*(l+1))}%).`;feed(`${SLOT[arg].name} Aurora-tuned to level ${l+1}.`,'good')}else dockErr=`Needs ${l+1} Aurora Tuning (2 Aurorite + 1 Flux Coil each). Aurorite is only found in deep space.`}}
-  else if(act==='upg'){const t=P.tiers[arg];if(t<5){const r=upgRecipe(arg,t+1),fee=c.fee?Math.ceil(invValue(r)*.08):0;if(t+1>=4&&!c.forge)dockErr='Mk IV and V need a Forge.';else if(P.credits<fee)dockErr='Not enough credits.';else if(takeFrom(r,srcs)){if(fee)transfer('player',c.wallet,fee);P.tiers[arg]++;refreshPlayerStats();dockErr=`✓ ${SLOT[arg].name} upgraded to Mk ${ROMAN[P.tiers[arg]]}.`;feed(`${SLOT[arg].name} now Mk ${ROMAN[P.tiers[arg]]}.`,'good')}else dockErr='Missing parts.'}}
-  else if(act==='rearm'&&false){const it=rackItem(P.cls),cap=rackCapC(P.cls,P.tiers.weapon),n=Math.min(cap-P.rack,countIn(it,srcs));if(n>0&&takeFrom({[it]:n},srcs)){P.rack+=n;dockErr=`✓ Loaded ${n} ${ITEMS[it].name}${n>1?'s':''}.`}}
+  else if(act==='vfit'){const[sl,id]=String(arg).split(':'),V=VARIANTS[id];if(!V||V.slot!==sl||!SLOT[sl])return;if((P.tiers[sl]||1)<2){dockErr=`Variants open at Mk II. Upgrade the ${SLOT[sl].name} first.`;return}
+    P.tune=P.tune||{};P.tune.vr=P.tune.vr||{};if(P.tune.vr[sl]===id)return;const item='v_'+id;
+    if(countIn(item,srcs)>0)takeFrom({[item]:1},srcs);else if(haveIn(V.recipe,srcs))takeFrom(V.recipe,srcs);else{dockErr=`Missing parts for the ${V.name}.`;return}
+    const old=P.tune.vr[sl];if(old)inv.add(c.storage,'v_'+old,1);P.tune.vr[sl]=id;refreshPlayerStats();dockErr=`✓ ${V.name} fitted to the ${SLOT[sl].name}.${old?` The ${VARIANTS[old].name} went to your ${c.storageName.toLowerCase()}.`:''}`;feed(`${SLOT[sl].name}: ${V.name} fitted.`,'good')}
+  else if(act==='vrem'){const sl=String(arg),vr=(P.tune&&P.tune.vr)||{},old=vr[sl];if(!old)return;inv.add(c.storage,'v_'+old,1);delete vr[sl];refreshPlayerStats();dockErr=`✓ ${VARIANTS[old].name} removed to your ${c.storageName.toLowerCase()}.`}
+  else if(act==='upg'){const t=P.tiers[arg];if(t<MK_TOP){const r=upgRecipe(arg,t+1),fee=c.fee?Math.ceil(invValue(r)*.08):0;if(P.credits<fee)dockErr='Not enough credits.';else if(takeFrom(r,srcs)){if(fee)transfer('player',c.wallet,fee);P.tiers[arg]++;refreshPlayerStats();dockErr=`✓ ${SLOT[arg].name} upgraded to Mk ${ROMAN[P.tiers[arg]]}.`;feed(`${SLOT[arg].name} now Mk ${ROMAN[P.tiers[arg]]}.`,'good')}else dockErr='Missing parts.'}}
+  else if(act==='rearm'&&false){const it=rackItem(P.cls),cap=pRack(P),n=Math.min(cap-P.rack,countIn(it,srcs));if(n>0&&takeFrom({[it]:n},srcs)){P.rack+=n;dockErr=`✓ Loaded ${n} ${ITEMS[it].name}${n>1?'s':''}.`}}
   else if(act==='repair'){const r=repairCost(c,p),amt=r.rate?Math.min(r.miss,Math.floor(P.credits/r.rate)):r.miss;if(amt>=1){const cost=Math.ceil(amt*r.rate);if(cost)transfer('player',c.wallet,cost);p.hull=Math.min(p.st.hull,p.hull+amt);dockErr=amt>=r.miss-.5?`✓ Hull repaired${cost?` for ${fmt(cost)} cr`:''}.`:`✓ Repaired ${Math.round(amt)} hull for ${fmt(cost)} cr. Earn more credits to finish.`;SFX.clunk()}}
   else if(act==='yardbuild'){if(!S.yards[yk()]&&!S.events.some(e=>e.type==='yardbuild'&&e.att===yk()&&e.stage!=='done')&&haveIn(YARD_COST,srcs)&&P.credits>=YARD_FEE){const force={};takeFrom(YARD_COST,srcs);inv.addAll(force,YARD_COST);transfer('player',c.wallet,YARD_FEE);S.events.push({id:S.nextId++,type:'yardbuild',att:yk(),sector:P.sector,force,until:S.T+YARD_TIME,stage:'building'});dockErr='✓ Shipyard construction started.';feed(`Construction of your capital shipyard has begun at ${DEF[P.sector].name}.`,'good')}}
   else if(act==='crewq'){const Q=arg&&S.pilots&&S.pilots[arg];if(!arg){delete P.crewFor;dockErr='✓ Signed off the turret.'}else if(Q&&Q.docked==='station'&&Q.sector===P.sector&&Q.cls==='gunboat'&&Q.faction===P.faction){P.crewFor=arg;dockErr=`✓ You'll take ${Q.name}'s turret when they launch. Stay docked.`}else dockErr='That Heavy Bomber has left.'}
@@ -5361,8 +5414,8 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
   else if(act==='bfly'){const i=+arg,r=(P.ships||[])[i];if(!r||c.storage!==P.vault)return;const room=shipStats(P.faction,r.cls,r.tiers,r.tune).cargo;if(invMass(P.cargo)>room){inv.addAll(c.storage,P.cargo);P.cargo={}}
     const cur=shipRec(P),bare=START_HULLS.includes(cur.cls)&&shipBare(cur);if(bare){inv.addAll(S.econ.stock[c.wallet]||c.storage,baseKit());inv.addAll(c.storage,cur.bay||{});P.ships.splice(i,1)}else P.ships[i]=cur;
     shipLoad(P,r);refreshPlayerStats();p.hull=p.st.hull;dockErr=`✓ You're flying your ${FACTIONS[P.faction].hulls[r.cls]}.${bare?'':` Your ${FACTIONS[P.faction].hulls[cur.cls]} took its place in the bay.`}`}
-  else if(act==='bupg'){const[i,sl]=String(arg).split(':'),r=(P.ships||[])[+i];if(!r||!SLOT[sl]||c.storage!==P.vault)return;const t=r.tiers[sl]||1;if(t>=5)return;const rc=upgRecipe(sl,t+1),fee=c.fee?Math.ceil(invValue(rc)*.08):0;
-    if(t+1>=4&&!c.forge)dockErr='Mk IV and V need a Forge.';else if(P.credits<fee)dockErr='Not enough credits.';else if(takeFrom(rc,srcs)){if(fee)transfer('player',c.wallet,fee);r.tiers[sl]=t+1;dockErr=`✓ ${FACTIONS[P.faction].hulls[r.cls]}: ${SLOT[sl].name} now Mk ${ROMAN[t+1]}.`}else dockErr='Missing parts.'}
+  else if(act==='bupg'){const[i,sl]=String(arg).split(':'),r=(P.ships||[])[+i];if(!r||!SLOT[sl]||c.storage!==P.vault)return;const t=r.tiers[sl]||1;if(t>=MK_TOP)return;const rc=upgRecipe(sl,t+1),fee=c.fee?Math.ceil(invValue(rc)*.08):0;
+    if(P.credits<fee)dockErr='Not enough credits.';else if(takeFrom(rc,srcs)){if(fee)transfer('player',c.wallet,fee);r.tiers[sl]=t+1;dockErr=`✓ ${FACTIONS[P.faction].hulls[r.cls]}: ${SLOT[sl].name} now Mk ${ROMAN[t+1]}.`}else dockErr='Missing parts.'}
   else if(act==='bsell'){const i=+arg,r=(P.ships||[])[i];if(!r||c.storage!==P.vault)return;shipStrip(r,c.storage);inv.addAll(c.storage,r.bay||{});inv.addAll(c.storage,r.hullInv||{});inv.addAll(S.econ.stock[c.wallet]||c.storage,baseKit());
     const ti=START_HULLS.includes(r.cls)?0:Math.floor(hullPrice(r.cls)*TRADE_IN),got=ti&&c.wallet?transfer(c.wallet,'player',ti):0;P.ships.splice(i,1);dockErr=`✓ ${FACTIONS[P.faction].hulls[r.cls]} sold${got?` for ${fmt(got)} cr`:''}. Its upgrades and drones went into your vault.`}
   else if(act==='hull'&&CLASSES[arg]&&(YARD_IDS.includes(arg)||(arg==='wraith'&&(P.lvl||0)>=10))){const own=hullOwned(P,arg),price=own?0:hullPrice(arg);if(P.cls===arg)return;if(!own&&DOCKS_ONLY.includes(arg)&&!atDocks(P)){dockErr='Heavy Bombers are sold only at orbital docks: a constructed capital shipyard, where carriers and escorts are commissioned.';return}if(P.credits<price){dockErr=`The ${FACTIONS[P.faction].hulls[arg]} costs ${fmt(price)} cr.`;return}{const room=shipStats(P.faction,arg,P.tiers,P.tune).cargo;if(invMass(P.cargo)>room)dockErr='Store some cargo first; the new hold is smaller.';else{inv.addAll(c.storage,P.hullInv||{});P.hullInv={};const wasBare=shipBare(P);shipStrip(P,c.storage);const ti=START_HULLS.includes(P.cls)?0:Math.floor(hullPrice(P.cls)*TRADE_IN),got=ti?transfer(c.wallet||P.faction,'player',ti):0;if(price)transfer('player',c.wallet||P.faction,price);{const nc=CLASSES[arg].drones||0;P.bay=P.bay||{};if((P.bay.drone||0)>nc){inv.add(c.storage,'drone',P.bay.drone-nc);P.bay.drone=nc}}P.rack=rackCapC(arg,P.tiers.weapon);P.mslT=0;P.swarm=CLASSES[arg].swarm||0;P.swT=0;P.cls=arg;hullsOwned(P);const dg=droneTopUp(P,c.storage,c.wallet),dcap=CLASSES[arg].drones||0;refreshPlayerStats();p.hull=p.st.hull;dockErr=`✓ ${price?`Bought for ${fmt(price)} cr. `:''}You now fly the ${FACTIONS[P.faction].hulls[arg]}.${dcap?` Drone bay ${P.bay.drone}/${dcap}${(P.bay.drone||0)<dcap?' (the station is out of drones: buy more on the Market)':''}.`:''}${got?` Your old hull was traded in for ${fmt(got)} cr.`:''}${wasBare?'':' Its upgrades came off as parts into your '+c.storageName.toLowerCase()+' (put a ship in the Ship Bay to keep it whole).'}${price?' If it is destroyed you relaunch in a starter hull.':''}`}}}
@@ -5499,7 +5552,7 @@ function ledger(){
   for(const w of Object.values(WORLDS)){for(const e of w.ents)if(e.npc){invVec(e.load,L['Ships in this sector']);invVec(e.cargo,L['Ships in this sector'])}
     for(const m of w.missiles)invVec(m.inv,L['Ships in this sector'])}
   const Y=L['Your ship, hold, vault'];let credits=0;
-  for(const P of allPilots()){if(P.convoy)for(const t of P.convoy.ships)invVec(t.load,L['Fleets in muster']);invVec(P.cargo,Y);invVec(P.vault,Y);for(const k in P.vaults||{})invVec(P.vaults[k],Y);for(const R of[P,...(P.ships||[])]){invVec(R.hullInv||{},Y);invVec(R.bay||{},Y);for(const sl of SLOTS){invVec(compInv(sl.id,(R.tiers||{})[sl.id]||1),Y);invVec({tune:tuneItems((R.tune||{})[sl.id]||0)},Y)}}credits+=P.credits}
+  for(const P of allPilots()){if(P.convoy)for(const t of P.convoy.ships)invVec(t.load,L['Fleets in muster']);invVec(P.cargo,Y);invVec(P.vault,Y);for(const k in P.vaults||{})invVec(P.vaults[k],Y);for(const R of[P,...(P.ships||[])]){invVec(R.hullInv||{},Y);invVec(R.bay||{},Y);for(const sl of SLOTS){invVec(compInv(sl.id,(R.tiers||{})[sl.id]||1),Y);invVec({tune:tuneItems((R.tune||{})[sl.id]||0)},Y)}invVec(vrInv(R),Y)}credits+=P.credits}
   for(const k in S.econ.treasury)credits+=S.econ.treasury[k];
   const tot=z();for(const k in L)for(const e of RAWS)tot[e]+=L[k][e];return{L,tot,credits};
 }
@@ -5574,8 +5627,8 @@ const LEG_KEY='driftgate.legend',LEG_MIN=1800,LEG_LV=[1,2,4,6,9,12,16,20,25,30],
     'Freight licence: hauler hulls get 10% more hold, the full-hold handling penalty is cut by a third, and hauling Orders pay 10% more.',
     'Miner’s eye: mining hulls drill 10% faster and mine from 400 m instead of 300 m.',
     'Your own ship: start each galaxy in the hull you finished the last one in (not capital ships), with your own ship name and engine colour.',
-    'Head start: one system of your choice starts every galaxy at Mk II.',
-    'Second head start: a second system starts at Mk II.',
+    'Head start: one system of your choice starts every galaxy at Mk II, with a variant of your choice fitted free.',
+    'Second head start: a second system starts at Mk II, with a second free variant.',
     'Command rank: campaign bonuses pay 15% more, and your comms constructor leaves with 1 escort instead of 2.',
     'Reserve hull: a second hull waits in your Ship Bay each galaxy, and your faction’s next carrier is named after you.',
     'Contractor: a flat 150 cr from your faction for every Order, campaign move or beacon mission you complete.',
@@ -5592,15 +5645,15 @@ function legTag(l){return l>=10?'Legendary Ace':l>=7?'Legend':l>=3?'Heroic Pilot
 function lvlOf(k){if(!S||S.training)return 0;const P=isMe(k)?S.player:(S.pilots&&S.pilots[k]);return(P&&P.lvl)||0}
 function pilotLabel(P){if(!P)return'';const t=legTag(P.lvl||0);return P.name+(t?` (${t})`:'')+(P.shipName?` · ${P.shipName}`:'')}
 // what a pilot's device sends the host (and what single player uses directly) to set up its perks for a new galaxy
-function legPack(name){const r=legPeek(name);if(!r)return{lvl:0};const lvl=legLevel(r.pts);return{lvl,mk2:r.mk2||[],keep:r.keep!==false,lastCls:r.lastCls||null,reserve:r.reserve||'striker',shipName:lvl>=4?(r.shipName||''):'',trail:lvl>=4?(r.trail||''):''}}
+function legPack(name){const r=legPeek(name);if(!r)return{lvl:0};const lvl=legLevel(r.pts);return{lvl,mk2:r.mk2||[],fv:r.fv||[],keep:r.keep!==false,lastCls:r.lastCls||null,reserve:r.reserve||'striker',shipName:lvl>=4?(r.shipName||''):'',trail:lvl>=4?(r.trail||''):''}}
 function legValidCls(c,lvl){return!!c&&!!CLASSES[c]&&!LEG_CAPITAL.has(c)&&(YARD_IDS.includes(c)||(c==='wraith'&&lvl>=10))}
 // call before the galaxy's (or pilot's) ledger baseline is taken
 function legendStart(P,pk){pk=pk||{lvl:0};const lvl=Math.max(0,Math.min(10,pk.lvl|0));P.lvl=lvl;P.tune=P.tune||{};P.tune.lv=lvl;if(!lvl)return;
   if(lvl>=4){P.shipName=String(pk.shipName||'').slice(0,20);P.trail=/^#[0-9a-f]{6}$/i.test(pk.trail||'')?pk.trail:'';
     if(pk.keep&&legValidCls(pk.lastCls,lvl)&&pk.lastCls!==P.cls){const c=pk.lastCls;P.cls=c;P.rack=rackCapC(c,P.tiers.weapon);P.swarm=CLASSES[c].swarm||0;P.bay={drone:CLASSES[c].drones||0}}}
   const picks=[];for(const s of(pk.mk2||[]))if(SLOT[s]&&!picks.includes(s))picks.push(s);for(const s of['shield','weapon','engine'])if(picks.length<2&&!picks.includes(s))picks.push(s);
-  if(lvl>=5)P.tiers[picks[0]]=Math.max(2,P.tiers[picks[0]]||1);if(lvl>=6)P.tiers[picks[1]]=Math.max(2,P.tiers[picks[1]]||1);
-  if(lvl>=5)P.rack=rackCapC(P.cls,P.tiers.weapon);
+  if(lvl>=5)P.tiers[picks[0]]=Math.max(2,P.tiers[picks[0]]||1);if(lvl>=6)P.tiers[picks[1]]=Math.max(2,P.tiers[picks[1]]||1);for(let i=0;i<2;i++){const id=(pk.fv||[])[i],V=id&&VARIANTS[id];if(lvl>=5+i&&V&&V.slot===picks[i]){P.tune=P.tune||{};P.tune.vr=P.tune.vr||{};P.tune.vr[V.slot]=id}}
+  if(lvl>=5)P.rack=pRack(P);
   if(lvl>=8){const c=['striker','prospector'].includes(pk.reserve)?pk.reserve:'striker';P.ships=P.ships||[];if(P.ships.length<BAY_MAX)P.ships.push({cls:c,tiers:baseTiers(),tune:{lv:lvl},bay:{},rack:rackCapC(c,1),swarm:CLASSES[c].swarm||0,hullInv:{},stored:0});
     S.legFrig=S.legFrig||{};(S.legFrig[P.faction]=S.legFrig[P.faction]||[]).push(P.name)}}
 function applyLegend(B,cls,U){const lv=(U&&typeof U==='object'&&U.lv)||0;if(lv>=2&&LEG_HAUL.has(cls)){B.cargo=Math.round(B.cargo*1.1);B.ladenK=2/3}if(lv>=3&&LEG_MINE.has(cls))B.drill*=1.1;return B}
@@ -5635,13 +5688,13 @@ function legHtml(){const me=cleanCall($('mpName').value),d=legLoad(),r=me?legPee
   const R=r||{};const sel=(id,opts,val)=>`<select data-lg="${id}">${opts.map(([v,l])=>`<option value="${v}"${v===val?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
   let st='';
   if(lvl>=4)st+=`<label>Start in my last hull${R.lastCls?` (${esc(CLASSES[R.lastCls]?CLASSES[R.lastCls].name:R.lastCls)})`:''} <input type="checkbox" data-lg="keep"${R.keep!==false?' checked':''}></label><label>Ship name <input data-lg="shipName" maxlength="20" value="${esc(R.shipName||'')}" placeholder="e.g. Night Heron"></label><label>Engine colour ${sel('trail',[['','Faction colour'],...LEG_TRAILS.map(c=>[c,c])],R.trail||'')}</label>`;
-  if(lvl>=5){const so=SLOTS.map(s=>[s.id,s.name]);st+=`<label>Mk II system ${sel('mk0',so,(R.mk2||[])[0]||'shield')}</label>`;if(lvl>=6)st+=`<label>Second Mk II system ${sel('mk1',so,(R.mk2||[])[1]||'weapon')}</label>`}
+  if(lvl>=5){const so=SLOTS.map(s=>[s.id,s.name]),vo=i=>{const sl=(R.mk2||[])[i]||(i?'weapon':'shield');return[['','No variant'],...(VAR_BY_SLOT[sl]||[]).map(id=>[id,VARIANTS[id].name])]};st+=`<label>Mk II system ${sel('mk0',so,(R.mk2||[])[0]||'shield')}</label><label>Free variant ${sel('fv0',vo(0),(R.fv||[])[0]||'')}</label>`;if(lvl>=6)st+=`<label>Second Mk II system ${sel('mk1',so,(R.mk2||[])[1]||'weapon')}</label><label>Second free variant ${sel('fv1',vo(1),(R.fv||[])[1]||'')}</label>`}
   if(lvl>=8)st+=`<label>Reserve hull ${sel('reserve',[['striker','Medium Fighter'],['prospector','Medium Miner']],R.reserve||'striker')}</label>`;
   if(st)h+=`<div class="h3" style="margin-top:14px">Perk settings</div><div class="lgs">${st}</div><p class="note">Settings apply from your next new galaxy.</p>`;
   h+=`<div style="margin-top:14px"><button type="button" class="btn sm" data-lgact="reset">${legResetArm?'Click again to erase '+esc(me)+'’s legend':'Reset my legend'}</button></div>`;return h}
 let legResetArm=false;
 function legOpen(){$('legBody').innerHTML=legHtml();$('legend').hidden=false}
-function legSet(k,v){const me=cleanCall($('mpName').value);if(!me)return;const d=legLoad(),r=legRec(me,d);if(k==='keep')r.keep=!!v;else if(k==='mk0'||k==='mk1'){r.mk2=r.mk2||[];r.mk2[k==='mk0'?0:1]=v}else if(k==='shipName')r.shipName=cleanCall(v).slice(0,20);else if(k==='trail')r.trail=v;else if(k==='reserve')r.reserve=v;legSave(d)}
+function legSet(k,v){const me=cleanCall($('mpName').value);if(!me)return;const d=legLoad(),r=legRec(me,d);if(k==='keep')r.keep=!!v;else if(k==='mk0'||k==='mk1'){const i=k==='mk0'?0:1;r.mk2=r.mk2||[];r.mk2[i]=v;r.fv=r.fv||[];const V=VARIANTS[r.fv[i]];if(V&&V.slot!==v)r.fv[i]=''}else if(k==='fv0'||k==='fv1'){r.fv=r.fv||[];r.fv[k==='fv0'?0:1]=VARIANTS[v]?v:''}else if(k==='shipName')r.shipName=cleanCall(v).slice(0,20);else if(k==='trail')r.trail=v;else if(k==='reserve')r.reserve=v;legSave(d)}
 
 $('bLegend').addEventListener('click',()=>{legResetArm=false;legOpen()});
 $('legBody').addEventListener('change',e=>{const el=e.target.closest('[data-lg]');if(!el)return;legSet(el.dataset.lg,el.type==='checkbox'?el.checked:el.value);legOpen()});
