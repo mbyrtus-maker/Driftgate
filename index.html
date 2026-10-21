@@ -1003,7 +1003,7 @@ function unbGateHold(){if(!S.unb)return GATE_HOLD;const o=sideNorm(sectorOwner(W
 function unbFenceRate(){return[.7,.7,.8,.9][unbWork('den')]}
 function fenceRef(k){let t=0,n=0;for(const f of FAC_IDS){const st=S.econ.stock[f];if(st){t+=price(st,k);n++}}return n?t/n:baseValue(k)}
 function fencePr(k){return Math.max(1,Math.floor(fenceRef(k)*unbFenceRate()))}
-const STOLEN_K=2.5;function fencePrS(k){return Math.max(1,Math.floor(fenceRef(k)*STOLEN_K*unbFenceRate()/.7))}
+const STOLEN_K=4;function fencePrS(k){return Math.max(1,Math.floor(fenceRef(k)*STOLEN_K*unbFenceRate()/.7))}
 function unbFenceHtml(c,P,srcs){let h=`<p class="note" style="margin:0 0 12px">The Fence's Den buys anything at ${Math.round(unbFenceRate()*100)}% of market value, and stolen goods (☠) at ${Math.round(STOLEN_K*unbFenceRate()/.7*100)}%, no questions asked: goods go into Unbound stores and the credits come out of the Unbound treasury. Stolen goods (☠) sell here; at a Freeport they only sell under false colours. ${unbWork('den')>=2?'The Den launders stolen goods for a tenth of their value.':'Laundering needs the Den at level 2 (Works tab).'}</p>`;
   const items=ITEM_ORDER.filter(k=>countIn(k,[P.cargo])>0&&!MUNITIONS.has(k));if(!items.length)return h+'<p class="note">Your hold is empty. Go and take something.</p>';
   h+=`<div class="tblw"><table class="t"><thead><tr><th>Item</th><th class="r">In hold</th><th class="r">Fence pays</th><th></th></tr></thead><tbody>`;
@@ -7184,8 +7184,8 @@ function pirCaps(){return(S.frigates||[]).filter(t=>t.side==='pirate')}
 function pirCost(k){return k==='carrier'?CARRIER_COST:ESCORT_COST}
 // fencing: the Unbound sell surplus loot to the Freeport Compact and buy what they can't mine (credits and goods both move,
 // nothing is created). The Wrack has no copper and no Vantium, so those come through the fence.
-function pirFence(want){const st=S.econ.stock.pirate,N=S.econ.stock.neutral;if(!st||!N)return;
-  for(const[k,keep]of[['xc',40],['ir',140],['fe',260],['nu',Math.max(30,(want.nu||0)+20)],['cu',Math.max(80,(want.cu||0)+40)]]){const n=Math.min(8,(st[k]||0)-keep);if(n<=0)continue;const pr=Math.floor(baseValue(k)*.8),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m)}}
+function pirFence(want){const st=S.econ.stock.pirate,N=S.econ.stock.neutral;if(!st||!N)return;const KEEP={xc:40,ir:140,fe:260,nu:Math.max(30,(want.nu||0)+20),cu:Math.max(80,(want.cu||0)+40),keel:99,frame:99,lattice:99,core:99};
+  for(const k of Object.keys(st)){if(MUNITIONS.has(k)||!ITEMS[k])continue;const keep=Math.max(KEEP[k]!=null?KEEP[k]:10,(want[k]||0)+5),n=Math.min(20,(st[k]||0)-keep);if(n<=0)continue;const pr=Math.max(1,Math.floor(price(N,k)*.9)),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m)}}
   for(const k of['cu','nu','wire']){const need=(want[k]||0)-(st[k]||0);if(need<=0)continue;const n=Math.min(k==='nu'?3:k==='wire'?6:10,need,(N[k]||0)-(k==='nu'?12:k==='wire'?20:25));if(n<=0)continue;const pr=Math.ceil(baseValue(k)*(k==='wire'?1.4:1.5)),cost=pr*n;if((S.econ.treasury.pirate||0)<cost+1500)continue;inv.take(N,k,n);inv.add(st,k,n);transfer('pirate','neutral',cost)}}
 function pirTick(){if(NET.cl||!S||S.training)return;pirSetup();const st=S.econ.stock.pirate,T=S.T,H=S.stations.wr,caps=pirCaps(),bld=S.events.filter(e=>e.type==='pirbuild'&&e.stage!=='done');
   const nE=caps.filter(isEsc).length+bld.filter(e=>e.cls==='escort').length,nC=caps.filter(isCar).length+bld.filter(e=>e.cls==='carrier').length;

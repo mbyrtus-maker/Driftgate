@@ -22,3 +22,11 @@ rep("st=(P.stolen||{})[k]||0,pr=fencePr(k);","st=(P.stolen||{})[k]||0,pr=st?fenc
 rep("The Fence's Den buys anything at ${Math.round(unbFenceRate()*100)}% of market value, no questions asked:",
     "The Fence's Den buys anything at ${Math.round(unbFenceRate()*100)}% of market value, and stolen goods (☠) at ${Math.round(STOLEN_K*unbFenceRate()/.7*100)}%, no questions asked:")
 open(P,'w',encoding='utf-8').write(s);print('Unbound pay applied')
+# second pass: at 2.5x a bot pilot made 4-10k an hour, still under the band, and each pilot drained the Unbound treasury by about
+# 18k an hour. The premium goes to 4x, and the haven now sells its surplus loot on to the Freeports at 90% of their market price,
+# every kind of goods and up to 20 of each a tick (it sold only raw ore, 8 at a time, at 80% of base value), keeping what the slip needs.
+s=open(P,encoding='utf-8').read()
+rep("const STOLEN_K=2.5;","const STOLEN_K=4;")
+rep("function pirFence(want){const st=S.econ.stock.pirate,N=S.econ.stock.neutral;if(!st||!N)return;\n  for(const[k,keep]of[['xc',40],['ir',140],['fe',260],['nu',Math.max(30,(want.nu||0)+20)],['cu',Math.max(80,(want.cu||0)+40)]]){const n=Math.min(8,(st[k]||0)-keep);if(n<=0)continue;const pr=Math.floor(baseValue(k)*.8),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m)}}",
+    "function pirFence(want){const st=S.econ.stock.pirate,N=S.econ.stock.neutral;if(!st||!N)return;const KEEP={xc:40,ir:140,fe:260,nu:Math.max(30,(want.nu||0)+20),cu:Math.max(80,(want.cu||0)+40),keel:99,frame:99,lattice:99,core:99};\n  for(const k of Object.keys(st)){if(MUNITIONS.has(k)||!ITEMS[k])continue;const keep=Math.max(KEEP[k]!=null?KEEP[k]:10,(want[k]||0)+5),n=Math.min(20,(st[k]||0)-keep);if(n<=0)continue;const pr=Math.max(1,Math.floor(price(N,k)*.9)),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m)}}")
+open(P,'w',encoding='utf-8').write(s);print('Unbound pay pass 2 applied')
