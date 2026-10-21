@@ -835,3 +835,48 @@ Measured per hour (Mk I, 20 simulated galaxies, realistic overheads):
 
 Combat 4.9k (casual) / 9.8k (average) / 14.8k (strong). Scouting 3.5k / 5.4k / 7.3k. Hauling also has blockade runs
 (median profit about 1,070 a run), carrier resupply at up to ×2.2 on the front, and convoy work on top of trade.
+
+## Combat hulls, pirates and aces (v159)
+
+**Duel balance.** `test/t279_duel.py` (scratchpad) runs AI-vs-AI 1v1 duels between every pair of combat hulls at equal Mk.
+Before this pass the Heavy Bomber won about 90% of its duels and the Bomber 61%: AI bombers torpedoed fighters at close
+range and a torpedo all but one-shots a fighter. Changes:
+
+- **Torpedoes are siege weapons.** A torpedo's blast hits any ship that isn't a capital ship for `TORP_SMALL` = 0.3 of its
+  damage, and AI bombers only torpedo capital ships (stations and outposts as before).
+- **Heavy Bomber:** hull 240 → 185, shield 1.25 → 1.0, forward guns 1.15 → 1.05.
+- **Wraith +10%:** hull 78 → 82, shield .85 → .89, guns 1.8 → 1.89 (about +10% fighting strength overall).
+
+Win % of the row hull against the column hull, 150 duels each:
+
+| Mk I | Light | Medium | Heavy | Bomber | Heavy Bomber | Wraith | Overall |
+|---|---|---|---|---|---|---|---|
+| Light Fighter | — | 50 | 40 | 81 | 65 | 18 | 51% |
+| Medium Fighter | 50 | — | 40 | 86 | 62 | 26 | 53% |
+| Heavy Fighter | 60 | 60 | — | 97 | 82 | 24 | 65% |
+| Bomber | 19 | 14 | 3 | — | 18 | 5 | 12% |
+| Heavy Bomber | 35 | 38 | 18 | 82 | — | 12 | 37% |
+| Wraith | 82 | 74 | 76 | 95 | 88 | — | 83% |
+
+| Mk II | Light | Medium | Heavy | Bomber | Heavy Bomber | Wraith | Overall |
+|---|---|---|---|---|---|---|---|
+| Light Fighter | — | 37 | 17 | 84 | 56 | 25 | 44% |
+| Medium Fighter | 63 | — | 25 | 83 | 73 | 30 | 55% |
+| Heavy Fighter | 83 | 75 | — | 97 | 96 | 56 | 81% |
+| Bomber | 16 | 17 | 3 | — | 15 | 6 | 11% |
+| Heavy Bomber | 44 | 27 | 4 | 85 | — | 16 | 35% |
+| Wraith | 75 | 70 | 44 | 94 | 84 | — | 73% |
+
+**Pirate bounties.** Unbound ships pay `PIRATE_MUL` = 1.2 times a rival faction's bounty.
+
+**AI aces.** Each faction and the Unbound keep a roster (`S.aces`) of three named aces. A new patrol, raider or pirate wing
+has a 6% chance (`ACE_P`) of being led by one, at most one ace per system. An ace flies one Mk above its side (up to Mk III),
+tuned, with a quarter more hull and shields (`ACE_HP`), a steadier lead and longer bursts. Bombers and Light Fighters chosen
+as ace hulls become Heavy and Medium Fighters. Killing an ace pays `ACE_BOUNTY` = 3,500 cr (4,200 for an Unbound ace),
+the biggest bounty in the game, and counts as three heavies for War effort. Aces tally their kills, run when their wing
+breaks and can turn up again; a dead ace is replaced by a new name after `ACE_BACK` = 15 minutes. The HUD marks an ace in
+orange with its bounty, and guests see the name through the entity row (names ending "(Ace)"). In AI duels an ace beats
+regular fighters of its side's Mk over 90% of the time; against players its aim is only a little better than a Mk III
+regular, so the threat is its Mk and toughness.
+
+Strategic check after the hull changes (500 games, 2.2 h): Halcyon 27%, Ostrova 26%, Varkesh 24%, Brood 22%.

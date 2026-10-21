@@ -524,7 +524,9 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Missiles and swarms.</b> Missiles and swarm micro-missiles hit 1.8× harder once a target's shield is down, so break shields with guns and finish with missiles. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts carry a swarm launcher with 2 pods (fire with 3): eight micro-missiles fan out at your target and anything flying near it. Flares fool only about half of them. AI heavy fighters and bombers sometimes carry one too.</p>
             <p><b>Constructors.</b> Factions send escorted constructor convoys to build forward depots in sectors without a station, and to rebuild lost frontier depots. A forward depot costs one Depot Frame and is lightly built (2 turrets, 2 module slots); its faction expands it into a full depot when it can spare a second frame. Constructors are flown only by faction command. To get a depot built, fly to a system with no station, make sure the area is mostly clear (no more than one hostile within 3 km, no hostile capital ship in the system) and call one in through comms (I, then 3). If command has no constructor ready it assembles one as soon as its stores allow, then it sets out from the nearest friendly station and jumps system by system to you, always with an escort of at least two fighters. The site doesn't have to stay clear while it travels, but the convoy has to survive to build.</p>
             <p><b>Logistics.</b> Each faction's core station is its warehouse; each depot keeps its own store. A depot mines into its store, runs its life support, works and fighter hangar from it, and (with a production module) turns ore into plates, conduit and coil. Freight convoys carry surplus ore to the warehouse and components out to depots that are building and to carriers in the field. Convoys are real freighters: they can be caught on the way, and a destroyed freighter spills half its hold as salvage. The Missions tab lists enemy convoys within reach under Convoy raids, with a bounty for each, and our own convoys under Convoy escort: sign on, fly with one, and Command pays when it docks.</p>
-            <p><b>Bounties.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships. You don't need the kill shot: everyone who damaged it is paid their share of the bounty (and War effort) by damage dealt.</p>
+            <p><b>Bounties.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships. You don't need the kill shot: everyone who damaged it is paid their share of the bounty (and War effort) by damage dealt. Unbound pirates pay a fifth more than a rival faction's ships.</p>
+            <p><b>Aces.</b> Each faction and the Unbound have three named aces. Now and then one leads a wing, marked in orange with its bounty: a Mk ahead of its wingmates, tougher, and a better shot. An ace pays the biggest bounty in the game (3,500 cr, 4,200 for an Unbound ace), more than a carrier. Aces keep a tally of their kills and run when their wing breaks; a dead ace is replaced by a new name 15 minutes later.</p>
+            <p><b>Torpedoes are siege weapons.</b> They hit a small ship for under a third of their damage, so they're for capital ships, stations and outposts, not dogfights.</p>
             <p><b>Galaxy events.</b> Every few minutes something happens somewhere, announced in the feed and marked on the map. <b>Comet</b>: drifting debris pulls together into a comet in Kestrel Drift, The Shoal, Cinder Reach, Hollow Verge or The Wrack. It holds up to about 110 t of ore, mostly Xenocrystal, for about 4 minutes before it breaks up again. Mine it with your mining laser (F) like a rock; you can't land on it, and AI miners leave it alone, so it's there for pilots. <b>Derelict cargo</b>: a faction freighter has broken up and left a glowing crate of components (plates, conduit, coils, sometimes Crystal Lattice or iridium) drifting in a system for about 5 minutes. Fly into it to scoop it into your hold. It's anyone's: Unbound pirates go for it too. <b>Ion storm</b>: for 2½ minutes shields don't recharge there and radar is blind. <b>Gate collapse</b>: one jumpgate link is down for 2 minutes. <b>Requisition</b>: a faction pulls stock for its war effort, and prices for that item climb at its stations.</p>
             <p><b>War effort.</b> Orders delivered, supply-drive loads, campaign moves, beacon flips and enemy ships shot down earn your faction War effort. It fades over about 20 minutes, and while it lasts your faction's fleets fight harder in the battles fought out of sight. The campaign panel at your station shows the current bonus.</p>
             <p><b>Sensors, not omniscience.</b> You only hear about strikes, convoys and battles in sectors your side can see: sectors with a friendly station or depot (plus their neighbours), friendly outposts, and wherever a friendly scout is (plus neighbours). Holding the Hollow Relay taps the whole network. The map dims sectors you cannot see. Scout hulls are the fastest ships, see the whole sector and the sectors next door, but carry light guns and turn slowly. The Scout fires its missiles in pairs from two launchers; the Advanced Scout has one launcher plus a swarm launcher.</p>
@@ -679,13 +681,13 @@ const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',sh
 const PLAYER_COL='#f0b24a';
 const CLASSES={
   interceptor:{name:'Light Fighter',hull:78,shield:.85,speed:1.32,turn:3.45,weapon:1.0,cargo:14,drill:0,radius:12,rack:.75,boost:1.25,agile:1.45,acc:1.38,bcost:.7,desc:'Fastest and most agile: quickest acceleration, cheap afterburner, best at shaking missiles. Light armour.'},
-  gunboat:{name:'Heavy Bomber',swarm:2,torp:true,hull:240,shield:1.25,speed:.9,turn:1.75,weapon:1.15,cargo:30,drill:0,radius:20,rack:1,boost:.95,agile:.82,acc:.85,bcost:1.05,seats:2,desc:'Two seats. The pilot flies on twin forward cannons and a siege torpedo bay that cracks stations, outposts and their works; a gunner works the rear dorsal turret with its own cannons. An AI gunner mans the turret when no pilot is in it. Swarm launcher (2 pods). Tougher and slower than a fighter, quicker than a Bomber.'},
+  gunboat:{name:'Heavy Bomber',swarm:2,torp:true,hull:185,shield:1,speed:.9,turn:1.75,weapon:1.05,cargo:30,drill:0,radius:20,rack:1,boost:.95,agile:.82,acc:.85,bcost:1.05,seats:2,desc:'Two seats. The pilot flies on twin forward cannons and a siege torpedo bay that cracks stations, outposts and their works; a gunner works the rear dorsal turret with its own cannons. An AI gunner mans the turret when no pilot is in it. Swarm launcher (2 pods). Tougher and slower than a fighter, quicker than a Bomber.'},
   striker:{name:'Medium Fighter',hull:110,shield:1,speed:1.17,turn:2.95,weapon:1.25,cargo:24,drill:0,radius:15,rack:1,boost:1.12,agile:1.18,acc:1.2,bcost:.85,desc:'All-rounder: quick off the mark and nimble enough to out-turn heavies and bombers.'},
   heavy:{name:'Heavy Fighter',swarm:2,acc:.9,hull:165,shield:1.25,speed:.92,turn:1.95,weapon:1.55,cargo:30,drill:0,radius:19,rack:1.5,boost:.92,agile:.8,desc:'Tough gun platform, big missile rack, swarm launcher.'},
   bomber:{name:'Bomber',swarm:2,acc:.78,hull:190,shield:1.2,speed:.8,turn:1.5,weapon:.8,cargo:34,drill:0,radius:22,torp:true,boost:.85,agile:.7,desc:'Torpedoes that crack stations and outposts, swarm launcher. Slow.'},
   skiff:{name:'Light Miner',hull:90,shield:.85,speed:1.1,turn:2.5,weapon:.8,cargo:30,drill:1.1,radius:14,rack:.5,boost:1.05,agile:1.05,acc:1.1,drones:1,lasers:1,desc:'1 mining laser, 1 guard drone, small hold. Nimble enough to run.'},
   prospector:{lasers:2,drones:2,name:'Medium Miner',hull:125,shield:1,speed:1,turn:2.2,weapon:.95,cargo:46,drill:1.5,radius:17,rack:1,boost:1,agile:.9,desc:'2 mining lasers, 2 guard drones, mid hold.'},
-  wraith:{name:'Wraith',hull:78,shield:.85,speed:1.3,turn:3.25,weapon:1.8,cargo:0,drill:0,radius:12,rack:0,swarm:2,boost:1.2,agile:1.4,acc:1.35,bcost:.75,radar:true,desc:'Legendary Ace hull. Quad cannons and lasers, two swarm pod batteries, no hold and no mining laser. K switches stealth: hidden beyond 600 m, but no shields, guns, missile locks or afterburner while hidden.'},
+  wraith:{name:'Wraith',hull:82,shield:.89,speed:1.3,turn:3.25,weapon:1.89,cargo:0,drill:0,radius:12,rack:0,swarm:2,boost:1.2,agile:1.4,acc:1.35,bcost:.75,radar:true,desc:'Legendary Ace hull. Quad cannons and lasers, two swarm pod batteries, no hold and no mining laser. K switches stealth: hidden beyond 600 m, but no shields, guns, missile locks or afterburner while hidden.'},
   escort:{name:'Escort',hull:1300,shield:7,speed:.62,turn:.62,weapon:.9,cargo:0,drill:0,radius:70,rack:0,boost:1,agile:.55,acc:.55,desc:'Light capital ship.'},
   carrier:{name:'Carrier',hull:2500,shield:14,speed:.36,turn:.26,weapon:0,cargo:0,drill:0,radius:120,rack:0,boost:1,agile:.25,acc:.3,desc:'Fleet carrier.'},
   frigate:{name:'Frigate',hull:3000,shield:14,speed:.42,turn:.32,weapon:1,cargo:0,drill:0,radius:110,rack:0,boost:1,agile:.3,acc:.35,desc:'Capital ship.'},
@@ -1507,13 +1509,14 @@ function wePts(f){const g=weFac(f);return g&&S.we?(S.we[g]||0):0}
 function weBonus(f){return WE.max*(1-Math.exp(-wePts(f)/WE.scale))}
 function weMul(f){return 1+weBonus(f)}
 function weTick(){if(!S.we)return;const k=Math.exp(-10/WE.tau);for(const f in S.we){S.we[f]*=k;if(S.we[f]<.01)delete S.we[f]}}
-function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'?K.drone:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
+function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'?K.drone:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.ace)p=K.heavy*3;if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
 // ---- kill credit. Every pilot who damaged a ship is paid their share of its bounty (and War effort) by damage dealt, so the
 // kill shot isn't needed. AI damage counts in the total but pays no one; the kill shot only adds to the kill count.
 // Bounties grow with the size of the ship.
 const BOUNTY_MUL=4;   // the pay ladder: hauling, then mining, then combat, then beacon running
-function bountyOf(e){if(e.role==='drone')return 40;if(e.role==='frigate')return e.cls==='escort'?1400:2800;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
-  return Math.max(40,Math.round(BOUNTY_MUL*(25+20*(e.tier||1))*Math.pow(Math.max(.3,r),.6)/5)*5)}
+const PIRATE_MUL=1.2; // the Unbound prey on everyone: their pilots (and aces) carry a fifth more bounty than a rival faction's
+function bountyOf(e){if(e.ace)return Math.round(ACE_BOUNTY*(e.side==='pirate'?PIRATE_MUL:1));if(e.role==='drone')return 40;if(e.role==='frigate')return e.cls==='escort'?1400:2800;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
+  return Math.max(40,Math.round(BOUNTY_MUL*(e.side==='pirate'?PIRATE_MUL:1)*(25+20*(e.tier||1))*Math.pow(Math.max(.3,r),.6)/5)*5)}
 function dmgRec(e,src,at,d){if(!(d>0)||e.isPlayer)return;const k=at&&at.src&&at.src.rp?at.src.rp:src==='player'?'me':'_ai';(e.dmg=e.dmg||{})[k]=(e.dmg[k]||0)+d}
 function killNoun(e){return e.role==='miner'?'miner':e.role==='hauler'?'hauler':e.role==='trader'?(e.tradeT&&e.tradeT.kind==='haul'?'supply freighter':'trader'):e.role==='builder'?'constructor':e.role==='drone'?'drone':e.role==='frigate'?(e.tok?capName(e.tok):'capital ship'):CLASSES[e.cls]?CLASSES[e.cls].name.toLowerCase():'fighter'}
 function payKill(e,src,at){const D=e.dmg||{},kp=at&&at.src&&at.src.rp,killer=kp||(src==='player'?'me':null);let tot=0;for(const k in D)tot+=D[k];
@@ -2769,9 +2772,33 @@ function populate(initial){
     else if(cnt(r,s)<n&&Math.random()<(initial?.6:.35)*ch){if(r==='hauler')spawnHauler(s,initial);else spawnNPC(r,s,initial);return}}
 }
 // wings: combat ships always arrive in groups of 3+, share targets, fly formation and run for home when cut down to 1-2
+// ---- AI aces. Each faction and the Unbound keep a roster of three named aces. Now and then one leads a combat wing: one Mk
+// better than its side flies (up to Mk III), a quarter more hull and shields, a steadier aim and longer bursts. An ace's kills are tallied, it runs when its
+// wing breaks and comes back another day, and killing one pays the biggest bounty in the game (more than a carrier). A dead
+// ace is replaced by a new name after ACE_BACK seconds.
+let ACE_P=.06;const ACE_BOUNTY=3500,ACE_HP=1.25,ACE_ROSTER=3,ACE_BACK=900;
+const ACE_NAMES={halcyon:['Seren Vale','Idris Kael','Maren Sol','Tamsin Rhee','Corin Ashby','Liora Venn','Edric Hale','Juno Marsh','Calla Wren','Rowan Teague'],
+  varkesh:['Draven Kosk','Ulrek Thane','Saska Vor','Brann Kharos','Teyla Grisk','Mordek Ash','Ivra Skell','Kael Durn','Rusk Hadar','Velka Morn'],
+  ostrova:['Mira Volkova','Anton Sedrin','Katya Orlan','Yuri Belsk','Nadia Kirov','Pavel Strand','Lena Morosk','Oleg Varin','Irina Tal','Dmitri Kass'],
+  pirate:['Red Jessa','Knuckles Dray','Mad Sorrel','One-Eye Brisk','Black Tobin','Vix Calloway','Grin Marlow','Sable Kinch','Lucky Fenn','Rattle Quint']};
+function aceRoster(side){if(!ACE_NAMES[side])return[];S.aces=S.aces||{};const L=S.aces[side]=S.aces[side]||[];
+  while(L.length<ACE_ROSTER){const used=new Set(L.map(a=>a.n)),pool=ACE_NAMES[side].filter(n=>!used.has(n));L.push({id:'ace'+(S.nextId++),n:pool.length?pick(pool):pick(ACE_NAMES[side])+' the Younger',k:ri(3,9),t:S.T+(S.aceInit&&S.aceInit[side]?ACE_BACK:0)})}
+  (S.aceInit=S.aceInit||{})[side]=1;return L}
+function aceFlying(id){for(const w of Object.values(WORLDS))if(w.ents.some(e=>e.aceId===id&&e.alive))return true;return false}
+function aceTry(g){const side=g.side;if(!ACE_NAMES[side]||Math.random()>ACE_P||W.ents.some(e=>e.ace&&e.alive))return;
+  const a=aceRoster(side).filter(a=>a.t<=S.T&&!aceFlying(a.id));if(!a.length)return;const A=pick(a),e=g.members[0];if(!e)return;
+  if(isBmb(e.cls)||e.cls==='interceptor')e.cls=isBmb(e.cls)?'heavy':'striker';
+  const tier=Math.min(3,(e.tier||1)+1),st={...shipStats(side==='pirate'?null:side,e.cls,tier,1)};st.hull*=ACE_HP;st.sCap*=ACE_HP;e.st=st;e.tier=tier;e.tuned=1;e.hull=st.hull;e.shield=st.sCap;e.energy=st.eCap;
+  e.ace=1;e.aceId=A.id;e.pname=`${A.n} (Ace)`;
+  if(W===LW&&!NET.cl){const who=side==='pirate'?'Unbound':FACTIONS[side].short;
+    feed(hostile(S.player.faction,side)?`★ Enemy ace sighted: ${A.n} (${A.k} kills) leads ${art(who).toLowerCase()} ${who} wing here. Bounty ${fmt(bountyOf(e))} cr.`:`★ ${A.n}, a ${who} ace with ${A.k} kills, is flying with a friendly wing here.`,hostile(S.player.faction,side)?'warn':'good')}}
+function aceOf(e){const L=S.aces&&S.aces[e.side];return L?L.find(a=>a.id===e.aceId):null}
+function aceDown(e){const L=S.aces&&S.aces[e.side],A=aceOf(e);if(!A)return;L.splice(L.indexOf(A),1);aceRoster(e.side);const who=e.side==='pirate'?'Unbound':FACTIONS[e.side].short;
+  feed(`★ Ace down: ${A.n} of the ${who} (${A.k} kills) is dead.`,hostile(S.player.faction,e.side)?'good':'bad')}
+function aceTally(k,v){const A=aceOf(k);if(!A)return;A.k++;if(v.isPlayer)feed(`★ Shot down by ${A.n}, ${k.side==='pirate'?'an Unbound':art(FACTIONS[k.side].short).toLowerCase()+' '+FACTIONS[k.side].short} ace: that's kill number ${A.k}.`,'bad')}
 function spawnWing(role,side,size,initial){const g={id:'g'+(RID++),side,role,members:[],n0:0,fleeing:false};let lead=null;
   for(let i=0;i<size;i++){const e=spawnNPC(role,side,initial,lead);if(!e)break;e.grp=g;e.slot=i;g.members.push(e);if(!lead)lead=e}
-  if(g.members.length<3){for(const e of g.members)despawn(e);return null}g.n0=g.members.length;W.groups[g.id]=g;return g}
+  if(g.members.length<3){for(const e of g.members)despawn(e);return null}g.n0=g.members.length;W.groups[g.id]=g;if(['patrol','raider','pirate'].includes(role))aceTry(g);return g}
 function grpAlive(g){return g.members.filter(m=>m.alive&&W.ents.includes(m))}
 function grpLead(g){return g.members.find(m=>m.alive&&W.ents.includes(m)&&m.role!=='flee')||null}
 const HOP={};for(const a of SECTOR_DEFS){const d={[a.id]:0},q=[a.id];while(q.length){const x=q.shift();for(const n of NEIGH[x])if(d[n]===undefined){d[n]=d[x]+1;q.push(n)}}HOP[a.id]=d}
@@ -3599,7 +3626,7 @@ function wreckWorld(dt){const s=S.sectors[W.sid];if(!s.wrecks||!s.wrecks.length)
     if(w.broodAt&&S.T>=w.broodAt){w.broodAt=0;let n=0;for(let i=0;i<(w.broodN||2);i++){const e=spawnNPC('miner','brood');if(e){const g=pick(GATES[W.sid]);e.x=g.x*.92;e.y=g.y*.92;e.z=g.z*.92;e.ai.ast=pick(w.pts);e.scav=1;n++}}
       if(n&&p&&!S.player.docked)feed(`✕ Brood scavengers (${n}) have come through the gate for the ${w.name} wreck.`,'warn')}
     if(Math.random()<dt*.8&&!MUTE){const pt=pick(w.pts);fxSpark(pt,'#ffb066',2)}}}
-function killShip(e,src,at){
+function killShip(e,src,at){if(!NET.cl){if(e.ace)aceDown(e);const kb=at&&at.src;if(kb&&kb.ace&&kb!==e&&e.type==='ship'&&e.role!=='drone')aceTally(kb,e)}
   e.alive=false;e.killed=true;if(e.sortie||e.sortieEv){const ev=S.events.find(v=>v.id===(e.sortie||e.sortieEv));if(ev){if(e.sortie&&ev.stage==='gather')ev.pending=Math.max(0,ev.pending-1);if(e.sortieEv){const i=ev.craft.indexOf(e.cls);if(i>=0)ev.craft.splice(i,1);ev.lost++}}}if(e.role==='trader'&&e.home.startsWith('trader:'))traderLost(e);if(e.role==='scout'&&e.home.startsWith('scout:')){const id=e.home.split(':')[1];S.scouts=S.scouts.filter(t=>String(t.id)!==id);if(e.side===S.player.faction)feed(`Our scout was shot down in ${DEF[W.sid].name}.`,'bad')}fxBoom(e,e.st.radius*2.6,e.isPlayer?PLAYER_COL:sideCol(e.side));
   if(e.drones)for(const d of e.drones)if(d.alive){d.role='leave';d.mom=null}
   if(e.side==='player'&&e.role==='drone')feed('One of your guard drones was destroyed.','bad');
@@ -3683,14 +3710,14 @@ function bomberRun(e,OE,dt){const ai=e.ai,dx=OE.x-e.x,dy=OE.y-e.y,dz=OE.z-e.z,d=
   if(ai.lock>=1&&(ai.tcd||0)<=W.t&&(e.load.torpedo||0)>0){inv.take(e.load,'torpedo',1);launchMissile(e,OE,e.tier,'torpedo');ai.lock=.4;ai.tcd=W.t+rnd(4,6)}
   if(err<.09&&d<SHOT_RANGE)fire(e)}
 function fight(e,t,dt){
-  const ai=e.ai;if(ai.lt!==t){ai.lt=t;ai.lead=rnd(.6,1.25)}const dx=t.x-e.x,dy=t.y-e.y,dz=t.z-e.z,d=hyp(dx,dy,dz)||1,lp0=e.wpn==='laser'?t:leadPoint(e,t,SHOT_SPD),lp={x:t.x+(lp0.x-t.x)*ai.lead,y:t.y+(lp0.y-t.y)*ai.lead,z:t.z+(lp0.z-t.z)*ai.lead};
-  const amp=.03-.006*((e.tier||1)-1);ai.jx=(ai.jx||0)*.97+rnd(-amp,amp);ai.jy=(ai.jy||0)*.97+rnd(-amp,amp);if(!ai.bT||W.t>ai.bT){ai.bOn=!ai.bOn;ai.bT=W.t+(ai.bOn?rnd(.7,1.4):rnd(.8,1.6))}
+  const ai=e.ai;if(ai.lt!==t){ai.lt=t;ai.lead=e.ace?rnd(.75,1.2):rnd(.6,1.25)}const dx=t.x-e.x,dy=t.y-e.y,dz=t.z-e.z,d=hyp(dx,dy,dz)||1,lp0=e.wpn==='laser'?t:leadPoint(e,t,SHOT_SPD),lp={x:t.x+(lp0.x-t.x)*ai.lead,y:t.y+(lp0.y-t.y)*ai.lead,z:t.z+(lp0.z-t.z)*ai.lead};
+  const amp=e.ace?.02:.03-.006*((e.tier||1)-1);ai.jx=(ai.jx||0)*.97+rnd(-amp,amp);ai.jy=(ai.jy||0)*.97+rnd(-amp,amp);if(!ai.bT||W.t>ai.bT){ai.bOn=!ai.bOn;ai.bT=W.t+(ai.bOn?rnd(.7,1.4)*(e.ace?1.2:1):rnd(.8,1.6)*(e.ace?.8:1))}
   const err=faceDir(e,lp.x-e.x+ai.jx*d,lp.y-e.y+ai.jy*d,lp.z-e.z,dt);
   const want=t.type==='outpost'||t.type==='station'?560:400;
   const ax=ai.ax;let px=dy/d*ax.z-dz/d*ax.y,py=dz/d*ax.x-dx/d*ax.z,pz=dx/d*ax.y-dy/d*ax.x;const pl=hyp(px,py,pz)||1;px/=pl;py/=pl;pz/=pl;
   steer(e,t.x-dx/d*want+px*260,t.y-dy/d*want+py*260,t.z-dz/d*want+pz*260,dt,false,.85);
   if(ai.bOn||t.type==='outpost'||t.type==='station'||t.kind==='torpedo'){if(e.wpn==='laser'){if(err<.07&&d<LASER_RANGE&&e.energy>e.st.eCap*.2)fireLaser(e)}else if(err<.09&&d<SHOT_RANGE)fire(e)}
-  if(t.type==='ship'&&(e.load.torpedo||0)>0&&isBmb(e.cls)&&d<1200&&(ai.tcd||0)<=W.t&&err<.15){inv.take(e.load,'torpedo',1);launchMissile(e,t,e.tier,'torpedo');ai.tcd=W.t+12}
+  if(t.type==='ship'&&t.role==='frigate'&&(e.load.torpedo||0)>0&&isBmb(e.cls)&&d<1200&&(ai.tcd||0)<=W.t&&err<.15){inv.take(e.load,'torpedo',1);launchMissile(e,t,e.tier,'torpedo');ai.tcd=W.t+12}
   if((e.load.swarm||0)>0&&t.type==='ship'&&d<1700&&err<.35&&(ai.scd||0)<=W.t){inv.take(e.load,'swarm',1);launchSwarm(e,t,e.tier);ai.scd=W.t+18}
   if((e.load.missile||0)>0&&t.type==='ship'){if(ai.mcd===undefined)ai.mcd=rnd(2,5);ai.mcd-=dt*(t.shield<=t.st.sCap*.05?3:1);
     if(err<.24&&d<2200)ai.lock=Math.min(1,(ai.lock||0)+dt/1.8);else ai.lock=Math.max(0,(ai.lock||0)-dt);
@@ -3735,10 +3762,13 @@ function fireSwarm(){if(!W||!running||S.player.docked||W.dead)return;if(W.player
 function stat(k,n){if(W){W.stats=W.stats||{};W.stats[k]=(W.stats[k]||0)+(n===undefined?1:n)}}
 function killTorp(m,bySide){if(NET.cl)return;const i=W.missiles.indexOf(m);if(i<0)return;if(m.tgt&&m.tgt.role==='frigate')stat('torpShotDown');W.missiles.splice(i,1);toDebris(S.sectors[W.sid],m.inv);fxBoom(m,30,'#ffcf5a');if(bySide==='player')feed('Torpedo intercepted.','good')}
 function missileTgtValid(T){if(!T)return false;if(T.decoy)return T.life>0;if(T.masked)return false;if(T.type==='station')return W.stationEnt===T;if(T.type==='ship')return T.alive&&W.ents.includes(T)&&!(T.isPlayer&&(S.player.docked||W.dead));if(T.type==='outpost')return!!T.o.owner&&!T.o.breached;if(T.type==='works')return!!(W.works&&W.works.includes(T));return false}
+// torpedoes are siege weapons: their blast is built to crack hulls the size of a capital ship or a station, and a small ship
+// takes only TORP_SMALL of it, so a bomber can't torpedo its way through a dogfight
+const TORP_SMALL=.3;
 function detonate(m,i){const s=S.sectors[W.sid],tp=m.kind==='torpedo',sw=m.kind==='swarm',BR=tp?110:sw?26:70;W.missiles.splice(i,1);fxBoom(m,tp?130:sw?28:55,m.col);if(tp)fxBoom(m,80,'#ffe2b0');
   for(const e of W.ents.slice()){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead))continue;if(!hostile(m.side,e.side))continue;const d=d3(e,m);if(d<BR+e.st.radius){
     const bare=!tp&&e.shield<=e.st.sCap*.05,mul=bare?BARE_MUL:1;if(bare){fxSpark(e,'#ff9a6a',sw?3:8);if(m.side==='player'&&W.t-(W.bareT||-9)>1.5){W.bareT=W.t;flash('Shields down: missiles hit for ×1.8!')}}
-    damageShip(e,m.dmg*mul*(d<e.st.radius+28?1:.45),m.side,m)}}
+    damageShip(e,m.dmg*mul*(d<e.st.radius+28?1:.45)*(tp&&e.role!=='frigate'?TORP_SMALL:1),m.side,m)}}
   if(m.tgt&&m.tgt.type==='station'&&W.stationEnt===m.tgt&&hostile(m.side,m.tgt.fac)&&d3(m.tgt,m)<240)damageStation(m.tgt,m.dmg*(tp?TORP_STATION:1),m.side,m.kind);
   if(W.works&&W.works.length)wkBlast(m,tp,BR);
   const T=m.tgt;if(T&&T.type==='outpost'&&!T.o.breached&&T.o.owner&&hostile(m.side,T.o.owner)&&d3(T,m)<(tp?230:170))damageOutpost(T,m.dmg*(tp?3:1.5));
@@ -4801,7 +4831,7 @@ function drawOverlay(){
     c.strokeStyle=hexA(col,h?.85:.45);c.beginPath();if(h){c.moveTo(P.x-r,P.y-r+4);c.lineTo(P.x-r,P.y-r);c.lineTo(P.x-r+4,P.y-r);c.moveTo(P.x+r-4,P.y-r);c.lineTo(P.x+r,P.y-r);c.lineTo(P.x+r,P.y-r+4);c.moveTo(P.x-r,P.y+r-4);c.lineTo(P.x-r,P.y+r);c.lineTo(P.x-r+4,P.y+r);c.moveTo(P.x+r-4,P.y+r);c.lineTo(P.x+r,P.y+r);c.lineTo(P.x+r,P.y+r-4)}else{c.moveTo(P.x,P.y-r-2);c.lineTo(P.x+4,P.y-r-7);c.lineTo(P.x-4,P.y-r-7);c.closePath()}c.stroke()}
   const marks=[],nxg=routeNext();for(const g of GATES[W.sid]){const nx=nxg&&nxg.to===g.to;marks.push({o:g,l:(nx?'NEXT JUMP ':'')+'→ '+DEF[g.to].name,c:S.gateDown[gateKey(W.sid,g.to)]?'#ff5d4f':nx?'#f0b24a':'#dfe8ff',r:120})}
   const SE=W.stationEnt,OE=W.outpostEnt,blk=Math.floor(t*4)%2===0;if(SE){const ua=friendSide(SE.fac)&&W.t-SE.lastHit<4;marks.push({o:SE,l:SE.name,c:ua&&blk?'#ff5d4f':sideCol(SE.fac),r:130,sub:ua?'UNDER ATTACK':''})}if(OE){const ua=friendSide(OE.o.owner)&&W.t-OE.lastHit<4;marks.push({o:OE,l:OE.o.name,c:ua&&blk?'#ff5d4f':sideCol(OE.o.owner),r:140,sub:(ua?'UNDER ATTACK · ':'')+(OE.o.breached?'BREACHED · ':'')+(OE.o.owner?sideName(OE.o.owner).toUpperCase():'UNCLAIMED')+' · LEVEL '+OE.o.level})}
-  for(const e of W.ents)if(e.pname&&e.alive&&e!==p&&e.type==='ship'&&!(hostile('player',e.side)&&mHid(e,p)))marks.push({o:e,l:e.pname,c:/\(Legendary Ace\)/.test(e.pname)?'#ffd27a':sideCol(e.side),r:e.st.radius*1.25,sub:(hostile('player',e.side)?'HOSTILE PILOT · ':'PILOT · ')+hullName(e.fac,e.cls).toUpperCase()});
+  for(const e of W.ents)if(e.pname&&e.alive&&e!==p&&e.type==='ship'&&!(hostile('player',e.side)&&mHid(e,p)))marks.push({o:e,l:e.pname,c:e.ace?'#ff9a5a':/\(Legendary Ace\)/.test(e.pname)?'#ffd27a':sideCol(e.side),r:e.st.radius*1.25,sub:(e.ace?(hostile('player',e.side)?`ENEMY ACE · ${fmt(bountyOf(e))} CR · `:'ACE · '):hostile('player',e.side)?'HOSTILE PILOT · ':'PILOT · ')+hullName(e.fac,e.cls).toUpperCase()});
   for(const a of sec.ast)if(a.comet)marks.push({o:a,l:'Comet',c:'#c99cff',r:astR(a)});
   for(const cr of sec.crates)if(cr.derelict)marks.push({o:cr,l:'Derelict cargo',c:'#f0b24a',r:16});
   for(const m of marks){const P=proj(m.o.x,m.o.y,m.o.z),d=Math.round(d3(m.o,p)/10)*10,on=!P.behind&&P.x>20&&P.y>20&&P.x<VW-20&&P.y<VH-20;
@@ -5613,7 +5643,7 @@ const TRAIN=[
   {x:'Missiles: keep a target near your nose until the lock completes, then press <kbd>C</kbd>. Missiles hit 1.8× harder once shields are down and reload on a cooldown.',ok:()=>W.missiles.some(m=>m.src===W.player)},
   {x:'If something locks onto you, press <kbd>B</kbd> for flares: they spoof missiles tracking you. Try it now.',ok:()=>W.flareCd>0},
   {x:'Finish the remaining drones.',ok:()=>!trDroneEnts().length},
-  {ack:1,ok:()=>!!S.training.ack,x:'<b>Bounties, swarms and wings.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships, shared by damage dealt. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts also carry a swarm launcher (<kbd>3</kbd>): eight micro-missiles that fan out at your target. Shields recharge 2.5 s after the last hit. Combat ships fly in wings, and when a wing is cut down to one or two ships the survivors run for home.'}]},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Bounties, swarms and wings.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships, shared by damage dealt. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts also carry a swarm launcher (<kbd>3</kbd>): eight micro-missiles that fan out at your target. Shields recharge 2.5 s after the last hit. Combat ships fly in wings, and when a wing is cut down to one or two ships the survivors run for home. A wing led by an <b>ace</b> (orange marker) is dangerous, but an ace pays the biggest bounty in the game.'}]},
  {t:'Mining and trade',setup:trMiner,steps:[
   {x:'Only mining ships carry a mining laser, so training has moved you into a <b>Light Miner</b>. Press <kbd>R</kbd> to target the nearest asteroid and fly to it.',ok:()=>W.tgt&&W.tgt.kind==='ast'},
   {x:'Hold <kbd>F</kbd> (or right-click) to run the mining laser. Collect <b>3 ore</b>: lasers cut slowly, and a full hold takes several minutes. Every plate and coil in Driftgate was mined from a rock that already existed: nothing is created.',setup:()=>{S.training.v.ore=trOre()},ok:()=>trOre()-(S.training.v.ore||0)>=3},
@@ -6097,7 +6127,7 @@ function applySync(L){if(!S)return;const P=S.player;
   for(const id in w.pup||{}){const e=w.pup[id];if(e.mining)e.mining=S.sectors[w.sid].ast.find(a=>a.id===e.mining.id)||null}}
 function mkPup(r){const[id,side,fac,cls,role,tier,wpn,name]=r;const st=shipStats(fac==='pirate'?null:fac,cls,tier||1);
   const e={type:'ship',pup:true,id,side,fac,cls,role,tier:tier||1,wpn,st,x:r[8],y:r[9],z:r[10],vx:0,vy:0,vz:0,q:q0(),hull:st.hull,shield:st.sCap,energy:st.eCap,alive:true,lastHit:-99,ai:{},load:{},cargo:{},drones:[]};
-  if(role==='pilot'){e.pname=name;e.rp=id.slice(2);e.trail=r[24]||null}if(role==='frigate'){e.tokId=r[23];e.tok=(S.frigates||[]).find(x=>x.id===r[23])||{name,side,id:r[23]};e.pickets=[]}e.q.x=r[11]/1000;e.q.y=r[12]/1000;e.q.z=r[13]/1000;e.q.w=r[14]/1000;qNorm(e.q);e.momId=r[22];return e}
+  if(role==='pilot'){e.pname=name;e.rp=id.slice(2);e.trail=r[24]||null}else if(name&&role!=='frigate'&&/\(Ace\)$/.test(name)){e.pname=name;e.ace=1;e.st={...st,hull:st.hull*ACE_HP,sCap:st.sCap*ACE_HP};e.hull=e.st.hull;e.shield=e.st.sCap}if(role==='frigate'){e.tokId=r[23];e.tok=(S.frigates||[]).find(x=>x.id===r[23])||{name,side,id:r[23]};e.pickets=[]}e.q.x=r[11]/1000;e.q.y=r[12]/1000;e.q.z=r[13]/1000;e.q.w=r[14]/1000;qNorm(e.q);e.momId=r[22];return e}
 function relinkFrigs(){const w=LW;if(!w||!w.pup)return;for(const id in w.pup){const e=w.pup[id];if(e.role!=='frigate'||e.tokId==null)continue;const t=(S.frigates||[]).find(x=>x.id===e.tokId);if(!t)continue;e.tok=t;
     if(t.ctl){const C=fctl(t);if(C.tgtId&&!C.tgt){const T=C.tgtId==='S'?w.stationEnt:C.tgtId==='p_'+MP.pid?w.player:w.pup[C.tgtId];if(T)C._t=T}}}
   if(MP.fjB){const e=Object.values(w.pup).find(x=>x.role==='frigate'&&x.tokId===MP.fjB.id);if(e){W.bridge={f:e,...MP.fjB.keep,panel:null};cam.snap=true;const st=MP.fjB.keep.seat;MP.fjB=null;if(st)openConsole('strat')}else if(performance.now()-MP.fjB.at>8000){MP.fjB=null;if(S.player.docked==='bridge'){S.player.docked=null;ejectReset();const p=W.player;netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:0,vy:0,vz:0,q:[p.q.x,p.q.y,p.q.z,p.q.w]});flash('Lost contact with the capital ship. Your fighter is adrift.',true)}}}}
