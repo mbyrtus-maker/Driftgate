@@ -715,6 +715,10 @@ const VARIANTS={
   deepmag:{slot:'payload',name:'Deep magazine',gain:'+50% missiles in the rack',cost:'Always flies as at least a third laden',f:{rackK:1.5,ladenMin:1/3}},
   quickcyc:{slot:'payload',name:'Quick-cycle rack',gain:'Reloads twice as fast',cost:'−40% rack size',f:{reloadK:.5,rackK:.6}},
   smart:{slot:'payload',name:'Smart seekers',gain:'−40% lock time',cost:'−20% missile damage',f:{lockK:.6,mslK:.8}},
+  faraday:{slot:'armor',name:'Faraday plating',spec:'jam',gain:'Jam bar 50% larger, so a take lasts longer',cost:'−10% hull',m:{hull:.9},f:{jamBarK:1.5},recipe:{plate:3,wire:3}},
+  fastboot:{slot:'power',name:'Fast-reboot reactor',spec:'jam',gain:'Jam bar drains after 0.75 s at 25% a second',cost:'−15% energy capacity',m:{eCap:.85},f:{jamDelay:.75,jamRate:.25},recipe:{plate:3,wire:3}},
+  snapback:{slot:'shield',name:'Snap-back emitter',spec:'jam',gain:'When a Jam bar first appears, shields jump back to 30% (once a minute)',cost:'−20% shield capacity',m:{sCap:.8},f:{snapBack:1},recipe:{plate:3,wire:3}},
+  sealed:{slot:'cargo',name:'Sealed hold',spec:'jam',gain:'A hooked hold gives up half its contents, not all',cost:'−15% hold',m:{cargo:.85},f:{sealed:1},recipe:{plate:3,wire:3}},
   shredder:{slot:'weapon',name:'Shredder rounds',spec:'brood',gain:'Kinetic +35% to Brood hulls; a hit stops their regrowth for 10 s',cost:'Kinetic −15% against faction shields',f:{broodK:1.35,regenStop:10,facShK:.85},recipe:{plate:3,wire:3}},
   cautery:{slot:'weapon',name:'Cautery lance',spec:'brood',gain:'Lasers +40% to Bloom Nodes and Seeders',cost:'Lasers −20% against other ships',f:{cautery:1},recipe:{plate:3,wire:3}},
   incendiary:{slot:'payload',name:'Incendiary warheads',spec:'brood',gain:'Missiles +50% to Bloom Nodes and Seeders',cost:'Missiles −25% against other ships',f:{incend:1},recipe:{plate:3,wire:3}},
@@ -759,7 +763,7 @@ const FACTIONS={
 };
 FACTIONS.brood={name:'The Vael Brood',short:'Brood',col:'#9be35a',fill:'#14200c',trait:{hull:1.5,shield:.6,energy:1.1},traitText:'Hull +50% and regrows · Shields −40%',blurb:'Something grown, not built. It eats ore, and it eats stations.',
   hulls:{interceptor:'Skitter',striker:'Thresher',heavy:'Carapace',bomber:'Sporemaw',prospector:'Grazer',freighter:'Gorger',drone:'Mite',skiff:'Nibbler',frigate:'Leviathan',escort:'Prowler',picket:'Spawnling',dredger:'Devourer',courier:'Crawler',bulker:'Bloater',constructor:'Seeder',scout:'Watcher',scout2:'Stalker'},station:'Bloom Heart',depot:'Bloom Node',shot:'spore',bio:true};
-const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',shot:'scrap',hulls:{gunboat:'Raker',interceptor:'Dart',striker:'Cutter',heavy:'Brute',bomber:'Wrecker',prospector:'Gouger',freighter:'Scow',drone:'Junk Drone',skiff:'Scrounger',frigate:'Corsair',picket:'Gnat',dredger:'Grinder',courier:'Smuggler',bulker:'Hulk',constructor:'Rigger',scout:'Sneak',scout2:'Ghost'}};
+const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',shot:'scrap',hulls:{raider:'Raider',corsair:'Corsair',plunderer:'Plunderer',gunboat:'Raker',interceptor:'Dart',striker:'Cutter',heavy:'Brute',bomber:'Wrecker',prospector:'Gouger',freighter:'Scow',drone:'Junk Drone',skiff:'Scrounger',frigate:'Corsair',picket:'Gnat',dredger:'Grinder',courier:'Smuggler',bulker:'Hulk',constructor:'Rigger',scout:'Sneak',scout2:'Ghost'}};
 const PLAYER_COL='#f0b24a';
 const CLASSES={
   interceptor:{name:'Light Fighter',hull:86,shield:.85,speed:1.32,turn:3.45,weapon:1.05,cargo:14,drill:0,radius:12,rack:.75,boost:1.25,agile:1.45,acc:1.38,bcost:.7,desc:'Fastest and most agile: quickest acceleration, cheap afterburner, best at shaking missiles. Light armour.'},
@@ -783,6 +787,13 @@ const CLASSES={
   dredger:{name:'Heavy Miner',hull:190,shield:1.15,speed:.82,turn:1.6,weapon:.9,cargo:80,drill:2.2,radius:23,rack:.75,boost:.9,agile:.75,acc:.82,drones:4,lasers:3,desc:'3 charge launchers, 4 guard drones, deep hold. Slow and armoured.'},
   bulker:{name:'Heavy Hauler',hull:260,shield:1.25,speed:.72,turn:1.2,weapon:.7,cargo:180,drill:0,radius:28,rack:.75,boost:.85,agile:.6,acc:.7,drones:4,desc:'180 t hold, 4 guard drones, 4% market fee. A fortress that crawls.'},
 };
+
+// the Unbound fly three hulls of their own, built off the fighter frames (their models too). Big holds, no swarm pods.
+{const B=(k,o)=>Object.assign({},CLASSES[k],{swarm:0,radar:false},o);
+  CLASSES.raider=B('interceptor',{name:'Raider',hull:85,shield:.85,speed:1.25,turn:2.95,cargo:40,acc:(CLASSES.interceptor.acc||1)*.85,agile:(CLASSES.interceptor.agile||1)*.85,radar:true,jamK:1,desc:'Unbound light hull: the crew\'s eyes. Scout radar, 40 t hold.'});
+  CLASSES.corsair=B('striker',{name:'Corsair',hull:120,shield:1,speed:1.1,turn:2.5,cargo:70,acc:(CLASSES.striker.acc||1)*.85,agile:(CLASSES.striker.agile||1)*.85,jamK:1.3,desc:'Unbound medium hull: the muscle, with the best jammers. 70 t hold.'});
+  CLASSES.plunderer=B('heavy',{name:'Plunderer',hull:180,shield:1.25,speed:.86,turn:1.55,cargo:110,acc:(CLASSES.heavy.acc||1)*.8,agile:(CLASSES.heavy.agile||1)*.8,jamK:1,desc:'Unbound heavy hull: the cargo hold. 110 t.'})}
+const UNB_CLS={interceptor:'raider',striker:'corsair',heavy:'plunderer',bomber:'corsair',gunboat:'plunderer'};
 const CLS_IDS=['interceptor','striker','heavy','bomber','skiff','prospector','dredger','courier','freighter','bulker','scout','scout2'],YARD_IDS=[...CLS_IDS,'gunboat'];   // constructors are AI-only: call one in through comms
 const FIGHTERS=['interceptor','striker','heavy','bomber'];
 function hullName(side,cls){if(side==='player')side=S.player.faction;return side==='pirate'?PIRATE.hulls[cls]:FACTIONS[side]?FACTIONS[side].hulls[cls]:cls}
@@ -901,6 +912,40 @@ const TYPE_TEXT={forge:'Forge · Lattice and Cores',relay:'Relay · gate tolls a
 function oStats(o){const L=o.level;return{sMax:400+350*L,hMax:900+450*L,dmg:7+3*L,rof:1.6+.3*L,range:950}}
 function sideCol(s){return s==='player'?PLAYER_COL:s==='neutral'?NEUTRAL.col:s==='pirate'?PIRATE.col:FACTIONS[s]?FACTIONS[s].col:'#7f8aa3'}
 function sideName(s){return s==='player'?'You':s==='neutral'?NEUTRAL.short:s==='pirate'?'The Unbound':FACTIONS[s]?FACTIONS[s].short:'Unclaimed'}
+
+// ============================================================ jamming (the AI Unbound, in every galaxy): a jammer does nothing to a ship with shields up. On an
+// unshielded ship it fills the Jam bar (the ship's full hull, at the rate guns would deal damage); stop jamming for 1.5 s and the bar
+// drains 10% a second. A full bar disables the ship for a window, then it is hardened against jamming for 60 s. While it is dark,
+// pirates within 150 m hook its hold, most valuable cargo first. Jammers never kill.
+const JAM={drainD:1.5,drainR:.1,harden:60,hookR:150,hookRate:8};
+function jamCap(e){return e.st.hull*(e.st.jamBarK||1)}
+function jamFrac(e){return e&&e.jam>0?clamp(e.jam/jamCap(e),0,1):0}
+function jamDark(e){return!!e&&(e.jamOff||0)>W.t}
+function jamWin(e){const c=e.cls;return c==='freighter'||c==='bulker'?12:c==='courier'||c==='skiff'||c==='prospector'||c==='dredger'?10:5}
+function jamHit(e,b){e.lastHit=W.t;e.lastHitBy=b.side;if(e.shield>0){fxSpark(b,'#8fc8ff',3);return}if(jamDark(e)||(e.jamHard||0)>W.t){fxSpark(b,'#b7c6ff',2);return}
+  if(!(e.jam>0)){ // the bar appears: a Snap-back emitter answers once a minute, freighters call for help, a pilot is warned
+    if(e.st.snapBack&&!((e.snapT||0)>W.t)){e.shield=e.st.sCap*.3;e.snapT=W.t+60;fxSpark(e,'#8fc8ff',8);if(e.isPlayer)flash('Snap-back emitter: shields back to 30%. The jam is broken.',true);return}
+    if(e.isPlayer)flash('Jammer on your hull! Get your shields back up or break away.',true);else if(e.npc&&(e.role==='hauler'||e.role==='miner')&&FACTIONS[e.side])distressCall(W.sid,`a ${FACTIONS[e.side].short} ${CLASSES[e.cls].name}`,e.side,b.side)}
+  e.jam=(e.jam||0)+b.dmg*((b.src&&b.src.st&&b.src.st.jamK)||1);e.jamT=W.t;fxSpark(b,'#b7c6ff',3);
+  if(e.jam>=jamCap(e)){e.jam=0;e.jamOff=W.t+jamWin(e);e.jamHard=e.jamOff+JAM.harden;e.boosting=false;e.thrusting=false;fxSpark(e,'#b7c6ff',12);
+    if(e.isPlayer){flash(`Jammed: every system offline for ${jamWin(e)} s. Pirates will hook your hold.`,true);SFX.shieldDown&&SFX.shieldDown()}}}
+function jamDrain(e,dt){if(!(e.jam>0)||jamDark(e))return;const d=e.st.jamDelay||JAM.drainD,r=e.st.jamRate||JAM.drainR;if(W.t-(e.jamT||0)>d)e.jam=Math.max(0,e.jam-jamCap(e)*r*dt)}
+// a pirate beside a disabled ship hooks its hold (a Sealed hold gives up half)
+function jamTake(e,t,dt){const d=d3(e,t);if(d>JAM.hookR*.8){steer(e,t.x,t.y,t.z,dt,true,1);faceTo(e,t,dt);return}brake(e,dt);faceTo(e,t,dt);
+  const cg=t.isPlayer?S.player.cargo:t.rp?((S.pilots||{})[t.rp]||{}).cargo:t.cargo;if(!cg)return;if(t.takeCap==null){t.takeCap=t.st.sealed?Math.floor(invMass(cg)/2):1e9;t.taken=0}
+  e.hookAcc=(e.hookAcc||0)+JAM.hookRate*dt;let moved=0;
+  while(e.hookAcc>=1&&t.taken<t.takeCap){const ks=Object.keys(cg).filter(k=>cg[k]>0&&mass(k)>0).sort((a,b)=>baseValue(b)/mass(b)-baseValue(a)/mass(a));const k=ks[0];if(!k)break;const m=mass(k);
+    if(invMass(e.cargo)+m>e.st.cargo)break;if(e.hookAcc<m)break;e.hookAcc-=m;inv.take(cg,k,1);inv.add(e.cargo,k,1);t.taken+=m;moved+=m}
+  if(moved&&t.isPlayer&&W.t-(W.hookMsg||0)>2){W.hookMsg=W.t;flash('Pirates are hooking your hold!',true)}
+  if(invMass(e.cargo)>=e.st.cargo*.9||!Object.keys(cg).some(k=>cg[k]>0)){e.role='leave';e.ai.tgt=null}}
+// a pilot being jammed: thrust stutters, guns misfire, then a total blackout
+function jamThr(p){const f=jamFrac(p);if(jamDark(p))return 0;if(f>=.75)return Math.random()<.85?0:1;if(f>=.5)return Math.random()<.6?0:1;if(f>=.25)return Math.random()<.2?0:1;return 1}
+function jamFx(c){const p=W.player;if(!p)return;const f=jamFrac(p),dark=jamDark(p);if(!f&&!dark)return;c.save();
+  const a=dark?.88:f>=.75?(Math.random()<.5?.6:.15):f>=.5?(Math.random()<.15?.7:.08):f>=.25?(Math.random()<.04?.5:.03):.02;c.fillStyle=`rgba(0,0,0,${a})`;c.fillRect(0,0,VW,VH);
+  if(f>0&&!dark){c.strokeStyle=`rgba(183,198,255,${.15+.35*f})`;for(let i=0;i<6*f;i++){const y=Math.random()*VH;c.beginPath();c.moveTo(0,y);c.lineTo(VW,y+rnd(-4,4));c.stroke()}}
+  c.textAlign='center';c.font='700 15px "Saira Semi Condensed",sans-serif';c.fillStyle='#b7c6ff';
+  if(dark)c.fillText(`SYSTEMS OFFLINE · ${Math.max(0,Math.ceil(p.jamOff-W.t))} S`,VW/2,VH/2-40);else{c.fillText(`JAM ${Math.round(f*100)}%`,VW/2,VH-154);c.fillStyle='rgba(183,198,255,.25)';c.fillRect(VW/2-90,VH-148,180,6);c.fillStyle='#b7c6ff';c.fillRect(VW/2-90,VH-148,180*f,6)}
+  c.restore()}
 function hostile(a,b){if(!a||!b||a===b)return false;if((a==='brood'&&b==='pirate')||(a==='pirate'&&b==='brood'))return false;if(!STRAT&&W&&W.truce&&isFacSide(a)&&isFacSide(b))return false;if(a==='neutral'||b==='neutral'){const o=a==='neutral'?b:a;return o==='pirate'||o==='brood'}const pf=S.player.faction;if((a==='player'&&b===pf)||(b==='player'&&a===pf))return false;
   const C=S.coal;if(C){const A=a==='player'?pf:a,B=b==='player'?pf:b;if(A!==B&&C.mem.includes(A)&&C.mem.includes(B))return false}return true}
 
@@ -959,13 +1004,14 @@ const ESCORT_COST={keel:1,lattice:2,core:1,wire:10,plate:24,coil:8,missile:2},ES
 const CAP_TEST=1,CARRIER_COST={keel:6,lattice:4,core:2,wire:12,frame:4,coil:10},CAR_HULL=5000,CAR_SHIELD=2400,CAR_WING=6,CAR_ASSAULT=3,ASSAULT_LD={plate:8,coil:3},FWD_COST={frame:1},CAR_NAMES=['Bastion','Harbinger','Citadel','Aegis','Ascendant','Bulwark','Meridian'];
 function isEsc(t){return!!t&&t.cls==='escort'}
 function isCar(t){return!!t&&t.cls==='carrier'}
-function capName(t){return isEsc(t)?'escort':isCar(t)?'carrier':'frigate'}
+function capName(t){if(t&&t.side==='pirate')return isEsc(t)?'sloop':isCar(t)?'destroyer':'frigate';return isEsc(t)?'escort':isCar(t)?'carrier':'frigate'}
+const SLOOP_NAMES=['Saucy Gull','Rum Runner','Widow\'s Grin','Bilge Rat','Cutlass Kate','Black Penny','Scurvy Dog','Gallows Bird'],DEST_NAMES=['The Drowned Crown','Queen of Scrap','Mother of Knives','Old Grog','Salt Saint'];
 function capHullMax(t){return isEsc(t)?ESC_HULL:t.side==='brood'?7000:CAR_HULL}
 function facEsc(f){return S.frigates.filter(x=>x.side===f&&isEsc(x)&&(!x.owner||x.cmd))}
 const ESC_NAMES=['Warden','Aegis','Bulwark','Vigil','Sentinel','Lancer','Ward','Rampart'];
 function broodCap(t){return isEsc(t)?'Prowler':isCar(t)?'Hive Ship':'Leviathan'}
-function escName(side){S.escSeq=(S.escSeq||0)+1;if(side==='brood')return`Prowler ${['I','II','III','IV','V','VI','VII','VIII','IX'][(S.escSeq-1)%9]}`;return`${ESC_NAMES[S.escSeq%ESC_NAMES.length]} ${['I','II','III','IV','V','VI','VII','VIII','IX'][Math.floor(S.escSeq/ESC_NAMES.length)%9]}`}
-function carName(side){return side==='brood'?'Hive Ship':`${pick(CAR_NAMES)} ${['I','II','III','IV','V'][Math.floor(Math.random()*5)]}`}
+function escName(side){S.escSeq=(S.escSeq||0)+1;if(side==='pirate')return SLOOP_NAMES[(S.escSeq-1)%SLOOP_NAMES.length];if(side==='brood')return`Prowler ${['I','II','III','IV','V','VI','VII','VIII','IX'][(S.escSeq-1)%9]}`;return`${ESC_NAMES[S.escSeq%ESC_NAMES.length]} ${['I','II','III','IV','V','VI','VII','VIII','IX'][Math.floor(S.escSeq/ESC_NAMES.length)%9]}`}
+function carName(side){if(side==='pirate')return pick(DEST_NAMES);return side==='brood'?'Hive Ship':`${pick(CAR_NAMES)} ${['I','II','III','IV','V'][Math.floor(Math.random()*5)]}`}
 function makeCarrier(side,sector,load,owner,full){const t={id:S.nextId++,side,sector,dest:null,cls:'carrier',hull:side==='brood'?7000:CAR_HULL,shield:side==='brood'?0:CAR_SHIELD,load,name:carName(side),hold:0,wing:[],aload:0};if(owner)t.owner=owner;else if(S.legFrig&&(S.legFrig[side]||[]).length){const nm=S.legFrig[side].shift();t.name=`Carrier “${nm}”`;facFeed(side,`${t.name} is named in honour of ${nm}.`,'good')}S.frigates.push(t);if(full)carFullLoad(t);else capRefill(t);if(WORLDS[sector])inW(WORLDS[sector],()=>spawnFrigate(t,true));return t}
 // a carrier delivered fully loaded (the developer spawn): three fighters, three bombers and every assault bay filled, kits aboard
 function carFullLoad(t){const f=t.side==='player'?S.player.faction:t.side;t.wingInit=1;t.wing=[];const fi=f==='brood'?['interceptor','striker']:['interceptor','striker','heavy'];
@@ -2814,7 +2860,7 @@ function renderFeed(){const now=performance.now(),el=$('feed');const items=FEED.
 
 // ============================================================ world runtime
 let RID=1;
-function makeNPC(role,side,cls,tier,load,home){
+function makeNPC(role,side,cls,tier,load,home){if(side==='pirate'&&UNB_CLS[cls])cls=UNB_CLS[cls];
   const st=shipStats(side==='pirate'?null:side,cls,tier);
   return{type:'ship',npc:true,id:'n'+(RID++),role,side,fac:side,cls,tier,st,x:0,y:0,z:0,vx:0,vy:0,vz:0,q:q0(),hull:st.hull,shield:st.sCap,energy:st.eCap,load,cargo:{},home,wpn:side==='brood'?'kinetic':Math.random()<(side==='pirate'?.2:.45)?'laser':'kinetic',ai:{t:0,ax:rdir()},cool:rnd(.3),lastHit:-99,mineAcc:0,life:0,alive:true};
 }
@@ -3634,12 +3680,12 @@ function drawGunnerOverlay(c,t){const G=W.gunseat,e=gsEnt();if(!e)return;const c
   c.textAlign='center';c.font='700 13px "Saira Semi Condensed",sans-serif';c.fillStyle='#f0b24a';c.fillText(`GUNNER · ${e.pname?e.pname.toUpperCase()+"'S ":''}${String(hullName(e.fac,e.cls)).toUpperCase()}`,cx,cy+72);
   c.font='500 12px "Saira Semi Condensed",sans-serif';c.fillStyle='#cfd6e4';c.fillText(`${bl?'Blocked by the hull · ':''}Hull ${Math.round(e.hull/e.st.hull*100)}% · Shield ${Math.round(e.shield/(e.st.sCap||1)*100)}% · Missiles ${e.isPlayer||!e.rp?turretRack(e).get():'—'} · Click/Space fire · C missile · E climb out`,cx,cy+90)}
 function fire(e){
-  if(e.train)return;
+  if(e.train)return;if(jamDark(e))return;if(e.isPlayer&&jamFrac(e)>=.25&&Math.random()<(jamFrac(e)>=.5?.33:.1))return;
   if(e.landed||e.stealth||(e.boot&&W.t<e.boot))return;if(e.cool>0||e.energy<e.st.shotCost)return;e.cool=1/e.st.rof;e.energy-=e.st.shotCost;e.lastFire=W.t;
   if(e.isPlayer)SFX.kinetic(1);else if(W.t-(e.sndT||0)>.3){e.sndT=W.t;SFX.kinetic(vAt(e)*.7)}
   qRot(e.q,0,0,1,_f);qRot(e.q,1,0,0,_r);const r=e.st.radius;e.barrel=(e.barrel||1)*-1;const off=e.barrel*r*.42;
   const sty=e.side==='pirate'?'scrap':FACTIONS[e.fac].shot;
-  W.shots.push({x:e.x+_f.x*r+_r.x*off,y:e.y+_f.y*r+_r.y*off,z:e.z+_f.z*r+_r.z*off,vx:e.vx+_f.x*(e.st.shotSpd||SHOT_SPD),vy:e.vy+_f.y*(e.st.shotSpd||SHOT_SPD),vz:e.vz+_f.z*(e.st.shotSpd||SHOT_SPD),dmg:e.st.dmg,side:e.side,src:e,ttl:SHOT_TTL*(e.st.shotTtl||1),col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side),sty});
+  W.shots.push({x:e.x+_f.x*r+_r.x*off,y:e.y+_f.y*r+_r.y*off,z:e.z+_f.z*r+_r.z*off,vx:e.vx+_f.x*(e.st.shotSpd||SHOT_SPD),vy:e.vy+_f.y*(e.st.shotSpd||SHOT_SPD),vz:e.vz+_f.z*(e.st.shotSpd||SHOT_SPD),dmg:e.st.dmg,side:e.side,src:e,ttl:SHOT_TTL*(e.st.shotTtl||1),jam:!!e.jamMode,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side),sty});
 }
 // lasers bite harder into shields, kinetic slugs into hull; missiles hit both evenly
 function setWeapon(w){if(!S||!running)return;if(S.player.wpn===w)return;S.player.wpn=w;flash(w==='laser'?'Lasers: instant hit, no lead, heavy energy draw. Strong against shields.':'Kinetic cannons: lead the target, light energy draw. Strong against hull.')}
@@ -3650,7 +3696,7 @@ function laserRay(e,range){qRot(e.q,0,0,1,_f);const fx=_f.x,fy=_f.y,fz=_f.z,r=e.
   const SE=W.stationEnt;if(SE){if(hostile(e.side,SE.fac)&&!SE.offline&&SE.shield>0){if(test(SE,165))hit={kind:'station',ref:SE}}else if(hostile(e.side,SE.fac)&&test(SE,75))hit={kind:'station',ref:SE};else if(test(SE,60))hit={kind:'block'}}
   for(const a of S.sectors[W.sid].ast)if(test(a,astR(a)))hit={kind:'block'};
   return{hit,x:ox+fx*best,y:oy+fy*best,z:oz+fz*best,d:best}}
-function fireLaser(e){if(e.cool>0||e.landed||e.stealth||(e.boot&&W.t<e.boot))return;const cost=e.st.shotCost*1.6;
+function fireLaser(e){if(jamDark(e))return;if(e.cool>0||e.landed||e.stealth||(e.boot&&W.t<e.boot))return;const cost=e.st.shotCost*1.6;
   if(e.energy<cost){if(e.isPlayer&&W.t-(W.lowEMsg||0)>2.5){flash('Lasers need energy. Let the reactor recharge or switch to kinetic (1).');W.lowEMsg=W.t}return}
   e.cool=1/LASER_ROF;e.energy-=cost;e.lastFire=W.t;const R=laserRay(e,LASER_RANGE),dmg=e.st.dmg*.5;
   if(e.isPlayer)AU.lasT=W.t;else if(W.t-(e.sndT||0)>.45){e.sndT=W.t;SFX.laserNpc(vAt(e))}
@@ -3918,6 +3964,7 @@ function bomberRun(e,OE,dt){const ai=e.ai,dx=OE.x-e.x,dy=OE.y-e.y,dz=OE.z-e.z,d=
   if(err<.09&&d<SHOT_RANGE)fire(e)}
 function fight(e,t,dt){
   const ai=e.ai;if(ai.lt!==t){ai.lt=t;ai.lead=rnd(.6,1.25)}
+  if(e.side==='pirate'&&e.npc&&t.type==='ship'){if(jamDark(t)){e.jamMode=false;jamTake(e,t,dt);return}e.jamMode=t.role!=='frigate'&&!t.drone&&t.role!=='drone'&&t.shield<=t.st.sCap*.02&&!((t.jamHard||0)>W.t);if(e.jamMode)e.wpn='kinetic'}
   // a pilot-grade AI (e.flares: duel tests) flares incoming missiles the way a player would: 30 energy, 5 s apart, and it
   // saves them for missiles and torpedoes rather than wasting them on a swarm
   if(e.flares&&(ai.flareAt||0)<=W.t&&e.energy>=30&&W.missiles.some(m=>m.tgt===e&&m.kind!=='swarm'&&d3(m,e)<700)){e.energy-=30;deployFlares(e);ai.flareAt=W.t+5}const dx=t.x-e.x,dy=t.y-e.y,dz=t.z-e.z,d=hyp(dx,dy,dz)||1,lp0=e.wpn==='laser'?t:leadPoint(e,t,e.st.shotSpd||SHOT_SPD),lp={x:t.x+(lp0.x-t.x)*ai.lead,y:t.y+(lp0.y-t.y)*ai.lead,z:t.z+(lp0.z-t.z)*ai.lead};
@@ -3926,7 +3973,7 @@ function fight(e,t,dt){
   const want=t.type==='outpost'||t.type==='station'?560:400;
   const ax=ai.ax;let px=dy/d*ax.z-dz/d*ax.y,py=dz/d*ax.x-dx/d*ax.z,pz=dx/d*ax.y-dy/d*ax.x;const pl=hyp(px,py,pz)||1;px/=pl;py/=pl;pz/=pl;
   steer(e,t.x-dx/d*want+px*260,t.y-dy/d*want+py*260,t.z-dz/d*want+pz*260,dt,false,.85);
-  if(ai.bOn||t.type==='outpost'||t.type==='station'||t.kind==='torpedo'){if(e.wpn==='laser'){if(err<.07&&d<LASER_RANGE&&e.energy>e.st.eCap*.2)fireLaser(e)}else if(err<.09&&d<SHOT_RANGE)fire(e)}
+  if(ai.bOn||e.jamMode||t.type==='outpost'||t.type==='station'||t.kind==='torpedo'){if(e.wpn==='laser'){if(err<.07&&d<LASER_RANGE&&e.energy>e.st.eCap*.2)fireLaser(e)}else if(err<.09&&d<SHOT_RANGE)fire(e)}
   if(t.type==='ship'&&t.role==='frigate'&&(e.load.torpedo||0)>0&&isBmb(e.cls)&&d<1200&&(ai.tcd||0)<=W.t&&err<.15){inv.take(e.load,'torpedo',1);launchMissile(e,t,e.tier,'torpedo');ai.tcd=W.t+12}
   if((e.load.swarm||0)>0&&t.type==='ship'&&d<1700&&err<.35&&(ai.scd||0)<=W.t){inv.take(e.load,'swarm',1);launchSwarm(e,t,e.tier);ai.scd=W.t+18}
   if((e.load.missile||0)>0&&t.type==='ship'){if(ai.mcd===undefined)ai.mcd=rnd(2,5);ai.mcd-=dt*(t.shield<=t.st.sCap*.05?3:1);
@@ -4018,7 +4065,7 @@ function despawn(e){if(e.drones)for(const d of e.drones)if(d.alive&&W.ents.inclu
   if(e.escortG){e.escortG.escort=null;for(const m of grpAlive(e.escortG))if(m.role==='escort'){m.role='patrol';m.ai.retireAt=W.t+25}}
   returnHome(e);e.alive=false;{const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null}
 function npcThink(e,dt){
-  const ai=e.ai,s=S.sectors[W.sid];ai.t-=dt;e.life+=dt;e.mining=null;e.thrusting=false;
+  const ai=e.ai,s=S.sectors[W.sid];ai.t-=dt;e.life+=dt;e.mining=null;e.thrusting=false;if(jamDark(e)){e.boosting=false;return}
   if(e.role==='drone'){droneThink(e,dt);return}
   if(e.role==='frigate'){frigateThink(e,dt);return}
   if(e.role==='picket'){droneThink(e,dt);return}
@@ -4167,7 +4214,7 @@ function pbuildTick(dt){const B=W.pbuild;if(!B)return;if((B.pid||NET.me)!==(CTX|
   takeFrom(DEPOT_COST,[P.cargo]);const Rr=makeStation(W.sid,NET.on?S.player.faction:'player','depot',B,{...DEPOT_COST});addStationEnt(Rr);fxBoom(Rr,160,PLAYER_COL);SFX.clunk();
   feed(`${Rr.name} is online. Dock to use its store; it mines this sector for you and its turrets defend it.`,'good');save()}
 function playerUpdate(dt){
-  const p=W.player,P=S.player,st=p.st;pbuildTick(dt);if(P.docked||W.dead)return;
+  const p=W.player,P=S.player,st=p.st;pbuildTick(dt);if(P.docked||W.dead)return;if(jamDark(p)){p.boosting=false;p.thrusting=false;return}
   if(p.landed){landedTick(dt);updateLock(dt);return}
   if(apOn){const man=keys.KeyW||keys.KeyS||keys.KeyA||keys.KeyD||keys.ArrowLeft||keys.ArrowRight||keys.ArrowUp||keys.ArrowDown||touch.on||(mouse.in&&mouse.aim&&hyp(mouse.x-VW/2,mouse.y-VH/2)>Math.min(VW,VH)*.42*.25);
     if(man){apOn=false;flash('Autopilot off.')}else{p.wx=p.wy=p.wz=0;autopilot(p,dt);levelRoll(p,dt);if(keys.Space||mouse.l||touch.fire){if(P.wpn==='laser')fireLaser(p);else fire(p)}updateLock(dt);pickupAndGates(p,P,st);return}}
@@ -4185,10 +4232,10 @@ function playerUpdate(dt){
   // afterburner: running dry locks it out until Shift is released and the reactor has at least 15 energy to light it again
   // (without the latch it re-lit every time a sliver of energy came back, firing the start-up kick over and over)
   const bHeld=(keys.ShiftLeft||keys.ShiftRight||touch.boost)&&fwd>0;if(!bHeld)p.bLock=false;
-  const bm=C.boost||1,boost=bHeld&&!p.stealth&&!p.bLock&&(p.boosting?p.energy>0:p.energy>=15);if(p.boosting&&bHeld&&!boost&&p.energy<=0){p.bLock=true;flash('Afterburner out of energy. Let go of Shift to let it recharge.')}
+  const bm=C.boost||1,boost=bHeld&&!p.stealth&&!p.bLock&&jamFrac(p)<.5&&(p.boosting?p.energy>0:p.energy>=15);if(p.boosting&&bHeld&&!boost&&p.energy<=0){p.bLock=true;flash('Afterburner out of energy. Let go of Shift to let it recharge.')}
   if(boost&&!p.boosting){SFX.boost();const kick=70*bm*H.kick;qRot(p.q,0,0,1,_f);p.vx+=_f.x*kick;p.vy+=_f.y*kick;p.vz+=_f.z*kick;W.shake=Math.max(W.shake||0,.35);fxSpark({x:p.x-_f.x*20,y:p.y-_f.y*20,z:p.z-_f.z*20},FACTIONS[P.faction].col,6)}
   p.boosting=boost;if(boost){p.energy=Math.max(0,p.energy-30*dt*(CLASSES[P.cls].bcost||1)*(st.boostK||1));p.lastFire=W.t;W.shake=Math.max(W.shake||0,.12)}
-  qRot(p.q,0,0,1,_f);const thr=st.thrust*(boost?2.3*bm:1)*H.thr;p.thrusting=fwd>0;
+  qRot(p.q,0,0,1,_f);const thr=st.thrust*(boost?2.3*bm:1)*H.thr*jamThr(p);p.thrusting=fwd>0;
   const v=hyp(p.vx,p.vy,p.vz),vf=p.vx*_f.x+p.vy*_f.y+p.vz*_f.z;
   if(fwd>0){const capF=st.maxSpd*(boost?1.95*bm:1)*H.spd;if(vf<capF){const a=Math.min(thr*dt,capF-vf);p.vx+=_f.x*a;p.vy+=_f.y*a;p.vz+=_f.z*a}}
   if(P.fa){
@@ -4393,7 +4440,7 @@ function physics(e,dt){if(e.inJump)return;
   e.cool-=dt;if(!e.landed)e.energy=Math.min(e.st.eCap,e.energy+e.st.eRegen*dt*(e.boot&&W.t<e.boot?4:1)*(e.st.surge&&W.t-(e.lastFire||-9)<e.st.surge?0:1));
   if(!(S.sectors[W.sid].storm>S.T)&&W.t-e.lastHit>(e.st.shDelay||2.5)&&!e.landed&&!e.stealth&&!(e.boot&&W.t<e.boot))e.shield=Math.min(e.st.sCap,e.shield+e.st.sCap*(e.cls==='frigate'||e.cls==='carrier'?.012*pmul(e.tok,'shd'):e.cls==='escort'?.025*pmul(e.tok,'shd'):.09*(e.st.shRegK||1))*dt*(W.haze&&e.side!=='brood'&&!e.st.hazeImm?.85:1));
   if(e.shDown&&e.shield>e.st.sCap*.2){e.shDown=false;e.shUpT=W.t}
-  if(e.spores&&e.spores.length&&e.side!=='brood'){e.spores=e.spores.filter(t=>t>W.t);if(e.spores.length&&e.hull>1)e.hull=Math.max(1,e.hull-.5*e.spores.length*dt)}
+  jamDrain(e,dt);if(e.spores&&e.spores.length&&e.side!=='brood'){e.spores=e.spores.filter(t=>t>W.t);if(e.spores.length&&e.hull>1)e.hull=Math.max(1,e.hull-.5*e.spores.length*dt)}
   if(e.side==='brood'&&W.t-e.lastHit>3&&e.hull<e.st.hull&&!(e.noRegen>W.t))e.hull=Math.min(e.st.hull,e.hull+e.st.hull*.025*dt);
   const s=S.sectors[W.sid],R=e.st.radius;
   for(const a of s.ast){const ar=astR(a),dx=e.x-a.x,dy=e.y-a.y,dz=e.z-a.z,d=hyp(dx,dy,dz);if(d<ar+R&&d>0){const nx=dx/d,ny=dy/d,nz=dz/d,vn=e.vx*nx+e.vy*ny+e.vz*nz;e.x=a.x+nx*(ar+R);e.y=a.y+ny*(ar+R);e.z=a.z+nz*(ar+R);if(vn<0){e.vx-=1.5*vn*nx;e.vy-=1.5*vn*ny;e.vz-=1.5*vn*nz;if(-vn>160)damageShip(e,(-vn-160)*.06,null)}}}
@@ -4437,7 +4484,7 @@ function structUpdate(dt){
 function shotsUpdate(dt){
   const s=S.sectors[W.sid],OE=W.outpostEnt,SE=W.stationEnt;
   for(let i=W.shots.length-1;i>=0;i--){const b=W.shots[i],ox=b.x,oy=b.y,oz=b.z;b.x+=b.vx*dt;b.y+=b.vy*dt;b.z+=b.vz*dt;b.ttl-=dt;let hit=b.ttl<=0;
-    if(!hit)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e===b.src)continue;if(e.isPlayer&&(S.player.docked||W.dead))continue;if(!hostile(b.side,e.side))continue;if(segHit(ox,oy,oz,b.x,b.y,b.z,e,e.st.radius*1.15+5)){damageShip(e,b.dmg,b.side,b,b.cap?'capital':'kinetic');if(b.cap)fxBoom(b,40,'#ffd9a0');hit=true;break}}
+    if(!hit)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e===b.src)continue;if(e.isPlayer&&(S.player.docked||W.dead))continue;if(!hostile(b.side,e.side))continue;if(segHit(ox,oy,oz,b.x,b.y,b.z,e,e.st.radius*1.15+5)){if(b.jam)jamHit(e,b);else damageShip(e,b.dmg,b.side,b,b.cap?'capital':'kinetic');if(b.cap)fxBoom(b,40,'#ffd9a0');hit=true;break}}
     if(!hit&&!(b.src&&b.src.cls!=='frigate'))for(const m of W.missiles){if(m.kind!=='torpedo'||!hostile(b.side,m.side))continue;if(segHit(ox,oy,oz,b.x,b.y,b.z,m,16)){m.hp-=b.dmg;fxSpark(m,'#ffe0b0',3);if(m.hp<=0)killTorp(m,b.side);hit=true;break}}
     if(!hit&&OE&&OE.o.owner&&!OE.o.breached&&hostile(b.side,OE.o.owner)&&segHit(ox,oy,oz,b.x,b.y,b.z,OE,OE.r)){damageOutpost(OE,b.dmg);hit=true}
     if(!hit&&SE&&hostile(b.side,SE.fac)){if(!SE.offline&&SE.shield>0&&segHit(ox,oy,oz,b.x,b.y,b.z,SE,165)){damageStation(SE,b.dmg,b.side,b.cap?'capital':'kinetic');fxSpark(b,'#9fd0ff',3);if(b.cap)fxBoom(b,50,'#9fd0ff');hit=true}else if(segHit(ox,oy,oz,b.x,b.y,b.z,SE,75)){if(SE.offline||SE.shield<=0)damageStation(SE,b.dmg,b.side,b.cap?'capital':'kinetic');if(b.cap)fxBoom(b,50,'#ffd9a0');fxSpark(b,'#ffd9a0',2);hit=true}}
@@ -4786,7 +4833,7 @@ function carrierMesh(fac){const pal=mdlPal(fac),C=pal.c,LT=C[0],MD=C[1],DK=C[2],
   g.set(0,-.06,-.93).box(.5,.22,.12,DK);
   const qz=qAxis(1,0,0,Math.PI/2,q0());for(const x of[-.23,-.08,.08,.23]){g.set(x,-.06,-.99,qz).cyl(.065,.075,.06,12,DK);g.set(x,-.06,-1.025,qz).cyl(.05,.05,.01,12,FG,.9);eng.push([x,-.06,-1.03,.07])}
   L.seg([0,0,0],[0,0,0],[0,0,0]);return{hull:g.upload(),rim:L.upload(true),eng,mdl:true}}
-function shipMesh(fac,cls){
+function shipMesh(fac,cls){if(cls==='raider')cls='interceptor';else if(cls==='corsair')cls='striker';else if(cls==='plunderer')cls='heavy';
   if(cls==='carrier'&&fac!=='brood'&&!mdlHas('carrier')){const k=fac+'carrier';return MESH[k]||(MESH[k]=carrierMesh(fac))}
   if(cls==='escort'&&fac!=='brood'&&!mdlHas('escort'))cls='frigate';if(cls==='wraith')cls='interceptor';
   const key=fac+cls;if(MESH[key])return MESH[key];
@@ -5019,7 +5066,7 @@ function drawOverlay(){
   if(W.bridge){drawBridgeOverlay(c,t);return}
   if(W.gunseat){drawGunnerOverlay(c,t);return}
   if(S.player.docked||W.dead)return;
-  drawDocking(c);blDraw(c);if(W.truce){c.save();c.textAlign='center';c.font='700 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#9be35a';c.fillText('TRUCE ZONE: ONLY THE BROOD IS A TARGET',VW/2,92);c.restore()}
+  drawDocking(c);jamFx(c);blDraw(c);if(W.truce){c.save();c.textAlign='center';c.font='700 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#9be35a';c.fillText('TRUCE ZONE: ONLY THE BROOD IS A TARGET',VW/2,92);c.restore()}
   if(W.shHit)vignette(c,'111,183,255',W.shHit*1.3);
   const crit=p.hull<p.st.hull*.35;
   if(p.shield<=.5||crit)vignette(c,'255,93,79',(crit?.55:.36)+(crit?.22:.16)*Math.sin(t*(crit?9:6)));
@@ -5274,7 +5321,7 @@ function edgeMark(P,label,col){const c=octx,cx=VW/2,cy=VH/2;let dx=P.x-cx,dy=P.y
   c.save();c.translate(ex,ey);c.rotate(a);c.fillStyle=col;c.beginPath();c.moveTo(9,0);c.lineTo(-4,-6);c.lineTo(-4,6);c.fill();c.restore();c.textAlign=ex<cx?'left':'right';c.fillStyle=hexA(col,.85);c.fillText(label.toUpperCase(),ex+(ex<cx?14:-14),ey+4)}
 const rcv=$('radar'),rctx=rcv.getContext('2d');
 function drawRadar(){
-  const c=rctx,p=W.player,R=3600*SPACE,sc=150/R;c.setTransform(2,0,0,2,0,0);c.clearRect(0,0,340,300);c.save();c.translate(170,165);
+  const c=rctx,p=W.player,R=3600*SPACE,sc=150/R;c.setTransform(2,0,0,2,0,0);c.clearRect(0,0,340,300);if(p&&jamDark(p))return;c.save();c.translate(170,165);
   c.fillStyle='rgba(5,7,13,.72)';c.beginPath();c.ellipse(0,0,166,100,0,0,TAU);c.fill();c.strokeStyle='#36435f';c.lineWidth=2;c.stroke();
   c.strokeStyle='rgba(54,67,95,.7)';c.lineWidth=1;c.beginPath();c.ellipse(0,0,83,50,0,0,TAU);c.stroke();c.beginPath();c.moveTo(-166,0);c.lineTo(166,0);c.moveTo(0,-100);c.lineTo(0,100);c.stroke();
   if(S.sectors[W.sid].storm>S.T&&!CLASSES[S.player.cls].radar){c.fillStyle='#8c91a5';c.font='600 24px "Saira Semi Condensed",sans-serif';c.textAlign='center';c.fillText('ION STORM',0,8);for(let i=0;i<60;i++){c.fillStyle=`rgba(200,210,255,${Math.random()*.4})`;c.fillRect(rnd(-140,140),rnd(-80,80),2,2)}c.restore();return}
@@ -6731,7 +6778,7 @@ function anomPanel(T,dist){const p=W.player,sc=p&&p.anS&&p.anS.id===T.id?p.anS.t
 // 25-minute mark, a second by 45, and a carrier after an hour, if they can mine, salvage, plunder and fence the parts.
 const PIR_E1=1500,PIR_E2=2700,PIR_C=3900,PIR_REBUILD=600,PIR_LURK=.65,LURK_TRIG=850,LURK_RADAR=1600;
 STN.haven={sMax:3000,hMax:9000,tur:6,dmg:14,range:1450};LS_RATE.haven=.6;
-const PIR_ESC_NAMES=['Gallows Bird','Scrapjaw','Blackwake','Knife Saint','Last Laugh','Rust Halo','Bad Penny','Grin'],PIR_CAR_NAMES=['Mother of Knives','The Long Grin','Rustqueen','Saint Gutter'];
+const PIR_ESC_NAMES=['Saucy Gull','Rum Runner','Widow\'s Grin','Bilge Rat','Cutlass Kate','Black Penny','Scurvy Dog','Gallows Bird'],PIR_CAR_NAMES=['The Drowned Crown','Queen of Scrap','Mother of Knives','Old Grog','Salt Saint'];
 const PIR_OK=new Set(SECTOR_DEFS.filter(d=>!d.home&&d.kind!=='hive').map(d=>d.id));
 const HOPP={};for(const a of PIR_OK){const d={[a]:0},q=[a];while(q.length){const x=q.shift();for(const n of NEIGH[x])if(PIR_OK.has(n)&&d[n]===undefined){d[n]=d[x]+1;q.push(n)}}HOPP[a]=d}
 function pirSetup(){if(!S||NET.cl)return;S.yards=S.yards||{};if(!S.yards.pirate)S.yards.pirate={sector:'wr'};S.pir=S.pir||{lostT:-1e9,built:{escort:0,carrier:0}};
