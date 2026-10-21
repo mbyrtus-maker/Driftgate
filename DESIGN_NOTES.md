@@ -799,3 +799,12 @@ It's now the workhorse between the quick Light Hauler and the crawling Heavy Hau
   - A blockade delivery patches station hull in proportion to its share.
 - **Orders screen.** Each job shows its tonnage, how much has already been delivered, and a warning when it's bigger than your hold.
 
+## Economy pass: closing risk-free loops (built)
+- **Stations fabricate their own ore.** Faction stations turn all raw iron and copper above an 80-unit reserve into plate and conduit every tick. (Those ores make nothing else, and at 80 the faction doesn't fall below its 60-unit import trigger.) Freeports do the same above 40; depots with a production module do it above 20, at 10 a tick per production level. Coil stays at its old rate, because iridium is needed for missiles, torpedoes and keels.
+  - **Result:** raw ore on markets is scarce and dear (about 14 cr), while plate is plentiful (about 20 cr). Buying ore to fabricate into plate for a contract now loses money (it used to make +41%). Miners get better ore prices.
+- **Carrier resupply pays the local rate.** The base rate is what the goods would sell for there: the local price if a friendly station is in the carrier's system, otherwise the faction's sell price. That rate is multiplied by the front-line bonus (up to ×2.2). Unloading at a carrier parked at home now roughly breaks even (−5 cr in the test, down from +31%); the profit is out at the front. An open Order's rate applies only to goods you mined or made, never to bought ones.
+- **Mining lasers only on mining ships.** Light, Medium and Heavy Miners keep their lasers; fighters, bombers, scouts, haulers and the constructor have none. Pressing F in another hull explains why. Wreck salvage is now miners' work. Training moves the cadet into a Light Miner for the mining and salvage lessons.
+- **Convoy escort pay only where it's dangerous.** Escort pilots near the hauler as it jumps are paid only when the system it leaves or the one it enters is outside friendly space. Runs between home systems pay nothing.
+- **Balance, 1,000 galaxies:** Varkesh 27.0%, Halcyon 25.7%, Brood 25.5%, Ostrova 21.8% (±2.7). That's inside the 21–28% band. Speeding up coil production as well had pushed the Brood to 40% by starving the factions of iridium, so coil was left at its old rate.
+- **Still open:** the developer menu works for multiplayer guests, and two pilots on opposite sides can trade a beacon back and forth for flip bonuses.
+
