@@ -809,26 +809,29 @@ It's now the workhorse between the quick Light Hauler and the crawling Heavy Hau
 - **Still open:** the developer menu works for multiplayer guests, and two pilots on opposite sides can trade a beacon back and forth for flip bonuses.
 
 
-## The pay ladder (v157)
+## The pay ladder (v158)
 
 Income follows risk. Hauling pays most: it crosses the least friendly systems the furthest. Mining comes next, since it can
 happen in enemy fields. Combat is third, and beacon running, the safest work, pays least.
 
-- **Mining.** A pilot's mining laser cuts rock at a per-hull fraction of its rated drill (`MINE_RATE`): Light Miner 0.032,
-  Medium 0.0284, Heavy 0.0234. Holds fill in about 4.5, 5.5 and 8 minutes. Salvage points on capital wrecks cut at
+- **Mining.** A pilot's mining laser cuts rock at a per-hull fraction of its rated drill (`MINE_RATE`): Light Miner 0.036,
+  Medium 0.0324, Heavy 0.0257. Holds fill in about 4, 5 and 7.5 minutes. Salvage points on capital wrecks cut at
   `SALVAGE_RATE` = 0.5, since a wreck only lasts five minutes. AI miners are unchanged, so faction economies and the
   strategic balance don't move. The shipyard shows the pilot rate.
+- **Hauling.** Pilots pay a market fee on every trade: 6%, 5.5% in a Medium Hauler and 4% in a Heavy Hauler (`HAUL_FEE`,
+  `mFee`). A bigger hold soon moves prices against itself (a 300 t hold makes barely more a trip than 180 t), so the Heavy
+  Hauler's edge is a thinner fee rather than more tonnage. A buy-and-sell round trip at one station still loses money.
 - **Combat.** Kill bounties ×4 (drones 40), escorts 1,400, carriers 2,800. Convoy raid bounty = cargo value × 0.85 + 400.
 - **Beacons.** Flip bonus 180, beacon missions 240, residual 12 cr/min, paid only for `BCN_RES_T` = 10 minutes after the
   pilot last flipped or re-secured that beacon (`B.byT`). Holding a beacon no longer pays forever.
 
-Measured per hour (Mk I, 8 simulated galaxies, realistic overheads):
+Measured per hour (Mk I, 20 simulated galaxies, realistic overheads):
 
 | Role | Light | Medium | Heavy |
 |---|---|---|---|
-| Hauling, trade only | 14.1k | 19.1k | 20.7k |
+| Hauling, trade only | 15.6k | 19.9k | 25.2k |
 | Mining, best field ≤2 jumps | 12.0k | 15.5k | 20.0k |
-| Mining, home system | 3.4k | 4.3k | 5.4k |
+| Mining, home system | 3.7k | 4.7k | 5.8k |
 
 Combat 4.9k (casual) / 9.8k (average) / 14.8k (strong). Scouting 3.5k / 5.4k / 7.3k. Hauling also has blockade runs
 (median profit about 1,070 a run), carrier resupply at up to ×2.2 on the front, and convoy work on top of trade.

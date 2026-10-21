@@ -695,9 +695,9 @@ const CLASSES={
   scout2:{name:'Advanced Scout',acc:1.3,bcost:.85,hull:78,shield:.9,speed:1.72,turn:1.25,weapon:.6,cargo:10,drill:0,radius:12,rack:.75,swarm:2,boost:1.3,agile:.46,radar:true,desc:'Nearly as fast as the Scout and even slower to turn. One missile launcher plus a swarm launcher (2 pods, fire with 3). Long-range radar. Flips sector beacons (hold within 250 m). Pings enemy capital ships (keep one targeted within 4 km for 4 s).'},
   constructor:{name:'Constructor',acc:.75,hull:240,shield:1.25,speed:.72,turn:1.25,weapon:.55,cargo:160,drill:0,radius:26,rack:.5,boost:.85,agile:.65,desc:'Carries Depot Frames; press K to build a depot where there is no station.'},
   courier:{name:'Light Hauler',hull:120,shield:.95,speed:1.05,turn:2.1,weapon:.7,cargo:60,drill:0,radius:16,rack:.5,boost:1.05,agile:.95,acc:1,drones:1,desc:'60 t hold, 1 guard drone, quick for a hauler.'},
-  freighter:{drones:2,name:'Medium Hauler',acc:.8,hull:170,shield:1.1,speed:.95,turn:1.7,weapon:.75,cargo:100,drill:0,radius:21,rack:.75,boost:.9,agile:.75,desc:'100 t hold, 2 guard drones. The workhorse: nearly as quick as a Light Hauler.'},
+  freighter:{drones:2,name:'Medium Hauler',acc:.8,hull:170,shield:1.1,speed:.95,turn:1.7,weapon:.75,cargo:100,drill:0,radius:21,rack:.75,boost:.9,agile:.75,desc:'100 t hold, 2 guard drones, 5.5% market fee. The workhorse: nearly as quick as a Light Hauler.'},
   dredger:{name:'Heavy Miner',hull:190,shield:1.15,speed:.82,turn:1.6,weapon:.9,cargo:80,drill:2.2,radius:23,rack:.75,boost:.9,agile:.75,acc:.82,drones:4,lasers:3,desc:'3 mining lasers, 4 guard drones, deep hold. Slow and armoured.'},
-  bulker:{name:'Heavy Hauler',hull:260,shield:1.25,speed:.72,turn:1.2,weapon:.7,cargo:180,drill:0,radius:28,rack:.75,boost:.85,agile:.6,acc:.7,drones:4,desc:'180 t hold, 4 guard drones. A fortress that crawls.'},
+  bulker:{name:'Heavy Hauler',hull:260,shield:1.25,speed:.72,turn:1.2,weapon:.7,cargo:180,drill:0,radius:28,rack:.75,boost:.85,agile:.6,acc:.7,drones:4,desc:'180 t hold, 4 guard drones, 4% market fee. A fortress that crawls.'},
 };
 const CLS_IDS=['interceptor','striker','heavy','bomber','skiff','prospector','dredger','courier','freighter','bulker','scout','scout2'],YARD_IDS=[...CLS_IDS,'gunboat'];   // constructors are AI-only: call one in through comms
 const FIGHTERS=['interceptor','striker','heavy','bomber'];
@@ -807,7 +807,7 @@ function mainOre(a){let b=null,m=0;for(const k in a.ore)if(a.ore[k]>m){m=a.ore[k
 // commute. Salvage points on wrecks cut faster: a wreck lasts only five minutes. AI miners are unaffected.
 // per hull, tuned so a Light Miner on a good field makes about 12k an hour, a Medium 15.5k and a Heavy 20k (a Heavy Hauler
 // on trade runs makes about 21.6k): the bigger the miner, the slower its lasers fill its hold.
-const MINE_RATE={skiff:.032,prospector:.0284,dredger:.0234},SALVAGE_RATE=.5;const mineP=cls=>MINE_RATE[cls]||.025,mineRate=(a,cls)=>a&&a.wpt?SALVAGE_RATE:mineP(cls);
+const MINE_RATE={skiff:.036,prospector:.0324,dredger:.0257},SALVAGE_RATE=.5;const mineP=cls=>MINE_RATE[cls]||.025,mineRate=(a,cls)=>a&&a.wpt?SALVAGE_RATE:mineP(cls);
 function astR(a){return a.wpt?WPT_R:14+Math.sqrt(oreTotal(a))*3.3}
 function newAstPos(s){const b=pick(s.belts),d=rdir(1),r=Math.cbrt(Math.random())*(b.r||440);return{x:Math.round(b.x+d.x*r),y:Math.round(b.y+d.y*r),z:Math.round(b.z+d.z*r)}}
 // Vantium lies in the three contested forge systems and the hub. Every power is one jump from two fields (each shared with one
@@ -1122,8 +1122,12 @@ function locF(R,id){if(!R||!R.mk)return 1;const L=R.mk[id]||0;return clamp(Math.
 function stPrice(R,id){return price(R?mkStock(R):{},id)*locF(R,id)}
 // market prices at the dock you're in (outposts have no local level)
 function mR(c){return c&&c.kind==='station'?S.stations[S.player.sector]:null}
-function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id)*locF(R,id)*1.06)}
-function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id)*locF(R,id)*.94))}
+// market fee on a pilot's trades: 6%, less in the bigger haulers (a freight licence). A big hold soon moves the price against
+// itself, so the Heavy Hauler's edge is a thinner fee rather than more tonnage: trade runs come to about 15k an hour in a Light
+// Hauler, 20k in a Medium and 25k in a Heavy, Mk I.
+const HAUL_FEE={freighter:.055,bulker:.04};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;
+function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id)*locF(R,id)*(1+mFee(S.player.cls)))}
+function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id)*locF(R,id)*(1-mFee(S.player.cls))))}
 // how many units a market takes (dir +1, a sale) or gives (dir -1, a purchase) at the quoted price: as many as it can absorb before
 // its price would move past the buy/sell spread, so a big dump sells in lots and buying it straight back never pays
 function lotCap(c,k,dir,maxN){if(maxN<=1)return maxN;const R=mR(c);if(R)mkOf(R);const st=c.market,s0=st[k],m0=R?R.mk[k]||0:0,p0=price(st,k)*locF(R,k);
@@ -1140,7 +1144,7 @@ function intelSectors(P){const s=new Set([P.sector]);for(const id in S.beacons||
   for(const t of S.scouts||[])if(t.side===P.faction)s.add(t.sector);if(isScoutCls(P.cls)||P.cls==='wraith')for(const n of NEIGH[P.sector]||[])s.add(n);
   if(S.outposts.hollow&&(S.outposts.hollow.owner===P.faction))for(const d of SECTOR_DEFS)s.add(d.id);return s}
 function intelTick(P){const first=!P.pintel;P.pintel=P.pintel||{};const live=intelSectors(P);if(first)for(const R of mkStations())if(R.owner===P.faction)live.add(R.sid);for(const R of mkStations()){if(!live.has(R.sid))continue;if(hostile(P.faction,R.owner)&&R.owner!=='neutral')continue;mkOf(R);
-  const st=mkStock(R),b={},sl={},n={};for(const k of TRADE_ITEMS){const pr=stPrice(R,k);b[k]=Math.ceil(pr*1.06);sl[k]=Math.max(1,Math.floor(pr*.94));n[k]=st[k]||0}P.pintel[R.sid]={T:first&&R.sid!==P.sector?S.T-600:S.T,b,s:sl,n}}}
+  const st=mkStock(R),b={},sl={},n={};for(const k of TRADE_ITEMS){const pr=stPrice(R,k);b[k]=Math.ceil(pr*(1+mFee(P.cls)));sl[k]=Math.max(1,Math.floor(pr*(1-mFee(P.cls))));n[k]=st[k]||0}P.pintel[R.sid]={T:first&&R.sid!==P.sector?S.T-600:S.T,b,s:sl,n}}}
 function intelAge(e){if(!e)return'no data';const a=S.T-e.T;return a<15?'live':a<90?Math.round(a)+' s ago':Math.round(a/60)+' min ago'}
 // ---- AI traders: real trade runs. A faction merchant buys a load where a good is cheap, flies it jump by jump to where it's
 // dear, and only changes that market when it arrives. On the way it's a real freighter in any system someone is in, so it can
