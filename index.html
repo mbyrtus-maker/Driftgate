@@ -1694,7 +1694,9 @@ function payKill(e,src,at){const D=e.dmg||{},kp=at&&at.src&&at.src.rp,killer=kp|
   for(const k in sh)runAs(isMe(k)?null:k,()=>{const f=S.player.faction,x=sh[k],pct=Math.round(x*100);if(k===killer)S.player.kills++;if(!hostile(f,e.side))return;weKill(e,x);
     const nm=`${e.side==='pirate'?'Unbound':FACTIONS[e.side]?FACTIONS[e.side].short:'Brood'} ${killNoun(e)}`,part=x<.995?` Your damage: ${pct}%.`:'';
     if(e.role==='trader'&&e.tradeT&&e.tradeT.kind==='haul'){const got=transfer(f,'player',Math.round(raidBounty(e.tradeT)*x));weAdd(f,3*x);if(got)feed(`Convoy raid: +${fmt(got)} cr for cutting ${FACTIONS[e.side].short} supplies.${part}`,'good')}
-    const b=transfer(f,'player',Math.max(1,Math.round(bountyOf(e)*x)));feed(`${nm} destroyed${k===killer?'':' (shared kill)'}.${b?` Bounty +${b} cr.`:''}${part}`,'good')})}
+    const b=transfer(f,'player',Math.max(1,Math.round(bountyOf(e)*x)));feed(`${nm} destroyed${k===killer?'':' (shared kill)'}.${b?` Bounty +${b} cr.`:''}${part}`,'good');if(e.side==='brood'&&e.role==='builder'){const c=transfer(f,'player',Math.round(CONTAIN.seeder*x));if(c)feed(`Containment order: Seeder killed before it planted. +${fmt(c)} cr.`,'good')}})}
+// containment orders, open to every faction pilot: a Seeder killed, a Bloom Node burned (more for a node that has rooted)
+const CONTAIN={seeder:600,young:900,node:1500,youngT:180};
 // where to catch a convoy: the first system on its remaining route you can reach in time (it spends ~45 s crossing each
 // system, so one jump of slack), else the point on its route nearest you
 function cvIntercept(t,from){const P=(t.path||[]).slice(t.leg);if(!P.length)return t.to;for(let i=0;i<P.length;i++)if((HOP[from][P[i]]??99)<=i+1)return P[i];
@@ -3915,13 +3917,13 @@ function respawn(){if(W&&W.player){W.player.landed=null;W.player.stealth=false;W
   const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';droneTopUp(P,P.vault,P.faction);
   enterSector(P.sector);openDock();save();
 }
-function damageStation(E,dmg,by,kind){if(by==='player'&&W.player&&d3(E,W.player)<3000)musHit(((E.shield||0)>0)||((E.rec&&E.rec.shield)||0)>0);if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
+function damageStation(E,dmg,by,kind){if(by==='player'&&E&&E.fac==='brood'&&E.rec){E.rec.pHit=W.t}if(by==='player'&&W.player&&d3(E,W.player)<3000)musHit(((E.shield||0)>0)||((E.rec&&E.rec.shield)||0)>0);if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
   E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
   if(!E.offline){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.offline=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! Its turrets are offline and the hull is exposed.`:`${E.name}'s shield collapsed. Its turrets are offline and the hull is exposed.`,mine?'bad':'warn')}
   if(!R||dmg<=0)return;R.hull-=dmg;if(Math.random()<.3)fxSpark({x:E.x+rnd(-60,60),y:E.y+rnd(-60,60),z:E.z+rnd(-60,60)},'#ffcf8a',3);
   if(R.hull<=0&&R.kind==='depot'&&R.owner!=='brood'&&E.lastHitBy&&E.lastHitBy!=='brood'){const g=garrison(R);if(capLoads(R.sid,E.lastHitBy)>=g){useLoads(R.sid,E.lastHitBy,g,R);captureDepot(R.sid,E.lastHitBy);return}}
   if(R.hull<=0&&R.kind==='free'){razeStation(R.sid,'brood');return}
-  if(R.hull<=0){if(R.kind!=='depot'){R.hull=1;if(W.t+40>E.offline){E.offline=W.t+40;feed(`${E.name} is crippled: dark for 40 s.`,friendSide(E.fac)?'bad':'warn')}}else razeStation(R.sid,E.lastHitBy)}}
+  if(R.hull<=0){if(R.kind!=='depot'){R.hull=1;if(W.t+40>E.offline){E.offline=W.t+40;feed(`${E.name} is crippled: dark for 40 s.`,friendSide(E.fac)?'bad':'warn')}}else{if(R.owner==='brood'&&R.kind==='depot'&&R.pHit!=null&&W.t-R.pHit<60&&FAC_IDS.includes(S.player.faction)){const young=S.T-(R.built==null?-1e9:R.built)<CONTAIN.youngT,c=transfer(S.player.faction,'player',young?CONTAIN.young:CONTAIN.node);if(c)feed(`Containment order: Bloom Node burned${young?' before it rooted':''}. +${fmt(c)} cr.`,'good')}razeStation(R.sid,E.lastHitBy)}}}
 // a razed depot leaves its frames as drifting debris; anything stored in it spills out as salvage
 // a frigate that breaks a faction depot takes it over: new flag, a third of its hull back, half its store to the captor
 function captureDepot(sid,side){const R=S.stations[sid];if(!R||R.owner==='neutral')return;if(side==='player')side=S.player.faction;const prev=R.owner;if(!FACTIONS[side]||prev===side)return;
