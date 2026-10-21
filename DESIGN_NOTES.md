@@ -895,7 +895,7 @@ a player's magazines (missile rack or torpedo bay by Mk, swarm pods), flaring mi
 
 Overall win % against the other five hulls at the same Mk (Mk I / III / V): Light 49/49/54, Medium 56/57/51,
 Heavy 66/65/65, Bomber 15/16/20, Heavy Bomber 32/35/37, Wraith 81/77/72.
-## The Brood: contained, scary, rarely winning (design, not built)
+## The Brood: contained, scary, rarely winning (stages 1, 2 and 4 built)
 Full spec: the Claude doc [Driftgate: The Brood](https://claude.ai/artifact/3gHjQB1NpmToqsxUEnLpja).
 
 ### The idea
@@ -958,12 +958,19 @@ AI Unbound never enter or route through Brood-held systems. The Brood never targ
 3. Spread stages, containment orders, guts and the feast, feeding grounds, Grazer bellies, scout spotting, supply orders.
 4. Fear: haze, spores and blood scent, tuned small.
 
+### As built
+- **Stage 1:** the "hungrier next galaxy" bonus is gone; a Brood win earns no pilot a Legend point, not even the half point; the Brood and the Unbound are not hostile and don't plan offensives on each other's outposts. AI pirate routes still pass through Bloom space.
+- **Stage 2:** truce zones in every Brood-held system and for 30 s after the last node burns (live combat only: the strategic layer keeps its own rules), a HUD banner, no building. Map hatching is not built. The Containment Accord reuses the coalition: at 5 Brood systems all three factions join it, until the Bloom is below 4.
+- **Stage 3, partly:** the existing Seeder announcement and build event already give the seeded and rooting stages. Containment orders pay as bounties: 600 cr for a Seeder (shared by damage), 900 cr for a Bloom Node burned in its first 3 minutes, 1,500 cr after. Not built: map countdowns, node guts and the feast after the fire, feeding grounds, Grazer bellies, scout spotting pay and hauler supply orders. Node pay doesn't reach multiplayer guests yet.
+- **Stage 4:** Bloom haze (shields recharge 15% slower, radar 25% shorter), latching spores (0.5 hull a second for 4 s per Brood hull hit, at most 3, never below 1 hull, cleared by docking), blood scent (Brood wings weight their targets by damage).
+- **The six anti-Brood variants** are built (see Ship upgrade choices).
+
 ### Balance rules (must hold when built)
 - AI-only simulation puts the Brood at 12–15% with each faction near 28–30%; real pilots should then pull it to about 10%.
 - Median galaxy length doesn't grow.
 - The closed economy balances to the unit.
 
-## Playing as the Unbound (design, not built)
+## Playing as the Unbound (stage 1 partly built)
 Full spec: the Claude doc [Driftgate: Playing as the Unbound](https://claude.ai/artifact/SoHpuwfLLe9Myivh9JTkBc).
 
 ### The idea
@@ -1029,12 +1036,21 @@ AI wings fly the three Unbound hulls with the same jamming rules, go after haule
 2. Unbound mode core, solo first.
 3. Raids and lockdown, capital takes, the haven works, fleet call-ins, Lairs, crew multiplayer.
 
+### As built (stage 1, jamming in faction galaxies)
+- **The three hulls** fly for the AI Unbound, built off the fighter frames and models: Raider (scout radar, 40 t), Corsair (jammer output ×1.3, 70 t), Plunderer (110 t). Every pirate fighter spawn uses them.
+- **Jammers:** an AI pirate switches to jammers once its mark's shields are down and keeps firing in jam mode. The Jam bar, drain, disable windows (5, 10, 12 s) and 60 s hardening follow the design. Jammers do no damage.
+- **Takes:** pirates beside a dark ship hook its hold at 8 t/s, most valuable first, then leave with it into Unbound stores. Freighters call distress when their bar appears.
+- **Being jammed:** thrust stutters and gun misfires scale with the bar, the afterburner dies above half, the screen flickers, and at a full bar every system goes offline and the radar blanks.
+- **Names:** pirate escorts and carriers use the Corsair Sloop and Destroyer name rotations.
+- **Anti-jam variants:** Faraday plating, Fast-reboot reactor, Snap-back emitter and Sealed hold are built. Tether cutter waits for harpoons.
+- **Not built:** harpoons, jamming torpedoes, capital takes, and all of Unbound mode for pilots (stages 2 and 3). In multiplayer a guest's own jam effects don't show on their screen yet.
+
 ### Balance rules (proposed; must hold when built)
 - The faction win race is unchanged in AI-only simulation.
 - Every haven cost comes from real goods; the closed economy balances to the unit.
 - Jamming never kills and can't touch a shielded ship.
 
-## Ship upgrade choices (design, not built; next build phase)
+## Ship upgrade choices (built, except faction doctrines and stocking)
 Full spec: the Claude doc [Driftgate: Ship Upgrade Choices](https://claude.ai/artifact/RKuLFjS9Gvxz2cHZ9azXq7).
 
 ### The idea
@@ -1113,12 +1129,23 @@ Unbound pilots get a mirror set at the haven's black market (scan baffles, jamme
 3. Specialists, then the Unbound mirror once jamming is in the build.
 4. Faction doctrines and stocking.
 
+### As built
+- **Mk I–III only.** Upgrades stop at Mk III and the Forge requirement is gone. Saves bring Mk IV and V systems back to Mk III with the parts above Mk III in the pilot's vault (the ledger doesn't move).
+- **A stronger Mk curve, by choice** (stronger Mk steps rather than weaker variants): `MK_LV` 0.45 at Mk II and 0.85 at Mk III (v160 had 0.17 and 0.29), so the Mk table above is now larger for combat stats. Duels, same hull, 100 each: Mk II beats Mk I 61–68%, Mk III beats Mk I 76–86%.
+- **Variants are items** (`v_<id>`, built from plate 2, coil 2 and lattice 1; specialists plate 3 and wire 3), fitted per ship in `tune.vr`. They can be fitted or swapped free at any dock with an Upgrades tab, from Mk II.
+- **Losing a ship:** fitted variants go half to the crate and half to debris. Mk parts still go to the crate whole, as before; whether they should also split is open.
+- **Tuned by duel** so none is a trap: Surge core +50% energy with a 0.5 s pause, Reactive plating +12% damage reduction and −10% shields, Light frame −15% hull, Long barrel −10% fire rate. Built variants against a plain ship of the same hull at Mk II, 100 duels each: 13 of 15 win 43–56%; Flicker 70% and Bastion 63% (79% on the Heavy Fighter) are the strongest; Long barrel 43% (AI pilots don't use range).
+- **Specialists built:** six anti-Brood and four anti-jam. Tether cutter waits for harpoons; the Unbound mirror set waits for Unbound mode.
+- **Legend perks 5 and 6** start a system at Mk II and fit a free variant of the pilot's choice to it.
+- **Blast Rig variants** (Shaped charges, Long launcher, Survey rig) replace the laser ones.
+- **Not built:** faction AI doctrines and station or depot stocking.
+
 ### Balance rules (proposed; must hold when built)
 - No variant wins more than about 60% of mirror duels against the same hull with another variant at equal Mk.
 - The duel tables keep their shape: no hull class jumps a tier.
 - The pay ladder holds: hauling over mining over combat over beacon running.
 
-## Blast mining (design, not built; next build phase)
+## Blast mining (built)
 Full spec: the Claude doc [Driftgate: Blast Mining](https://claude.ai/artifact/1hGfqjnu4axL6uLLAxb1LP).
 
 ### The idea
@@ -1178,6 +1205,12 @@ The Mining Laser system becomes the Blast Rig (Mk I–III; variants in Ship upgr
 - Mining stays below hauling on the pay ladder.
 - The closed economy balances to the unit: every unit not collected reaches the debris pool.
 
-### Open questions
-- Does blast mining ship in the current build phase, or wait with the upgrade rework?
-- Should a cloud's cover block missile locks from outside it entirely, or only slow them?
+### As built (where it differs from the design above)
+- **Pacing is by the magazine**, as agreed after the pay-ladder check: each charge releases one fault-point section, and magazines are small with long reloads so a perfect hold takes about as long as the laser did. Light Miner 2 charges and a 348 s reload, Medium 3 and 408 s, Heavy 4 and 552 s; one charge every 1, 0.5 or 0.34 s. A trip model fitted to the v158 mining pay puts perfect placement at about 12k, 15.6k and 19.9k an hour, near-point charges at 8k to 12k, and off-point charges at 4k to 6k.
+- **A Blast Rig Mk level adds one charge**, not one per launcher: one per launcher would have more than doubled a Heavy Miner's pay at Mk III.
+- **Collector rates** are 6, 9 and 12 units a second (+20% a Mk level).
+- **Scanning** happens when a rock or salvage point is targeted (fault-point rings for 20 s; faint rings within 100 m without a scan).
+- **Rocks don't tumble**, so charges fly straight along the nose.
+- **Clouds hide ships and drones** from radar and missile locks beyond 300 m, for their 90 s.
+- **Not built yet:** AI Unbound and Brood Grazers turning toward fresh clouds; a cloud's cover slowing locks rather than blocking them is still open.
+- **Multiplayer:** guests send fire, detonate and cancel to the host and collect by cloud id; untested here (no matchmaking server in the build sandbox).
