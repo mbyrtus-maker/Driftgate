@@ -834,6 +834,91 @@ function bloodScent(o){if(!o.st||!o.st.hull)return 1;const f=clamp(o.hull/o.st.h
 function atkSt(at){return at&&at.src&&at.src.st||null}
 function vsShK(e,at,kind){const A=atkSt(at);return A&&A.broodK&&kind==='kinetic'&&e.side!=='brood'?A.facShK:1}
 function vsHullK(e,at,kind){const A=atkSt(at);if(A&&A.broodK&&kind==='kinetic'&&e.side==='brood'){e.noRegen=W.t+A.regenStop;return A.broodK}return 1}
+
+// ---- Brood ecology (stage 3). What the swarms graze is split: half to the Brood's stores, a quarter into the gut of the
+// nearest Bloom Node (spilled as rich rock when the node burns), a quarter piled as a feeding ground in the nearest
+// Brood-held system (dense rock any pilot can mine under the truce). Zoned ores (Aurorite, Vantium) never leave for a
+// feeding ground. Nothing is created: every unit comes out of a real field.
+const GUT={share:.25,fg:.25,cap:240,fgCap:600,fgRock:160,feastRock:130};
+function brNodes(){return Object.values(S.stations).filter(R=>R.owner==='brood'&&R.kind==='depot')}
+function srnd(x){return Math.floor(x+Math.random())}
+function fgMass(s){let m=0;for(const a of s.ast)if(a.fg)m+=oreTotal(a);return m}
+function fgAnchor(s){if(!s.fg){const p=s.belts&&s.belts.length?newAstPos(s):{x:ri(-1400,1400),y:ri(-200,200),z:ri(-1400,1400)};s.fg={x:p.x,y:p.y,z:p.z}}return s.fg}
+function fgSector(from){let b=null,bh=99;for(const d of SECTOR_DEFS){const id=d.id;if(!broodHeld(id)||WORLDS[id]||!S.sectors[id])continue;if(fgMass(S.sectors[id])>=GUT.fgCap)continue;const h=HOP[from][id]??99;if(h<bh){bh=h;b=id}}return b}
+function fgAdd(s,k,m){if(m<=0)return;const A=fgAnchor(s);let a=s.ast.find(x=>x.fg&&x.ore[k]&&oreTotal(x)<GUT.fgRock)||s.ast.find(x=>x.fg&&oreTotal(x)<GUT.fgRock*.5);
+  if(a){inv.add(a.ore,k,m);return}s.ast.push({id:S.nextId++,x:Math.round(A.x+rnd(-320,320)),y:Math.round(A.y+rnd(-90,90)),z:Math.round(A.z+rnd(-320,320)),ore:{[k]:m},seed:ri(1,1e9),fg:1})}
+function brGut(st,from,got){let R=null,bh=99;for(const x of brNodes()){const h=HOP[from][x.sid]??99;if(h<bh){bh=h;R=x}}
+  const fs=fgSector(from),fsec=fs?S.sectors[fs]:null;
+  for(const k in got){let n=got[k];if(n<=0)continue;
+    if(R&&invMass(R.gut||{})<GUT.cap){const g=Math.min(n,srnd(n*GUT.share));if(g>0){R.gut=R.gut||{};inv.add(R.gut,k,g);n-=g}}
+    if(fsec&&k!=='au'&&k!=='nu'){const f=Math.min(n,srnd(got[k]*GUT.fg));if(f>0){fgAdd(fsec,k,f);n-=f}}
+    if(n>0)inv.add(st,k,n)}}
+// the feast after the fire: a burned node's gut spills as a few big, rich rocks where it stood
+function brFeast(s,R){const g=R.gut||{},t=invMass(g);R.gut={};if(t<=0)return 0;const n=clamp(Math.ceil(t/GUT.feastRock),1,5),rocks=[];
+  for(let i=0;i<n;i++){const o=rdir(.5),k=ri(160,420);rocks.push({id:S.nextId++,x:Math.round((R.x||0)+o.x*k),y:Math.round((R.y||0)+o.y*k*.4),z:Math.round((R.z||0)+o.z*k),ore:{},seed:ri(1,1e9),feast:1})}
+  let i=0;for(const k in g){let left=g[k];while(left>0){const m=Math.min(left,Math.max(1,Math.ceil(g[k]/n)));inv.add(rocks[i%n].ore,k,m);left-=m;i++}}
+  for(const a of rocks)if(oreTotal(a)>0)s.ast.push(a);return t}
+// ---- scouts: hold a lock on a Seeder for 3 s inside 5 km, before it plants, for a 250 cr containment order (one per Seeder)
+const SPOT={t:3,r:5000,pay:250};
+function spotTarget(){const T=W.tgt;if(!T||T.kind!=='ship')return null;const e=T.ref;return e&&e.alive&&e.side==='brood'&&e.role==='builder'?e:null}
+function spotTick(dt){const F=W.spotF||(W.spotF={id:null,t:0});const e=spotTarget(),p=W.player;
+  if(!e||!p||!isScoutCls(S.player.cls)||S.player.docked||!FAC_IDS.includes(S.player.faction)||e.spotted||d3(e,p)>SPOT.r){F.t=0;return}
+  if(F.id!==e.id){F.id=e.id;F.t=0}F.t+=dt;if(F.t<SPOT.t)return;F.t=0;if(NET.cl){netSend({t:'spot',id:e.id});e.spotted=1}else spotPay(e,pkey())}
+function spotPay(e,k){if(!e||!e.alive||e.side!=='brood'||e.role!=='builder'||e.spotted)return;const P=isMe(k)?S.player:S.pilots&&S.pilots[k];if(!P||!FAC_IDS.includes(P.faction)||!isScoutCls(P.cls))return;
+  e.spotted=1;const c=payKey(k,P.faction,SPOT.pay);keyFeed(k,`📡 Containment order: Seeder spotted before it planted. Every faction can see it now.${c?` +${fmt(c)} cr.`:''}`,'good');
+  const ev=S.events.find(v=>v.type==='build'&&v.att==='brood'&&v.sector===W.sid&&v.stage!=='done');if(ev)ev.spotted=1}
+function spotChip(){const e=spotTarget();if(!e||!isScoutCls(S.player.cls)||S.player.docked)return null;if(e.spotted)return['📡 Seeder spotted: containment paid','good'];const d=d3(e,W.player),F=W.spotF||{};
+  if(d>SPOT.r)return[`📡 Close to ${SPOT.r/1000} km to spot the Seeder (${fmt(Math.round(d))} m)`,'warn'];return[`📡 Spotting Seeder ${Math.round(clamp((F.id===e.id?F.t:0)/SPOT.t,0,1)*100)}% · keep it targeted`,'warn']}
+// ---- scouts find feeding grounds: flying a scout through Brood space marks its feeding ground on every pilot's map
+function fgScout(){if(!W||W!==LW||!W.haze||!W.player||S.player.docked||!isScoutCls(S.player.cls))return;S.fgSeen=S.fgSeen||{};if(S.fgSeen[W.sid])return;S.fgSeen[W.sid]=1;
+  const t=fgMass(S.sectors[W.sid]);if(t>0)feed(`📡 Scout report: a Brood feeding ground in ${DEF[W.sid].name}, about ${fmt(t)} t of piled ore. It's marked on the galaxy map.`,'good')}
+// ---- containment supply: faction stations on the Bloom's border post orders for torpedoes, missiles and plate, paid at a
+// front-line bonus (about 2.5x value) and delivered in person, like a blockade run
+const CONT_PAY=[2.2,2.8],CONT_T=900;
+function contFront(f,sid){const R=S.stations[sid];return!!R&&R.owner===f&&R.kind!=='hive'&&NEIGH[sid].some(n=>broodHeld(n))}
+function contContracts(){for(const f of FAC_IDS){if(!S.econ.stock[f])continue;S.contracts=S.contracts.filter(c=>!(c.cont&&c.fac===f&&!contFront(f,c.st)));
+    const L=S.contracts.filter(c=>c.cont&&c.fac===f);if(L.length>=1||Math.random()<.5)continue;
+    const cand=Object.keys(S.stations).filter(sid=>contFront(f,sid)&&!S.contracts.some(c=>c.blk&&c.st===sid));if(!cand.length)continue;const sid=pick(cand),R=S.stations[sid];
+    const item=wpickArr([['torpedo',1],['missile',2],['plate',3]].filter(([k])=>ITEMS[k])),js=jobSize(item,item==='torpedo'?ri(2,4):item==='missile'?ri(4,8):ri(10,20)),n=js.n,reward=Math.ceil(baseValue(item)*n*rnd(CONT_PAY[0],CONT_PAY[1])/10)*10;
+    S.contracts.push({id:S.nextId++,fac:f,st:sid,blk:1,cont:1,why:'on the Bloom front: containment supply',foe:'brood',item,n,n0:n,reward,until:S.T+CONT_T*js.t});
+    facFeed(f,`☣ Containment supply: ${R.name} in ${DEF[sid].name} holds the line against the Bloom and needs ${n} ${ITEMS[item].name}. ${fmt(reward)} cr for delivery in person (Economy → Orders).`,'info')}}
+// ---- the galaxy map: truce hatching, Seeder countdowns, rooting nodes, feeding grounds
+function brMapMarks(c,d,x,y,r,t){const bc=FACTIONS.brood.col;
+  if(truceAt(d.id)){c.save();c.beginPath();c.arc(x,y,r-1,0,TAU);c.clip();c.strokeStyle=hexA(bc,.4);c.lineWidth=1.2;for(let k=-r*2;k<r*2;k+=6){c.beginPath();c.moveTo(x+k-r,y+r);c.lineTo(x+k+r,y-r);c.stroke()}c.restore()}
+  const lines=[],ev=S.events.find(e=>e.type==='build'&&e.att==='brood'&&e.sector===d.id&&e.stage!=='done');
+  if(ev){const pu=.5+.5*Math.sin(t*4);c.strokeStyle=hexA(bc,.5+.4*pu);c.lineWidth=2;c.setLineDash([4,4]);c.beginPath();c.arc(x,y,r+9,0,TAU);c.stroke();c.setLineDash([]);
+    lines.push(ev.stage==='inbound'?`SEEDER ${fmtT(Math.max(0,ev.eta-S.T))}`:'SEEDER PLANTING')}
+  const Rs=S.stations[d.id];if(Rs&&Rs.owner==='brood'&&Rs.kind==='depot'&&Rs.built!=null&&S.T-Rs.built<CONTAIN.youngT)lines.push(`ROOTING ${fmtT(CONTAIN.youngT-(S.T-Rs.built))}`);
+  const sc=S.sectors[d.id];if(sc&&(covered(d.id)||(S.fgSeen&&S.fgSeen[d.id]))){const m=fgMass(sc);if(m>=20)lines.push(`◆ FEED ${fmt(m)} t`)}
+  if(!lines.length)return;c.font='700 9px "Saira Semi Condensed",sans-serif';c.textAlign='center';let yy=y-r-(ev?14:8)-(lines.length-1)*10;
+  for(const L of lines){c.fillStyle='#070b16';c.fillText(L,x+1,yy+1);c.fillStyle=L[0]==='◆'?'#7ad9a7':bc;c.fillText(L,x,yy);yy+=10}}
+
+// ---- faction doctrines: the variants each faction's AI wings favour. Halcyon (strong shields) fits Bastion or Flicker;
+// Varkesh (heavy hulls) Ablative or Reactive plating, or Heavy cannons; Ostrova (deep reactors) a Surge or Steady core, or
+// Rapid fire. Combat wings only; the chance grows with the faction's tier. Stats only: nothing is built, nothing drops.
+const WING_DOC={halcyon:{shield:['bastion','flicker']},varkesh:{armor:['ablative','reactive'],weapon:['heavyc']},ostrova:{power:['surge','steady'],weapon:['rapid']}},DOC_P=[0,.3,.5,.7];
+function docFit(e,tuned){const D=WING_DOC[e.side];if(!D||!['patrol','raider','escort','strike','screen'].includes(e.role)||Math.random()>=(DOC_P[e.tier]||.3))return;
+  const sl=pick(Object.keys(D)),id=pick(D[sl]);if(!VARIANTS[id])return;e.vr={[sl]:id};const U={vr:e.vr};if(tuned)for(const x of SLOTS)U[x.id]=1;
+  const h=e.hull/e.st.hull,sh=e.st.sCap?e.shield/e.st.sCap:1;e.st=shipStats(e.side,e.cls,e.tier,U);e.hull=e.st.hull*h;e.shield=e.st.sCap*sh}
+// ---- specialist stocking: a faction holding the line against the Bloom stocks anti-Brood parts; one whose convoys the
+// Unbound have hit in the last half hour (or any faction after the first half hour) stocks anti-jam parts. Built from its
+// own plate and wire, so nothing is created; they sell on its market like any other part.
+const STOCK_SPEC={cap:2};
+function specStock(f,st,need){if(need||(st.plate||0)<60||(st.wire||0)<40)return;
+  const front=Object.keys(S.stations).some(sid=>contFront(f,sid)),raided=S.T>1800||((S.raidT||{})[f]||-1e9)>S.T-1800;
+  for(const id in VARIANTS){const V=VARIANTS[id];if(!V.spec)continue;if(V.spec==='brood'?front:V.spec==='jam'?raided:false)craftAbstract(st,'v_'+id,1,STOCK_SPEC.cap)}}
+// ---- AI Unbound, and Brood Grazers in or next to Bloom space, turn toward fresh ore clouds (within 5 km) and scoop them.
+// What they take goes into their hold, and home with them if they leave, or into the wreck if they're shot down.
+const CLOUD_AI={r:5000,rate:4};
+function cloudSeek(e,dt){const s=S.sectors[W.sid],ai=e.ai;if(!s.clouds||!s.clouds.length){ai.cl=null;return false}
+  if(e.side==='brood'&&!broodHeld(W.sid)&&!NEIGH[W.sid].some(n=>broodHeld(n)))return false;
+  const room=(e.st.cargo||0)-invMass(e.cargo);if(room<1){if(ai.cl){ai.cl=null;e.role='leave'}return false}
+  let c=ai.cl&&s.clouds.find(x=>x.id===ai.cl);if(!c||oreTotal(c)<=0){c=null;let bd=CLOUD_AI.r;for(const x of s.clouds){if(oreTotal(x)<=0||x.until-S.T<10)continue;const d=d3(x,e);if(d<bd){bd=d;c=x}}
+    if(!c){ai.cl=null;return false}ai.cl=c.id;if(e.side==='pirate'&&W.player&&!S.player.docked&&d3(W.player,c)<1500&&!(c.warned)){c.warned=1;feed('⚠ Unbound raiders are turning toward the ore cloud. They will scoop it, and you.','warn')}}
+  const d=steer(e,c.x,c.y,c.z,dt,true,1);faceTo(e,c,dt);e.thrusting=d>c.r*.6;
+  if(d<c.r){e.mining=c;ai.sc=(ai.sc||0)+CLOUD_AI.rate*dt;while(ai.sc>=1){const k=mainOre(c);if(!k||mass(k)>(e.st.cargo||0)-invMass(e.cargo))break;ai.sc-=1;inv.take(c.ore,k,1);inv.add(e.cargo,k,1)}
+    if(oreTotal(c)<=0){s.clouds=s.clouds.filter(x=>x!==c);ai.cl=null}}
+  return true}
 function tunedK(e,kind){const t=e.st&&e.st.tuned;if(!t||(kind!=='kinetic'&&kind!=='laser'))return 1;return kind===t?1/1.3:1.2}
 // a destroyed ship's fitted variants: each one either spills into the crate whole, or breaks up into the system's debris
 function vrLose(P,crate,s){const vr=vrOf(P.tune);for(const sl in vr){const id='v_'+vr[sl];if(!ITEMS[id])continue;if(Math.random()<.5)inv.add(crate,id,1);else toDebris(s,{[id]:1})}if(P.tune)P.tune.vr={}}
@@ -1457,7 +1542,7 @@ function strategicTick(){
     for(let i=s.ast.length-1;i>=0;i--){const a=s.ast[i];if(a.comet&&T>a.until){toDebris(s,a.ore);s.ast.splice(i,1);if(W&&W.tgt&&W.tgt.ref===a)W.tgt=null}}
   }
   diffuse();scoutsTick();beaconTick();bcnMissionsTick();cReqTick();mkTick();coalTick();threatTick();capitalTick();victoryTick();campTick();for(const ev of S.events)announce(ev);
-  for(const f of FAC_IDS)factionIndustry(f);factionIndustry('brood');neutralIndustry();lifeTick();devTick();hgTick();logiTick();weTick();carTick();sortieTick();wkRepair();fpContracts();blkContracts();
+  for(const f of FAC_IDS)factionIndustry(f);factionIndustry('brood');neutralIndustry();lifeTick();devTick();hgTick();logiTick();weTick();carTick();sortieTick();wkRepair();fpContracts();blkContracts();contContracts();
   pirateIndustry();
   const h=S.outposts.hollow;
   if(h.owner){let got=0;for(const f of FAC_IDS){if(f===h.owner)continue;got+=transfer(f,h.owner,22)}if(h.owner==='player'){S.tollAcc+=got;if(S.tollAcc>=300){feed(`Hollow Relay tolls: +${fmt(S.tollAcc)} cr`,'good');S.tollAcc=0}}}
@@ -1475,7 +1560,7 @@ function factionIndustry(f){
   const st=S.econ.stock[f],fl=S.econ.fleet[f],war=S.ai[f]&&S.ai[f].war>S.T,need=S.T>150?capNeed(f):null;
   // the Brood grazes: its swarms strip rock from the systems it holds and the ones next door (ore out of real fields, nothing created)
   if(f==='brood'&&BAL.brGraze>0&&((st.fe||0)<300||(st.cu||0)<300)){const t=territory('brood'),z=new Set(t);for(const id of t)for(const n of NEIGH[id])if(!(DEF[n].home&&DEF[n].kind==='core'))z.add(n);
-    const L=[...z].filter(id=>S.sectors[id]&&S.sectors[id].ast.length&&!WORLDS[id]);const gz=Math.floor(BAL.brGraze)+(Math.random()<BAL.brGraze%1?1:0);for(let i=0;i<gz&&L.length;i++)inv.addAll(st,extract(S.sectors[pick(L)],6,false,{au:1,nu:(st.nu||0)>200,cu:(st.cu||0)>=300,fe:(st.fe||0)>=300,ir:(st.ir||0)>300,xc:(st.xc||0)>150}))}
+    const L=[...z].filter(id=>S.sectors[id]&&S.sectors[id].ast.length&&!WORLDS[id]);const gz=Math.floor(BAL.brGraze)+(Math.random()<BAL.brGraze%1?1:0);for(let i=0;i<gz&&L.length;i++){const gs=pick(L);brGut(st,gs,extract(S.sectors[gs],6,false,{au:1,nu:(st.nu||0)>200,cu:(st.cu||0)>=300,fe:(st.fe||0)>=300,ir:(st.ir||0)>300,xc:(st.xc||0)>150}))}}
   // imports: short of construction stock, a faction buys from the Freeport Compact with treasury credits (zero-sum: credits to the
   // Compact, goods out of its stores). Halcyon's Trade Charter buys twice the volume at a discount.
   // Trade Charter: Halcyon hires Freeport prospectors to work the rocks in its own systems when its ore runs short.
@@ -1488,7 +1573,7 @@ function factionIndustry(f){
   else{craftAbstract(st,'lattice',1,8);if(S.T>200)craftAbstract(st,'core',1,2)}
   if(S.T>150){craftAbstract(st,'keel',1,8)}craftAbstract(st,'frame',1,f==='brood'?5:6);
   // while saving for a shipyard or carrier, skip the luxuries that eat coil, wire and iridium
-  craftAbstract(st,'missile',2,need||war?8:40);craftAbstract(st,'torpedo',war?2:1,war?(need?14:36):need?4:14);if(f!=='brood'&&!need&&!war){craftAbstract(st,'drone',2,30);craftAbstract(st,'swarm',1,8);craftAbstract(st,'tune',1,10)}
+  if(f!=='brood')specStock(f,st,need);craftAbstract(st,'missile',2,need||war?8:40);craftAbstract(st,'torpedo',war?2:1,war?(need?14:36):need?4:14);if(f!=='brood'&&!need&&!war){craftAbstract(st,'drone',2,30);craftAbstract(st,'swarm',1,8);craftAbstract(st,'tune',1,10)}
   if(invValue(fl)<400+250*forgesOwned(f)){for(const[k,n,res]of[['plate',3,need?60:30],['wire',2,need?40:30],['coil',1,need?20:10],['lattice',1,need?12:2],['missile',1,6],['torpedo',1,4]])if((st[k]||0)>res)inv.add(fl,k,inv.take(st,k,n))}
 }
 function pirateIndustry(){const st=S.econ.stock.pirate;for(const id of['wr','ho']){const s=S.sectors[id];for(const e of RAWS){const m=Math.min(s.debris[e],3);s.debris[e]-=m;inv.add(st,e,m)}}craftAbstract(st,'plate',4,60);craftAbstract(st,'wire',4,60);craftAbstract(st,'coil',1,20);craftAbstract(st,'missile',1,10);craftAbstract(st,'torpedo',1,4)}
@@ -2085,8 +2170,8 @@ function blkWhy(f,sid){const R=S.stations[sid];if(!R||R.owner!==f)return null;if
   if(frigatesIn(sid).some(t=>hostile(f,t.side)))return'blockaded by a hostile capital ship';const T=territory(f);if(!NEIGH[sid].some(n=>T.has(n)))return'cut off behind the lines';return null}
 function blkFoe(f,sid){const ev=S.events.find(e=>e.type==='offensive'&&e.st===sid&&hostile(e.att,f));if(ev)return ev.att;const c=frigatesIn(sid).find(t=>hostile(f,t.side));if(c)return c.side;
   for(const n of NEIGH[sid]){let o=sectorOwner(n);if(o==='player')o=S.player.faction;if(o&&o!==f&&(FAC_IDS.includes(o)||o==='brood'))return o}return FAC_IDS.find(x=>hostile(f,x))}
-function blkContracts(){for(const f of FAC_IDS){const st=S.econ.stock[f];if(!st)continue;S.contracts=S.contracts.filter(c=>!(c.blk&&c.fac===f&&!blkWhy(f,c.st)));
-    const L=S.contracts.filter(c=>c.blk&&c.fac===f);if(L.length>=BLK_N||Math.random()<.4)continue;
+function blkContracts(){for(const f of FAC_IDS){const st=S.econ.stock[f];if(!st)continue;S.contracts=S.contracts.filter(c=>!(c.blk&&!c.cont&&c.fac===f&&!blkWhy(f,c.st)));
+    const L=S.contracts.filter(c=>c.blk&&!c.cont&&c.fac===f);if(L.length>=BLK_N||Math.random()<.4)continue;
     const cand=Object.keys(S.stations).filter(sid=>!L.some(c=>c.st===sid)&&blkWhy(f,sid));if(!cand.length)continue;const sid=pick(cand),why=blkWhy(f,sid),R=S.stations[sid];
     const item=wpickArr([['plate',3],['coil',2],['wire',2],['missile',1.2],['ir',1]].filter(([k])=>ITEMS[k])),js=jobSize(item,item==='ir'?ri(20,40):item==='missile'?ri(4,8):item==='coil'?ri(5,10):ri(10,20)),n=js.n,reward=Math.ceil(baseValue(item)*n*rnd(BLK_PAY[0],BLK_PAY[1])/10)*10;
     S.contracts.push({id:S.nextId++,fac:f,st:sid,blk:1,why,foe:blkFoe(f,sid),item,n,n0:n,reward,until:S.T+BLK_T*js.t});
@@ -2162,7 +2247,7 @@ function contractsHtml(c,P,srcs){let h='';
     if(!list.length)h+=`<div class="empty">No open contracts. New ones are posted every minute or so.</div>`;
     else{h+=`<div class="tblw"><table class="t"><thead><tr><th>Deliver</th><th class="r">Reward</th><th class="r">Time left</th><th></th></tr></thead><tbody>`;
       for(const k of list){const have=k.st?fpDeliverable(P,k,srcs):deliverable(P,k.item,srcs),bo=k.st?fpBoughtAt(P,k.st,k.item):boughtOf(P,k.item);h+=`<tr><td>${chip(k.item,k.n,have)}${jobLine(k)}${k.car?`<span class="mass">for the carrier ${esc(k.carName||'')} to build fighters</span>`:''}${k.blk?`<span class="mass" style="color:var(--amber)">⚠ blockade run: this station is ${esc(k.why||'cut off')}</span>`:''}${bo?`<span class="mass">${bo} bought ${k.st?'here':'on a market'} don't count</span>`:''}</td><td class="r num">${fmt(k.reward)} cr</td><td class="r num">${Math.max(0,Math.round((k.until-S.T)/60))} min</td><td><div class="act"><button class="btn sm" data-act="deliver" data-arg="${k.id}" ${have>=jobMin(k)?'':'disabled'}>${have>=k.n?'Deliver':have>=jobMin(k)?'Deliver '+Math.min(have,k.n):'Deliver'}</button></div></td></tr>`}h+=`</tbody></table></div>`}
-    if(blks.length){h+=`<div class="h3" style="margin-top:14px">⚠ Blockade runs</div><p class="note" style="margin:0 0 8px">These ${esc(FACTIONS[P.faction].short)} stations are cut off or under siege. Bring the goods in person: anything you own counts, even goods bought on a market. Carrying them through hostile space nearby draws enemy interceptors.</p><div class="tblw"><table class="t"><thead><tr><th>Wanted</th><th>Where</th><th class="r">Reward</th><th class="r">Time left</th></tr></thead><tbody>`;
+    if(blks.length){h+=`<div class="h3" style="margin-top:14px">⚠ Blockade runs${blks.some(k=>k.cont)?' and containment supply':''}</div><p class="note" style="margin:0 0 8px">These ${esc(FACTIONS[P.faction].short)} stations are cut off, under siege${blks.some(k=>k.cont)?' or holding the line against the Bloom':''}. Bring the goods in person: anything you own counts, even goods bought on a market. Carrying them through hostile space nearby draws enemy interceptors.</p><div class="tblw"><table class="t"><thead><tr><th>Wanted</th><th>Where</th><th class="r">Reward</th><th class="r">Time left</th></tr></thead><tbody>`;
       for(const k of blks){const R2=S.stations[k.st],j=HOP[k.st][P.sector]||0;h+=`<tr><td>${chip(k.item,k.n,countIn(k.item,[P.cargo,P.vault]))}${jobLine(k)}</td><td>${esc(R2?R2.name:DEF[k.st].name)}<br><span class="mass" style="margin:0">${esc(DEF[k.st].name)} · ${j} jump${j===1?'':'s'} · ${esc(k.why||'')}</span></td><td class="r num">${fmt(k.reward)} cr</td><td class="r num">${Math.max(0,Math.round((k.until-S.T)/60))} min</td></tr>`}h+=`</tbody></table></div>`}
     if(reqs.length){h+=`<div class="h3" style="margin-top:14px">Freeport requests elsewhere</div><div class="tblw"><table class="t"><thead><tr><th>Wanted</th><th>Where</th><th class="r">Reward</th><th class="r">Time left</th><th></th></tr></thead><tbody>`;
       for(const k of reqs){const R=S.stations[k.st],b=fpBuyable(c,P,k);h+=`<tr><td>${chip(k.item,k.n,fpDeliverable(P,k,[P.cargo,P.vault]))}${jobLine(k)}${b?`<span class="mass">here: ${b.stock} in stock · ${fmt(b.pr)} cr each</span>`:''}</td><td>${esc(R?R.name:DEF[k.st].name)}<br><span class="mass" style="margin:0">${esc(DEF[k.st].name)} · ${HOP[k.st][P.sector]} jump${HOP[k.st][P.sector]===1?'':'s'}${covered(k.st)?'':' · unscouted'}</span></td><td class="r num">${fmt(k.reward)} cr</td><td class="r num">${Math.max(0,Math.round((k.until-S.T)/60))} min</td><td><div class="act">${b&&b.need>0?`<button class="btn sm" data-act="hbuy" data-arg="${k.id}" ${b.n>0?'':'disabled'} title="${b.n<b.need?'Limited by stock, hold space or credits':''}">Buy ${b.n||b.need} to hold · ${fmt(Math.round((b.n||b.need)*b.pr))} cr</button>`:''}<button class="btn sm" data-act="croute" data-arg="${k.st}">Set course</button></div></td></tr>`}h+=`</tbody></table></div><p class="note">Freeport requests are hauling runs: goods you buy at a faction market count, so buy here, carry them across the void and deliver in person. Goods bought at the freeport itself don't count there.</p>`}
@@ -2978,7 +3063,7 @@ function spawnNPC(role,side,initial,lead){
   if(!takeFrom(ld,srcs))return null;
   if((cls==='heavy'&&tier>=2||cls==='bomber'||cls==='gunboat')&&srcs.some(x=>(x.swarm||0)>0)&&Math.random()<.6){takeFrom({swarm:1},srcs);ld.swarm=1}
   let tuned=0;if(lr==='patrol'&&srcs.some(x=>(x.tune||0)>0)&&Math.random()<.55){takeFrom({tune:1},srcs);ld.tune=1;tuned=1}
-  const e=makeNPC(role,side,cls,tier,ld,'stock:'+side);if(tuned){e.tuned=1;e.st=shipStats(side==='pirate'?null:side,cls,tier,1);e.hull=e.st.hull;e.shield=e.st.sCap}
+  const e=makeNPC(role,side,cls,tier,ld,'stock:'+side);if(role==='miner'&&side==='brood'){const st=S.econ.stock.brood||{};let left={skiff:14,prospector:24,dredger:36}[cls]||20;for(const k of['fe','cu','ir','xc','nu','au']){if(left<=0)break;const m=inv.take(st,k,Math.min(left,ri(4,12)));if(m){inv.add(e.cargo,k,m);left-=m}}}if(tuned){e.tuned=1;e.st=shipStats(side==='pirate'?null:side,cls,tier,1);e.hull=e.st.hull;e.shield=e.st.sCap}docFit(e,tuned);
   const sEnt=W.stationEnt&&W.stationEnt.fac===side?W.stationEnt:null;
   if(role==='hauler'){const gs=GATES[W.sid],D=sEnt?sEnt:W.outpostEnt&&W.outpostEnt.o.owner===side?W.outpostEnt:null;const g=pick(gs);let dest=pick(gs.filter(x=>x!==g));e.x=g.x*.94;e.y=g.y*.94;e.z=g.z*.94;
     if(D&&(!dest||Math.random()<.35)){if(Math.random()<.5)dest=D;else{dest=g;const o=rdir(.4);e.x=D.x+o.x*190;e.y=D.y+o.y*190;e.z=D.z+o.z*190}}e.ai.dest=dest||g;
@@ -3703,7 +3788,7 @@ function fireLaser(e){if(jamDark(e))return;if(e.cool>0||e.landed||e.stealth||(e.
   if(e.energy<cost){if(e.isPlayer&&W.t-(W.lowEMsg||0)>2.5){flash('Lasers need energy. Let the reactor recharge or switch to kinetic (1).');W.lowEMsg=W.t}return}
   e.cool=1/LASER_ROF;e.energy-=cost;e.lastFire=W.t;const R=laserRay(e,LASER_RANGE),dmg=e.st.dmg*.5;
   if(e.isPlayer)AU.lasT=W.t;else if(W.t-(e.sndT||0)>.45){e.sndT=W.t;SFX.laserNpc(vAt(e))}
-  if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg*(e.st.cautery?(R.hit.ref.side==='brood'&&R.hit.ref.role==='builder'?1.4:.8):1),e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1*(e.st.cautery&&R.hit.ref.fac==='brood'?1.4:1),e.side,'laser');if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
+  if(R.hit){if(R.hit.kind==='ship')(R.src=e,damageShip(R.hit.ref,dmg*(e.st.cautery?(R.hit.ref.side==='brood'&&R.hit.ref.role==='builder'?1.4:.8):1),e.side,R,'laser'));else if(R.hit.kind==='torp'){R.hit.ref.hp-=dmg;if(R.hit.ref.hp<=0)killTorp(R.hit.ref,e.side)}else if(R.hit.kind==='station'){damageStation(R.hit.ref,dmg*1.1*(e.st.cautery&&R.hit.ref.fac==='brood'?1.4:1),e.side,'laser',e);if(Math.random()<.5)fxSpark(R,'#9fd0ff',1)}else{if(R.hit.kind==='outpost')damageOutpost(R.hit.ref,dmg*.9);if(Math.random()<.5)fxSpark(R,'#ffe0b0',1)}}
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FACTIONS[S.player.faction].col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
   {const me=W.player;if(me&&e.alive&&!e.ghost){if(e===me){if(srcSide&&srcSide!==me.side)musHit(e.shield>0)}else if(at&&(at.src===me||at===me))musHit(e.shield>0)}}
@@ -3883,7 +3968,7 @@ function wreckWorld(dt){const s=S.sectors[W.sid];if(!s.wrecks||!s.wrecks.length)
       if(n&&p&&!S.player.docked)feed(`✕ Brood scavengers (${n}) have come through the gate for the ${w.name} wreck.`,'warn')}
     if(Math.random()<dt*.8&&!MUTE){const pt=pick(w.pts);fxSpark(pt,'#ffb066',2)}}}
 function killShip(e,src,at){
-  e.alive=false;e.killed=true;if(e.sortie||e.sortieEv){const ev=S.events.find(v=>v.id===(e.sortie||e.sortieEv));if(ev){if(e.sortie&&ev.stage==='gather')ev.pending=Math.max(0,ev.pending-1);if(e.sortieEv){const i=ev.craft.indexOf(e.cls);if(i>=0)ev.craft.splice(i,1);ev.lost++}}}if(e.role==='trader'&&e.home.startsWith('trader:'))traderLost(e);if(e.role==='scout'&&e.home.startsWith('scout:')){const id=e.home.split(':')[1];S.scouts=S.scouts.filter(t=>String(t.id)!==id);if(e.side===S.player.faction)feed(`Our scout was shot down in ${DEF[W.sid].name}.`,'bad')}fxBoom(e,e.st.radius*2.6,e.isPlayer?PLAYER_COL:sideCol(e.side));
+  e.alive=false;e.killed=true;if(e.sortie||e.sortieEv){const ev=S.events.find(v=>v.id===(e.sortie||e.sortieEv));if(ev){if(e.sortie&&ev.stage==='gather')ev.pending=Math.max(0,ev.pending-1);if(e.sortieEv){const i=ev.craft.indexOf(e.cls);if(i>=0)ev.craft.splice(i,1);ev.lost++}}}if((e.role==='trader'||e.role==='hauler')&&src==='pirate'&&FAC_IDS.includes(e.side)){S.raidT=S.raidT||{};S.raidT[e.side]=S.T}if(e.role==='trader'&&e.home.startsWith('trader:'))traderLost(e);if(e.role==='scout'&&e.home.startsWith('scout:')){const id=e.home.split(':')[1];S.scouts=S.scouts.filter(t=>String(t.id)!==id);if(e.side===S.player.faction)feed(`Our scout was shot down in ${DEF[W.sid].name}.`,'bad')}fxBoom(e,e.st.radius*2.6,e.isPlayer?PLAYER_COL:sideCol(e.side));
   if(e.drones)for(const d of e.drones)if(d.alive){d.role='leave';d.mom=null}
   if(e.side==='player'&&e.role==='drone')feed('One of your guard drones was destroyed.','bad');
   if(e.pickets)for(const p of e.pickets)if(p.alive){p.mom=null;p.role='leave'}
@@ -3918,13 +4003,13 @@ function respawn(){if(W&&W.player){W.player.landed=null;W.player.stealth=false;W
   const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';droneTopUp(P,P.vault,P.faction);
   enterSector(P.sector);openDock();save();
 }
-function damageStation(E,dmg,by,kind){if(by==='player'&&E&&E.fac==='brood'&&E.rec){E.rec.pHit=W.t}if(by==='player'&&W.player&&d3(E,W.player)<3000)musHit(((E.shield||0)>0)||((E.rec&&E.rec.shield)||0)>0);if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
+function damageStation(E,dmg,by,kind,src){if(E&&E.fac==='brood'&&E.rec){const k=src&&src.rp?src.rp:by==='player'?'me':null;if(k){(E.rec.pHits=E.rec.pHits||{})[k]=W.t;E.rec.pHit=W.t}}if(by==='player'&&W.player&&d3(E,W.player)<3000)musHit(((E.shield||0)>0)||((E.rec&&E.rec.shield)||0)>0);if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
   E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
   if(!E.offline){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.offline=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! Its turrets are offline and the hull is exposed.`:`${E.name}'s shield collapsed. Its turrets are offline and the hull is exposed.`,mine?'bad':'warn')}
   if(!R||dmg<=0)return;R.hull-=dmg;if(Math.random()<.3)fxSpark({x:E.x+rnd(-60,60),y:E.y+rnd(-60,60),z:E.z+rnd(-60,60)},'#ffcf8a',3);
   if(R.hull<=0&&R.kind==='depot'&&R.owner!=='brood'&&E.lastHitBy&&E.lastHitBy!=='brood'){const g=garrison(R);if(capLoads(R.sid,E.lastHitBy)>=g){useLoads(R.sid,E.lastHitBy,g,R);captureDepot(R.sid,E.lastHitBy);return}}
   if(R.hull<=0&&R.kind==='free'){razeStation(R.sid,'brood');return}
-  if(R.hull<=0){if(R.kind!=='depot'){R.hull=1;if(W.t+40>E.offline){E.offline=W.t+40;feed(`${E.name} is crippled: dark for 40 s.`,friendSide(E.fac)?'bad':'warn')}}else{if(R.owner==='brood'&&R.kind==='depot'&&R.pHit!=null&&W.t-R.pHit<60&&FAC_IDS.includes(S.player.faction)){const young=S.T-(R.built==null?-1e9:R.built)<CONTAIN.youngT,c=transfer(S.player.faction,'player',young?CONTAIN.young:CONTAIN.node);if(c)feed(`Containment order: Bloom Node burned${young?' before it rooted':''}. +${fmt(c)} cr.`,'good')}razeStation(R.sid,E.lastHitBy)}}}
+  if(R.hull<=0){if(R.kind!=='depot'){R.hull=1;if(W.t+40>E.offline){E.offline=W.t+40;feed(`${E.name} is crippled: dark for 40 s.`,friendSide(E.fac)?'bad':'warn')}}else{if(R.owner==='brood'&&R.kind==='depot'){const young=S.T-(R.built==null?-1e9:R.built)<CONTAIN.youngT;for(const k in R.pHits||{}){if(W.t-R.pHits[k]>=60)continue;const P=isMe(k)?S.player:S.pilots&&S.pilots[k];if(!P||!FAC_IDS.includes(P.faction))continue;const c=payKey(k,P.faction,young?CONTAIN.young:CONTAIN.node);if(c)keyFeed(k,`Containment order: Bloom Node burned${young?' before it rooted':''}. +${fmt(c)} cr.`,'good')}}razeStation(R.sid,E.lastHitBy)}}}
 // a razed depot leaves its frames as drifting debris; anything stored in it spills out as salvage
 // a frigate that breaks a faction depot takes it over: new flag, a third of its hull back, half its store to the captor
 function captureDepot(sid,side){const R=S.stations[sid];if(!R||R.owner==='neutral')return;if(side==='player')side=S.player.faction;const prev=R.owner;if(!FACTIONS[side]||prev===side)return;
@@ -3932,7 +4017,7 @@ function captureDepot(sid,side){const R=S.stations[sid];if(!R||R.owner==='neutra
   if(S.distress)S.distress=S.distress.filter(d=>d.sid!==sid);
   const pf=S.player.faction;if(side===pf||prev===pf||covered(sid))feed(side===pf?`Our assault ships have taken the depot in ${DEF[sid].name}. It flies the ${FACTIONS[side].short} flag now.`:prev===pf?`The depot in ${DEF[sid].name} has been captured by ${sideName(side)} assault ships.`:`${sideName(side)} assault ships captured the depot in ${DEF[sid].name}.`,side===pf?'good':prev===pf?'bad':'news');
   const w=WORLDS[sid];if(w)inW(w,()=>{const E=W.stationEnt;if(E&&E.rec===R){if(W===LW&&S.player.docked==='station')undock();if(NET.host)netKickDocked(sid,'station',side);fxBoom(E,200,sideCol(side));const i=W.ents.indexOf(E);if(i>=0)W.ents.splice(i,1);W.stationEnt=null;const N=addStationEnt(R);N.shield=0;N.offline=W.t+20}})}
-function razeStation(sid,by){const R=S.stations[sid];if(!R||(R.owner==='neutral'&&by!=='brood'))return;const s=S.sectors[sid];if(R.owner==='neutral'){S.fpDown=S.fpDown||{};S.fpDown[sid]=S.T;S.contracts=S.contracts.filter(c=>c.st!==sid)}toDebris(s,R.fort);R.fort={};if(R.store){toDebris(s,R.store);R.store={}}wkRaze(sid);for(const P of allPilots()){if(P.vaults&&P.vaults[sid]){toDebris(s,P.vaults[sid]);delete P.vaults[sid]}if(P.vaultAt===sid){toDebris(s,P.vault);P.vault={};P.vaultAt=undefined}}
+function razeStation(sid,by){const R=S.stations[sid];if(!R||(R.owner==='neutral'&&by!=='brood'))return;const s=S.sectors[sid];if(R.owner==='neutral'){S.fpDown=S.fpDown||{};S.fpDown[sid]=S.T;S.contracts=S.contracts.filter(c=>c.st!==sid)}{const ft=R.owner==='brood'&&R.gut?brFeast(s,R):0;if(ft&&(covered(sid)||W&&W.sid===sid))feed(`The ${R.name}'s gut spills: ${fmt(ft)} t of ore in dense, rich rock where it stood.`,'good')}toDebris(s,R.fort);R.fort={};if(R.store){toDebris(s,R.store);R.store={}}wkRaze(sid);for(const P of allPilots()){if(P.vaults&&P.vaults[sid]){toDebris(s,P.vaults[sid]);delete P.vaults[sid]}if(P.vaultAt===sid){toDebris(s,P.vault);P.vault={};P.vaultAt=undefined}}
   if(Object.keys(R.stock).length){s.crates.push({id:S.nextId++,x:Math.round(R.x),y:Math.round(R.y),z:Math.round(R.z),inv:R.stock,until:S.T+400});R.stock={}}
   delete S.stations[sid];
   const who=by?sideName(by):'attackers',mine=friendSide(R.owner);if(R.owner==='neutral')allFeed(`⚠ ${R.name} has been devoured by the Brood. Its market, requests and refits are gone until the Compact can rebuild.`,'bad');else if(mine||covered(sid))feed(by==='brood'?`${R.name} has been devoured by the Brood.`:`${R.name} was destroyed by ${who}.`,mine?'bad':R.owner==='brood'?'good':'news');
@@ -4029,7 +4114,7 @@ function detonate(m,i){const s=S.sectors[W.sid],tp=m.kind==='torpedo',sw=m.kind=
   for(const e of W.ents.slice()){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead))continue;if(!hostile(m.side,e.side))continue;const d=d3(e,m);if(d<BR+e.st.radius){
     const bare=!tp&&e.shield<=e.st.sCap*.05,mul=bare?BARE_MUL:1;if(bare){fxSpark(e,'#ff9a6a',sw?3:8);if(m.side==='player'&&W.t-(W.bareT||-9)>1.5){W.bareT=W.t;flash('Shields down: missiles hit for ×1.8!')}}
     damageShip(e,(m.incend?(e.side==='brood'&&e.role==='builder'?1.5:.75):1)*m.dmg*mul*(d<e.st.radius+28?1:.45)*(tp&&e.role!=='frigate'?TORP_SMALL:1),m.side,m)}}
-  if(m.tgt&&m.tgt.type==='station'&&W.stationEnt===m.tgt&&hostile(m.side,m.tgt.fac)&&d3(m.tgt,m)<240)damageStation(m.tgt,m.dmg*(tp?TORP_STATION:1)*(m.incend&&m.tgt.fac==='brood'?1.5:1),m.side,m.kind);
+  if(m.tgt&&m.tgt.type==='station'&&W.stationEnt===m.tgt&&hostile(m.side,m.tgt.fac)&&d3(m.tgt,m)<240)damageStation(m.tgt,m.dmg*(tp?TORP_STATION:1)*(m.incend&&m.tgt.fac==='brood'?1.5:1),m.side,m.kind,m.src);
   if(W.works&&W.works.length)wkBlast(m,tp,BR);
   const T=m.tgt;if(T&&T.type==='outpost'&&!T.o.breached&&T.o.owner&&hostile(m.side,T.o.owner)&&d3(T,m)<(tp?230:170))damageOutpost(T,m.dmg*(tp?3:1.5));
   toDebris(s,m.inv)}
@@ -4096,6 +4181,7 @@ function npcThink(e,dt){
   if(isBmb(e.cls)&&ai.tgt&&ai.tgt.role==='frigate'&&ai.tgt.alive&&W.ents.includes(ai.tgt)&&(e.load.torpedo||0)>0){if(ai.stand&&d3(ai.stand,ai.tgt)>2300)ai.stand=null;bomberRun(e,ai.tgt,dt);return}
   if(e.role==='strike'&&ai.siege&&ai.tgt){const T=W.stationEnt;if(isBmb(e.cls)||(T&&d3(ai.tgt,T)>2600))ai.tgt=null}
   if(combat&&ai.tgt){fight(e,ai.tgt,dt);return}
+  if((e.role==='pirate'||(e.role==='miner'&&e.side==='brood'))&&!ai.tgt&&cloudSeek(e,dt))return;
   const OE=W.outpostEnt,SE=W.stationEnt;
   switch(e.role){
     case 'flee':{e.boosting=true;
@@ -4490,7 +4576,7 @@ function shotsUpdate(dt){
     if(!hit)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e===b.src)continue;if(e.isPlayer&&(S.player.docked||W.dead))continue;if(!hostile(b.side,e.side))continue;if(segHit(ox,oy,oz,b.x,b.y,b.z,e,e.st.radius*1.15+5)){if(b.jam)jamHit(e,b);else damageShip(e,b.dmg,b.side,b,b.cap?'capital':'kinetic');if(b.cap)fxBoom(b,40,'#ffd9a0');hit=true;break}}
     if(!hit&&!(b.src&&b.src.cls!=='frigate'))for(const m of W.missiles){if(m.kind!=='torpedo'||!hostile(b.side,m.side))continue;if(segHit(ox,oy,oz,b.x,b.y,b.z,m,16)){m.hp-=b.dmg;fxSpark(m,'#ffe0b0',3);if(m.hp<=0)killTorp(m,b.side);hit=true;break}}
     if(!hit&&OE&&OE.o.owner&&!OE.o.breached&&hostile(b.side,OE.o.owner)&&segHit(ox,oy,oz,b.x,b.y,b.z,OE,OE.r)){damageOutpost(OE,b.dmg);hit=true}
-    if(!hit&&SE&&hostile(b.side,SE.fac)){if(!SE.offline&&SE.shield>0&&segHit(ox,oy,oz,b.x,b.y,b.z,SE,165)){damageStation(SE,b.dmg,b.side,b.cap?'capital':'kinetic');fxSpark(b,'#9fd0ff',3);if(b.cap)fxBoom(b,50,'#9fd0ff');hit=true}else if(segHit(ox,oy,oz,b.x,b.y,b.z,SE,75)){if(SE.offline||SE.shield<=0)damageStation(SE,b.dmg,b.side,b.cap?'capital':'kinetic');if(b.cap)fxBoom(b,50,'#ffd9a0');fxSpark(b,'#ffd9a0',2);hit=true}}
+    if(!hit&&SE&&hostile(b.side,SE.fac)){if(!SE.offline&&SE.shield>0&&segHit(ox,oy,oz,b.x,b.y,b.z,SE,165)){damageStation(SE,b.dmg,b.side,b.cap?'capital':'kinetic',b.src);fxSpark(b,'#9fd0ff',3);if(b.cap)fxBoom(b,50,'#9fd0ff');hit=true}else if(segHit(ox,oy,oz,b.x,b.y,b.z,SE,75)){if(SE.offline||SE.shield<=0)damageStation(SE,b.dmg,b.side,b.cap?'capital':'kinetic',b.src);if(b.cap)fxBoom(b,50,'#ffd9a0');fxSpark(b,'#ffd9a0',2);hit=true}}
     if(!hit&&W.works&&W.works.length&&wkShot(b,ox,oy,oz))hit=true;
     if(!hit)for(const a of s.ast){if(d3(a,b)<astR(a)){fxSpark(b,'#b9ab96',2);hit=true;break}}
     if(hit)W.shots.splice(i,1)}
@@ -4511,7 +4597,7 @@ function worldUpdate(dt){
   if(W.pendingFJump){const J=W.pendingFJump;W.pendingFJump=null;bridgeJump(J.tok,J.to);return}
   if(W.bridge)bridgeUpdate(dt);
   if(W.gunseat)gunseatUpdate(dt);
-  if(JIN.t<JIN.d)JIN.t+=dt;if(W.docking&&!W.jump)dockingUpdate(dt);else if(W.detach&&!W.jump)detachUpdate(dt);else if(!W.jump&&JIN.t>=.45)playerUpdate(dt);else if(!W.jump)levelRoll(W.player,dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}if(NET.cl)beaconLocal(dt);if(!W.jump)pingTick(dt)}
+  if(JIN.t<JIN.d)JIN.t+=dt;if(W.docking&&!W.jump)dockingUpdate(dt);else if(W.detach&&!W.jump)detachUpdate(dt);else if(!W.jump&&JIN.t>=.45)playerUpdate(dt);else if(!W.jump)levelRoll(W.player,dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}if(NET.cl)beaconLocal(dt);if(!W.jump){pingTick(dt);spotTick(dt);fgScout()}}
   if(NET.cl){clientWorld(dt);return}
   if(NET.host)netWorld(dt);
   groupsUpdate();
@@ -5354,7 +5440,7 @@ function hudUpdate(){
   for(const g of GATES[W.sid])if(S.gateDown[gateKey(W.sid,g.to)])chips.push(['Gate to '+DEF[g.to].name+' down','bad']);
   for(const ev of S.events){if(ev.sector!==W.sid)continue;if(ev.type==='comet')chips.push(['Comet in sector','good']);if(ev.type==='derelict')chips.push(['Derelict cargo','good']);if(ev.type==='offensive'){if(ev.stage==='engaged')chips.push([`${sideName(ev.att)} assault in progress`,'bad']);else if(evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'swarm':'strike'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,'warn'])}if(ev.type==='build'&&ev.stage==='inbound'&&evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'Seeder':'constructor'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,friendSide(ev.att)?'good':'warn'])}
   if(o&&o.cap.p>0)sc.push([`${o.name}: ${sideName(o.cap.side)} claiming ${Math.round(o.cap.p*100)}%`,o.cap.side==='player'?'good':'warn']);
-  {const bc=beaconChip();if(bc)sc.push(bc)}{const pc=pingChip();if(pc)sc.push(pc)}{const cc=convoyChip();if(cc)sc.push(cc)}
+  {const bc=beaconChip();if(bc)sc.push(bc)}{const pc=pingChip();if(pc)sc.push(pc)}{const sp=spotChip();if(sp)sc.push(sp)}{const cc=convoyChip();if(cc)sc.push(cc)}
 
   // your own ship's status lives with the ship readout at the bottom: hold, mining, handling, flight modes
   {const m=invMass(P.cargo),cap=p.st.cargo||1,f=m/cap;sc.unshift([`Hold ${m}/${cap} t`,f>=.98?'bad':f>.7?'warn':''])}
@@ -5378,7 +5464,7 @@ function hudUpdate(){
     $('contacts').innerHTML=`<div class="ctt"><span>Contacts</span>${nh?`<b>${nh} hostile</b>`:'<span>No hostiles</span>'}</div>`+structRows(ref,selR)+cl.map(([e,d,h])=>`<button type="button" class="ct${h?' h':''}${selR===e?' sel':''}" data-cid="${e.id}"><i style="background:${sideCol(e.side)}"></i><span>${esc(shipLabel(e))}${(n=>n?` <small style="opacity:.6">+${n} drone${n>1?'s':''}</small>`:'')((e.drones||[]).filter(d=>d.alive).length)}</span><em>${selR===e?'<u class="cs t">target</u>':(st=>st?`<u class="cs ${st[1]}">${st[0]}</u>`:'')(stOf(e))}${fmt(d)} m</em></button>`).join('')+`<div class="ctk">${detAll()?'Full sector picture':'Radar 2.8 km · a scout or friendly station shows the whole sector'} · T nearest · Y assist · Q next · G ahead · I friendly</div>`
 }
   let th='';if(W.tgt&&validTgt(W.tgt)){const T=W.tgt.ref,dist=Math.round(d3(T,p));
-    if(W.tgt.kind==='ship'){const col=sideCol(T.side);th=`<div class="tp"><div class="tn" style="color:${col}">${esc(aceOfEnt(T)&&T.pname?T.pname:T.tok?T.tok.name:hullName(T.side==="player"?S.player.faction:T.side,T.cls))}</div>${aceTgtLine(T)}<div class="ts">${esc(sideName(T.side))} · ${CLASSES[T.cls].name} · ${T.role==='strike'?'strike group':T.role==='frigate'?'capital ship':T.role} · Mk ${ROMAN[T.tier]} · ${T.wpn==='laser'?'lasers':'kinetic'} · ${hostile('player',T.side)?'hostile':'friendly'}${T.tuned?' · <span style="color:#6ff2cf">Aurora-tuned ✦</span>':''}</div>${T.role==='frigate'?(T.cls==='escort'?'<div class="ts" style="color:var(--amber)">Light capital: guns and missiles wear it down; a torpedo that hits guts it</div>':'<div class="ts" style="color:var(--amber)">Capital ship: guns drain its shield; only torpedoes and capital guns hurt its hull</div>'):''}
+    if(W.tgt.kind==='ship'){const col=sideCol(T.side);th=`<div class="tp"><div class="tn" style="color:${col}">${esc(aceOfEnt(T)&&T.pname?T.pname:T.tok?T.tok.name:hullName(T.side==="player"?S.player.faction:T.side,T.cls))}</div>${aceTgtLine(T)}<div class="ts">${esc(sideName(T.side))} · ${CLASSES[T.cls].name} · ${T.role==='strike'?'strike group':T.role==='frigate'?'capital ship':T.role} · Mk ${ROMAN[T.tier]} · ${T.wpn==='laser'?'lasers':'kinetic'} · ${hostile('player',T.side)?'hostile':'friendly'}${T.tuned?' · <span style="color:#6ff2cf">Aurora-tuned ✦</span>':''}</div>${T.vr?`<div class="ts" style="color:#9fe0c8">Fitted: ${Object.values(T.vr).map(id=>esc(VARIANTS[id].name)+' ('+esc(VARIANTS[id].cost)+')').join(', ')}</div>`:''}${T.side==='brood'&&T.role==='miner'&&invMass(T.cargo||{})>0?`<div class="ts" style="color:#9be35a">Belly: ${fmt(invMass(T.cargo))} t of ore. It spills when the Grazer dies.</div>`:''}${T.role==='frigate'?(T.cls==='escort'?'<div class="ts" style="color:var(--amber)">Light capital: guns and missiles wear it down; a torpedo that hits guts it</div>':'<div class="ts" style="color:var(--amber)">Capital ship: guns drain its shield; only torpedoes and capital guns hurt its hull</div>'):''}
       <div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.st.sCap*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(T.hull)}</b></div><div class="mini"><i style="width:${T.hull/T.st.hull*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
     else if(W.tgt.kind==='ast')th=`<div class="tp"><div class="tn">${T.comet?'Comet':T.seam?'Xenocrystal Seam':'Asteroid'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${ITEMS[k].name} ${T.ore[k]} t`).join(' · ')}</div>${T.seam?'<div class="ts" style="color:#d9bbff">Protected home vein: a limited supply that refills slowly. Turn it into Crystal Lattice and Resonance Cores at your home station.</div>':''}<div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Fire charges at its fault points with F (rings turn green on point), back off 120 m and press 3. Hold F by the ore cloud to collect it.</div></div>`;
     else if(W.tgt.kind==='beacon'){const own=T.owner,mine=T.by&&isMe(T.by),sc=isScoutCls(S.player.cls);th=`<div class="tp"><div class="tn" style="color:${own?sideCol(own):'var(--ivory)'}">Sector beacon</div><div class="ts">${own?'Held by '+FACTIONS[own].name+(T.by?' · flipped '+fmtT(S.T-T.T)+' ago':''):'Unclaimed'}${mine?' · <b>yours</b>, paying '+BCN_RES+' cr/min':''}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">${own===S.player.faction?'Scanning this system for your side.':sc?`Hold within ${BCN_R} m for ${BCN_T} s to flip it: +${BCN_FLIP} cr, then ${BCN_RES} cr a minute (for ${BCN_RES_T/60} min after your last flip or re-secure) and a constant scan here.`:'Only a Scout or Advanced Scout can flip it.'}</div></div>`}
@@ -5389,7 +5475,7 @@ function hudUpdate(){
       <div class="row">Shield<b>${Math.round(o2.shield)}</b></div><div class="mini"><i style="width:${o2.shield/os.sMax*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(o2.hull)}</b></div><div class="mini"><i style="width:${o2.hull/os.hMax*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
     else if(W.tgt.kind==='gate'){const down=S.gateDown[gateKey(W.sid,T.to)],nx=routeNext();th=`<div class="tp"><div class="tn">Jumpgate</div><div class="ts">To ${esc(DEF[T.to].name)}${down?' · COLLAPSED':''}${nx&&nx.to===T.to?' · next jump on your course':''}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">J autopilot · hold Z to face it</div></div>`}
     else if(W.tgt.kind==='works'){const fr=wkHp(T)/wkMax(T);th=`<div class="tp"><div class="tn" style="color:${sideCol(T.fac)}">${esc(T.name)}</div>${hostile('player',T.fac)?'<div class="ts" style="color:var(--amber)">Armoured: only torpedoes and capital guns damage it</div>':''}<div class="ts">${T.fac==='player'?'Your':FACTIONS[T.fac]?FACTIONS[T.fac].short:'Freeport'} ${T.k==='yard'||T.k==='yardb'?'capital shipyard':'station module'+(T.lvl>1?' · level '+T.lvl:'')}${T.k==='yardb'?' · '+Math.round(wkProg(T)*100)+'% built':''}</div><div class="row">Structure<b>${Math.round(fr*100)}%</b></div><div class="mini"><i style="width:${fr*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
-    else if(W.tgt.kind==='station')th=`<div class="tp"><div class="tn" style="color:${sideCol(T.fac)}">${esc(T.name)}</div>${hostile('player',T.fac)?'<div class="ts" style="color:var(--amber)">Armoured: only torpedoes damage it</div>':''}<div class="ts">${T.fac==='player'?'Your':FACTIONS[T.fac]?FACTIONS[T.fac].name:sideName(T.fac)} ${T.kind==='hive'?'hive':T.core?'station':'depot'}${T.rec?` · hull ${Math.round(T.rec.hull/T.rec.hMax*100)}%`:''} · ${T.turrets.length} turrets${T.offline?' · OFFLINE':''}</div><div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.sMax*100}%;background:#6fb7ff"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
+    else if(W.tgt.kind==='station')th=`<div class="tp"><div class="tn" style="color:${sideCol(T.fac)}">${esc(T.name)}</div>${hostile('player',T.fac)?'<div class="ts" style="color:var(--amber)">Armoured: only torpedoes damage it</div>':''}<div class="ts">${T.fac==='player'?'Your':FACTIONS[T.fac]?FACTIONS[T.fac].name:sideName(T.fac)} ${T.kind==='hive'?'hive':T.core?'station':'depot'}${T.rec?` · hull ${Math.round(T.rec.hull/T.rec.hMax*100)}%`:''} · ${T.turrets.length} turrets${T.offline?' · OFFLINE':''}</div>${T.rec&&T.rec.owner==='brood'&&T.rec.kind==='depot'?`<div class="ts" style="color:#9be35a">${T.rec.built!=null&&S.T-T.rec.built<CONTAIN.youngT?`Rooting: burn it in ${fmtT(CONTAIN.youngT-(S.T-T.rec.built))} for ${fmt(CONTAIN.young)} cr · `:''}Gut: ${fmt(invMass(T.rec.gut||{}))} t of ore</div>`:''}<div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.sMax*100}%;background:#6fb7ff"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
   if(th&&W.lock.ref&&W.tgt&&W.lock.ref===W.tgt.ref){const L=W.lock;th=th.slice(0,-6)+`<div class="row">Missile lock<b style="color:${L.locked?'var(--danger)':'var(--amber)'}">${L.locked?'LOCKED · press C':Math.round(L.p*100)+'%'}</b></div><div class="mini"><i style="width:${L.p*100}%;background:${L.locked?'var(--danger)':'var(--amber)'}"></i></div></div>`}
   else if(th&&lockable(W.tgt)&&P.rack>0)th=th.slice(0,-6)+`<div class="ts">Keep it inside the dashed lock ring to lock missiles.</div></div>`;
   $('hTgt').innerHTML=th;commsUpdate();
@@ -5489,7 +5575,7 @@ function renderDock(){
       if(t<MK_TOP){const r=upgRecipe(sl.id,t+1),fee=c.fee?Math.ceil(invValue(r)*.08):0,needF=false;rq=Object.keys(r).map(i=>chip(i,r[i],countIn(i,srcs))).join('')+(fee?`<span class="req ${P.credits>=fee?'ok':'no'}">${fee} cr fee</span>`:'')+(needF?'<span class="req no">Forge only</span>':'');
         btn=`<button class="btn" data-act="upg" data-arg="${sl.id}" ${!needF&&haveIn(r,srcs)&&P.credits>=fee?'':'disabled'}>To Mk ${ROMAN[t+1]}</button>`}else rq='<span class="ss" style="color:var(--amber)">Fully upgraded</span>';
       {const l=(P.tune||{})[sl.id]||0;if(l<TUNE_MAX){const need=l+1;btn+=` <button class="btn" data-act="tune" data-arg="${sl.id}" title="Aurora Tuning: ${sl.id==='payload'?'2 s off every reload':'+'+Math.round(TUNE_STEP*100)+'% on this component'} (uses ${need} Aurora Tuning)" ${countIn('tune',srcs)>=need?'':'disabled'}>Attune ✦${need} · ${need}</button>`}}
-      {const vl=VAR_BY_SLOT[sl.id]||[],vr=(P.tune&&P.tune.vr)||{},fv=vr[sl.id];if(vl.length)vrow=t<2?`<div class="note" style="margin:4px 0 0">Variants open at Mk II.</div>`:`<div class="act" style="margin-top:4px;flex-wrap:wrap">${vl.map(id=>{const V=VARIANTS[id],own=countIn('v_'+id,srcs),on=fv===id,can=own>0||haveIn(V.recipe,srcs);return on?`<button class="btn sm pri" data-act="vrem" data-arg="${sl.id}" title="${esc(V.gain+' · '+V.cost)} · click to remove">✓ ${esc(V.name)}</button>`:`<button class="btn sm" data-act="vfit" data-arg="${sl.id}:${id}" ${can?'':'disabled'} title="${esc(V.gain+' · '+V.cost)} · ${own?own+' spare':esc(Object.keys(V.recipe).map(k=>V.recipe[k]+' '+ITEMS[k].name).join(', '))}">${esc(V.name)}${own?' ·'+own:''}</button>`}).join('')}</div>`;else vrow=''}
+      {const vl0=VAR_BY_SLOT[sl.id]||[],vl=t<2?vl0.filter(id=>VARIANTS[id].spec):vl0,vr=(P.tune&&P.tune.vr)||{},fv=vr[sl.id];if(vl0.length)vrow=t<2&&!vl.length?`<div class="note" style="margin:4px 0 0">Variants open at Mk II.</div>`:`<div class="act" style="margin-top:4px;flex-wrap:wrap">${t<2?'<span class="note" style="margin:0 6px 0 0">General variants open at Mk II; specialists fit now:</span>':''}${vl.map(id=>{const V=VARIANTS[id],own=countIn('v_'+id,srcs),on=fv===id,can=own>0||haveIn(V.recipe,srcs);return on?`<button class="btn sm pri" data-act="vrem" data-arg="${sl.id}" title="${esc(V.gain+' · '+V.cost)} · click to remove">✓ ${esc(V.name)}</button>`:`<button class="btn sm" data-act="vfit" data-arg="${sl.id}:${id}" ${can?'':'disabled'} title="${esc(V.gain+' · '+V.cost)} · ${own?own+' spare':esc(Object.keys(V.recipe).map(k=>V.recipe[k]+' '+ITEMS[k].name).join(', '))}">${esc(V.name)}${own?' ·'+own:''}</button>`}).join('')}</div>`;else vrow=''}
       h+=`<div class="slot"><div><div class="sn">${sl.name}</div><div class="ss">${stat[sl.id]}</div></div><div><div class="mk">Mk ${ROMAN[t]}${(P.tune||{})[sl.id]?`<span style="color:#6ff2cf;font-size:.55em;vertical-align:middle" title="Aurora tuning"> ${'✦'.repeat(P.tune[sl.id])}</span>`:''}</div><div class="pips">${[1,2,3].map(i=>`<i class="${i<=t?'on':''}"></i>`).join('')}</div></div><div class="rq">${rq}</div><div>${btn}</div>${vrow?`<div style="grid-column:1/-1">${vrow}</div>`:''}</div>`}
     h+=`</div>`;
     }if(dockTab==='ship'){
@@ -5568,7 +5654,7 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
     while(made<lim&&haveIn(r,srcs)&&P.credits>=fee){takeFrom(r,srcs);inv.add(c.storage,k,1);if(fee)transfer('player',c.wallet,fee);made++}
     dockErr=made?`✓ Fabricated ${made} ${ITEMS[k].name}.`:(P.credits<fee?'Not enough credits for the labour fee.':'Missing materials.')}
   else if(act==='tune'){const l=(P.tune=P.tune||{})[arg]||0;if(l<TUNE_MAX){if(takeFrom({tune:l+1},srcs)){P.tune[arg]=l+1;refreshPlayerStats();dockErr=`✓ ${SLOT[arg].name} Aurora-tuned ${'✦'.repeat(l+1)} (+${Math.round(TUNE_STEP*100*(l+1))}%).`;feed(`${SLOT[arg].name} Aurora-tuned to level ${l+1}.`,'good')}else dockErr=`Needs ${l+1} Aurora Tuning (2 Aurorite + 1 Flux Coil each). Aurorite is only found in deep space.`}}
-  else if(act==='vfit'){const[sl,id]=String(arg).split(':'),V=VARIANTS[id];if(!V||V.slot!==sl||!SLOT[sl])return;if((P.tiers[sl]||1)<2){dockErr=`Variants open at Mk II. Upgrade the ${SLOT[sl].name} first.`;return}
+  else if(act==='vfit'){const[sl,id]=String(arg).split(':'),V=VARIANTS[id];if(!V||V.slot!==sl||!SLOT[sl])return;if(!V.spec&&(P.tiers[sl]||1)<2){dockErr=`General variants open at Mk II. Upgrade the ${SLOT[sl].name} first (specialists fit at any Mk).`;return}
     P.tune=P.tune||{};P.tune.vr=P.tune.vr||{};if(P.tune.vr[sl]===id)return;const item='v_'+id;
     if(countIn(item,srcs)>0)takeFrom({[item]:1},srcs);else if(haveIn(V.recipe,srcs))takeFrom(V.recipe,srcs);else{dockErr=`Missing parts for the ${V.name}.`;return}
     const old=P.tune.vr[sl];if(old)inv.add(c.storage,'v_'+old,1);P.tune.vr[sl]=id;refreshPlayerStats();dockErr=`✓ ${V.name} fitted to the ${SLOT[sl].name}.${old?` The ${VARIANTS[old].name} went to your ${c.storageName.toLowerCase()}.`:''}`;feed(`${SLOT[sl].name}: ${V.name} fitted.`,'good')}
@@ -5652,6 +5738,7 @@ function drawMap(){
     if(d.kind==='hive'){c.fillStyle=hexA(FACTIONS.brood.col,.7);for(let i=0;i<7;i++){const a=i/7*TAU+t*.3;c.beginPath();c.arc(x+Math.cos(a)*7,y+Math.sin(a)*7,3,0,TAU);c.fill()}}
     {const Rs=S.stations[d.id];if(Rs&&!d.home&&Rs.kind==='depot'){c.fillStyle=sideCol(Rs.owner);c.fillRect(x+r*.55,y-r*1.15,9,9);c.strokeStyle='#070b16';c.lineWidth=1.5;c.strokeRect(x+r*.55,y-r*1.15,9,9)}
       if(!Rs&&d.home&&d.kind==='frontier'){c.strokeStyle='#ff5d4f';c.lineWidth=2;c.beginPath();c.moveTo(x-6,y-6);c.lineTo(x+6,y+6);c.moveTo(x+6,y-6);c.lineTo(x-6,y+6);c.stroke()}}
+    brMapMarks(c,d,x,y,r,t);
     const oid=OUT_BY_SECTOR[d.id];if(oid){const o=S.outposts[oid];c.fillStyle=col;c.font='800 13px "Big Shoulders Display",sans-serif';c.textAlign='center';c.fillText(o.type==='forge'?'F':o.type==='relay'?'R':'Y',x,y+5);if(o.owner==='player'){c.strokeStyle=PLAYER_COL;c.lineWidth=1.5;c.beginPath();c.arc(x,y,r+6,0,TAU);c.stroke()}}
     if(!covered(d.id)){c.fillStyle='rgba(7,11,22,.55)';c.beginPath();c.arc(x,y,r+3,0,TAU);c.fill()}else{c.strokeStyle='rgba(122,217,167,.25)';c.setLineDash([2,4]);c.lineWidth=1;c.beginPath();c.arc(x,y,r+21,0,TAU);c.stroke();c.setLineDash([])}
     {const fs=(S.frigates||[]).filter(t=>t.sector===d.id&&(t.side==='player'||t.side===S.player.faction||covered(d.id)||capPinged(t,S.player.faction)));let fx=x-r-6;for(const t of fs){const col=fMine(t)?PLAYER_COL:sideCol(t.side);c.fillStyle=col;c.strokeStyle='#070b16';c.lineWidth=1.5;c.beginPath();c.moveTo(fx,y+r+24);c.lineTo(fx+6,y+r+30);c.lineTo(fx,y+r+36);c.lineTo(fx-6,y+r+30);c.closePath();c.fill();c.stroke();if(capPinged(t,S.player.faction)){c.strokeStyle=hexA('#ffcf5a',.55+.35*Math.sin(performance.now()/250));c.lineWidth=1.4;c.beginPath();c.arc(fx,y+r+30,10,0,TAU);c.stroke()}fx-=13}
@@ -5723,7 +5810,7 @@ function ledger(){
   for(const k in S.econ.stock)invVec(S.econ.stock[k],L['Faction & Unbound stores']);
   for(const k in S.econ.fleet)invVec(S.econ.fleet[k],L['Fleets in muster']);for(const ev of S.events)if(ev.force)invVec(ev.force,L['Fleets in muster']);for(const f in S.ai||{})if(S.ai[f]&&S.ai[f].hm)invVec(S.ai[f].hm.force,L['Fleets in muster']);for(const t of S.scouts||[])invVec(t.load,L['Fleets in muster']);for(const t of S.traders||[])invVec(t.load,L['Fleets in muster']);for(const t of S.frigates||[]){invVec(t.load,L['Fleets in muster']);invVec(t.store||{},L['Fleets in muster']);if(t.fab)invVec(t.fab.kit,L['Fleets in muster'])}
   for(const id in S.outposts){const o=S.outposts[id];invVec(o.stock,L.Outposts);invVec(o.fort,L.Outposts)}
-  for(const id in(S.stations||{})){const R=S.stations[id];invVec(R.fort,L.Stations);invVec(R.stock,L.Stations);invVec(R.store||{},L.Stations);for(const h of R.hg||[])invVec(h.load,L.Stations)}
+  for(const id in(S.stations||{})){const R=S.stations[id];invVec(R.fort,L.Stations);invVec(R.stock,L.Stations);invVec(R.store||{},L.Stations);invVec(R.gut||{},L.Stations);for(const h of R.hg||[])invVec(h.load,L.Stations)}
   for(const k in(S.yards||{}))invVec(S.yards[k].fort||{},L.Stations);invVec(S.drift||{},L['Outer drift (recycling)']);
   for(const w of Object.values(WORLDS)){for(const e of w.ents)if(e.npc){invVec(e.load,L['Ships in this sector']);invVec(e.cargo,L['Ships in this sector'])}
     for(const m of w.missiles)invVec(m.inv,L['Ships in this sector'])}
@@ -6154,6 +6241,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
   switch(m.t){
     case 'u':{if(P.docked)break;MP.inp[pid]={...m,at:performance.now()};P.x=m.x;P.y=m.y;P.z=m.z;P.vx=m.vx;P.vy=m.vy;P.vz=m.vz;P.q=m.q;P.fa=!!m.fa;P.wpn=m.w==='l'?'laser':'kinetic';P.route=m.rt||null;break}
     case 'msl':hMissile(pid,m);break;
+    case 'spot':{const e0=MP.rp[pid];if(e0)inW(worldOf(e0),()=>{const e=W.ents.find(x=>x.id===m.id);if(e&&d3(e,e0)<SPOT.r*1.2)spotPay(e,pid)});break}
     case 'blast':{const e=MP.rp[pid];if(e)inW(worldOf(e),()=>{if(m.k==='fire')blFire(e,P);else if(m.k==='det')blDetReq(P,e);else if(m.k==='cancel')blCancel(P)});break}
     case 'flare':{const e=MP.rp[pid];if(e)inW(worldOf(e),()=>deployFlares(e));break}
     case 'jump':hJump(pid,m);break;
