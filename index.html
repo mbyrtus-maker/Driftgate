@@ -763,7 +763,7 @@ const CLASSES={
   bomber:{name:'Bomber',swarm:2,acc:.78,hull:190,shield:1.2,speed:.8,turn:1.5,weapon:.8,cargo:34,drill:0,radius:22,torp:true,boost:.85,agile:.7,desc:'Torpedoes that crack stations and outposts, swarm launcher. Slow.'},
   skiff:{name:'Light Miner',hull:90,shield:.85,speed:1.1,turn:2.5,weapon:.8,cargo:30,drill:1.1,radius:14,rack:.5,boost:1.05,agile:1.05,acc:1.1,drones:1,lasers:1,desc:'1 charge launcher, 1 guard drone, small hold. Nimble enough to run.'},
   prospector:{lasers:2,drones:2,name:'Medium Miner',hull:125,shield:1,speed:1,turn:2.2,weapon:.95,cargo:46,drill:1.5,radius:17,rack:1,boost:1,agile:.9,desc:'2 charge launchers, 2 guard drones, mid hold.'},
-  wraith:{name:'Wraith',hull:82,shield:.89,speed:1.3,turn:3.25,weapon:1.89,cargo:0,drill:0,radius:12,rack:0,swarm:2,boost:1.2,agile:1.4,acc:1.35,bcost:.75,radar:true,desc:'Legendary Ace hull. Quad cannons and lasers, two swarm pod batteries, no hold and no blast rig. K switches stealth: hidden beyond 600 m, but no shields, guns, missile locks or afterburner while hidden.'},
+  wraith:{name:'Wraith',hull:82,shield:.89,speed:1.3,turn:3.25,weapon:1.5,cargo:0,drill:0,radius:12,rack:0,swarm:2,boost:1.2,agile:1.4,acc:1.35,bcost:.75,radar:true,desc:'Legendary Ace hull. Quad cannons and lasers, two swarm pod batteries, no hold and no blast rig. K switches stealth: hidden beyond 600 m, but no shields, guns, missile locks or afterburner while hidden.'},
   escort:{name:'Escort',hull:1300,shield:7,speed:.62,turn:.62,weapon:.9,cargo:0,drill:0,radius:70,rack:0,boost:1,agile:.55,acc:.55,desc:'Light capital ship.'},
   carrier:{name:'Carrier',hull:2500,shield:14,speed:.36,turn:.26,weapon:0,cargo:0,drill:0,radius:120,rack:0,boost:1,agile:.25,acc:.3,desc:'Fleet carrier.'},
   frigate:{name:'Frigate',hull:3000,shield:14,speed:.42,turn:.32,weapon:1,cargo:0,drill:0,radius:110,rack:0,boost:1,agile:.3,acc:.35,desc:'Capital ship.'},
@@ -817,7 +817,7 @@ function vrLose(P,crate,s){const vr=vrOf(P.tune);for(const sl in vr){const id='v
 // combat Mk curve: how many old-style Mk steps each Mk is worth for hull, shields, armour, guns, energy and missiles, so an
 // upgrade is an edge, not a wall. Same pilot skill, same hull: Mk I beats Mk II about 37% of the time, Mk III 32%, Mk IV 27%,
 // Mk V 22%. Engines, holds, mining lasers and payload reloads keep their full steps.
-let MK_LV=[0,0,.17,.29,.46,.72],MK_K=1;const MK_TOP=3;let SWARM_K=.35,MSL_K=1;/* swarm micro-missiles were deciding dogfights on their own: now harassment more than a kill */const mkL=t=>MK_LV[clamp(Math.round(t),1,5)]*MK_K;
+let MK_LV=[0,0,.45,.85,.85,.85],MK_K=1;const MK_TOP=3;/* Mk I-III only (IV and V retired); stronger steps so one Mk is worth more than any one variant */let SWARM_K=.35,MSL_K=1;/* swarm micro-missiles were deciding dogfights on their own: now harassment more than a kill */const mkL=t=>MK_LV[clamp(Math.round(t),1,5)]*MK_K;
 function shipStatsBase(fac,cls,T){
   const t=s=>typeof T==='number'?T:T[s];
   const C=CLASSES[cls],F=(FACTIONS[fac]&&FACTIONS[fac].trait)||{},tr=k=>F[k]||1,c=s=>mkL(t(s))*(C.mkK||1);   // C.mkK evens out how much each hull gains per Mk
