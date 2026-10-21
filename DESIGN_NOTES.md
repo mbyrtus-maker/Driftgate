@@ -808,3 +808,27 @@ It's now the workhorse between the quick Light Hauler and the crawling Heavy Hau
 - **Balance, 1,000 galaxies:** Varkesh 27.0%, Halcyon 25.7%, Brood 25.5%, Ostrova 21.8% (±2.7). That's inside the 21–28% band. Speeding up coil production as well had pushed the Brood to 40% by starving the factions of iridium, so coil was left at its old rate.
 - **Still open:** the developer menu works for multiplayer guests, and two pilots on opposite sides can trade a beacon back and forth for flip bonuses.
 
+
+## The pay ladder (v156)
+
+Income follows risk. Hauling pays most: it crosses the least friendly systems the furthest. Mining comes next, since it can
+happen in enemy fields. Combat is third, and beacon running, the safest work, pays least.
+
+- **Mining.** A pilot's mining laser cuts rock at `MINE_RATE` = 0.025 of the hull's rated drill, so a Light Miner fills its
+  30 t hold in about 6 minutes and a Heavy Miner its 80 t in about 7.5. Salvage points on capital wrecks cut at
+  `SALVAGE_RATE` = 0.5, since a wreck only lasts five minutes. AI miners are unchanged, so faction economies and the
+  strategic balance don't move. The shipyard shows the pilot rate.
+- **Combat.** Kill bounties ×3.5 (drones 35), escorts 1,200, carriers 2,400. Convoy raid bounty = cargo value × 0.75 + 360.
+- **Beacons.** Flip bonus 150, beacon missions 200, residual 10 cr/min, paid only for `BCN_RES_T` = 10 minutes after the
+  pilot last flipped or re-secured that beacon (`B.byT`). Holding a beacon no longer pays forever.
+
+Measured per hour (Mk I, 4 simulated galaxies, realistic overheads):
+
+| Role | Light | Medium | Heavy |
+|---|---|---|---|
+| Hauling, trade only | 15.0k | 19.2k | 21.6k |
+| Mining, best field ≤2 jumps | 10.4k | 14.5k | 21.3k |
+| Mining, home system | 2.8k | 3.8k | 5.6k |
+
+Combat 4.4k (casual) / 8.7k (average) / 13.1k (strong). Scouting 3.0k / 4.7k / 6.3k. Hauling also has blockade runs
+(median profit about 1,070 a run), carrier resupply at up to ×2.2 on the front, and convoy work on top of trade.
