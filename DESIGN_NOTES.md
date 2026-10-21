@@ -1041,7 +1041,7 @@ Full spec: the Claude doc [Driftgate: Ship Upgrade Choices](https://claude.ai/ar
 Today every Mk is a pure gain (a Mk V Drive gives about +64% thrust, +44% top speed and +24% turn), so upgrading is never a decision. Instead, every system becomes a fork: each variant buys a real strength with a real weakness, ideally one you feel in how the ship flies. Two pilots in the same hull should fly differently, and what you fit should depend on where you're going.
 
 ### How it works
-- **Mk I–III stay vertical** with today's per-level gains. Mk IV and V are retired; their value moves into variants.
+- **Mk I–III stay vertical** on the v160 curve: combat stats gain a fraction of the old step (`MK_LV` .17 at Mk II, .29 at Mk III; the Heavy Fighter 80% of that), while engines, holds, the Blast Rig and payload reloads keep full steps. Mk IV and V are retired; their value moves into variants.
 - **One variant per system**, opening at Mk II. You can own several; only one is fitted to each system.
 - **General variants** cost the usual Mk materials. **Specialist variants** guard against one enemy (Unbound jammers or the Brood), cost plate and wire only and need no Mk level.
 - **Swapping is free** at any Shipyard. Everything fitted goes down with the ship: 50% spills into the wreck as salvage, the rest is lost as debris. Spares in a station vault are safe.
@@ -1051,13 +1051,13 @@ Today every Mk is a pure gain (a Mk V Drive gives about +64% thrust, +44% top sp
 | System | Mk II | Mk III |
 |---|---|---|
 | Drive | +16% thrust, +11% top speed, +6% turn | +32% thrust, +22% top speed, +12% turn |
-| Reactor | +25% energy, +22% recharge | +50% energy, +44% recharge |
-| Shield Emitter | +32% shields | +64% shields |
-| Weapons | +26% damage, 12% more energy per shot | +52% damage, 24% more energy per shot |
-| Armor | +22% hull, 5% damage reduction | +44% hull, 10% damage reduction |
+| Reactor | +4% energy, +4% recharge | +7% energy, +6% recharge |
+| Shield Emitter | +5% shields | +9% shields |
+| Weapons | +4% damage, 2% more energy per shot | +8% damage, 3% more energy per shot |
+| Armor | +4% hull, 0.9% damage reduction | +6% hull, 1.5% damage reduction |
 | Blast Rig | +1 charge per launcher, +20% collector rate | +2 charges per launcher, +40% collector rate |
 | Cargo Hold | +30% hold | +60% hold |
-| Payload Bay | −15% reload time, +2 missiles, 7% faster lock | −30% reload time, +4 missiles, 14% faster lock |
+| Payload Bay | −15% reload time, +2 missiles, 7% faster lock, +3% missile damage | −30% reload time, +4 missiles, 14% faster lock, +6% missile damage |
 
 ### General variants
 | System | Variant | Gain | Cost |
