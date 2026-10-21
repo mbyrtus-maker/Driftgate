@@ -869,14 +869,10 @@ Win % of the row hull against the column hull, 150 duels each:
 
 **Pirate bounties.** Unbound ships pay `PIRATE_MUL` = 1.2 times a rival faction's bounty.
 
-**AI aces.** Each faction and the Unbound keep a roster (`S.aces`) of three named aces. A new patrol, raider or pirate wing
-has a 6% chance (`ACE_P`) of being led by one, at most one ace per system. An ace flies one Mk above its side (up to Mk III),
-tuned, with a quarter more hull and shields (`ACE_HP`), a steadier lead and longer bursts. Bombers and Light Fighters chosen
-as ace hulls become Heavy and Medium Fighters. Killing an ace pays `ACE_BOUNTY` = 3,500 cr (4,200 for an Unbound ace),
-the biggest bounty in the game, and counts as three heavies for War effort. Aces tally their kills, run when their wing
-breaks and can turn up again; a dead ace is replaced by a new name after `ACE_BACK` = 15 minutes. The HUD marks an ace in
-orange with its bounty, and guests see the name through the entity row (names ending "(Ace)"). In AI duels an ace beats
-regular fighters of its side's Mk over 90% of the time; against players its aim is only a little better than a Mk III
-regular, so the threat is its Mk and toughness.
+**Aces.** The live build carries the ace system from a parallel session (v158 + enemy aces that hunt you after you kill
+enough of a side's ships, a Wanted list, kill records kept on the device, Unbound ambushes from the rocks, quiet-space
+signals and the end-of-galaxy debrief). This pass sets ace prices: `ACE_BOUNTY` = 3,500 cr to start (4,200 for an
+Unbound captain, `PIRATE_MUL`), above a carrier's 2,800 so an ace is the biggest bounty in the game, +600 for every pilot
+it kills up to `ACE_CAP` = 8,400. A separate ace roster written in this session was dropped in favour of that one.
 
 Strategic check after the hull changes (500 games, 2.2 h): Halcyon 27%, Ostrova 26%, Varkesh 24%, Brood 22%.
