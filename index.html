@@ -2753,7 +2753,7 @@ function jobSize(item,n0){const b=wpick(JOB_BAND);if(b==='s'||!JOB_BIG.includes(
 const JOB_PART=10;   // partial deliveries: at least a quarter of the job, or 10 units, whichever is less
 function jobMin(k){return Math.min(k.n,JOB_PART,Math.ceil((k.n0||k.n)/4))}
 function scheduleContract(){
-  const f=S.player.faction;if(S.contracts.filter(c=>c.fac===f).length>=3)return;
+  const f=S.player.faction;if(S.unb||!FACTIONS[f])return;if(S.contracts.filter(c=>c.fac===f).length>=3)return;
   const item=wpick({plate:3,wire:3,coil:2,ir:2,xc:1.5,lattice:.8}),js=jobSize(item,item==='plate'||item==='wire'?ri(6,14):item==='coil'?ri(3,6):item==='ir'?ri(10,24):item==='xc'?ri(8,18):ri(2,3)),n=js.n;
   const reward=Math.ceil(baseValue(item)*n*1.7/10)*10;
   S.contracts.push({id:S.nextId++,fac:f,item,n,n0:n,reward,until:S.T+480*js.t});
