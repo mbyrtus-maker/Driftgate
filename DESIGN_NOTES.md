@@ -895,7 +895,7 @@ a player's magazines (missile rack or torpedo bay by Mk, swarm pods), flaring mi
 
 Overall win % against the other five hulls at the same Mk (Mk I / III / V): Light 49/49/54, Medium 56/57/51,
 Heavy 66/65/65, Bomber 15/16/20, Heavy Bomber 32/35/37, Wraith 81/77/72.
-## The Brood: contained, scary, rarely winning (stages 1, 2 and 4 built)
+## The Brood: contained, scary, rarely winning (built)
 Full spec: the Claude doc [Driftgate: The Brood](https://claude.ai/artifact/3gHjQB1NpmToqsxUEnLpja).
 
 ### The idea
@@ -961,7 +961,14 @@ AI Unbound never enter or route through Brood-held systems. The Brood never targ
 ### As built
 - **Stage 1:** the "hungrier next galaxy" bonus is gone; a Brood win earns no pilot a Legend point, not even the half point; the Brood and the Unbound are not hostile and don't plan offensives on each other's outposts. AI pirate routes still pass through Bloom space.
 - **Stage 2:** truce zones in every Brood-held system and for 30 s after the last node burns (live combat only: the strategic layer keeps its own rules), a HUD banner, no building. Map hatching is not built. The Containment Accord reuses the coalition: at 5 Brood systems all three factions join it, until the Bloom is below 4.
-- **Stage 3, partly:** the existing Seeder announcement and build event already give the seeded and rooting stages. Containment orders pay as bounties: 600 cr for a Seeder (shared by damage), 900 cr for a Bloom Node burned in its first 3 minutes, 1,500 cr after. Not built: map countdowns, node guts and the feast after the fire, feeding grounds, Grazer bellies, scout spotting pay and hauler supply orders. Node pay doesn't reach multiplayer guests yet.
+- **Stage 3:** containment orders pay as bounties: 600 cr for a Seeder (shared by damage), 900 cr for a Bloom Node burned in its first 3 minutes, 1,500 cr after, to every pilot who hit the node in its last minute, multiplayer guests included.
+  - **The map** rings an inbound Seeder's target with its countdown ("SEEDER 1:14"), shows "ROOTING 2:19" over a young node, hatches every truce system and marks feeding grounds ("◆ FEED 320 t") once a scout has flown through or the system is covered.
+  - **Guts and the feast:** what the swarms graze is split: half to Brood stores, a quarter into the nearest Bloom Node's gut (up to 240 t, shown on its target panel), a quarter piled as a feeding ground of rich rock in the nearest Brood-held system (up to 600 t; Aurorite and Vantium never leave their fields). A burned node spills its gut as one to five big rocks where it stood. Every ton moves; none is made.
+  - **Grazer bellies:** Brood miners fly with 14–36 t of ore from Brood stores; it goes home if they leave and spills as salvage if they're shot down. The target panel shows the belly.
+  - **Scouts:** holding a lock on a Seeder for 3 s inside 5 km, before it plants, pays 250 cr once per Seeder. Flying a scout through Brood space reports its feeding ground to every pilot's map.
+  - **Containment supply:** each faction posts one order at a time for torpedoes, missiles or plate at a station bordering Brood space, paid at about 2.5× value and delivered in person, listed with the blockade runs.
+- **Growth settings (tuned by simulation, 240 AI-only galaxies):** `brBuild` 1.65, `brOff` 1.42, `brHive` 4, `brGraze` 1.0, `brLevT` 3,300, `antiBrood` 2.8. Result: Brood 12.1%, Varkesh 32.5%, Ostrova 28.3%, Halcyon 27.1%, median length 113 minutes.
+  - Why they moved this far: with the Brood and the Unbound ignoring each other the pirates stopped wearing the Brood down, and at the old settings it won 69% (27% with that one change undone; the Accord on or off made little difference). The gut and feeding-ground split alone brought it to 50%; the proposed starting values to 29%.
 - **Stage 4:** Bloom haze (shields recharge 15% slower, radar 25% shorter), latching spores (0.5 hull a second for 4 s per Brood hull hit, at most 3, never below 1 hull, cleared by docking), blood scent (Brood wings weight their targets by damage).
 - **The six anti-Brood variants** are built (see Ship upgrade choices).
 
@@ -970,7 +977,7 @@ AI Unbound never enter or route through Brood-held systems. The Brood never targ
 - Median galaxy length doesn't grow.
 - The closed economy balances to the unit.
 
-## Playing as the Unbound (stage 1 partly built)
+## Playing as the Unbound (built)
 Full spec: the Claude doc [Driftgate: Playing as the Unbound](https://claude.ai/artifact/SoHpuwfLLe9Myivh9JTkBc).
 
 ### The idea
@@ -1045,12 +1052,32 @@ AI wings fly the three Unbound hulls with the same jamming rules, go after haule
 - **Anti-jam variants:** Faraday plating, Fast-reboot reactor, Snap-back emitter and Sealed hold are built. Tether cutter waits for harpoons.
 - **Not built:** harpoons, jamming torpedoes, capital takes, and all of Unbound mode for pilots (stages 2 and 3). In multiplayer a guest's own jam effects don't show on their screen yet.
 
+### As built (stage 2, Unbound mode for pilots)
+- **Unlock:** a fourth start card, locked until the callsign has a Legend point. Solo starts docked at Scrapheart Haven in a Raider.
+- **Haven dock:** Fence (70% of value, 80% and 90% with the Den; stolen goods marked ☠), Black market (Corsair 2,600 cr, Plunderer 5,000 cr, half back on a trade-in), Marks (Tankard rumours of faction freight with value, escorts and Set course), Wanted (heat by faction with its band, Infamy and rank, transponder state, Deeds). No faction Shipyard, Trade, Orders or Missions for the Unbound.
+- **Jam mode (4):** guns fire jammers, missiles become shock harpoons (35% of the bar and a 30 s tether that stretches the hook to 400 m). Harpoons count a target with shields at 5% or less as stripped.
+- **The hook:** hold E within 150 m (or tethered) of a ship jammed dark: 8 t/s into your hold, most valuable first, flagged stolen. The take ends when the window closes: a mercy take is +2 heat, a kill after a take is five times the kill's heat. Infamy 1 per 2 t.
+- **Heat** per faction 0–100 with the four bands; cools 1 a minute, 2 in quiet systems; doubles in that faction's home space. Hot sends 3-ship hunter wings every 2–3 minutes; Wanted makes Freeports refuse you and its gates take 10 s.
+- **False colours (K):** works only while Cool with a faction. Patrol scans every 4 s within 1.5 km (5%, +2% per 10 t stolen, +10% at heat 15–24, three times as often near a core station). Blown cover: +10 heat, transponder dead 5 minutes. Any shot blows it with every faction in sight. Freeports dock and trade only under false colours; stolen goods sell there only under cover.
+- **Infamy, ranks, Deeds:** Nuisance, Cutthroat 200, Buccaneer 600, Dread Captain 1,500, Pirate King 3,000; ×2 in home space. Deeds built: Three for three, Clean sweep, Ace-breaker, The long con, Heist, Capital take. The debrief lists each Unbound pilot's rank, Infamy and Deeds; one Legend point for a rank above Nuisance plus a Deed (none if the Brood wins).
+- **Freeport fixer:** about 150 cr a point, up to 10 points, once a visit.
+
+### As built (stage 3)
+- **The nine works** (Works tab at the haven): goods from your hold and vault go into Unbound stores, shares to the Unbound treasury. Costs about 40 t and 1,500 cr, 90 t and 3,500 cr, 170 t and 6,000 cr. Every level listed in the design does what it says, with these readings: Tankard 0 lists supply convoys only and hides values; Crow's Nest 2 shows masked ships within 2 km; Grog Still 2 makes Unbound wings break at one ship, not two. A haven battered dark loses a random level.
+- **Mirror variants** (black market only, any Mk): Scan baffles (scans 30% less likely, −10% energy), Jammer emitters (bar fills 45% faster, −15% damage in normal fire), Long harpoons (tether reach 600 m, −25% rack). **Tether cutter** (anti-jam, stocked by factions): flares cut a harpoon line, −25% rack. AI Unbound now fire harpoons in jam mode.
+- **Jamming torpedoes:** a Plunderer's missile key in jam mode; 2 in the magazine (3 with the Powder Magazine), 40 s reload. A third of an escort's jam bar, a sixth of a carrier's, drains 2% a second after 5 s; anything smaller is disabled outright.
+- **Capital takes:** jam-mode gunfire on a stripped capital jams its nearest turret for 15 s (then hardened 60 s; +2 heat). A full jam darkens the capital (no turrets, launches or jump: 20 s escort, 15 s carrier) and the hook pulls from its store; +300 Infamy, +15 heat, the Capital take Deed.
+- **Raids:** entering a faction's home system without cover sounds a lockdown: wings of 3 at 45 s, 5 at 2:15, the faction's ace at 3:45, then 3 every 90 s; that faction's heat doesn't cool while you stay. A jamming torpedo into its core station during a lockdown cracks the vault: up to 45 t of its stores spill as salvage (+6 heat, Heist).
+- **Fleet call-ins:** Graving Dock 2 calls a Corsair Sloop to a mark (5-minute cooldown), 3 calls the Destroyer (10 minutes); never into home space. A called capital lost puts 10 heat on the caller.
+- **Lairs:** comms 3 sends a Rigger (1 Depot Frame + 20 plate from haven stores, 90 s) into contested, hub, deep or quiet space with no station. Stash 200 t, repairs, heat cools at the quiet rate while docked. Hidden until a faction patrol comes within 2 km; then it is worn down (two light turrets fight back) and its stash spills when it falls. A new Lair abandons the old one.
+- **Crew multiplayer:** a host can create an Unbound crew galaxy; every guest flies Unbound and needs a Legend point of their own; no mixed galaxies. The haven, works and fleet are shared; heat, Infamy, Deeds, stolen goods and the Legend point are per pilot. Guests' jam mode, false colours, hook, harpoons, jamming torpedoes, Freeport and Lair docking run on the host. Tested over a loopback link between two browsers (join, hook, take, cover, Legend points); not over the real matchmaking server, which the build sandbox can't reach.
+
 ### Balance rules (proposed; must hold when built)
 - The faction win race is unchanged in AI-only simulation.
 - Every haven cost comes from real goods; the closed economy balances to the unit.
 - Jamming never kills and can't touch a shielded ship.
 
-## Ship upgrade choices (built, except faction doctrines and stocking)
+## Ship upgrade choices (built)
 Full spec: the Claude doc [Driftgate: Ship Upgrade Choices](https://claude.ai/artifact/RKuLFjS9Gvxz2cHZ9azXq7).
 
 ### The idea
@@ -1138,7 +1165,9 @@ Unbound pilots get a mirror set at the haven's black market (scan baffles, jamme
 - **Specialists built:** six anti-Brood and four anti-jam. Tether cutter waits for harpoons; the Unbound mirror set waits for Unbound mode.
 - **Legend perks 5 and 6** start a system at Mk II and fit a free variant of the pilot's choice to it.
 - **Blast Rig variants** (Shaped charges, Long launcher, Survey rig) replace the laser ones.
-- **Not built:** faction AI doctrines and station or depot stocking.
+- **Faction doctrines:** AI combat wings fit their faction's variants: Halcyon Bastion or Flicker; Varkesh Ablative or Reactive plating, or Heavy cannons; Ostrova a Surge or Steady core, or Rapid fire. 30% of ships at tier 1, 50% at 2, 70% at 3. The target panel names the variant and its cost, so it can be read and countered. Stats only: nothing is built or dropped.
+- **Stocking:** a faction with a station on the Bloom border keeps two of each anti-Brood part on its market; one whose convoys the Unbound have hit in the last half hour (or any faction after the first half hour) keeps two of each anti-jam part. Built from its own plate and wire.
+- **Specialists fit at any Mk** (the design said so; the first build wrongly gated them at Mk II).
 
 ### Balance rules (proposed; must hold when built)
 - No variant wins more than about 60% of mirror duels against the same hull with another variant at equal Mk.
@@ -1212,5 +1241,5 @@ The Mining Laser system becomes the Blast Rig (Mk I–III; variants in Ship upgr
 - **Scanning** happens when a rock or salvage point is targeted (fault-point rings for 20 s; faint rings within 100 m without a scan).
 - **Rocks don't tumble**, so charges fly straight along the nose.
 - **Clouds hide ships and drones** from radar and missile locks beyond 300 m, for their 90 s.
-- **Not built yet:** AI Unbound and Brood Grazers turning toward fresh clouds; a cloud's cover slowing locks rather than blocking them is still open.
+- **AI and clouds:** AI Unbound with nothing to shoot, and Brood Grazers in or next to Bloom space, turn toward a fresh cloud within 5 km and scoop it at 4 t/s into their hold (home with them, or salvage if shot down). A pilot near the cloud is warned. A cloud's cover slowing locks rather than blocking them is still open.
 - **Multiplayer:** guests send fire, detonate and cancel to the host and collect by cloud id; untested here (no matchmaking server in the build sandbox).
