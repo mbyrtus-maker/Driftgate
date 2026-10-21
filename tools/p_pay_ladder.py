@@ -13,9 +13,9 @@ rep("Flipping one pays you a one-off bonus of 180 cr from your faction's treasur
 rep("pays you a bonus plus 12 cr a minute for 10 minutes after you last flip or re-secure it.","pays you a bonus plus 4 cr a minute for 10 minutes after you last flip or re-secure it.")
 # Hauling measured 5k-8k (target 15.6k-25.2k) and the Heavy Hauler earned least: pilot loads of more than a few dozen units moved
 # the station's local price so far that the best trade was 4-35 units, whatever the hold. Fees drop to 3.5% / 2% / 1%, and a
-# pilot's trades move the local price level less in the bigger haulers (freight contracts): 100%, 60%, 28% of a unit per unit.
+# pilot's trades move the local price level less in the bigger haulers (freight contracts): 100%, 60%, 22% of a unit per unit.
 rep("const HAUL_FEE={freighter:.055,bulker:.04};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;",
-    "const HAUL_FEE={courier:.035,freighter:.02,bulker:.01};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;const HAUL_MK={freighter:.6,bulker:.28};const pMk=()=>HAUL_MK[S.player.cls]||1;")
+    "const HAUL_FEE={courier:.035,freighter:.02,bulker:.01};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;const HAUL_MK={freighter:.6,bulker:.22};const pMk=()=>HAUL_MK[S.player.cls]||1;")
 rep("mkOf(R)[k]=(R.mk[k]||0)-got","mkOf(R)[k]=(R.mk[k]||0)-got*pMk()")
 rep("mkOf(R)[k]=(R.mk[k]||0)+sold","mkOf(R)[k]=(R.mk[k]||0)+sold*pMk()")
 rep("mkOf(R)[k.item]=(R.mk[k.item]||0)-got","mkOf(R)[k.item]=(R.mk[k.item]||0)-got*pMk()")
@@ -33,3 +33,7 @@ rep("st=(P.stolen||{})[k]||0,pr=Math.max(1,Math.floor(baseValue(k)*unbFenceRate(
 rep("  const o=S.outposts[P.docked],mine=o.owner==='player';","  const o=S.outposts[P.docked]||{name:'Lost outpost',owner:'neutral',type:'mine',stock:{}},mine=o.owner==='player';")
 rep("sub:`${mine?'Your outpost':FACTIONS[o.owner].short+' outpost'} · ${TYPE_TEXT[o.type]}`","sub:`${mine?'Your outpost':(FACTIONS[o.owner]||{short:'Abandoned'}).short+' outpost'} · ${TYPE_TEXT[o.type]||''}`")
 open(P,'w',encoding='utf-8').write(s);print('pay ladder applied')
+# combat: a border-patrol fighter bot (flying with friendly wings) made 1-5k an hour, under scouting; kill bounties double
+s=open(P,encoding='utf-8').read()
+rep("BOUNTY_MUL=4","BOUNTY_MUL=8")
+open(P,'w',encoding='utf-8').write(s);print('pay ladder: bounties applied')
