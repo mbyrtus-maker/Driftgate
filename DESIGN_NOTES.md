@@ -1088,7 +1088,7 @@ Today every Mk is a pure gain (a Mk V Drive gives about +64% thrust, +44% top sp
 - **One variant per system**, opening at Mk II. You can own several; only one is fitted to each system.
 - **General variants** cost the usual Mk materials. **Specialist variants** guard against one enemy (Unbound jammers or the Brood), cost plate and wire only and need no Mk level.
 - **Swapping is free** at any Shipyard. Everything fitted goes down with the ship: 50% spills into the wreck as salvage, the rest is lost as debris. Spares in a station vault are safe.
-- **Aurorite tuning** stays the one purely vertical upgrade (+6% a level, up to 2).
+- **Aurorite tuning** stays the one purely vertical upgrade: once per component (+6%, or +3% on combat systems).
 - **Refits stay as they are:** pure gains bought at Freeports.
 
 | System | Mk II | Mk III |

@@ -1,0 +1,52 @@
+# Patch: training brought up to date. Mk I-III and variants (with a hands-on variant fit), blast-mining hull text, wreck cores
+# under the blast rules, Forges no longer gate Mk IV/V, the Bomber turret, containment supply orders, and three new lessons:
+# Upgrades and variants, The Brood (truce zones, fear, containment, ecology, the Accord) and Jammers and the Unbound.
+import sys
+P=sys.argv[1];s=open(P,encoding='utf-8').read()
+def rep(a,b,n=1):
+    global s
+    c=s.count(a);assert c==n,(c,n,a[:140]);s=s.replace(a,b)
+
+rep("This practice galaxy covers every system in Driftgate in 12 lessons;","This practice galaxy covers every system in Driftgate in 15 lessons;")
+rep("Bigger mining and hauling hulls, bought at a core Shipyard, carry more lasers and bigger holds, plus <b>guard drones</b> that launch with you and defend your ship.",
+    "Bigger mining and hauling hulls, bought at a core Shipyard, carry more charge launchers (and bigger magazines) or bigger holds, plus <b>guard drones</b> that launch with you and defend your ship. Haulers don’t mine.")
+rep("Open <b>Construction</b>: Fabricate turns ore into parts, Upgrades fit Mark I–V systems, Refit swaps loadouts, and Station works add the structures that grow a station.",
+    "Open <b>Construction</b>: Fabricate turns ore into parts, Upgrades fit Mark I–III systems and their variants, and Station works add the structures that grow a station. Refits (pure upgrades with no catch) are sold at Freeports.")
+rep("<b>Reading a wreck.</b> The reactor core holds the best of it, but every unit you cut heats the core (the target panel shows its heat). At 100% it blows and hurts everything nearby, so mine it in bursts. A wreck breaks up after <b>5 minutes</b>, and the Brood come for wrecks and eat them fast. Wrecks show on the galaxy map as an amber ✕.",
+    "<b>Reading a wreck.</b> The reactor core holds the best of it, but it must be cracked <b>perfectly</b>: one charge near or off its joint and it blows in a 600 m blast that wrecks every ship inside and destroys the whole wreck. While core charges are set, the blast warning reaches 600 m. A wreck breaks up after <b>5 minutes</b>, and the Brood come for wrecks and eat them fast. Wrecks show on the galaxy map as an amber ✕.")
+rep("Other pilots who fly escort are paid for every jump.'}]},",
+    "Other pilots who fly escort are paid for every jump.'},\n  {ack:1,ok:()=>!!S.training.ack,x:'<b>Containment supply.</b> Stations on the border of Brood space post orders for torpedoes, missiles and plate at about two and a half times value, listed with the blockade runs. Brood swarms are what you’ll meet on the way in.'}]},")
+rep("The three <b>Forges</b> are the only places Crystal Lattice and Resonance Cores are made, and the only docks for Mk IV and V parts.",
+    "The three <b>Forges</b> make Crystal Lattice and Resonance Cores faster than anywhere else.")
+rep("<b>The Brood</b> grow from hives. Their swarms raid stations, their capital ships hunt, and they can grow a mass over a jumpgate that seals it until someone destroys it. They also feed on wrecks.",
+    "<b>The Brood</b> grow from The Bloom, one system at a time. Their swarms raid stations, their capital ships hunt, and they feed on wrecks. The Brood lesson covers fighting them.")
+rep("<b>Special hulls.</b> The <b>Wraith</b> can cloak: invisible beyond a short range until it fires or takes a hit. The <b>Heavy Bomber</b> carries a turret another pilot can board and man while you fly.",
+    "<b>Special hulls.</b> The <b>Wraith</b> can cloak: invisible beyond a short range until it fires or takes a hit. Both bombers carry a rear dorsal turret: an AI gunner mans it, or another pilot can board and man it while you fly.")
+rep("When anyone (the Brood included) gets close, the other powers call a truce and turn on them, so watch the map.",
+    "When anyone gets close, the other powers call a truce and turn on them; against the Brood the <b>Containment Accord</b> starts much earlier, at 5 Brood systems, so watch the map.")
+rep("<b>Legend points.</b> Fly most of a galaxy (at least 30 minutes) for one faction. If it wins you earn a Legend point; if it loses you still earn half a point. Points raise you through ten levels, each with a permanent perk for scouts, haulers, miners, fighters and commanders. Your record is on the start screen’s leaderboard.",
+    "<b>Legend points.</b> Fly most of a galaxy (at least 30 minutes) for one faction. If it wins you earn a Legend point; if it loses you still earn half a point. Points raise you through ten levels, each with a permanent perk for scouts, haulers, miners, fighters and commanders. Your record is on the start screen’s leaderboard. Your first Legend point also unlocks <b>the Unbound</b> on the start screen.")
+
+NEW_UPG=r""" {t:'Upgrades and variants',setup:()=>{const P=S.player;devLedger(()=>{if((P.tiers.weapon||1)<2)P.tiers.weapon=2;inv.addAll(P.vault,VARIANTS.rapid.recipe)});refreshPlayerStats()},steps:[
+  {x:'Each system goes from Mk I to <b>Mk III</b>: a modest, pure gain at each level. From <b>Mk II</b> a system also takes one <b>variant</b>, a part that buys a real strength with a real cost. Training has raised your Weapons to Mk II and put the parts for one variant in your vault. Open <b>Construction → Upgrades</b>.',ok:()=>!$('dock').hidden&&dockTab==='upg'},
+  {x:'Fit <b>Rapid fire</b> to your Weapons: +45% fire rate for −25% damage per shot. Swapping is free at any dock, and spares wait in your vault.',ok:()=>!!(S.player.tune&&S.player.tune.vr&&S.player.tune.vr.weapon)},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Builds.</b> Every system has two or three variants: Sprint, Vector or Long-burn drives; Surge or Steady cores; Bastion, Flicker or tuned shields; Heavy cannons, Rapid fire or a Long barrel; Ablative, Light or Reactive plating; Bulk or Stabilised holds; Deep, Quick-cycle or Smart missile racks; and three Blast Rig variants for miners. Combine them: Sprint drive, Flicker and a Bulk hold make a blockade runner.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Specialists</b> guard against one enemy and fit at any Mk: four against Unbound jammers (Faraday plating, Fast-reboot reactor, Snap-back emitter, Sealed hold, plus a Tether cutter) and six against the Brood. They cost only plate and wire, and core stations and Bloom-border stations stock them.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Everything fitted goes down with the ship.</b> Lose it and half your variants spill into the wreck as salvage; the rest is gone. <b>Reading the enemy:</b> faction wings fly their own variants (Halcyon favours Bastion and Flicker; Varkesh heavy plating and cannons; Ostrova big cores and Rapid fire). The target panel names what an enemy has fitted, and its weakness.'}]},
+"""
+NEW_BROOD=r""" {t:'The Brood',steps:[
+  {x:'Open the galaxy map (<kbd>M</kbd>). The Bloom sits at the top; Brood-held systems are <b>hatched</b>. A dashed ring with <b>SEEDER</b> and a countdown marks where a Seeder is heading; <b>ROOTING</b> counts down a young Bloom Node; <b>◆ FEED</b> marks a feeding ground.',ok:()=>!$('map').hidden},
+  {x:'Close the map (<kbd>M</kbd>).',ok:()=>$('map').hidden},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>How it spreads.</b> A Seeder drifts to a system next to Bloom space and plants a Bloom Node, fragile for its first 3 minutes; then the node roots and the system is the Bloom’s. Every stage is a chance to stop it. <b>Containment orders</b> pay every faction pilot: 600 cr for a Seeder, 900 for a node burned before it roots, 1,500 after. A scout who holds a lock on a Seeder for 3 s before it plants earns 250 cr.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Truce zones.</b> In every Brood-held system the factions can’t hurt each other: shots pass through rivals, and only the Brood is a target. The truce lasts 30 s after the last node burns, then the race to claim the system begins. Nothing can be built in a truce zone.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Fear.</b> In Bloom space shields recharge 15% slower and radar reaches a quarter less. Each Brood hit leaves a spore that nibbles your hull for 4 s (up to 3; docking clears them). Brood wings go for the most damaged ship, so pull a hurt wingman out early. Brood hulls are tough and regrow, and kinetics beat lasers against them.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>An ecology.</b> What the swarms graze goes partly into each node’s <b>gut</b> (shown on its target panel) and partly into <b>feeding grounds</b> of rich rock in Brood space, which any faction can mine under the truce. Burn a node and its gut spills as big, rich rocks. Grazers carry real ore in their bellies.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>The Containment Accord.</b> Once the Brood holds 5 systems, all three factions stop fighting each other everywhere and turn on the Bloom, until it is back below 4. A Brood win consumes the galaxy and earns nobody a Legend point.'}]},
+ {t:'Jammers and the Unbound',steps:[
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Jammers.</b> Unbound pirates fly Raiders, Corsairs and Plunderers. They strip your shields, then switch to jammers: a <b>Jam bar</b> fills on your screen as they hit your bare hull. Thrust stutters and guns misfire, and at a full bar your ship goes dark for 5 to 12 seconds while they hook your hold. Jammers never kill, and they can’t touch a ship with shields up.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Beating a take.</b> Keep your shields up, or break away with the afterburner while the bar drains (stop being hit for 1.5 s and it falls 10% a second). After a take your ship is hardened for a minute. Their <b>harpoons</b> fill a third of the bar and let them hook from 400 m; flares cut the line if you fit a Tether cutter. Anti-jam variants stretch the bar, reboot faster, snap shields back or seal half your hold.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Flying for the pirates.</b> With a Legend point, the <b>Unbound</b> card unlocks on the start screen. You start at Scrapheart Haven in The Wrack. <kbd>4</kbd> is jam mode (jammers and harpoons); hold <kbd>E</kbd> beside a jammed ship to hook its hold; <kbd>K</kbd> raises false colours, a neutral transponder that works while a faction’s heat with you is cool. Fence the loot, grow the haven’s works, and earn your Legend point with Infamy and a Deed.'}]},
+"""
+rep(" {t:'Scouts and beacons',",NEW_UPG+" {t:'Scouts and beacons',")
+rep(" {t:'Winning the war',",NEW_BROOD+" {t:'Winning the war',")
+open(P,'w',encoding='utf-8').write(s);print('training updated')
