@@ -1602,7 +1602,7 @@ function mR(c){return c&&c.kind==='station'?S.stations[S.player.sector]:null}
 // market fee on a pilot's trades: 6%, less in the bigger haulers (a freight licence). A big hold soon moves the price against
 // itself; the bigger haulers pay a thinner fee and move the local price less per unit (HAUL_MK), so trade runs come to about
 // 15k an hour in a Light Hauler, 20k in a Medium and 25k in a Heavy, Mk I.
-const HAUL_FEE={courier:.035,freighter:.02,bulker:.01};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;const HAUL_MK={freighter:.6,bulker:.22};const pMk=()=>HAUL_MK[S.player.cls]||1;
+const HAUL_FEE={courier:.035,freighter:.02,bulker:.01};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;const HAUL_MK={freighter:.6,bulker:.26};const pMk=()=>HAUL_MK[S.player.cls]||1;
 function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id)*locF(R,id)*(1+mFee(S.player.cls)))}
 function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id)*locF(R,id)*(1-mFee(S.player.cls))))}
 // how many units a market takes (dir +1, a sale) or gives (dir -1, a purchase) at the quoted price: as many as it can absorb before
