@@ -1235,7 +1235,7 @@ The Mining Laser system becomes the Blast Rig (Mk I–III; variants in Ship upgr
 - The closed economy balances to the unit: every unit not collected reaches the debris pool.
 
 ### As built (where it differs from the design above)
-- **Pacing is by the magazine**, as agreed after the pay-ladder check: each charge releases one fault-point section, and magazines are small with long reloads so a perfect hold takes about as long as the laser did. Light Miner 2 charges and a 348 s reload, Medium 3 and 408 s, Heavy 4 and 552 s; one charge every 1, 0.5 or 0.34 s. A trip model fitted to the v158 mining pay puts perfect placement at about 12k, 15.6k and 19.9k an hour, near-point charges at 8k to 12k, and off-point charges at 4k to 6k.
+- **Pacing is by the magazine**, as agreed after the pay-ladder check: each charge releases one fault-point section, and magazines are small with long reloads so a perfect hold takes about as long as the laser did. Light Miner 2 charges, Medium 3, Heavy 4 (reloads 110 s, 115 s and 150 s since the balance sweep below; they were 348, 408 and 552 s); one charge every 1, 0.5 or 0.34 s. A trip model fitted to the v158 mining pay puts perfect placement at about 12k, 15.6k and 19.9k an hour, near-point charges at 8k to 12k, and off-point charges at 4k to 6k.
 - **A Blast Rig Mk level adds one charge**, not one per launcher: one per launcher would have more than doubled a Heavy Miner's pay at Mk III.
 - **Collector rates** are 6, 9 and 12 units a second (+20% a Mk level).
 - **Scanning** happens when a rock or salvage point is targeted (fault-point rings for 20 s; faint rings within 100 m without a scan).
@@ -1243,3 +1243,32 @@ The Mining Laser system becomes the Blast Rig (Mk I–III; variants in Ship upgr
 - **Clouds hide ships and drones** from radar and missile locks beyond 300 m, for their 90 s.
 - **AI and clouds:** AI Unbound with nothing to shoot, and Brood Grazers in or next to Bloom space, turn toward a fresh cloud within 5 km and scoop it at 4 t/s into their hold (home with them, or salvage if shot down). A pilot near the cloud is warned. A cloud's cover slowing locks rather than blocking them is still open.
 - **Multiplayer:** guests send fire, detonate and cancel to the host and collect by cloud id; untested here (no matchmaking server in the build sandbox).
+
+## Balance sweep: mirror duels and mining pay (Oct 2026)
+
+**Combat.** Every combat hull (the six faction hulls and the three Unbound ones) fought a plain Mk II copy of itself in 1v1 AI duels across 40 configurations: Mk steps, Aurora tuning, every general, specialist and Unbound variant, and four stacked builds. Most configs ran 60 or 100 duels; suspected outliers were rerun at 200. Duels use kinetic guns only, so they measure the kinetic Tuned emitter's gain and the laser one's cost and nothing else; both are left as counter-picks.
+
+| Finding | Before | Change | After (all 9 hulls) |
+|---|---|---|---|
+| Ablative plating strong on slow hulls | 63–76% on Heavy, Bomber, Gunboat | +40% hull → +20%, and −10% turn added to its cost | 54–64% |
+| Bastion strong on the Heavy Fighter | 68–71% | +30% shield capacity → +25% | 41–66% (Heavy Fighter 66%) |
+| Tank build (Ablative, Bastion, Steady) | 72–84% | from the two above | 58–64% |
+| Long barrel a trap | 29–47% | shells fly 15% faster; fire-rate cost −10% → −5% | 50–56% |
+| Light frame a trap | 34–51% | −15% hull → −10%; +10% turn and acceleration → +15% | 39–51% |
+| Snap-back emitter costly in ordinary fights | 29–45% | −20% shield capacity → −12% | 38–49% |
+
+- **Aurora tuning** (one level on every system) wins 44–62% by hull, about 55% on average; the help text quotes 55%.
+- **Mk:** Mk III beats Mk I 67–68% on the Interceptor and Striker but 86–91% on the Heavy Fighter, Bomber and Gunboat. Longer fights convert a stat edge more reliably, so heavy hulls gain more per Mk level. Left as is.
+- **Left as is:** Skirmisher build on the Bomber (76% at 200 duels), Flicker on the Bomber (64%) and Heavy Fighter (38%), Rapid fire on the Raider (71% at 60 duels). The anti-Brood specialists lose 32–49% outside Bloom space, which is their cost.
+
+**Mining pay.** A live-game mining bot (real charges, clouds, docking and sales at the home station, AI traffic, 30 game minutes a run, seeded) measured perfect placement at Mk I at about 3.9k, 5.6k and 8.6k an hour. That was under the agreed 12k, 15.6k and 20k, below combat's 9.8k average, and so it broke the pay ladder. One magazine fills the hold, so the reload set the pay, and near-point charges paid as well as on-point charges on the Light Miner. With reloads of 110, 115 and 150 s:
+
+| Placement (Mk I) | Light | Medium | Heavy |
+|---|---|---|---|
+| On point | 11.3k | 13.0k | 15.1k |
+| Near | 10.8k | 14.0k | 12.7k |
+| Off point | 6.6k | 7.9k | 6.7k |
+| Mk III, on point | 16.2k | 20.4k | 21.5k |
+
+The Heavy Miner's gap is the home market: 880 t sold at one station in half an hour fetched 8.6 cr/t, against 12–14 for small loads, so a Heavy Miner that spreads its sales does better. Variants at Mk II, before the reload change: Bulk hold +53% on the Light Miner and +19% on the Medium (the hold is what limits a miner, so its handling cost barely matters); Survey rig +24% on the Light Miner. Single 30-minute runs vary by about ±15%.
+
