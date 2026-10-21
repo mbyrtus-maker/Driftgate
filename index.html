@@ -565,7 +565,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Winning the galaxy.</b> A side that controls 7 systems for 20 minutes wins. If no one has done that after two hours of play, the side holding the most systems at that moment wins (ties go to most stations and depots, then capital ships, then the richest stores); the HUD counts down the last 30 minutes and shows who leads. The nine quiet systems (thin fields, little traffic) don't raise that bar, but holding one with a depot or outpost counts toward it. The galaxy resets, and the winner starts the next one with a finished capital shipyard and 40% richer stores; if it was your faction, you start with 4,000 extra credits and a crate of parts.</p>
             <p><b>Capital ships.</b> At your faction's main station you can build a Capital Shipyard (4 Depot Frames, 4 Capital Keels, 4 Crystal Lattice, 40 plates and 5,000 cr). It commissions one Fleet Carrier per faction (6 Keels, 4 Lattice, 2 Resonance Cores, 12 conduit, 4 frames, 10 coil) and Escorts. The carrier has no main gun: six point-defence turrets, a wing of 6 fighters and bombers, and 3 assault ships for capturing depots. It builds its own craft aboard from a store of materials and asks its faction for more; supply convoys fly out to it. AI carriers wait one system back from their target and strike through the gate. Fighter guns chip a capital's armour at a tenth of their damage; torpedoes and capital guns do the real damage. The Brood grows a Hive Ship and Prowlers in The Bloom.</p>
             <p><b>Vantium.</b> A dense, green-veined sixth ore that every Capital Keel needs (8 per keel), so no shipyard, carrier or escort gets built without it. It lies in only four fields: the three contested forge systems (Kestrel Drift, The Shoal, Cinder Reach), each between two powers, and the richest field in Hollow Verge, the hub all three border. Like Aurorite it only re-forms in its own fields. Factions push for those systems when they run short, and the Freeport Compact sells a little at a steep price.</p>
-            <p><b>Aurorite.</b> A fifth ore that exists only in the three deep-space sectors (Ashen Expanse, Glass Shallows, Lantern Deep), glowing teal in the rock. It never re-forms anywhere else: dust from wrecks drifts back toward deep space. Fabricate it into Aurora Tuning (2 Aurorite + 1 Flux Coil) and attune any component in the Shipyard: each level adds +6% to that component (two levels max, 1 then 2 tunings). Whoever holds depots in deep space mines Aurorite, and their fighters start showing up tuned.</p>
+            <p><b>Aurorite.</b> A fifth ore that exists only in the three deep-space sectors (Ashen Expanse, Glass Shallows, Lantern Deep), glowing teal in the rock. It never re-forms anywhere else: dust from wrecks drifts back toward deep space. Fabricate it into Aurora Tuning (2 Aurorite + 1 Flux Coil) and attune any component in the Shipyard: each level adds +6% to engines, holds and mining lasers, or +3% to shields, guns, armour and power (two levels max, 1 then 2 tunings). Fully tuned, a ship wins about 60% of fights against the same ship untuned. Whoever holds depots in deep space mines Aurorite, and their fighters start showing up tuned.</p>
             <p><b>Missiles and swarms.</b> Missiles and swarm micro-missiles hit 1.8× harder once a target's shield is down, so break shields with guns and finish with missiles. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts carry a swarm launcher with 2 pods (fire with 3): eight micro-missiles fan out at your target and anything flying near it. Flares fool only about half of them. AI heavy fighters and bombers sometimes carry one too.</p>
             <p><b>Constructors.</b> Factions send escorted constructor convoys to build forward depots in sectors without a station, and to rebuild lost frontier depots. A forward depot costs one Depot Frame and is lightly built (2 turrets, 2 module slots); its faction expands it into a full depot when it can spare a second frame. Constructors are flown only by faction command. To get a depot built, fly to a system with no station, make sure the area is mostly clear (no more than one hostile within 3 km, no hostile capital ship in the system) and call one in through comms (I, then 3). If command has no constructor ready it assembles one as soon as its stores allow, then it sets out from the nearest friendly station and jumps system by system to you, always with an escort of at least two fighters. The site doesn't have to stay clear while it travels, but the convoy has to survive to build.</p>
             <p><b>Logistics.</b> Each faction's core station is its warehouse; each depot keeps its own store. A depot mines into its store, runs its life support, works and fighter hangar from it, and (with a production module) turns ore into plates, conduit and coil. Freight convoys carry surplus ore to the warehouse and components out to depots that are building and to carriers in the field. Convoys are real freighters: they can be caught on the way, and a destroyed freighter spills half its hold as salvage. The Missions tab lists enemy convoys within reach under Convoy raids, with a bounty for each, and our own convoys under Convoy escort: sign on, fly with one, and Command pays when it docks.</p>
@@ -724,10 +724,10 @@ FACTIONS.brood={name:'The Vael Brood',short:'Brood',col:'#9be35a',fill:'#14200c'
 const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',shot:'scrap',hulls:{gunboat:'Raker',interceptor:'Dart',striker:'Cutter',heavy:'Brute',bomber:'Wrecker',prospector:'Gouger',freighter:'Scow',drone:'Junk Drone',skiff:'Scrounger',frigate:'Corsair',picket:'Gnat',dredger:'Grinder',courier:'Smuggler',bulker:'Hulk',constructor:'Rigger',scout:'Sneak',scout2:'Ghost'}};
 const PLAYER_COL='#f0b24a';
 const CLASSES={
-  interceptor:{name:'Light Fighter',hull:78,shield:.85,speed:1.32,turn:3.45,weapon:1.0,cargo:14,drill:0,radius:12,rack:.75,boost:1.25,agile:1.45,acc:1.38,bcost:.7,desc:'Fastest and most agile: quickest acceleration, cheap afterburner, best at shaking missiles. Light armour.'},
+  interceptor:{name:'Light Fighter',hull:86,shield:.85,speed:1.32,turn:3.45,weapon:1.05,cargo:14,drill:0,radius:12,rack:.75,boost:1.25,agile:1.45,acc:1.38,bcost:.7,desc:'Fastest and most agile: quickest acceleration, cheap afterburner, best at shaking missiles. Light armour.'},
   gunboat:{name:'Heavy Bomber',swarm:2,torp:true,hull:185,shield:1,speed:.9,turn:1.75,weapon:1.05,cargo:30,drill:0,radius:20,rack:1,boost:.95,agile:.82,acc:.85,bcost:1.05,seats:2,desc:'Two seats. The pilot flies on twin forward cannons and a siege torpedo bay that cracks stations, outposts and their works; a gunner works the rear dorsal turret with its own cannons. An AI gunner mans the turret when no pilot is in it. Swarm launcher (2 pods). Tougher and slower than a fighter, quicker than a Bomber.'},
   striker:{name:'Medium Fighter',hull:110,shield:1,speed:1.17,turn:2.95,weapon:1.25,cargo:24,drill:0,radius:15,rack:1,boost:1.12,agile:1.18,acc:1.2,bcost:.85,desc:'All-rounder: quick off the mark and nimble enough to out-turn heavies and bombers.'},
-  heavy:{name:'Heavy Fighter',swarm:2,acc:.9,hull:165,shield:1.25,speed:.92,turn:1.95,weapon:1.55,cargo:30,drill:0,radius:19,rack:1.5,boost:.92,agile:.8,desc:'Tough gun platform, big missile rack, swarm launcher.'},
+  heavy:{name:'Heavy Fighter',mkK:.8,swarm:2,acc:.9,hull:125,shield:.95,speed:.92,turn:1.95,weapon:1.22,cargo:30,drill:0,radius:19,rack:1,boost:.92,agile:.8,desc:'Tough gun platform with a swarm launcher. Slower to turn than the lighter fighters.'},
   bomber:{name:'Bomber',swarm:2,acc:.78,hull:190,shield:1.2,speed:.8,turn:1.5,weapon:.8,cargo:34,drill:0,radius:22,torp:true,boost:.85,agile:.7,desc:'Torpedoes that crack stations and outposts, swarm launcher. Slow.'},
   skiff:{name:'Light Miner',hull:90,shield:.85,speed:1.1,turn:2.5,weapon:.8,cargo:30,drill:1.1,radius:14,rack:.5,boost:1.05,agile:1.05,acc:1.1,drones:1,lasers:1,desc:'1 mining laser, 1 guard drone, small hold. Nimble enough to run.'},
   prospector:{lasers:2,drones:2,name:'Medium Miner',hull:125,shield:1,speed:1,turn:2.2,weapon:.95,cargo:46,drill:1.5,radius:17,rack:1,boost:1,agile:.9,desc:'2 mining lasers, 2 guard drones, mid hold.'},
@@ -762,23 +762,30 @@ const SHAPES={
     prospector:[[1.0,.2],[.4,.6],[-.6,.7],[-.9,.1],[-.6,-.6],[.3,-.5]],
     freighter:[[1.0,.3],[.9,-.3],[-.8,-.6],[-1.0,.1],[-.7,.6]]},
 };
+// Aurorite tuning: +6% a level to engines, holds and lasers, but only TUNE_CMB to shields, guns, armour and power, so two
+// levels are worth about a Mk in a fight
+const TUNE_CMB=.03;
 const TUNE_MAX=2,TUNE_STEP=.06,tuneItems=l=>l*(l+1)/2;
 function shipStats(fac,cls,T,U){const B=shipStatsBase(fac,cls,T);if(!U)return B;const u=s=>typeof U==='number'?U:(U[s]||0),m=s=>1+TUNE_STEP*u(s);
-  B.thrust*=m('engine');B.maxSpd*=m('engine');B.turn*=1+TUNE_STEP*.5*u('engine');B.eCap*=m('power');B.eRegen*=m('power');B.sCap*=m('shield');B.dmg*=m('weapon');B.hull*=m('armor');B.drill*=m('drill');B.cargo=Math.round(B.cargo*m('cargo'));return applyLegend(applyRefits(B,U),cls,U)}
+  B.thrust*=m('engine');B.maxSpd*=m('engine');B.turn*=1+TUNE_STEP*.5*u('engine');const mc=s=>1+TUNE_CMB*u(s);B.eCap*=mc('power');B.eRegen*=mc('power');B.sCap*=mc('shield');B.dmg*=mc('weapon');B.hull*=mc('armor');B.drill*=m('drill');B.cargo=Math.round(B.cargo*m('cargo'));return applyLegend(applyRefits(B,U),cls,U)}
+// combat Mk curve: how many old-style Mk steps each Mk is worth for hull, shields, armour, guns, energy and missiles, so an
+// upgrade is an edge, not a wall. Same pilot skill, same hull: Mk I beats Mk II about 37% of the time, Mk III 32%, Mk IV 27%,
+// Mk V 22%. Engines, holds, mining lasers and payload reloads keep their full steps.
+let MK_LV=[0,0,.17,.29,.46,.72],MK_K=1;let SWARM_K=.35,MSL_K=1;/* swarm micro-missiles were deciding dogfights on their own: now harassment more than a kill */const mkL=t=>MK_LV[clamp(Math.round(t),1,5)]*MK_K;
 function shipStatsBase(fac,cls,T){
   const t=s=>typeof T==='number'?T:T[s];
-  const C=CLASSES[cls],F=(FACTIONS[fac]&&FACTIONS[fac].trait)||{},tr=k=>F[k]||1;
+  const C=CLASSES[cls],F=(FACTIONS[fac]&&FACTIONS[fac].trait)||{},tr=k=>F[k]||1,c=s=>mkL(t(s))*(C.mkK||1);   // C.mkK evens out how much each hull gains per Mk
   return{thrust:225*SPEED_K*(C.acc||1)*(1+.16*(t('engine')-1)),maxSpd:285*SPEED_K*C.speed*(1+.11*(t('engine')-1)),turn:C.turn*(1+.06*(t('engine')-1)),
-    eCap:110*(1+.25*(t('power')-1))*tr('energy'),eRegen:22*(1+.22*(t('power')-1))*tr('energy'),
-    sCap:172*C.shield*(1+.32*(t('shield')-1))*tr('shield'),hull:2*C.hull*(1+.22*(t('armor')-1))*tr('hull'),dr:.05*(t('armor')-1),
-    dmg:8*C.weapon*(1+.26*(t('weapon')-1)),rof:5.5,shotCost:3.2*(1+.12*(t('weapon')-1)),
+    eCap:110*(1+.25*c('power'))*tr('energy'),eRegen:22*(1+.22*c('power'))*tr('energy'),
+    sCap:172*C.shield*(1+.32*c('shield'))*tr('shield'),hull:2*C.hull*(1+.22*c('armor'))*tr('hull'),dr:.05*c('armor'),
+    dmg:8*C.weapon*(1+.26*c('weapon')),rof:5.5,shotCost:3.2*(1+.12*c('weapon')),
     drill:3.2*C.drill*(1+.3*(t('drill')-1)),cargo:Math.round(C.cargo*(1+.3*(t('cargo')-1))),reload:1-.15*((t('payload')||1)-1),radius:C.radius};
 }
 const SHOT_SPD=1150,SHOT_TTL=.9,SHOT_RANGE=SHOT_SPD*SHOT_TTL*.9;
 const LASER_ROF=10,LASER_RANGE=820;
 const MISSILE_SPD=780,MISSILE_RANGE=2400,LOCK_CONE=.24;
 const TORP_SPD=440,TORP_RANGE=2700;
-const missileDmg=t=>80*(1+.2*(t-1)),torpDmg=t=>160*(1+.2*(t-1)),swarmDmg=t=>24*(1+.2*(t-1)),SWARM_N=8,BARE_MUL=1.8,TORP_STATION=5,
+const missileDmg=t=>80*MSL_K*(1+.2*mkL(t)),torpDmg=t=>160*(1+.2*(t-1)),swarmDmg=t=>24*SWARM_K*(1+.2*mkL(t)),SWARM_N=8,BARE_MUL=1.8,TORP_STATION=5,
   SPEED_K=.75, // every ship and missile flies at three quarters of the original pace (missiles keep their range)
   MK={missile:{spd:780*SPEED_K,acc:520*SPEED_K,turn:3,ttl:8/SPEED_K,k:1},torpedo:{spd:440*SPEED_K,acc:220*SPEED_K,turn:1.25,ttl:13/SPEED_K,k:2.2},swarm:{spd:950*SPEED_K,acc:700*SPEED_K,turn:4.6,ttl:5/SPEED_K,k:.6}},lockTime=(t,torp)=>(torp?2.6:1.5)*(1-.07*(t-1));
 const rackItem=cls=>CLASSES[cls].torp?'torpedo':'missile';
@@ -3730,8 +3737,11 @@ function bomberRun(e,OE,dt){const ai=e.ai,dx=OE.x-e.x,dy=OE.y-e.y,dz=OE.z-e.z,d=
   if(ai.lock>=1&&(ai.tcd||0)<=W.t&&(e.load.torpedo||0)>0){inv.take(e.load,'torpedo',1);launchMissile(e,OE,e.tier,'torpedo');ai.lock=.4;ai.tcd=W.t+rnd(4,6)}
   if(err<.09&&d<SHOT_RANGE)fire(e)}
 function fight(e,t,dt){
-  const ai=e.ai;if(ai.lt!==t){ai.lt=t;ai.lead=rnd(.6,1.25)}const dx=t.x-e.x,dy=t.y-e.y,dz=t.z-e.z,d=hyp(dx,dy,dz)||1,lp0=e.wpn==='laser'?t:leadPoint(e,t,SHOT_SPD),lp={x:t.x+(lp0.x-t.x)*ai.lead,y:t.y+(lp0.y-t.y)*ai.lead,z:t.z+(lp0.z-t.z)*ai.lead};
-  const amp=.03-.006*((e.tier||1)-1);ai.jx=(ai.jx||0)*.97+rnd(-amp,amp);ai.jy=(ai.jy||0)*.97+rnd(-amp,amp);if(!ai.bT||W.t>ai.bT){ai.bOn=!ai.bOn;ai.bT=W.t+(ai.bOn?rnd(.7,1.4):rnd(.8,1.6))}
+  const ai=e.ai;if(ai.lt!==t){ai.lt=t;ai.lead=rnd(.6,1.25)}
+  // a pilot-grade AI (e.flares: duel tests) flares incoming missiles the way a player would: 30 energy, 5 s apart, and it
+  // saves them for missiles and torpedoes rather than wasting them on a swarm
+  if(e.flares&&(ai.flareAt||0)<=W.t&&e.energy>=30&&W.missiles.some(m=>m.tgt===e&&m.kind!=='swarm'&&d3(m,e)<700)){e.energy-=30;deployFlares(e);ai.flareAt=W.t+5}const dx=t.x-e.x,dy=t.y-e.y,dz=t.z-e.z,d=hyp(dx,dy,dz)||1,lp0=e.wpn==='laser'?t:leadPoint(e,t,SHOT_SPD),lp={x:t.x+(lp0.x-t.x)*ai.lead,y:t.y+(lp0.y-t.y)*ai.lead,z:t.z+(lp0.z-t.z)*ai.lead};
+  const amp=.03-.006*((e.aimT||e.tier||1)-1);ai.jx=(ai.jx||0)*.97+rnd(-amp,amp);ai.jy=(ai.jy||0)*.97+rnd(-amp,amp);if(!ai.bT||W.t>ai.bT){ai.bOn=!ai.bOn;ai.bT=W.t+(ai.bOn?rnd(.7,1.4):rnd(.8,1.6))}
   const err=faceDir(e,lp.x-e.x+ai.jx*d,lp.y-e.y+ai.jy*d,lp.z-e.z,dt);
   const want=t.type==='outpost'||t.type==='station'?560:400;
   const ax=ai.ax;let px=dy/d*ax.z-dz/d*ax.y,py=dz/d*ax.x-dx/d*ax.z,pz=dx/d*ax.y-dy/d*ax.x;const pl=hyp(px,py,pz)||1;px/=pl;py/=pl;pz/=pl;
@@ -3794,7 +3804,7 @@ function detonate(m,i){const s=S.sectors[W.sid],tp=m.kind==='torpedo',sw=m.kind=
   const T=m.tgt;if(T&&T.type==='outpost'&&!T.o.breached&&T.o.owner&&hostile(m.side,T.o.owner)&&d3(T,m)<(tp?230:170))damageOutpost(T,m.dmg*(tp?3:1.5));
   toDebris(s,m.inv)}
 function deployFlares(e){const fl=[];for(let i=0;i<3;i++){const d=rdir(),f={decoy:true,x:e.x,y:e.y,z:e.z,vx:e.vx*.4+d.x*120,vy:e.vy*.4+d.y*120,vz:e.vz*.4+d.z*120,life:3.2};W.decoys.push(f);fl.push(f)}
-  const chance=Math.min(.95,(e.isPlayer?.8:.6)*(1+.3*((CLASSES[e.cls].agile||1)-1)));for(const m of W.missiles)if(m.tgt===e&&d3(m,e)<1700&&Math.random()<chance*(m.kind==='torpedo'?.5:m.kind==='swarm'?.55:1))m.tgt=pick(fl);fxSpark(e,'#fff1c0',10)}
+  const chance=Math.min(.95,(e.isPlayer||e.flares?.8:.6)*(1+.3*((CLASSES[e.cls].agile||1)-1)));for(const m of W.missiles)if(m.tgt===e&&d3(m,e)<1700&&Math.random()<chance*(m.kind==='torpedo'?.5:m.kind==='swarm'?.55:1))m.tgt=pick(fl);fxSpark(e,'#fff1c0',10)}
 function playerFlares(){if(!W||!running||S.player.docked||W.dead)return;const p=W.player;if(W.flareCd>0){flash(`Flares recharging (${Math.ceil(W.flareCd)} s).`);return}if(p.energy<30){flash('Not enough energy for flares.');return}p.energy-=30;W.flareCd=5;deployFlares(p);if(NET.cl)netSend({t:'flare'});flash('Flares away.')}
 function missilesUpdate(dt){
   W.flareCd=Math.max(0,W.flareCd-dt);W.mslCd=Math.max(0,W.mslCd-dt);
@@ -3805,7 +3815,8 @@ function missilesUpdate(dt){
     const tp=m.kind==='torpedo',K=MK[m.kind]||MK.missile;let sp=hyp(m.vx,m.vy,m.vz)||1,dx=m.vx/sp,dy=m.vy/sp,dz=m.vz/sp;sp=Math.min(K.spd,sp+K.acc*dt);
     if(T){let rx=T.x-m.x,ry=T.y-m.y,rz=T.z-m.z;const tt=hyp(rx,ry,rz)/sp;rx+=(T.vx||0)*tt;ry+=(T.vy||0)*tt;rz+=(T.vz||0)*tt;const l=hyp(rx,ry,rz)||1;rx/=l;ry/=l;rz/=l;
       const ang=Math.acos(clamp(dx*rx+dy*ry+dz*rz,-1,1)),k=ang>1e-4?Math.min(1,K.turn*dt/ang):1;dx+=(rx-dx)*k;dy+=(ry-dy)*k;dz+=(rz-dz)*k;const n=hyp(dx,dy,dz)||1;dx/=n;dy/=n;dz/=n;
-      if(T.type==='ship'&&T.npc&&!m.checked&&d3(m,T)<750){m.checked=true;if((T.ai.flareAt||0)<=W.t&&Math.random()<.35){deployFlares(T);T.ai.flareAt=W.t+10}}}
+      if(T.type==='ship'&&T.npc&&!m.checked&&m.kind!=='swarm'&&d3(m,T)<750){m.checked=true;   // AI pilots don't waste their flares on a swarm's micro-missiles
+      if((T.ai.flareAt||0)<=W.t&&Math.random()<.35){deployFlares(T);T.ai.flareAt=W.t+10}}}
     m.vx=dx*sp;m.vy=dy*sp;m.vz=dz*sp;const ox=m.x,oy=m.y,oz=m.z;m.x+=m.vx*dt;m.y+=m.vy*dt;m.z+=m.vz*dt;
     m.smoke-=dt;if(m.smoke<=0){m.smoke=tp?.025:.035;W.fx.push({x:ox,y:oy,z:oz,vx:rnd(-8,8),vy:rnd(-8,8),vz:rnd(-8,8),life:tp?1.6:.9,max:tp?1.6:.9,c:tp?[.5,.42,.3]:[.4,.4,.44],sz:rnd(4,7)*(tp?1.8:1)})}
     let boom=m.ttl<=0;

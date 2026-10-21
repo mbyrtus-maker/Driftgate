@@ -876,3 +876,22 @@ Unbound captain, `PIRATE_MUL`), above a carrier's 2,800 so an ace is the biggest
 it kills up to `ACE_CAP` = 8,400. A separate ace roster written in this session was dropped in favour of that one.
 
 Strategic check after the hull changes (500 games, 2.2 h): Halcyon 27%, Ostrova 26%, Varkesh 24%, Brood 22%.
+
+## Mk curve, hull balance and tuning (v160)
+
+Measured with `tools/duel.py` (jobs file of `[clsA,mkA,tuneA,clsB,mkB,tuneB]`): AI pilots with equal aim (`e.aimT=1`),
+a player's magazines (missile rack or torpedo bay by Mk, swarm pods), flaring missiles like a player (`e.flares`).
+
+- **Mk curve.** Each Mk now adds a fraction of the old step to combat stats (hull, shields, armour, guns, energy, missile
+  and swarm damage): `MK_LV=[0,0,.17,.29,.46,.72]` old steps at Mk I..V, times a hull's `mkK` (Heavy Fighter .8). Engines,
+  holds, mining lasers, payload reloads and torpedoes keep their full steps. Same hull, Mk I wins about 39% against Mk II,
+  33% against Mk III, 29% against Mk IV, 23% against Mk V (it was 0-16%).
+- **Aurorite tuning** adds `TUNE_CMB` = 3% a level to shields, guns, armour and power (6% to engines, holds and lasers).
+  Fully tuned beats the same ship untuned about 60% of the time, worth about a Mk.
+- **Swarm pods** do `SWARM_K` = 0.35 of their old damage: any swarm-carrying hull was winning almost every duel.
+- **Heavy Fighter** hull 165 → 125, shield 1.25 → .95, guns 1.55 → 1.22, missile rack 1.5 → 1.0.
+  **Light Fighter** hull 78 → 86, guns 1.0 → 1.05.
+- **AI flares** no longer fire at swarm micro-missiles (that let a swarm bait the flares for the real missile).
+
+Overall win % against the other five hulls at the same Mk (Mk I / III / V): Light 49/49/54, Medium 56/57/51,
+Heavy 66/65/65, Bomber 15/16/20, Heavy Bomber 32/35/37, Wraith 81/77/72.
