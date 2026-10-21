@@ -1003,14 +1003,15 @@ function unbGateHold(){if(!S.unb)return GATE_HOLD;const o=sideNorm(sectorOwner(W
 function unbFenceRate(){return[.7,.7,.8,.9][unbWork('den')]}
 function fenceRef(k){let t=0,n=0;for(const f of FAC_IDS){const st=S.econ.stock[f];if(st){t+=price(st,k);n++}}return n?t/n:baseValue(k)}
 function fencePr(k){return Math.max(1,Math.floor(fenceRef(k)*unbFenceRate()))}
-function unbFenceHtml(c,P,srcs){let h=`<p class="note" style="margin:0 0 12px">The Fence's Den buys anything at ${Math.round(unbFenceRate()*100)}% of market value, no questions asked: goods go into Unbound stores and the credits come out of the Unbound treasury. Stolen goods (☠) sell here; at a Freeport they only sell under false colours. ${unbWork('den')>=2?'The Den launders stolen goods for a tenth of their value.':'Laundering needs the Den at level 2 (Works tab).'}</p>`;
+const STOLEN_K=2.5;function fencePrS(k){return Math.max(1,Math.floor(fenceRef(k)*STOLEN_K*unbFenceRate()/.7))}
+function unbFenceHtml(c,P,srcs){let h=`<p class="note" style="margin:0 0 12px">The Fence's Den buys anything at ${Math.round(unbFenceRate()*100)}% of market value, and stolen goods (☠) at ${Math.round(STOLEN_K*unbFenceRate()/.7*100)}%, no questions asked: goods go into Unbound stores and the credits come out of the Unbound treasury. Stolen goods (☠) sell here; at a Freeport they only sell under false colours. ${unbWork('den')>=2?'The Den launders stolen goods for a tenth of their value.':'Laundering needs the Den at level 2 (Works tab).'}</p>`;
   const items=ITEM_ORDER.filter(k=>countIn(k,[P.cargo])>0&&!MUNITIONS.has(k));if(!items.length)return h+'<p class="note">Your hold is empty. Go and take something.</p>';
   h+=`<div class="tblw"><table class="t"><thead><tr><th>Item</th><th class="r">In hold</th><th class="r">Fence pays</th><th></th></tr></thead><tbody>`;
-  for(const k of items){const n=P.cargo[k]||0,st=(P.stolen||{})[k]||0,pr=fencePr(k);h+=`<tr><td class="iname">${esc(ITEMS[k].name)}${st?` <span class="dchip hi">☠ ${st} stolen</span>`:''}<span class="mass">${mass(k)} t</span></td><td class="r num">${n}</td><td class="r num">${fmt(pr)} cr</td><td><div class="act"><button class="btn sm" data-act="fence" data-arg="${k}:1">Fence 1</button><button class="btn sm" data-act="fence" data-arg="${k}:all">Fence all</button></div></td></tr>`}
+  for(const k of items){const n=P.cargo[k]||0,st=(P.stolen||{})[k]||0,pr=st?fencePrS(k):fencePr(k);h+=`<tr><td class="iname">${esc(ITEMS[k].name)}${st?` <span class="dchip hi">☠ ${st} stolen</span>`:''}<span class="mass">${mass(k)} t</span></td><td class="r num">${n}</td><td class="r num">${fmt(pr)} cr</td><td><div class="act"><button class="btn sm" data-act="fence" data-arg="${k}:1">Fence 1</button><button class="btn sm" data-act="fence" data-arg="${k}:all">Fence all</button></div></td></tr>`}
   return h+`</tbody></table></div><div class="act" style="margin-top:8px"><button class="btn" data-act="fence" data-arg="*:all">Fence the whole hold</button></div>`+launderHtml(P)}
 function unbFence(arg){const P=unbP(),[k0,n0]=String(arg).split(':'),keys=k0==='*'?Object.keys(P.cargo).filter(k=>!MUNITIONS.has(k)):[k0];let got=0,t=0;
-  for(const k of keys){const n=n0==='all'?(P.cargo[k]||0):Math.min(+n0||1,P.cargo[k]||0);if(!(n>0))continue;const pr=fencePr(k);const can=Math.min(n,Math.floor((S.econ.treasury.pirate||0)/pr));if(can<=0)continue;
-    inv.take(P.cargo,k,can);inv.add(S.econ.stock.pirate,k,can);if(P.stolen[k]){P.stolen[k]=Math.max(0,P.stolen[k]-can);if(!P.stolen[k])delete P.stolen[k]}got+=transfer('pirate','player',pr*can);t+=can*mass(k)}
+  for(const k of keys){const n=n0==='all'?(P.cargo[k]||0):Math.min(+n0||1,P.cargo[k]||0);if(!(n>0))continue;const nS=Math.min(n,P.stolen[k]||0);for(const[m,pr]of[[nS,fencePrS(k)],[n-nS,fencePr(k)]]){if(!(m>0))continue;const can=Math.min(m,Math.floor((S.econ.treasury.pirate||0)/pr));if(can<=0)continue;
+    inv.take(P.cargo,k,can);inv.add(S.econ.stock.pirate,k,can);if(P.stolen[k]){P.stolen[k]=Math.max(0,P.stolen[k]-Math.min(can,nS));if(!P.stolen[k])delete P.stolen[k]}got+=transfer('pirate','player',pr*can);t+=can*mass(k)}}
   if(got)SFX.fence();dockErr=got?`✓ The Fence took ${fmt(t)} t for ${fmt(got)} cr.`:'The Fence has nothing to pay you with right now.'}
 function unbBlackHtml(c,P){let h=`<p class="note" style="margin:0 0 12px">Unbound hulls, paid in credits to the haven. A bought hull goes down with you: you relaunch in a Raider. Trading in a bought hull returns half its price. Mk upgrades cost materials as usual (Upgrades tab).</p><div class="tblw"><table class="t"><thead><tr><th>Hull</th><th class="r">Hull</th><th class="r">Shields</th><th class="r">Hold</th><th class="r">Price</th><th></th></tr></thead><tbody>`;
   for(const k of UNB_HULLS){const st=shipStats('pirate',k,1),on=P.cls===k,pr=Math.round(UNB_PRICE[k]*(unbWork('chop')>=2?.9:1));h+=`<tr><td class="iname"><b>${esc(PIRATE.hulls[k])}</b> <span class="mass">${esc(CLASSES[k].desc||'')}</span></td><td class="r num">${Math.round(st.hull)}</td><td class="r num">${Math.round(st.sCap)}</td><td class="r num">${st.cargo} t</td><td class="r num">${pr?fmt(pr)+' cr':'free'}</td><td>${on?'<b>Flying</b>':`<button class="btn sm" data-act="unbhull" data-arg="${k}" ${P.credits+(UNB_PRICE[P.cls]||0)*TRADE_IN>=pr?'':'disabled'}>${pr?'Buy':'Switch'}</button>`}</td></tr>`}
@@ -1225,6 +1226,8 @@ const JAM={drainD:1.5,drainR:.1,harden:60,hookR:150,hookRate:8};
 function jamCap(e){return e.st.hull*(e.st.jamBarK||1)}
 function jamFrac(e){return e&&e.jam>0?clamp(e.jam/jamCap(e),0,1):0}
 function jamDark(e){return!!e&&(e.jamOff||0)>W.t}
+// a Jam bar or a harpoon tether keeps a ship out of the gate field
+function gateLocked(e){return!!e&&(e.jam>0||jamDark(e)||!!(e.teth&&e.teth.until>W.t))}
 function jamWin(e){const c=e.cls;return c==='freighter'||c==='bulker'?12:c==='courier'||c==='skiff'||c==='prospector'||c==='dredger'?10:5}
 function jamHit(e,b){e.lastHit=W.t;e.lastHitBy=b.side;if(e.shield>0){fxSpark(b,'#8fc8ff',3);return}if(jamDark(e)||(e.jamHard||0)>W.t){fxSpark(b,'#b7c6ff',2);return}
   if(!(e.jam>0)){ // the bar appears: a Snap-back emitter answers once a minute, freighters call for help, a pilot is warned
@@ -1599,7 +1602,7 @@ function mR(c){return c&&c.kind==='station'?S.stations[S.player.sector]:null}
 // market fee on a pilot's trades: 6%, less in the bigger haulers (a freight licence). A big hold soon moves the price against
 // itself; the bigger haulers pay a thinner fee and move the local price less per unit (HAUL_MK), so trade runs come to about
 // 15k an hour in a Light Hauler, 20k in a Medium and 25k in a Heavy, Mk I.
-const HAUL_FEE={courier:.035,freighter:.02,bulker:.01};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;const HAUL_MK={freighter:.7,bulker:.35};const pMk=()=>HAUL_MK[S.player.cls]||1;
+const HAUL_FEE={courier:.035,freighter:.02,bulker:.01};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;const HAUL_MK={freighter:.6,bulker:.28};const pMk=()=>HAUL_MK[S.player.cls]||1;
 function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id)*locF(R,id)*(1+mFee(S.player.cls)))}
 function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id)*locF(R,id)*(1-mFee(S.player.cls))))}
 // how many units a market takes (dir +1, a sale) or gives (dir -1, a purchase) at the quoted price: as many as it can absorb before
@@ -4393,7 +4396,7 @@ function missilesUpdate(dt){
 // AI gate jump: fly to a point on the gate's axis, hold there while the gate charges for 5 s, then warp out
 function npcGateJump(e,g,dt,urgency){const d=gateAxis(g);
   if(!e.gj||e.gj.g!==g){const ax=g.x-d.x*200,ay=g.y-d.y*200,az=g.z-d.z*200,dist=steer(e,ax,ay,az,dt,true,urgency||1);faceTo(e,{x:ax,y:ay,z:az},dt);if(dist<110)e.gj={g,t:0};return false}
-  const J=e.gj;J.t+=dt;const tx=g.x-d.x*60,ty=g.y-d.y*60,tz=g.z-d.z*60,ex=tx-e.x,ey=ty-e.y,ez=tz-e.z,el=hyp(ex,ey,ez)||1,sp=Math.min(50,el*.35),k=Math.min(1,1.6*dt);
+  const J=e.gj;if(gateLocked(e))J.t=0;else J.t+=dt;const tx=g.x-d.x*60,ty=g.y-d.y*60,tz=g.z-d.z*60,ex=tx-e.x,ey=ty-e.y,ez=tz-e.z,el=hyp(ex,ey,ez)||1,sp=Math.min(50,el*.35),k=Math.min(1,1.6*dt);
   e.vx+=(ex/el*sp-e.vx)*k;e.vy+=(ey/el*sp-e.vy)*k;e.vz+=(ez/el*sp-e.vz)*k;faceDir(e,d.x,d.y,d.z,dt);e.thrusting=false;
   if(Math.random()<dt*(2+J.t*3))fxSpark({x:e.x+rnd(-20,20),y:e.y+rnd(-20,20),z:e.z+rnd(-20,20)},sideCol(e.side),1);
   if(J.t>=GATE_HOLD){fxWarp(e,sideCol(e.side));despawn(e);return true}return false}
@@ -4610,6 +4613,7 @@ function gateCountdown(p){const dt=W.fdt||1/60;let best=null;for(const g of GATE
   const{g,z}=best;W.gate={g,z};
   if(S.gateDown[gateKey(W.sid,g.to)]){W.gc=null;if(W.t-(W.gateMsg||0)>3){flash('This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}return}
   if(z.cos<.94){if(W.gc){W.gc=null;SFX.beep(140);flash('Alignment lost. Line up with the gate again.',true)}return}
+  if(gateLocked(p)){if(W.gc){W.gc=null}if(W.t-(W.gateLockMsg||0)>3){W.gateLockMsg=W.t;flash('Jammed or tethered: the gate field won\u2019t take you until the bar drains or the line breaks.',true)}return}
   if(!W.gc||W.gc.g!==g){W.gc={g,t:0,last:6}}
   const C=W.gc;C.t+=dt;const n=Math.ceil(unbGateHold()-C.t);if(n<C.last&&n>0){C.last=n;SFX.count(n===1)}
   // the field: ease the ship onto the axis and let it creep toward the ring
@@ -4764,7 +4768,7 @@ function drawDocking(c){const D=W.docking;if(!D)return;const k=Math.min(1,D.t/DO
   c.fillText(`${D.kind==='turret'?'BOARDING TURRET':D.berth!=null&&carBay(D.E)?(D.t<2?'LANDING · LINING UP OVER THE FLIGHT DECK':'LANDING · SETTING DOWN ON THE DECK'):D.berth!=null?(D.t<2?'DOCKING · LINING UP ON THE HULL':'DOCKING · HULL CLAMPS DRAWING YOU IN'):D.port!=null?(D.t<2?'DOCKING · LINING UP ON THE ARM':'DOCKING · ARM CLAMPS DRAWING YOU IN'):D.t<2?'DOCKING · ALIGNING OVER HANGAR':'DOCKING · LOWERING INTO HANGAR'}  ${Math.max(0,DOCK_T-D.t).toFixed(1)} s  ·  E TO ABORT`,VW/2,y-9)}
 function undock(){const P=S.player;if(!P.docked)return;if(P.docked==='lair'){P.docked=null;$('dock').hidden=true;const p=W.player;p.alive=true;p.vx=60;cam.snap=true;if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:0,vz:0,q:[p.q.x,p.q.y,p.q.z,p.q.w]});save();return}if(NET.host)setTimeout(()=>crewLaunch(NET.me),400);setTimeout(launchPlayerDrones,0);setTimeout(convoyLaunch,0);SFX.clunk();const E=P.docked==='station'?W.stationEnt:W.outpostEnt;P.docked=null;const p=W.player;const L=portsW(E);
   if(L&&L.length){const pt=L[W.dockPort!=null&&L[W.dockPort]?W.dockPort:Math.floor(Math.random()*L.length)],sc=p.st.radius*1.25,f=sc*1.3+25,u=dockUp(E);p.x=pt.x+pt.dx*f;p.y=pt.y+pt.dy*f;p.z=pt.z+pt.dz*f;p.vx=pt.dx*110+(E.vx||0);p.vy=pt.dy*110;p.vz=pt.dz*110+(E.vz||0);qLook(pt.dx,pt.dy,pt.dz,u.x,u.y,u.z,p.q)}
-  else{const o=rdir(.8);p.x=E.x+o.x*(E.r+90);p.y=E.y+o.y*(E.r+90);p.z=E.z+o.z*(E.r+90);p.vx=o.x*120;p.vy=o.y*120;p.vz=o.z*120;faceInstant(p,o.x,o.y,o.z)}W.dockPort=null;cam.snap=true;$('dock').hidden=true;p.alive=true;if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]});save()}
+  else{const o=rdir(.8),B0=E||p,rr=(E&&E.r||0)+90;p.x=B0.x+o.x*rr;p.y=B0.y+o.y*rr;p.z=B0.z+o.z*rr;p.vx=o.x*120;p.vy=o.y*120;p.vz=o.z*120;faceInstant(p,o.x,o.y,o.z)}W.dockPort=null;cam.snap=true;$('dock').hidden=true;p.alive=true;if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]});save()}
 let flashMsg=null;
 function flash(m,alert){if(CTX&&NET.host&&CTX!==NET.me){netMsg(CTX,'flash',m,alert);return}if(MUTE&&!CTX)return;if(alert&&!CTX&&(!flashMsg||flashMsg.m!==m||performance.now()-flashMsg.t>2000))SFX.uiErr();flashMsg={m,alert,t:performance.now()}}
 
