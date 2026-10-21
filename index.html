@@ -715,6 +715,9 @@ const VARIANTS={
   deepmag:{slot:'payload',name:'Deep magazine',gain:'+50% missiles in the rack',cost:'Always flies as at least a third laden',f:{rackK:1.5,ladenMin:1/3}},
   quickcyc:{slot:'payload',name:'Quick-cycle rack',gain:'Reloads twice as fast',cost:'−40% rack size',f:{reloadK:.5,rackK:.6}},
   smart:{slot:'payload',name:'Smart seekers',gain:'−40% lock time',cost:'−20% missile damage',f:{lockK:.6,mslK:.8}},
+  shaped:{slot:'drill',name:'Shaped charges',gain:'On-point window 8 m instead of 5 m',cost:'An on-point charge releases at most 80%',f:{blWin:8,blRelCap:.8}},
+  longlaunch:{slot:'drill',name:'Long launcher',gain:'Charges reach 450 m instead of 300 m',cost:'Charges fly 25% slower',f:{blRange:450,blSpdK:.75}},
+  survey:{slot:'drill',name:'Survey rig',gain:'Scans last 60 s and mark every rock within 2 km',cost:'One charge fewer in the magazine',f:{blScan:60,blScanR:2000,blChg:-1}},
 };
 const VAR_BY_SLOT={};for(const id in VARIANTS){const V=VARIANTS[id];V.id=id;V.recipe=V.recipe||VAR_RECIPE;(VAR_BY_SLOT[V.slot]=VAR_BY_SLOT[V.slot]||[]).push(id);
   ITEMS['v_'+id]={name:V.name,recipe:V.recipe,col:'#9fe0c8',variant:id}}
@@ -733,7 +736,7 @@ function invValue(o){let v=0;for(const k in o)v+=baseValue(k)*o[k];return v}
 const SLOTS=[
   {id:'engine',name:'Drive',base:{plate:2,wire:2}},{id:'power',name:'Reactor',base:{plate:1,wire:2}},
   {id:'shield',name:'Shield Emitter',base:{plate:1,wire:2}},{id:'weapon',name:'Weapons',base:{plate:1,wire:2}},
-  {id:'armor',name:'Armor',base:{plate:3}},{id:'drill',name:'Mining Laser',base:{plate:1,wire:1}},{id:'cargo',name:'Cargo Hold',base:{plate:2}},{id:'payload',name:'Payload Bay',base:{}},
+  {id:'armor',name:'Armor',base:{plate:3}},{id:'drill',name:'Blast Rig',base:{plate:1,wire:1}},{id:'cargo',name:'Cargo Hold',base:{plate:2}},{id:'payload',name:'Payload Bay',base:{}},
 ];
 const SLOT={};SLOTS.forEach(s=>SLOT[s.id]=s);
 const UPG={2:{plate:2,wire:2},3:{plate:2,coil:2},4:{coil:2,lattice:2},5:{lattice:1,core:2}};
@@ -758,9 +761,9 @@ const CLASSES={
   striker:{name:'Medium Fighter',hull:110,shield:1,speed:1.17,turn:2.95,weapon:1.25,cargo:24,drill:0,radius:15,rack:1,boost:1.12,agile:1.18,acc:1.2,bcost:.85,desc:'All-rounder: quick off the mark and nimble enough to out-turn heavies and bombers.'},
   heavy:{name:'Heavy Fighter',mkK:.8,swarm:2,acc:.9,hull:125,shield:.95,speed:.92,turn:1.95,weapon:1.22,cargo:30,drill:0,radius:19,rack:1,boost:.92,agile:.8,desc:'Tough gun platform with a swarm launcher. Slower to turn than the lighter fighters.'},
   bomber:{name:'Bomber',swarm:2,acc:.78,hull:190,shield:1.2,speed:.8,turn:1.5,weapon:.8,cargo:34,drill:0,radius:22,torp:true,boost:.85,agile:.7,desc:'Torpedoes that crack stations and outposts, swarm launcher. Slow.'},
-  skiff:{name:'Light Miner',hull:90,shield:.85,speed:1.1,turn:2.5,weapon:.8,cargo:30,drill:1.1,radius:14,rack:.5,boost:1.05,agile:1.05,acc:1.1,drones:1,lasers:1,desc:'1 mining laser, 1 guard drone, small hold. Nimble enough to run.'},
-  prospector:{lasers:2,drones:2,name:'Medium Miner',hull:125,shield:1,speed:1,turn:2.2,weapon:.95,cargo:46,drill:1.5,radius:17,rack:1,boost:1,agile:.9,desc:'2 mining lasers, 2 guard drones, mid hold.'},
-  wraith:{name:'Wraith',hull:82,shield:.89,speed:1.3,turn:3.25,weapon:1.89,cargo:0,drill:0,radius:12,rack:0,swarm:2,boost:1.2,agile:1.4,acc:1.35,bcost:.75,radar:true,desc:'Legendary Ace hull. Quad cannons and lasers, two swarm pod batteries, no hold and no mining laser. K switches stealth: hidden beyond 600 m, but no shields, guns, missile locks or afterburner while hidden.'},
+  skiff:{name:'Light Miner',hull:90,shield:.85,speed:1.1,turn:2.5,weapon:.8,cargo:30,drill:1.1,radius:14,rack:.5,boost:1.05,agile:1.05,acc:1.1,drones:1,lasers:1,desc:'1 charge launcher, 1 guard drone, small hold. Nimble enough to run.'},
+  prospector:{lasers:2,drones:2,name:'Medium Miner',hull:125,shield:1,speed:1,turn:2.2,weapon:.95,cargo:46,drill:1.5,radius:17,rack:1,boost:1,agile:.9,desc:'2 charge launchers, 2 guard drones, mid hold.'},
+  wraith:{name:'Wraith',hull:82,shield:.89,speed:1.3,turn:3.25,weapon:1.89,cargo:0,drill:0,radius:12,rack:0,swarm:2,boost:1.2,agile:1.4,acc:1.35,bcost:.75,radar:true,desc:'Legendary Ace hull. Quad cannons and lasers, two swarm pod batteries, no hold and no blast rig. K switches stealth: hidden beyond 600 m, but no shields, guns, missile locks or afterburner while hidden.'},
   escort:{name:'Escort',hull:1300,shield:7,speed:.62,turn:.62,weapon:.9,cargo:0,drill:0,radius:70,rack:0,boost:1,agile:.55,acc:.55,desc:'Light capital ship.'},
   carrier:{name:'Carrier',hull:2500,shield:14,speed:.36,turn:.26,weapon:0,cargo:0,drill:0,radius:120,rack:0,boost:1,agile:.25,acc:.3,desc:'Fleet carrier.'},
   frigate:{name:'Frigate',hull:3000,shield:14,speed:.42,turn:.32,weapon:1,cargo:0,drill:0,radius:110,rack:0,boost:1,agile:.3,acc:.35,desc:'Capital ship.'},
@@ -771,7 +774,7 @@ const CLASSES={
   constructor:{name:'Constructor',acc:.75,hull:240,shield:1.25,speed:.72,turn:1.25,weapon:.55,cargo:160,drill:0,radius:26,rack:.5,boost:.85,agile:.65,desc:'Carries Depot Frames; press K to build a depot where there is no station.'},
   courier:{name:'Light Hauler',hull:120,shield:.95,speed:1.05,turn:2.1,weapon:.7,cargo:60,drill:0,radius:16,rack:.5,boost:1.05,agile:.95,acc:1,drones:1,desc:'60 t hold, 1 guard drone, quick for a hauler.'},
   freighter:{drones:2,name:'Medium Hauler',acc:.8,hull:170,shield:1.1,speed:.95,turn:1.7,weapon:.75,cargo:100,drill:0,radius:21,rack:.75,boost:.9,agile:.75,desc:'100 t hold, 2 guard drones, 5.5% market fee. The workhorse: nearly as quick as a Light Hauler.'},
-  dredger:{name:'Heavy Miner',hull:190,shield:1.15,speed:.82,turn:1.6,weapon:.9,cargo:80,drill:2.2,radius:23,rack:.75,boost:.9,agile:.75,acc:.82,drones:4,lasers:3,desc:'3 mining lasers, 4 guard drones, deep hold. Slow and armoured.'},
+  dredger:{name:'Heavy Miner',hull:190,shield:1.15,speed:.82,turn:1.6,weapon:.9,cargo:80,drill:2.2,radius:23,rack:.75,boost:.9,agile:.75,acc:.82,drones:4,lasers:3,desc:'3 charge launchers, 4 guard drones, deep hold. Slow and armoured.'},
   bulker:{name:'Heavy Hauler',hull:260,shield:1.25,speed:.72,turn:1.2,weapon:.7,cargo:180,drill:0,radius:28,rack:.75,boost:.85,agile:.6,acc:.7,drones:4,desc:'180 t hold, 4 guard drones, 4% market fee. A fortress that crawls.'},
 };
 const CLS_IDS=['interceptor','striker','heavy','bomber','skiff','prospector','dredger','courier','freighter','bulker','scout','scout2'],YARD_IDS=[...CLS_IDS,'gunboat'];   // constructors are AI-only: call one in through comms
@@ -802,6 +805,7 @@ function applyVariants(B,U){const vr=vrOf(U);for(const sl in vr){const V=VARIANT
   for(const k in V.m||{})B[k]=(B[k]||(k==='ladenK'?1:0))*V.m[k];for(const k in V.a||{})B[k]=(B[k]||0)+V.a[k];for(const k in V.f||{})B[k]=V.f[k]}
   if(B.cargo)B.cargo=Math.round(B.cargo);return B}
 // a pilot's fitted-variant factor for things computed from the pilot record rather than ship stats (rack size, reloads, lock time)
+function vF(P,key){const vr=vrOf(P&&P.tune);for(const sl in vr){const V=VARIANTS[vr[sl]];if(V&&V.f&&V.f[key]!=null)return V.f[key]}return null}
 function vK(P,key){let k=1;const vr=vrOf(P&&P.tune);for(const sl in vr){const V=VARIANTS[vr[sl]];if(V&&V.f&&V.f[key]!=null)k*=V.f[key]}return k}
 function pRack(P){return Math.round(rackCapC(P.cls,P.tiers.weapon)*vK(P,'rackK'))}
 function vrInv(R){const o={};const vr=vrOf(R&&R.tune);for(const sl in vr)if(VARIANTS[vr[sl]])inv.add(o,'v_'+vr[sl],1);return o}
@@ -840,7 +844,7 @@ const MAG_FLOOR={missile:10,torpedo:20,swarm:15};
 function reloadT(P,k){const t=(P.tiers&&P.tiers.payload)||1,u=(P.tune&&P.tune.payload)||0;return Math.max(1,Math.round(Math.max(MAG_FLOOR[k],MAG_T[k]*(1-.15*(t-1)))*vK(P,'reloadK'))-2*u)}
 function swarmCap(P){return(CLASSES[P.cls]&&CLASSES[P.cls].swarm)||0}
 function magInit(P){if(!P||P.magV)return;if(P.rack>0&&P.vault)inv.add(P.vault,rackItem(P.cls),P.rack);P.rack=pRack(P);P.swarm=swarmCap(P);P.mslT=0;P.swT=0;P.magV=1}
-function magTick(P,dt){if(!P||!P.tiers)return;if(!P.magV)magInit(P);const cap=pRack(P),sc=swarmCap(P);if(P.rack>cap)P.rack=cap;if(P.swarm>sc)P.swarm=sc;
+function magTick(P,dt){if(!P||!P.tiers)return;blTick(P,dt);if(!P.magV)magInit(P);const cap=pRack(P),sc=swarmCap(P);if(P.rack>cap)P.rack=cap;if(P.swarm>sc)P.swarm=sc;
   if(P.rack<cap){if(!(P.mslT>0))P.mslT=reloadT(P,CLASSES[P.cls].torp?'torpedo':'missile');P.mslT-=dt;if(P.mslT<=0){P.rack=cap;P.mslT=0;if(P===S.player&&!MUTE&&running)feed(`${CLASSES[P.cls].torp?'Torpedo bay':'Missile rack'} reloaded.`,'info')}}else P.mslT=0;
   if(sc&&(P.swarm||0)<sc){if(!(P.swT>0))P.swT=reloadT(P,'swarm');P.swT-=dt;if(P.swT<=0){P.swarm=sc;P.swT=0}}else P.swT=0}
 
@@ -2043,7 +2047,7 @@ function stMissiles(SE,dt){const R=SE.rec;if(!R||SE.offline)return;const d=devOf
 // missiles already chasing you lose the lock. Lifting off reboots the ship: guns and launchers stay cold for BOOT_T seconds
 // while energy surges back, and shields start recharging from empty once the boot is done.
 const LAND_SPD=70,LAND_REACH=120,BOOT_T=4,MASK_NEAR=320;
-function mHid(o,from){return!!o&&!!o.masked&&(!from||d3(o,from)>(o.maskR||MASK_NEAR))}
+function mHid(o,from){return!!o&&((!!o.masked&&(!from||d3(o,from)>(o.maskR||MASK_NEAR)))||blCov(o,from))}
 function landCandidate(){const p=W&&W.player;if(!p||S.player.docked||W.dead||p.landed||W.docking||W.bridge)return null;let b=null,bd=1e9;
   for(const a of S.sectors[W.sid].ast){if(a.comet)continue;const d=d3(a,p)-astR(a)-p.st.radius;if(d<LAND_REACH&&d<bd){bd=d;b=a}}return b?{a:b,d:Math.max(0,bd)}:null}
 function landOn(a){const p=W.player;if(hyp(p.vx,p.vy,p.vz)>LAND_SPD){flash(`Too fast to land. Slow below ${LAND_SPD} m/s.`,true);return false}
@@ -3429,7 +3433,8 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyQ')cycleHostile();
   if(c==='KeyG')targetAhead();
   if(c==='KeyC')fireMissile();
-  if(c==='Digit3')fireSwarm();
+  if(c==='Digit3'){if(blHull(S.player.cls))blKeyPress('det');else fireSwarm()}
+  if(c==='Digit4'&&blHull(S.player.cls))blKeyPress('cancel');
   if(c==='KeyB')playerFlares();
   if(c==='Digit1')setWeapon('kinetic');
   if(c==='Digit2')setWeapon('laser');
@@ -3476,7 +3481,7 @@ function tRad(t){const r=t.ref;return t.kind==='ast'?astR(r):t.kind==='ship'?r.s
 function validTgt(t){if(!t||!W)return false;const s=S.sectors[W.sid];if(t.kind==='ship')return t.ref.alive&&W.ents.includes(t.ref);if(t.kind==='ast')return s.ast.includes(t.ref);if(t.kind==='crate')return s.crates.includes(t.ref);if(t.kind==='wpt')return wptsIn(s).includes(t.ref);if(t.kind==='works')return!!(W.works&&W.works.includes(t.ref));return true}
 function targetNearest(mode){const p=W.player;let best=null,bd=1e9;for(const t of targetables()){const r=t.ref;if(mode==='hostile'&&!(t.kind==='ship'&&hostile('player',r.side))&&!(t.kind==='outpost'&&r.o.owner&&hostile('player',r.o.owner)&&!r.o.breached)&&!(t.kind==='station'&&hostile('player',r.fac))&&!(t.kind==='works'&&hostile('player',r.fac)))continue;if(mode==='ast'&&t.kind!=='ast')continue;const d=d3(r,p);if(d<bd){bd=d;best=t}}if(best)W.tgt=best;else if(mode==='hostile')flash('No hostiles in range.')}
 function detAll(){if(W._detT===Math.floor(W.t*4))return W._det;W._detT=Math.floor(W.t*4);const pf=S.player.faction;return W._det=!!(CLASSES[S.player.cls].radar||(W.stationEnt&&friendSide(W.stationEnt.fac))||(W.outpostEnt&&friendSide(W.outpostEnt.o.owner))||W.ents.some(e=>e.npc&&e.alive&&e.role==='scout'&&e.side===pf))}
-function seenShip(e){if(e.masked&&hostile('player',e.side)&&mHid(e,W.player))return false;return!e.npc||friendSide(e.side)||detAll()||d3(e,W.player)<(S.sectors[W.sid].storm>S.T?1200:2800)*SPREAD}
+function seenShip(e){if(e.masked&&hostile('player',e.side)&&mHid(e,W.player))return false;if(hostile('player',e.side)&&blCov(e,W.player))return false;return!e.npc||friendSide(e.side)||detAll()||d3(e,W.player)<(S.sectors[W.sid].storm>S.T?1200:2800)*SPREAD}
 function hostileList(){const p=W.player;return W.ents.filter(e=>e.type==='ship'&&e.alive&&!e.isPlayer&&hostile('player',e.side)&&seenShip(e)).sort((a,b)=>d3(a,p)-d3(b,p))}
 function hostileTargets(){const p=W.player,l=hostileList().map(e=>({kind:'ship',ref:e}));const SE=W.stationEnt,OE=W.outpostEnt;if(SE&&hostile('player',SE.fac))l.push({kind:'station',ref:SE});if(OE&&OE.o.owner&&hostile('player',OE.o.owner)&&!OE.o.breached)l.push({kind:'outpost',ref:OE});for(const w of W.works||[])if(hostile('player',w.fac))l.push({kind:'works',ref:w});return l}
 function cycleHostile(){if(!W||S.player.docked)return;const l=hostileTargets();if(!l.length){flash('No hostiles in this sector.');return}const i=l.findIndex(t=>W.tgt&&W.tgt.ref===t.ref);W.tgt=l[(i+1)%l.length]}
@@ -3656,6 +3661,112 @@ const WPT_NAME={core:'Reactor core',drive:'Drive block',bulk:'Torn bulkhead',car
 function wptsIn(sec){const o=[];for(const w of(sec&&sec.wrecks)||[])for(const p of w.pts)if(oreTotal(p)>0)o.push(p);return o}
 function mineFind(sec,id){return sec.ast.find(a=>a.id===id)||wptsIn(sec).find(p=>p.id===id)||null}
 function wreckOf(sec,p){return((sec&&sec.wrecks)||[]).find(w=>w.pts.includes(p))||null}
+// ============================================================ blast mining (pilots): scan a rock, fire charges at its fault points from up to 300 m, back off
+// and detonate (3) or cancel (4), then hold F by the ore cloud to collect it. Each charge releases one fault-point section of the
+// rock: 90% of it on point, 50% near, 25% off. Charges come from a magazine with a long reload, so placement, not time on the rock,
+// sets a miner's pay. Wreck sections crack at their joint, and a reactor core needs every charge on point or it all blows.
+// Nothing is made or lost: unreleased ore, and nuggets left when a cloud thins out, go to the system's debris pool.
+const BL={spd:300,near:15,blastR:120,cloudLife:90,collectR:250,coreR:600,coreDmg:520,chgDmg:22,stationR:400,scanT:20,eyeR:100};
+const BL_HULL={skiff:{n:2,reload:348,coll:6,cd:1},prospector:{n:3,reload:408,coll:9,cd:.5},dredger:{n:4,reload:552,coll:12,cd:.34}};
+const BL_REL={on:.9,near:.5,off:.25};
+function blHull(cls){return BL_HULL[cls]||null}
+function blTier(P){return(P&&P.tiers&&P.tiers.drill)||1}
+function blCap(P){const h=P&&blHull(P.cls);return h?Math.max(1,h.n+blTier(P)-1+(vF(P,'blChg')||0)):0}                       // a Blast Rig Mk level adds a charge
+function blColl(P){const h=P&&blHull(P.cls);return h?h.coll*(1+.2*(blTier(P)-1)):0}
+function blWin(P,a){const rare=a&&a.ore&&(a.ore.au||a.ore.nu),b=vF(P,'blWin')||5;return(rare?b-2:b)+((P&&(P.lvl||0)>=3)?2:0)}
+function blRange(P){return Math.max(legMineR(P),vF(P,'blRange')||0)}
+function blKey(P){return(P&&P.pid)||'me'}
+function blRng(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^t>>>15,1|t);r^=r+Math.imul(r^r>>>7,61|r);return((r^r>>>14)>>>0)/4294967296}}
+// a rock's fault points: fixed by its seed (and a new set each time it is partly cracked), spread over its surface
+function blPts(a){if(a.wpt){const w=wreckOf(S.sectors[W.sid],a),R=WPT_R*.9;let dx=0,dy=1,dz=0;if(w){dx=w.x-a.x;dy=w.y-a.y;dz=w.z-a.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l}return[{x:a.x+dx*R,y:a.y+dy*R,z:a.z+dz*R}]}
+  const tot=oreTotal(a),n=tot<=50?2:tot<=90?3:4,key=n+':'+(a.fpv||0)+':'+Math.round(a.x);if(a._fpk===key&&a._fp)return a._fp;
+  const r=blRng((a.seed||a.id||1)+(a.fpv||0)*7919),R=astR(a),out=[],rot=r()*TAU,tilt=r()*2-1;
+  for(let i=0;i<n;i++){const y=1-(i+.5)*2/n*(.8+.2*r()),rr=Math.sqrt(Math.max(0,1-y*y)),th=rot+i*2.39996;let x=Math.cos(th)*rr,z=Math.sin(th)*rr,yy=y*.9+tilt*.1;const l=hyp(x,yy,z)||1;out.push({x:a.x+x/l*R,y:a.y+yy/l*R,z:a.z+z/l*R})}
+  a._fpk=key;a._fp=out;return out}
+function blRate(q,P){const r=BL_REL[q]||0,cap=vF(P,'blRelCap');return cap?Math.min(cap,r):r}
+function blTick(P,dt){const cap=blCap(P);if(!cap){P.blN=0;P.blT=0;return}if(P.blN==null)P.blN=cap;if(P.blN>cap)P.blN=cap;
+  if(P.blN<cap){const h=blHull(P.cls);if(!(P.blT>0))P.blT=h.reload;P.blT-=dt;if(P.blT<=0){P.blN=cap;P.blT=0;if(P===S.player&&!MUTE&&running)feed('Blast charges reloaded.','info')}}else P.blT=0}
+function blNearStation(e){if(W.stationEnt&&d3(W.stationEnt,e)<BL.stationR+(W.stationEnt.st?W.stationEnt.st.radius||0:0))return true;for(const g of GATES[W.sid]||[])if(d3(g,e)<BL.stationR)return true;return false}
+function blSay(P,t,bad){if(P===S.player||!P.pid||isMe(P.pid))flash(t,!!bad);else netMsg(P.pid,'flash',t,!!bad)}
+// fire one charge along the nose (host and single player)
+function blFire(e,P){const h=blHull(P.cls);if(!h)return;if((e.blCd||0)>W.t)return;if(!(P.blN>0)){blSay(P,`No charges left: the magazine reloads in ${Math.ceil(P.blT||0)} s.`);return}
+  if(blNearStation(e)){blSay(P,`Charges can't be fired within ${BL.stationR} m of a station or jumpgate.`,true);return}
+  qRot(e.q,0,0,1,_f);const r=e.st.radius;W.blShots=W.blShots||[];W.blShots.push({x:e.x+_f.x*r,y:e.y+_f.y*r,z:e.z+_f.z*r,vx:e.vx+_f.x*BL.spd*(vF(P,'blSpdK')||1),vy:e.vy+_f.y*BL.spd*(vF(P,'blSpdK')||1),vz:e.vz+_f.z*BL.spd*(vF(P,'blSpdK')||1),ttl:blRange(P)/(BL.spd*(vF(P,'blSpdK')||1)),o:blKey(P),side:e.side,P});
+  P.blN--;e.blCd=W.t+h.cd;if(!MUTE&&(e===W.player))SFX.missile&&SFX.missile(.5,false)}
+// where a charge fired now would land on a target, and how close to its nearest fault point (for the HUD rings)
+function blAim(e,a){qRot(e.q,0,0,1,_f);const R=astR(a),ox=e.x-a.x,oy=e.y-a.y,oz=e.z-a.z,b=ox*_f.x+oy*_f.y+oz*_f.z,c=ox*ox+oy*oy+oz*oz-R*R,D=b*b-c;if(D<0)return null;const t=-b-Math.sqrt(D);if(t<0)return null;
+  return{x:e.x+_f.x*t,y:e.y+_f.y*t,z:e.z+_f.z*t,d:t}}
+function blStick(sh,a,s){const R=astR(a);let dx=sh.x-a.x,dy=sh.y-a.y,dz=sh.z-a.z;const l=hyp(dx,dy,dz)||1;const at={x:a.x+dx/l*R,y:a.y+dy/l*R,z:a.z+dz/l*R};
+  const pts=blPts(a);let pi=0,bd=1e9;pts.forEach((p,i)=>{const d=d3(p,at);if(d<bd){bd=d;pi=i}});const win=blWin(sh.P,a),q=bd<=win?'on':bd<=BL.near?'near':'off';
+  s.charges=s.charges||[];s.charges.push({id:S.nextId++,o:sh.o,side:sh.side,a:a.id,wp:!!a.wpt,x:Math.round(at.x),y:Math.round(at.y),z:Math.round(at.z),pi,q});
+  if(!MUTE)fxSpark(at,q==='on'?'#7ad9a7':q==='near'?'#f0b24a':'#ff5d4f',4);
+  blSay(sh.P,q==='on'?'Charge set: on point.':q==='near'?`Charge set: near (${Math.round(bd)} m off the point).`:`Charge set: off point (${Math.round(bd)} m). It will release only a quarter of its section.`)}
+// host and single player, every frame
+function blWorld(dt){const s=S.sectors[W.sid];
+  if(W.blShots&&W.blShots.length){for(let i=W.blShots.length-1;i>=0;i--){const sh=W.blShots[i];sh.x+=sh.vx*dt;sh.y+=sh.vy*dt;sh.z+=sh.vz*dt;sh.ttl-=dt;let hit=null;
+      for(const a of s.ast)if(d3(sh,a)<astR(a)+2){hit=a;break}if(!hit)for(const a of wptsIn(s))if(d3(sh,a)<WPT_R+2){hit=a;break}
+      if(hit){blStick(sh,hit,s);W.blShots.splice(i,1)}else if(sh.ttl<=0)W.blShots.splice(i,1)}}
+  // charges whose pilot has left the system cancel themselves; charges on a target that has gone are lost
+  if(s.charges&&s.charges.length){const here=new Set(allPilots().filter(P=>P&&P.sector===W.sid).map(blKey)),gone={};
+    s.charges=s.charges.filter(c=>{if(here.has(c.o)&&blTgt(s,c))return true;gone[c.o]=(gone[c.o]||0)+(here.has(c.o)?0:1);return false});
+    for(const o in gone)if(gone[o]){const P=blPilot(o);if(P)P.blN=Math.min(blCap(P),(P.blN||0)+gone[o])}}
+  if(s.clouds&&s.clouds.length){for(const c of s.clouds){c.r=Math.min(c.r+4*dt,c.r0+160)}s.clouds=s.clouds.filter(c=>{if(S.T<c.until&&oreTotal(c)>0)return true;if(oreTotal(c)>0)toDebris(s,c.ore);return false})}}
+function blTgt(s,c){return c.wp?wptsIn(s).find(p=>p.id===c.a):s.ast.find(a=>a.id===c.a)}
+function blPilot(o){if(o==='me'||isMe(o))return S.player;return(S.pilots||{})[o]||null}
+// detonate every charge this pilot has set in this system
+function blDetonate(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]).filter(c=>c.o===o);if(!mine.length){blSay(P,'No charges set. Fire them with F first.');return}
+  s.charges=s.charges.filter(c=>c.o!==o);const by={};for(const c of mine)(by[c.a]=by[c.a]||[]).push(c);let got=0;
+  for(const id in by){const cs=by[id],T=blTgt(s,cs[0]);if(!T)continue;const at={x:T.x,y:T.y,z:T.z},R0=astR(T);
+    if(T.wpt){const w=wreckOf(s,T);if(T.k==='core'&&cs.some(c=>c.q!=='on')){blCoreBlow(s,w,T);continue}
+      const best=Math.max(...cs.map(c=>blRate(c.q,P))),f=best*Math.max(0,1-.1*(cs.length-1)),rel={};for(const k in T.ore){const r=Math.round(T.ore[k]*f);if(r>0)rel[k]=r;const d=T.ore[k]-r;if(d>0)toDebris(s,{[k]:d})}
+      T.ore={};T.last=0;got+=blCloud(s,at,rel,R0,cs.length-1,o)}
+    else{const n=blPts(T).length,secQ={};let extra=0;for(const c of cs){const r=blRate(c.q,P);if(c.pi in secQ){extra++;secQ[c.pi]=Math.max(secQ[c.pi],r)}else secQ[c.pi]=r}
+      const nc=Object.keys(secQ).length,f=Object.values(secQ).reduce((a,b)=>a+b,0)/nc*Math.max(0,1-.1*extra),rel={};
+      for(const k of Object.keys(T.ore)){const cK=Math.min(T.ore[k],Math.round(T.ore[k]*nc/n)),r=Math.round(cK*f);T.ore[k]-=cK;if(T.ore[k]<=0)delete T.ore[k];if(r>0)rel[k]=r;if(cK-r>0)toDebris(s,{[k]:cK-r})}
+      if(oreTotal(T)<=0)removeAst(s,T);else T.fpv=(T.fpv||0)+1;got+=blCloud(s,at,rel,R0,extra,o)}
+    if(!MUTE){fxBoom(at,R0*1.6,'#ffd9a0');SFX.crack&&SFX.crack()}
+    for(const x of W.ents.slice())if(x.type==='ship'&&x.alive){const d=d3(x,at);if(d<BL.blastR)damageShip(x,BL.chgDmg*cs.length*(1-d/BL.blastR)+5,e.side,at,'blast')}}
+  blSay(P,got?`Blast! ${got} t of ore in the cloud. Hold F by it to collect.`:'Blast! Nothing came loose.')}
+function blCloud(s,at,ore,R0,extra,o){const t=oreTotal({ore});if(!t)return 0;s.clouds=s.clouds||[];s.clouds.push({id:S.nextId++,x:Math.round(at.x),y:Math.round(at.y),z:Math.round(at.z),ore,r:R0+30,r0:R0+30,until:S.T+Math.max(30,BL.cloudLife-10*extra),o});return t}
+// a core charged anything but perfectly: the whole wreck goes up, and everything in it becomes debris
+function blCoreBlow(s,w,pt){const at={x:pt.x,y:pt.y,z:pt.z};if(!MUTE){fxBoom(at,BL.coreR*.6,'#ff9a4a');fxBoom(at,BL.coreR*.35,'#ffe2b0');W.shake=Math.max(W.shake||0,.9)}
+  for(const e of W.ents.slice()){if(e.type!=='ship'||!e.alive)continue;const d=d3(e,at);if(d<BL.coreR)damageShip(e,BL.coreDmg*(1-d/BL.coreR)+40,null,at,'blast')}
+  if(w)wreckGone(s,w,'blown');else{toDebris(s,pt.ore);pt.ore={}}feed(`✕ A badly placed charge set off the reactor core: the ${w?w.name:''} wreck is gone.`,'bad')}
+// the detonate key: warns once when you are inside the blast, then a second press within 3 s goes ahead
+function blDetReq(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]).filter(c=>c.o===o);if(!mine.length){blSay(P,'No charges set. Fire them with F first.');return}
+  let lim=BL.blastR,near=1e9;for(const c of mine){const T=blTgt(s,c);if(!T)continue;if(T.wpt&&T.k==='core')lim=BL.coreR;near=Math.min(near,d3(e,T))}
+  if(near<lim&&!(P.blArm&&W.t-P.blArm<3)){P.blArm=W.t;blSay(P,`Inside blast radius: move ${lim} m clear (${Math.round(near)} m). Press 3 again to detonate anyway.`,true);return}
+  P.blArm=0;blDetonate(P,e)}
+function blCancel(P){const s=S.sectors[W.sid],o=blKey(P),n=(s.charges||[]).filter(c=>c.o===o).length;if(!n){blSay(P,'No charges set.');return}
+  s.charges=s.charges.filter(c=>c.o!==o);P.blN=Math.min(blCap(P),(P.blN||0)+n);blSay(P,`${n} charge${n>1?'s':''} cancelled and back in the magazine.`)}
+// a cloud within reach in front of this ship
+function blCloudNear(e,s){let b=null,bd=1e9;qRot(e.q,0,0,1,_f);for(const c of s.clouds||[]){const dx=c.x-e.x,dy=c.y-e.y,dz=c.z-e.z,d=hyp(dx,dy,dz);if(d>BL.collectR+c.r)continue;if(d>c.r&&(dx*_f.x+dy*_f.y+dz*_f.z)/d<.5)continue;if(d<bd){bd=d;b=c}}return b}
+function blCollect(e,P,c,dt,s){const room=e.st.cargo-invMass(P.cargo);if(room<1){if(W.t-(e.fullT||0)>3){e.fullT=W.t;blSay(P,'Hold is full. Dock to unload or fabricate.')}return}
+  e.blAcc=(e.blAcc||0)+blColl(P)*dt;while(e.blAcc>=1){const k=mainOre(c);if(!k)break;if(mass(k)>e.st.cargo-invMass(P.cargo))break;e.blAcc-=1;inv.take(c.ore,k,1);inv.add(P.cargo,k,1)}
+  if(oreTotal(c)<=0){s.clouds=s.clouds.filter(x=>x!==c);blSay(P,'Cloud collected.')}}
+// ships and drones inside a cloud stay off radar and can't be locked from more than 300 m away
+function blCov(o,from){if(!from||!W||!o||o.type==='station')return false;const s=S.sectors[W.sid];if(!s||!s.clouds||!s.clouds.length)return false;for(const c of s.clouds)if(d3(o,c)<c.r&&d3(o,from)>300)return true;return false}
+// pilot controls (local pilot): F fires on press, holding F by a cloud collects it
+function blPilotUpdate(p,P,st,sec,dt){const hold=!!(keys.KeyF||mouse.r||touch.mine),press=hold&&!p.blHeld;p.blHeld=hold;p.mining=null;
+  if(!blHull(P.cls)){if(press&&W.t-(W.drillMsg||0)>3){flash('No blast rig on this hull: only mining ships (Light, Medium and Heavy Miner) can mine. Switch at a core station Shipyard.');W.drillMsg=W.t}return}
+  const cl=hold?blCloudNear(p,sec):null;if(cl){p.mining=cl;if(!NET.cl)blCollect(p,P,cl,dt,sec);return}
+  if(press){if(NET.cl)netSend({t:'blast',k:'fire'});else blFire(p,P)}}
+function blKeyPress(k){if(!S||!running||S.player.docked||!W.player||W.dead)return;const P=S.player;if(NET.cl){netSend({t:'blast',k});return}if(k==='det')blDetReq(P,W.player);else blCancel(P)}
+// HUD: fault-point rings on the targeted rock or salvage point, your charges, clouds, the magazine and the blast warning
+function blDraw(c){const p=W.player,P=S.player,s=S.sectors[W.sid];if(!p||!blHull(P.cls))return;c.save();c.lineWidth=1.5;c.font='600 11px "Saira Semi Condensed",sans-serif';c.textAlign='center';
+  const T=W.tgt&&(W.tgt.kind==='ast'||W.tgt.kind==='wpt')&&validTgt(W.tgt)?W.tgt.ref:null;
+  if(T){if(W.blScanFor!==T.id){W.blScanFor=T.id;const sd=vF(P,'blScan')||BL.scanT,sr=vF(P,'blScanR');T.scanT=W.t+sd;if(sr)for(const a of s.ast)if(d3(a,p)<sr)a.scanT=W.t+sd}const dist=d3(T,p),scan=(T.scanT||0)>W.t;
+    if(scan||dist<BL.eyeR+astR(T)){const aim=blAim(p,T),win=blWin(P,T);for(const q of blPts(T)){const L=proj(q.x,q.y,q.z);if(L.behind)continue;const rr=Math.max(5,projR(L.d,win));const ok=aim&&d3(aim,q)<=win;
+        c.strokeStyle=ok?'#7ad9a7':scan?'rgba(240,178,74,.95)':'rgba(240,178,74,.45)';c.beginPath();c.arc(L.x,L.y,rr,0,TAU);c.stroke();if(T.wpt&&T.k==='core'){c.fillStyle='#ff5d4f';c.fillText('CORE · ON POINT ONLY',L.x,L.y-rr-6)}}}}
+  if(vF(P,'blScan'))for(const a of s.ast){if(a===T||!((a.scanT||0)>W.t)||d3(a,p)>2200)continue;for(const q of blPts(a)){const L=proj(q.x,q.y,q.z);if(L.behind)continue;c.strokeStyle='rgba(240,178,74,.5)';c.beginPath();c.arc(L.x,L.y,Math.max(3,projR(L.d,blWin(P,a))),0,TAU);c.stroke()}}
+  for(const ch of s.charges||[]){if(ch.o!==blKey(P))continue;const L=proj(ch.x,ch.y,ch.z);if(L.behind)continue;c.fillStyle=ch.q==='on'?'#7ad9a7':ch.q==='near'?'#f0b24a':'#ff5d4f';c.beginPath();c.arc(L.x,L.y,3.5,0,TAU);c.fill()}
+  for(const cl of s.clouds||[]){const L=proj(cl.x,cl.y,cl.z);if(L.behind)continue;const rr=Math.max(10,projR(L.d,cl.r));c.strokeStyle='rgba(122,217,167,.7)';c.setLineDash([3,5]);c.beginPath();c.arc(L.x,L.y,rr,0,TAU);c.stroke();c.setLineDash([]);
+    c.fillStyle='#7ad9a7';c.fillText(`ORE CLOUD ${oreTotal(cl)} T · ${Math.max(0,Math.ceil(cl.until-S.T))} S`,L.x,L.y-rr-6)}
+  const mine=(s.charges||[]).filter(ch=>ch.o===blKey(P));let warn='';if(mine.length){let lim=BL.blastR,near=1e9;for(const ch of mine){const TT=blTgt(s,ch);if(!TT)continue;if(TT.wpt&&TT.k==='core')lim=BL.coreR;near=Math.min(near,d3(p,TT))}if(near<lim)warn=`INSIDE BLAST RADIUS: MOVE ${lim} M CLEAR · ${Math.round(near)} M`}
+  c.textAlign='center';c.font='700 13px "Saira Semi Condensed",sans-serif';c.fillStyle='#f0b24a';
+  c.fillText(`CHARGES ${P.blN||0}/${blCap(P)}${P.blT>0?` · RELOAD ${Math.ceil(P.blT)} S`:''}${mine.length?` · ${mine.length} SET (3 DETONATE · 4 CANCEL)`:''}`,VW/2,VH-118);
+  if(warn){c.fillStyle='#ff5d4f';c.fillText(warn,VW/2,VH-136)}c.restore()}
+
 function vecMass(o){const v=invVec(o);let m=0;for(const e of RAWS)m+=v[e];return m}   // raw-material equivalent of anything, components included
 // a third intact as components, the rest raw: components are broken down or built up by their own recipes, so the ledger stays exact
 function wreckMix(o){const T=vecMass(o);if(!T)return o;const isC=k=>!RAWS.includes(k),cm=()=>{let m=0;for(const k in o)if(isC(k))m+=vecMass({[k]:o[k]});return m};
@@ -4068,15 +4179,7 @@ function playerUpdate(dt){
   if(keys.Space||mouse.l||touch.fire){if(P.wpn==='laser')fireLaser(p);else fire(p)}
   updateLock(dt);
   const sec=S.sectors[W.sid];
-  if(keys.KeyF||mouse.r||touch.mine){
-    let a=W.tgt&&(W.tgt.kind==='ast'||W.tgt.kind==='wpt')&&validTgt(W.tgt)?W.tgt.ref:null;
-    if(!(st.drill>0)){if(W.t-(W.drillMsg||0)>3){flash('No mining laser on this hull: only mining ships (Light, Medium and Heavy Miner) can mine. Switch at a core station Shipyard.');W.drillMsg=W.t}a=null}
-    else if(!a){let bd=420;for(const x of sec.ast){const d=d3(x,p)-astR(x);if(d<bd){bd=d;a=x}}for(const x of wptsIn(sec)){const d=d3(x,p)-astR(x);if(d<bd){bd=d;a=x}}if(a)W.tgt={kind:a.wpt?'wpt':'ast',ref:a}}
-    if(a){const d=d3(a,p)-astR(a);
-      if(d<legMineR(P)){const room=st.cargo-invMass(P.cargo);if(room<1){if(W.t-(W.fullMsg||0)>3){flash('Hold is full. Dock to unload or fabricate.');W.fullMsg=W.t}}
-        else{p.mining=a;if(!NET.cl)p.mineAcc+=st.drill*mineRate(a,S.player.cls)*dt;while(p.mineAcc>=1){p.mineAcc-=1;const k=mainOre(a);if(!k)break;a.ore[k]--;if(!a.ore[k])delete a.ore[k];inv.add(P.cargo,k,1);if(oreTotal(a)<=0){removeAst(sec,a);fxBoom(a,30,ITEMS[k].col);SFX.crack();break}}}}
-      else if(W.t-(W.rangeMsg||0)>2){flash(`Out of mining range. Close to within ${legMineR(P)} m.`);W.rangeMsg=W.t}}
-  }else p.mining=null;
+  blPilotUpdate(p,P,st,sec,dt);
   pickupAndGates(p,P,st);
 }
 function pickupAndGates(p,P,st){const sec=S.sectors[W.sid];
@@ -4343,7 +4446,7 @@ function worldUpdate(dt){
   beaconWorld(dt);wreckWorld(dt);blkHunt();if(W===LW||!LW)for(const Q of allPilots())if(Q&&Q.convoy&&S.T>Q.convoy.until){const k=Q===S.player?null:Object.keys(S.pilots||{}).find(id=>S.pilots[id]===Q);runAs(k,()=>convoyEnd(false,'it ran out of time'))}
   for(const e of gunboatsIn())tickTurret(e,dt);
   for(const e of W.ents.slice()){if(e.type==='ship'&&e.alive&&!(e.isPlayer&&(S.player.docked||W.dead||W.docking)))physics(e,dt)}
-  structUpdate(dt);shotsUpdate(dt);missilesUpdate(dt);
+  structUpdate(dt);shotsUpdate(dt);missilesUpdate(dt);blWorld(dt);
   for(let i=W.fx.length-1;i>=0;i--){const f=W.fx[i];f.life-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.z+=f.vz*dt;f.vx*=.985;f.vy*=.985;f.vz*=.985;if(f.life<=0)W.fx.splice(i,1)}
   W.popT-=dt;if(W.popT<=0){W.popT=3.5;populate(false)}
   if(loc&&W.tgt&&!validTgt(W.tgt))W.tgt=null;
@@ -4893,7 +4996,7 @@ function drawOverlay(){
   if(W.bridge){drawBridgeOverlay(c,t);return}
   if(W.gunseat){drawGunnerOverlay(c,t);return}
   if(S.player.docked||W.dead)return;
-  drawDocking(c);
+  drawDocking(c);blDraw(c);
   if(W.shHit)vignette(c,'111,183,255',W.shHit*1.3);
   const crit=p.hull<p.st.hull*.35;
   if(p.shield<=.5||crit)vignette(c,'255,93,79',(crit?.55:.36)+(crit?.22:.16)*Math.sin(t*(crit?9:6)));
@@ -5204,10 +5307,10 @@ function hudUpdate(){
   let th='';if(W.tgt&&validTgt(W.tgt)){const T=W.tgt.ref,dist=Math.round(d3(T,p));
     if(W.tgt.kind==='ship'){const col=sideCol(T.side);th=`<div class="tp"><div class="tn" style="color:${col}">${esc(aceOfEnt(T)&&T.pname?T.pname:T.tok?T.tok.name:hullName(T.side==="player"?S.player.faction:T.side,T.cls))}</div>${aceTgtLine(T)}<div class="ts">${esc(sideName(T.side))} · ${CLASSES[T.cls].name} · ${T.role==='strike'?'strike group':T.role==='frigate'?'capital ship':T.role} · Mk ${ROMAN[T.tier]} · ${T.wpn==='laser'?'lasers':'kinetic'} · ${hostile('player',T.side)?'hostile':'friendly'}${T.tuned?' · <span style="color:#6ff2cf">Aurora-tuned ✦</span>':''}</div>${T.role==='frigate'?(T.cls==='escort'?'<div class="ts" style="color:var(--amber)">Light capital: guns and missiles wear it down; a torpedo that hits guts it</div>':'<div class="ts" style="color:var(--amber)">Capital ship: guns drain its shield; only torpedoes and capital guns hurt its hull</div>'):''}
       <div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.st.sCap*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(T.hull)}</b></div><div class="mini"><i style="width:${T.hull/T.st.hull*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
-    else if(W.tgt.kind==='ast')th=`<div class="tp"><div class="tn">${T.comet?'Comet':T.seam?'Xenocrystal Seam':'Asteroid'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${ITEMS[k].name} ${T.ore[k]} t`).join(' · ')}</div>${T.seam?'<div class="ts" style="color:#d9bbff">Protected home vein: a limited supply that refills slowly. Turn it into Crystal Lattice and Resonance Cores at your home station.</div>':''}<div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Hold F or right-click within 300 m to mine.</div></div>`;
+    else if(W.tgt.kind==='ast')th=`<div class="tp"><div class="tn">${T.comet?'Comet':T.seam?'Xenocrystal Seam':'Asteroid'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${ITEMS[k].name} ${T.ore[k]} t`).join(' · ')}</div>${T.seam?'<div class="ts" style="color:#d9bbff">Protected home vein: a limited supply that refills slowly. Turn it into Crystal Lattice and Resonance Cores at your home station.</div>':''}<div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Fire charges at its fault points with F (rings turn green on point), back off 120 m and press 3. Hold F by the ore cloud to collect it.</div></div>`;
     else if(W.tgt.kind==='beacon'){const own=T.owner,mine=T.by&&isMe(T.by),sc=isScoutCls(S.player.cls);th=`<div class="tp"><div class="tn" style="color:${own?sideCol(own):'var(--ivory)'}">Sector beacon</div><div class="ts">${own?'Held by '+FACTIONS[own].name+(T.by?' · flipped '+fmtT(S.T-T.T)+' ago':''):'Unclaimed'}${mine?' · <b>yours</b>, paying '+BCN_RES+' cr/min':''}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">${own===S.player.faction?'Scanning this system for your side.':sc?`Hold within ${BCN_R} m for ${BCN_T} s to flip it: +${BCN_FLIP} cr, then ${BCN_RES} cr a minute (for ${BCN_RES_T/60} min after your last flip or re-secure) and a constant scan here.`:'Only a Scout or Advanced Scout can flip it.'}</div></div>`}
     else if(W.tgt.kind==='anom'){th=anomPanel(T,dist)}
-    else if(W.tgt.kind==='wpt'){const wk=wreckOf(S.sectors[W.sid],T);th=`<div class="tp"><div class="tn">${WPT_NAME[T.k]||'Salvage point'}</div><div class="ts">Wreck of ${esc(wk?wk.name:'a capital ship')} · breaks up in ${wk?fmtT(Math.max(0,wk.until-S.T)):'?'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${T.ore[k]} ${ITEMS[k].name}`).join(' · ')}</div><div class="row">Range<b>${fmt(dist)} m</b></div>${T.k==='core'?`<div class="row">Reactor heat<b style="color:${T.heat>.6?'var(--danger)':T.heat>.3?'var(--amber)':'inherit'}">${Math.round(T.heat*100)}%</b></div><div class="ts">Every unit you cut heats the core. Mine in bursts: at 100% it blows.</div>`:'<div class="ts">Mine it with the mining laser (F).</div>'}</div>`}
+    else if(W.tgt.kind==='wpt'){const wk=wreckOf(S.sectors[W.sid],T);th=`<div class="tp"><div class="tn">${WPT_NAME[T.k]||'Salvage point'}</div><div class="ts">Wreck of ${esc(wk?wk.name:'a capital ship')} · breaks up in ${wk?fmtT(Math.max(0,wk.until-S.T)):'?'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${T.ore[k]} ${ITEMS[k].name}`).join(' · ')}</div><div class="row">Range<b>${fmt(dist)} m</b></div>${T.k==='core'?`<div class="row">Reactor heat<b style="color:${T.heat>.6?'var(--danger)':T.heat>.3?'var(--amber)':'inherit'}">${Math.round(T.heat*100)}%</b></div><div class="ts">Every charge on the core must be on point, or the whole wreck goes up.</div>`:'<div class="ts">Fire a charge onto its joint (F), back off and press 3, then collect the cloud.</div>'}</div>`}
     else if(W.tgt.kind==='crate')th=`<div class="tp"><div class="tn">${T.derelict?'Derelict cargo':'Salvage'}</div><div class="ts">${Object.keys(T.inv).map(k=>`${T.inv[k]} ${ITEMS[k].name}`).join(' · ')}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Fly into it to scoop.</div></div>`;
     else if(W.tgt.kind==='outpost'){const o2=T.o,os=oStats(o2);th=`<div class="tp"><div class="tn" style="color:${sideCol(o2.owner)}">${esc(o2.name)}</div><div class="ts">${o2.owner?sideName(o2.owner):'Unclaimed'} · Level ${o2.level}${o2.breached?' · BREACHED':''}</div><div class="ts">${TYPE_TEXT[o2.type]}</div>
       <div class="row">Shield<b>${Math.round(o2.shield)}</b></div><div class="mini"><i style="width:${o2.shield/os.sMax*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(o2.hull)}</b></div><div class="mini"><i style="width:${o2.hull/os.hMax*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
@@ -5307,8 +5410,8 @@ function renderDock(){
   }else if(dockTab==='ship'||dockTab==='upg'){
     const st=p.st;if(dockTab==='upg'){
     h+=`<div class="grid2" style="margin-bottom:10px"><div class="note">Upgrading folds parts permanently into a component. Mk II and III fit at any friendly dock, and from Mk II each system takes one variant: a part that buys a strength with a weakness, free to swap here. Upgrades belong to this ship: store it in the Ship Bay to keep it, and if it's destroyed its upgrades are left in the wreck.</div>
-      <div class="kv"><span>Top speed</span><b>${Math.round(st.maxSpd)} m/s</b><span>Shield / Hull</span><b>${Math.round(st.sCap)} / ${Math.round(st.hull)}</b><span>Energy · regen</span><b>${Math.round(st.eCap)} · ${st.eRegen.toFixed(1)}/s</b><span>Kinetic · laser DPS</span><b>${Math.round(st.dmg*st.rof)} · ${Math.round(st.dmg*.5*LASER_ROF)}</b><span>Mining · Hold</span><b>${(st.drill*mineP(S.player.cls)).toFixed(2)} t/s · ${st.cargo} t</b></div></div><div class="slots">`;
-    const stat={engine:`${Math.round(st.maxSpd)} m/s · thrust ${Math.round(st.thrust)}`,power:`${Math.round(st.eCap)} energy · ${st.eRegen.toFixed(1)}/s`,shield:`${Math.round(st.sCap)} shield`,weapon:`kinetic ${Math.round(st.dmg*st.rof)} dps · laser ${Math.round(st.dmg*.5*LASER_ROF)} dps`,armor:`${Math.round(st.hull)} hull · ${Math.round(st.dr*100)}% reduction`,drill:`${(st.drill*mineP(P.cls)).toFixed(2)} t/s`,cargo:`${st.cargo} t`,payload:`${CLASSES[P.cls].torp?'torpedo':'missile'} reload ${Math.round(reloadT(P,CLASSES[P.cls].torp?'torpedo':'missile'))} s${swarmCap(P)?` · swarm ${Math.round(reloadT(P,'swarm'))} s`:''}`};
+      <div class="kv"><span>Top speed</span><b>${Math.round(st.maxSpd)} m/s</b><span>Shield / Hull</span><b>${Math.round(st.sCap)} / ${Math.round(st.hull)}</b><span>Energy · regen</span><b>${Math.round(st.eCap)} · ${st.eRegen.toFixed(1)}/s</b><span>Kinetic · laser DPS</span><b>${Math.round(st.dmg*st.rof)} · ${Math.round(st.dmg*.5*LASER_ROF)}</b><span>Charges · Hold</span><b>${blCap(S.player)} · ${st.cargo} t</b></div></div><div class="slots">`;
+    const stat={engine:`${Math.round(st.maxSpd)} m/s · thrust ${Math.round(st.thrust)}`,power:`${Math.round(st.eCap)} energy · ${st.eRegen.toFixed(1)}/s`,shield:`${Math.round(st.sCap)} shield`,weapon:`kinetic ${Math.round(st.dmg*st.rof)} dps · laser ${Math.round(st.dmg*.5*LASER_ROF)} dps`,armor:`${Math.round(st.hull)} hull · ${Math.round(st.dr*100)}% reduction`,drill:`${blCap(P)} charges · collector ${blColl(P).toFixed(1)} t/s`,cargo:`${st.cargo} t`,payload:`${CLASSES[P.cls].torp?'torpedo':'missile'} reload ${Math.round(reloadT(P,CLASSES[P.cls].torp?'torpedo':'missile'))} s${swarmCap(P)?` · swarm ${Math.round(reloadT(P,'swarm'))} s`:''}`};
     for(const sl of SLOTS){const t=P.tiers[sl.id];let rq='',btn='',vrow='';
       if(t<MK_TOP){const r=upgRecipe(sl.id,t+1),fee=c.fee?Math.ceil(invValue(r)*.08):0,needF=false;rq=Object.keys(r).map(i=>chip(i,r[i],countIn(i,srcs))).join('')+(fee?`<span class="req ${P.credits>=fee?'ok':'no'}">${fee} cr fee</span>`:'')+(needF?'<span class="req no">Forge only</span>':'');
         btn=`<button class="btn" data-act="upg" data-arg="${sl.id}" ${!needF&&haveIn(r,srcs)&&P.credits>=fee?'':'disabled'}>To Mk ${ROMAN[t+1]}</button>`}else rq='<span class="ss" style="color:var(--amber)">Fully upgraded</span>';
@@ -5543,7 +5646,7 @@ function allPilots(){if(!S.pilots)return[S.player];const a=Object.values(S.pilot
 function ledger(){
   const z=()=>({fe:0,cu:0,ir:0,xc:0,au:0,nu:0});
   const L={'Asteroid fields':z(),'Drifting debris':z(),'Salvage crates':z(),'Capital wrecks':z(),'Faction & Unbound stores':z(),'Fleets in muster':z(),'Outposts':z(),'Stations':z(),'Outer drift (recycling)':z(),'Ships in this sector':z(),'Your ship, hold, vault':z()};
-  for(const id in S.sectors){const s=S.sectors[id];for(const a of s.ast)invVec(a.ore,L['Asteroid fields']);for(const e of RAWS)L['Drifting debris'][e]+=s.debris[e];for(const c of s.crates)invVec(c.inv,L['Salvage crates']);for(const w of s.wrecks||[])for(const p of w.pts)invVec(p.ore,L['Capital wrecks'])}
+  for(const id in S.sectors){const s=S.sectors[id];for(const a of s.ast)invVec(a.ore,L['Asteroid fields']);for(const e of RAWS)L['Drifting debris'][e]+=s.debris[e];for(const c of s.crates)invVec(c.inv,L['Salvage crates']);for(const c of s.clouds||[])invVec(c.ore,L['Salvage crates']);for(const w of s.wrecks||[])for(const p of w.pts)invVec(p.ore,L['Capital wrecks'])}
   for(const k in S.econ.stock)invVec(S.econ.stock[k],L['Faction & Unbound stores']);
   for(const k in S.econ.fleet)invVec(S.econ.fleet[k],L['Fleets in muster']);for(const ev of S.events)if(ev.force)invVec(ev.force,L['Fleets in muster']);for(const f in S.ai||{})if(S.ai[f]&&S.ai[f].hm)invVec(S.ai[f].hm.force,L['Fleets in muster']);for(const t of S.scouts||[])invVec(t.load,L['Fleets in muster']);for(const t of S.traders||[])invVec(t.load,L['Fleets in muster']);for(const t of S.frigates||[]){invVec(t.load,L['Fleets in muster']);invVec(t.store||{},L['Fleets in muster']);if(t.fab)invVec(t.fab.kit,L['Fleets in muster'])}
   for(const id in S.outposts){const o=S.outposts[id];invVec(o.stock,L.Outposts);invVec(o.fort,L.Outposts)}
@@ -5625,7 +5728,7 @@ const LEG_KEY='driftgate.legend',LEG_MIN=1800,LEG_LV=[1,2,4,6,9,12,16,20,25,30],
   LEG_TITLES=['Pathfinder','Freighter','Prospector','Veteran','Heroic Pilot','Ace','Commander','Paragon','Champion','Legendary Ace'],
   LEG_PERKS=['Scout’s instinct: in a Scout or Advanced Scout, beacons flip in 7 s instead of 10, and beacon bounties pay 20% more.',
     'Freight licence: hauler hulls get 10% more hold, the full-hold handling penalty is cut by a third, and hauling Orders pay 10% more.',
-    'Miner’s eye: mining hulls drill 10% faster and mine from 400 m instead of 300 m.',
+    'Miner’s eye: blast charges reach 400 m instead of 300 m, and the on-point window is 2 m wider.',
     'Your own ship: start each galaxy in the hull you finished the last one in (not capital ships), with your own ship name and engine colour.',
     'Head start: one system of your choice starts every galaxy at Mk II, with a variant of your choice fitted free.',
     'Second head start: a second system starts at Mk II, with a second free variant.',
@@ -5708,10 +5811,10 @@ function trDroneEnts(){return W.ents.filter(e=>e.train&&e.alive)}
 function trFrig(){const f=S.player.faction;let e=W.ents.find(x=>x.role==='frigate'&&x.tok&&x.side===f&&x.alive);if(!e){const t=makeCarrier(f,W.sid,{});t.train=true;e=W.ents.find(x=>x.tok===t)}
   if(e){const p=W.player;qRot(p.q,0,0,1,_f);e.x=p.x+_f.x*700;e.y=p.y+60;e.z=p.z+_f.z*700;e.tok.dest=e.tok.sector;W.tgt={kind:'ship',ref:e}}}
 // a harmless wrecked escort for the salvage lesson: built from materials added to the practice galaxy's books, no Brood visit
-function trMiner(){const P=S.player;if(P.cls!=='skiff'){P.cls='skiff';refreshPlayerStats();feed('Training: you are now flying a Light Miner. Only mining ships carry a mining laser.','info')}}
+function trMiner(){const P=S.player;if(P.cls!=='skiff'){P.cls='skiff';refreshPlayerStats();feed('Training: you are now flying a Light Miner. Only mining ships carry a blast rig.','info')}}
 function trWreck(){trMiner();const p=W.player;if(!p)return;qRot(p.q,0,0,1,_f);const foe=FAC_IDS.find(f=>hostile(S.player.faction,f))||'pirate';
   const e={type:'ship',side:foe,fac:foe,cls:'escort',st:{radius:CLASSES.escort.radius},q:qCopy(q0(),p.q),x:p.x+_f.x*700,y:p.y+40,z:p.z+_f.z*700,load:{},cargo:{},tok:{name:'Training hulk'}};
-  devLedger(()=>{inv.addAll(e.load,{plate:24,wire:12,coil:6,fe:40,cu:24,ir:8})});const w=makeWreck(e);if(w){w.broodAt=0;w.until=S.T+1800;w.name='Training hulk'}}
+  const w=devLedger(()=>{inv.addAll(e.load,{plate:24,wire:12,coil:6,fe:40,cu:24,ir:8});return makeWreck(e)});if(w){w.broodAt=0;w.until=S.T+1800;w.name='Training hulk'}}
 const trItems=()=>Object.values(S.player.cargo||{}).reduce((a,b)=>a+b,0);
 const TRAIN=[
  {t:'Flight',steps:[
@@ -5730,8 +5833,8 @@ const TRAIN=[
   {x:'Finish the remaining drones.',ok:()=>!trDroneEnts().length},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Bounties, swarms and wings.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships, shared by damage dealt. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts also carry a swarm launcher (<kbd>3</kbd>): eight micro-missiles that fan out at your target. Shields recharge 2.5 s after the last hit. Combat ships fly in wings, and when a wing is cut down to one or two ships the survivors run for home.'}]},
  {t:'Mining and trade',setup:trMiner,steps:[
-  {x:'Only mining ships carry a mining laser, so training has moved you into a <b>Light Miner</b>. Press <kbd>R</kbd> to target the nearest asteroid and fly to it.',ok:()=>W.tgt&&W.tgt.kind==='ast'},
-  {x:'Hold <kbd>F</kbd> (or right-click) to run the mining laser. Collect <b>3 ore</b>: lasers cut slowly, and a full hold takes several minutes. Every plate and coil in Driftgate was mined from a rock that already existed: nothing is created.',setup:()=>{S.training.v.ore=trOre()},ok:()=>trOre()-(S.training.v.ore||0)>=3},
+  {x:'Only mining ships carry a blast rig, so training has moved you into a <b>Light Miner</b>. Press <kbd>R</kbd> to target the nearest asteroid and fly to it.',ok:()=>W.tgt&&W.tgt.kind==='ast'},
+  {x:'Mining is blasting. Fault-point rings show on the rock: aim at one until it turns green and press <kbd>F</kbd> to fire a charge. Back off 120 m and press <kbd>3</kbd> to detonate (<kbd>4</kbd> cancels). Then hold <kbd>F</kbd> by the ore cloud and collect <b>3 ore</b>. Charges on point release the most; your magazine reloads slowly, so placement sets your pay. Every plate and coil in Driftgate was mined from a rock that already existed: nothing is created.',setup:()=>{S.training.v.ore=trOre()},ok:()=>trOre()-(S.training.v.ore||0)>=3},
   {x:'Fly back to the station (<kbd>Tab</kbd> to target it, <kbd>J</kbd> for autopilot) and press <kbd>E</kbd> to dock.',ok:()=>S.player.docked==='station'},
   {x:'Open <b>Economy → Market</b> and sell your ore. Prices follow each station’s real stock, so a glut sells cheap and a shortage pays well.',setup:()=>{S.training.v.ore=trOre();S.training.v.cr=S.player.credits},ok:()=>trOre()<S.training.v.ore&&S.player.credits>S.training.v.cr},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Ores and hulls.</b> Ferrite, cuprite, iridium and xenocrystal are common. <b>Aurorite</b> exists only in the three deep-space systems and tunes components (+6% a level). <b>Vantium</b> lies in four contested fields, and every Capital Keel needs it. Bigger mining and hauling hulls, bought at a core Shipyard, carry more lasers and bigger holds, plus <b>guard drones</b> that launch with you and defend your ship.'}]},
@@ -5753,7 +5856,7 @@ const TRAIN=[
   {x:'Press <kbd>E</kbd> to lift off. Systems take four seconds to re-energise: no guns until they are back up.',ok:()=>!W.player.landed}]},
  {t:'Salvage and wrecks',setup:trWreck,steps:[
   {x:'A wrecked escort drifts ahead, its salvage points glowing. Destroyed carriers and escorts leave wrecks like this, and miners cut them apart (you’re back in a Light Miner). Press <kbd>Tab</kbd> until a salvage point is targeted and fly to it.',ok:()=>W.tgt&&W.tgt.kind==='wpt'},
-  {x:'Hold <kbd>F</kbd> to cut it apart with the mining laser. Collect <b>6 units</b> of salvage. A third of what’s inside a wreck comes out as intact components: plate, coil and conduit.',setup:()=>{S.training.v.it=trItems()},ok:()=>trItems()-(S.training.v.it||0)>=6},
+  {x:'Wreck sections crack at their joint ring. Fire a charge onto it (<kbd>F</kbd>), back off and press <kbd>3</kbd>, then collect <b>6 units</b> from the cloud. A reactor core needs every charge on point, or the whole wreck goes up. A third of what’s inside a wreck comes out as intact components: plate, coil and conduit.',setup:()=>{S.training.v.it=trItems()},ok:()=>trItems()-(S.training.v.it||0)>=6},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Reading a wreck.</b> The reactor core holds the best of it, but every unit you cut heats the core (the target panel shows its heat). At 100% it blows and hurts everything nearby, so mine it in bursts. A wreck breaks up after <b>5 minutes</b>, and the Brood come for wrecks and eat them fast. Wrecks show on the galaxy map as an amber ✕.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Other salvage.</b> A destroyed freighter or fighter spills a crate: fly into it to scoop. Galaxy events bring <b>derelict cargo</b> (an abandoned hold, free to whoever gets there first) and <b>comets</b> (rich ore that breaks up after a few minutes), and also <b>ion storms</b> (shields don’t recharge and radar is blind for 2½ minutes) and <b>gate collapses</b> (one link down for 2 minutes). Watch the feed and the map.'}]},
  {t:'Hauling for the war',steps:[
@@ -5978,6 +6081,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
   switch(m.t){
     case 'u':{if(P.docked)break;MP.inp[pid]={...m,at:performance.now()};P.x=m.x;P.y=m.y;P.z=m.z;P.vx=m.vx;P.vy=m.vy;P.vz=m.vz;P.q=m.q;P.fa=!!m.fa;P.wpn=m.w==='l'?'laser':'kinetic';P.route=m.rt||null;break}
     case 'msl':hMissile(pid,m);break;
+    case 'blast':{const e=MP.rp[pid];if(e)inW(worldOf(e),()=>{if(m.k==='fire')blFire(e,P);else if(m.k==='det')blDetReq(P,e);else if(m.k==='cancel')blCancel(P)});break}
     case 'flare':{const e=MP.rp[pid];if(e)inW(worldOf(e),()=>deployFlares(e));break}
     case 'jump':hJump(pid,m);break;
     case 'dock':hDock(c,m);break;
@@ -6115,9 +6219,7 @@ function netWorld(dt){const now=performance.now();
     if(u){const age=Math.min(.25,(now-u.at)/1000);e.x=u.x+u.vx*age;e.y=u.y+u.vy*age;e.z=u.z+u.vz*age;e.vx=u.vx;e.vy=u.vy;e.vz=u.vz;e.q.x=u.q[0];e.q.y=u.q[1];e.q.z=u.q[2];e.q.w=u.q[3];qNorm(e.q);e.boosting=!!u.b;e.thrusting=!!u.th;e.wpn=u.w==='l'?'laser':'kinetic';e.inJump=!!u.j;
       if(u.f&&now-u.at<600){if(u.w==='l')fireLaser(e);else fire(e)}}
     e.mining=null;
-    if(u&&u.m){const sec=S.sectors[W.sid],a=mineFind(sec,u.m);if(a&&d3(a,e)-astR(a)<340){const room=e.st.cargo-invMass(P.cargo);
-      if(room>=1){e.mining=a;e.mineAcc+=e.st.drill*mineRate(a,P.cls)*dt;while(e.mineAcc>=1){e.mineAcc-=1;const k=mainOre(a);if(!k)break;a.ore[k]--;if(!a.ore[k])delete a.ore[k];inv.add(P.cargo,k,1);if(oreTotal(a)<=0){removeAst(sec,a);fxBoom(a,30,ITEMS[k].col);break}}}
-      else if(now-(e.fullT||0)>3000){e.fullT=now;netMsg(e.rp,'flash','Hold is full. Dock to unload or fabricate.')}}}
+    if(u&&u.m){const sec=S.sectors[W.sid],cl=(sec.clouds||[]).find(c=>c.id===u.m);if(cl&&d3(cl,e)<BL.collectR+cl.r){e.mining=cl;blCollect(e,P,cl,dt,sec)}}
     const sec=S.sectors[W.sid];for(let i=sec.crates.length-1;i>=0;i--){const cr=sec.crates[i];if(d3(cr,e)<e.st.radius+40){let room=e.st.cargo-invMass(P.cargo),took=0;
       for(const k of Object.keys(cr.inv)){const ms=mass(k);while(cr.inv[k]&&room>=ms){inv.take(cr.inv,k,1);inv.add(P.cargo,k,1);room-=ms;took+=ms}}
       if(took)netMsg(e.rp,'feed',`Recovered ${took} t of salvage.`,'good');if(!Object.keys(cr.inv).length){sec.crates.splice(i,1);if(W.tgt&&W.tgt.ref===cr)W.tgt=null}}}
