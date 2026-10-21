@@ -895,3 +895,289 @@ a player's magazines (missile rack or torpedo bay by Mk, swarm pods), flaring mi
 
 Overall win % against the other five hulls at the same Mk (Mk I / III / V): Light 49/49/54, Medium 56/57/51,
 Heavy 66/65/65, Bomber 15/16/20, Heavy Bomber 32/35/37, Wraith 81/77/72.
+## The Brood: contained, scary, rarely winning (design, not built)
+Full spec: the Claude doc [Driftgate: The Brood](https://claude.ai/artifact/3gHjQB1NpmToqsxUEnLpja).
+
+### The idea
+The Brood is the galaxy's shared threat: an alien growth the three factions must keep contained. It can still win a galaxy, by the same 7-system hold as anyone, but the target is about 1 galaxy in 10 with real pilots fighting, down from about 1 in 4 today.
+
+- **Scary.** Fighting in Bloom space wears you down a little at a time, and the Brood hunts anything that's bleeding.
+- **Contained.** Its spread is visible in stages, each a chance to stop it, and the factions drop their rivalries to fight it when it grows.
+- **Truce ground.** In any system the Brood holds, the factions can't harm each other.
+- **An ecology, not just an enemy.** The Brood concentrates the ore it eats, so burning it back pays miners, haulers and scouts as well as fighters.
+
+The Unbound stay out of all of it: they avoid Bloom space, and the Brood leaves them alone.
+
+### Fear
+| Mechanic | What it does | Counter |
+|---|---|---|
+| Bloom haze | In Brood-held systems, shields recharge 15% slower and radar range drops by a quarter | Fight short, leave to recharge |
+| Latching spores | Each Brood hit leaves a spore that nibbles 0.5 hull a second for 4 s, stacking to 3 | Break off; docking or leaving clears them |
+| Blood scent | Brood wings turn toward the most damaged ship and fresh wrecks | Pull damaged wingmen out early |
+
+These stack with what the Brood already has: hulls 50% tougher that regrow out of combat, shields 40% weaker (kinetics beat lasers), and swarms that strip wrecks.
+
+### Spread and containment
+The Bloom spreads one system at a time through three visible stages:
+1. **Seeded:** a Seeder drifts toward a system next to Bloom space; the map marks its target and arrival time. Kill it and the spread stops.
+2. **Rooting:** the Seeder plants a young Bloom Node, fragile for 3 minutes, with a countdown on the map.
+3. **Infested:** the node roots, the system belongs to the Bloom and becomes a truce zone.
+
+Containment orders in every faction's Missions tab: kill a Seeder 600 cr, burn a rooting node 900 cr, burn an infested node 1,500 cr, spot a Seeder before it plants 250 cr (scouts).
+
+**The Containment Accord:** once the Brood holds 5 systems, all three factions stop fighting each other everywhere until it's back below 4, and their strike groups and capitals turn on the Bloom.
+
+### Truce zones
+Every Brood-held system, The Bloom included: rival factions' shots, missiles and torpedoes pass harmlessly through each other, AI and capitals ignore rivals, and players can lock only Brood targets. A HUD banner reads "Truce zone: only the Brood is a target" and the map hatches truce systems. The truce outlasts the last node by 30 s. No depots or claims start in a truce zone. Pilots of every faction can work the same feeding ground side by side.
+
+### Ecology
+- **The gut.** Ore the Brood grazes goes into the nearest Bloom Node's store, shown on its target panel.
+- **The feast after the fire.** A burned node's gut spills as dense, rich rock where it stood.
+- **Every role:** miners work feeding grounds under the truce; haulers run containment supply to border depots at a front-line bonus; scouts spot Seeders and find feeding grounds; fighters take containment bounties, the Hive Ship, Prowlers and Grazers, whose bellies spill real ore.
+- The Brood never turns one ore into another, so the closed economy stays exact.
+
+### The Brood and the Unbound
+AI Unbound never enter or route through Brood-held systems. The Brood never targets Scrapheart Haven or Unbound Lairs (today it can attack the haven; that's removed). Unbound pilots can fly into Bloom space, but nothing there is for them.
+
+### Winning rarely
+- **The "hungrier next galaxy" bonus is removed.** A Brood win no longer strengthens the next galaxy's Brood.
+- **A Brood victory is a total loss:** no pilot earns a Legend point, not even the half point for serving a losing faction.
+- **Slower growth**, starting values to tune:
+
+| Setting | Controls | Now | Proposed start |
+|---|---|---|---|
+| `brBuild` | Time between Seeder launches (higher is slower) | 0.8 | 1.0 |
+| `brOff` | Time between Brood offensives (higher is slower) | 0.8 | 0.95 |
+| `brHive` | Ore the Bloom Heart mines per tick | 6.5 | 5.5 |
+| `brGraze` | Rock the swarms strip from nearby systems | 1.7 | 1.3 |
+| `brLevT` | Seconds before the Brood can grow capital ships | 1,800 | 2,400 |
+
+### Build stages
+1. Balance and boundaries: remove the "hungrier" bonus, retune the growth settings by simulation, the Brood and the Unbound ignore each other.
+2. Truce zones and the Containment Accord.
+3. Spread stages, containment orders, guts and the feast, feeding grounds, Grazer bellies, scout spotting, supply orders.
+4. Fear: haze, spores and blood scent, tuned small.
+
+### Balance rules (must hold when built)
+- AI-only simulation puts the Brood at 12–15% with each faction near 28–30%; real pilots should then pull it to about 10%.
+- Median galaxy length doesn't grow.
+- The closed economy balances to the unit.
+
+## Playing as the Unbound (design, not built)
+Full spec: the Claude doc [Driftgate: Playing as the Unbound](https://claude.ai/artifact/SoHpuwfLLe9Myivh9JTkBc).
+
+### The idea
+A pilot, or a crew of friends, flies for the pirates. They never race for the 7-system win; they get rich and infamous off the three powers who do, while the faction race runs on, AI-driven. The core loop: the Raider finds a mark, the crew strips its shields and jams it, the hook takes its cargo, and the loot is fenced or poured into Scrapheart Haven.
+
+- **Take, don't kill.** A jammed ship gives up its whole hold; a destroyed one spills half. Takes earn more Infamy and less heat.
+- **Heat is the clock.** Every faction you hit remembers it, and its response escalates until you lie low.
+- **Pirates don't work.** No mining, hauling or scouting hulls.
+- **Earned, not chosen.** Unlocked only after a callsign has earned a Legend point flying for a faction.
+
+### Setup
+A fourth start card, locked until the callsign has 1 Legend point. Solo starts docked at Scrapheart Haven in The Wrack. Multiplayer: the host creates an Unbound crew galaxy and every pilot needs their own Legend point; no mixed galaxies, so no player-versus-player. The crew shares the haven, its upgrades and fleet; Infamy, heat, Deeds and Legend points stay per pilot.
+
+### Hulls
+| Hull | Role | Price | Hull | Shield | Top speed | Turn | Hold | Special |
+|---|---|---|---|---|---|---|---|---|
+| Raider | light, eyes | free | 85 | ×0.85 | ×1.25 | 2.95 | 40 t | Scout-range radar, spots landed ships at 1.6 km |
+| Corsair | medium, muscle | 2,600 cr | 120 | ×1.0 | ×1.10 | 2.50 | 70 t | Best jammer output |
+| Plunderer | heavy, hold | 5,000 cr | 180 | ×1.25 | ×0.86 | 1.55 | 110 t | Jamming torpedoes, the only way to disable a capital |
+
+About 85% of the matching fighter's turn and acceleration (the Plunderer 80%), no swarm pods, laden penalty at half strength. Sold at the haven's black market about 10% dearer than the nearest faction hull.
+
+### Weapons and jamming
+Keys stay the same: 1 kinetic (15% harder on hull), 2 lasers (25% stronger against shields), 3 not fitted, 4 jam mode (guns fire jammers, missiles become shock harpoons; never kills). Unbound missiles hit shields 25% harder.
+
+- **Shields first.** A jammer hit on a shielded ship does nothing.
+- The **Jam bar** appears with the first hit on an unshielded ship; it fills at the rate guns would deal damage and its size equals the target's full hull.
+- Jam hits keep shields down. Stop for 1.5 s and the bar drains 10% a second.
+- **One disable per ship**, then 60 s hardened.
+- **Shock harpoon:** fills 35% of the bar and stretches the hook's reach from 150 m to 400 m.
+- **Jamming torpedo** (Plunderer): 2 in the magazine, 40 s reload; a third of an escort's bar, a sixth of a carrier's, disables anything smaller outright.
+
+### The take
+Jam the mark dark, fly within 150 m, hold E to run the cargo hook (8 t/s) for the window: fighters 5 s, miners and light haulers 10 s, medium and heavy haulers 12 s. Two hooks double the rate. Then let them go (mercy take, half heat) or finish it (five times the kill's heat). Taken goods are flagged stolen until fenced or laundered. Freighters call distress when their bar appears; AI pilots raise shields once it drains.
+
+Being jammed runs in stages from edge flicker to a total blackout at 100%. Keeping shields up is the faction pilot's defence. AI pirates take only from the hold, never fitted parts or the vault.
+
+### Capital takes
+Strip the capital's shields (1,800 escort, 2,400 carrier), jam its turrets one at a time (offline about 15 s, then hardened 60 s), and land Plunderer torpedoes through the gap. A full jam takes the ship offline for about 20 s (escort) or 15 s (carrier) while hooks pull from its material store. Its launched wing keeps fighting.
+
+### Heat
+Per faction, 0–100: Cool (ignored, transponder works), Warm 25 (scanned on sight), Hot 50 (hunter wings, aces interested), Wanted 75 (Freeports refuse you, gates take 10 s to charge). Mercy take +2, take +4, kill a freighter or miner +8, kill an escort or patrol +3, jam a capital turret +2, capital take +15, caught under false colours +10; double in home space. Cools about 1 a minute, 2 in quiet systems; Freeport fixers sell 1 point for about 150 cr once a visit.
+
+### False transponder
+`K` toggles it. While Cool with a faction, its ships and stations see a neutral trader. Patrol scans within 1.5 km catch you at about 5%, +2% per 10 t of stolen goods, +10% at heat 15–24. Blown cover: +10 heat, instant hostility, transponder dead for 5 minutes. Any shot blows it with everyone in sight.
+
+### Raiding faction space
+Player crews can enter core and frontier systems (AI Unbound never do). Loud entry sounds the alarm at once; a quiet entry under cover lasts until the first shot. Lockdown: response wings at 45 s (3) and 2 min 15 s (5, Heavy Fighter-led), an ace at 3 min 45 s, then a wing every 90 s. Targets: freight lanes, supply convoys, vault heists with Plunderer torpedoes. Takes in home space earn double Infamy.
+
+### Scrapheart Haven
+Nine works fed with real goods and shares (credits): the Rusty Tankard (marks), Fence's Den (fence at 70/80/90%, laundering), Powder Magazine (jammers +10%, harpoon reload, 3 torpedoes), Chop Shop (hook 10 then 12 t/s, cheaper hulls), Crow's Nest (intel), Forger's Shack (scan chance −25%, faster cooling, shorter burnout), Grog Still (bigger, braver AI wings), Trophy Wall (+5% Infamy per downed ace), Graving Dock (faster capitals, call a sloop, call the destroyer). About 40 t and 1,500 shares at level 1 to 160 t and 6,000 at level 3. A battered haven loses a level; one upgrade carries into a pilot's next Unbound galaxy.
+
+### Lairs, fleet, Infamy
+- **Lairs:** a Rigger builds one into a large asteroid in contested, hub, deep or quiet space (1 Depot Frame + 20 plate). Stash 200 t, repairs only, hidden until a scout pings it. One per pilot, one per system.
+- **Fleet:** the AI capitals become the Corsair Sloop (replaces the escort) and the Destroyer (replaces the carrier: capital guns, two boarding pinnaces, no wing), with named rotations. Pilots call a sloop from Graving Dock 2; no Unbound capital enters faction home space.
+- **Infamy and Legend points:** ranks Nuisance, Cutthroat 200, Buccaneer 600, Dread Captain 1,500, Pirate King 3,000. One Legend point, never half, for a rank above Nuisance plus at least one Deed (Heist, Capital take, Ace-breaker, Clean sweep, Three for three, The long con).
+
+### AI Unbound in faction galaxies
+AI wings fly the three Unbound hulls with the same jamming rules, go after haulers, miners and full holds first, and feed what they take into Unbound stores, so a faction that lets its haulers be robbed pays for the Drowned Crown.
+
+### Build stages
+1. Jamming arrives in faction galaxies: the three hulls, jammers, the Jam bar, jammed-player effects, AI takes, capital names.
+2. Unbound mode core, solo first.
+3. Raids and lockdown, capital takes, the haven works, fleet call-ins, Lairs, crew multiplayer.
+
+### Balance rules (proposed; must hold when built)
+- The faction win race is unchanged in AI-only simulation.
+- Every haven cost comes from real goods; the closed economy balances to the unit.
+- Jamming never kills and can't touch a shielded ship.
+
+## Ship upgrade choices (design, not built; next build phase)
+Full spec: the Claude doc [Driftgate: Ship Upgrade Choices](https://claude.ai/artifact/RKuLFjS9Gvxz2cHZ9azXq7).
+
+### The idea
+Today every Mk is a pure gain (a Mk V Drive gives about +64% thrust, +44% top speed and +24% turn), so upgrading is never a decision. Instead, every system becomes a fork: each variant buys a real strength with a real weakness, ideally one you feel in how the ship flies. Two pilots in the same hull should fly differently, and what you fit should depend on where you're going.
+
+### How it works
+- **Mk I–III stay vertical** with today's per-level gains. Mk IV and V are retired; their value moves into variants.
+- **One variant per system**, opening at Mk II. You can own several; only one is fitted to each system.
+- **General variants** cost the usual Mk materials. **Specialist variants** guard against one enemy (Unbound jammers or the Brood), cost plate and wire only and need no Mk level.
+- **Swapping is free** at any Shipyard. Everything fitted goes down with the ship: 50% spills into the wreck as salvage, the rest is lost as debris. Spares in a station vault are safe.
+- **Aurorite tuning** stays the one purely vertical upgrade (+6% a level, up to 2).
+- **Refits stay as they are:** pure gains bought at Freeports.
+
+| System | Mk II | Mk III |
+|---|---|---|
+| Drive | +16% thrust, +11% top speed, +6% turn | +32% thrust, +22% top speed, +12% turn |
+| Reactor | +25% energy, +22% recharge | +50% energy, +44% recharge |
+| Shield Emitter | +32% shields | +64% shields |
+| Weapons | +26% damage, 12% more energy per shot | +52% damage, 24% more energy per shot |
+| Armor | +22% hull, 5% damage reduction | +44% hull, 10% damage reduction |
+| Blast Rig | +1 charge per launcher, +20% collector rate | +2 charges per launcher, +40% collector rate |
+| Cargo Hold | +30% hold | +60% hold |
+| Payload Bay | −15% reload time, +2 missiles, 7% faster lock | −30% reload time, +4 missiles, 14% faster lock |
+
+### General variants
+| System | Variant | Gain | Cost |
+|---|---|---|---|
+| Drive | Sprint drive | +25% top speed, longer afterburner | −20% turn |
+| Drive | Vector drive | +30% turn, sharper braking | −12% top speed |
+| Drive | Long-burn drive | Afterburner uses 40% less energy | −15% acceleration |
+| Reactor | Surge core | +40% energy capacity | Recharge pauses after firing or boosting |
+| Reactor | Steady core | +35% energy recharge | −25% energy capacity |
+| Shield Emitter | Bastion | +45% shield capacity | Recharge waits 4.5 s after a hit, not 2.5 s |
+| Shield Emitter | Flicker | Recharge starts after 1 s, runs twice as fast | −30% shield capacity |
+| Shield Emitter | Tuned emitter | +30% against kinetic (or laser) fire | −20% against the other |
+| Weapons | Heavy cannons | +40% damage per shot | −30% fire rate, slower shells |
+| Weapons | Rapid fire | +45% fire rate | −25% damage, higher energy drain |
+| Weapons | Long barrel | +30% range | −15% fire rate |
+| Armor | Ablative plating | +40% hull | −10% speed and acceleration |
+| Armor | Light frame | +10% turn and acceleration | −20% hull |
+| Armor | Reactive plating | +8% damage reduction | −15% shields |
+| Blast Rig | Shaped charges | On-point window 8 m instead of 5 m | At most 80% of a rock released |
+| Blast Rig | Long launcher | Charges reach 450 m instead of 300 m | Charges fly 25% slower |
+| Blast Rig | Survey rig | Scans last 60 s and mark every rock within 2 km | One charge fewer |
+| Cargo Hold | Bulk hold | +50% capacity | Always handles as at least half laden |
+| Cargo Hold | Stabilised hold | Half the laden handling penalty | −20% capacity |
+| Payload Bay | Deep magazine | +50% missiles in the rack | Always flies as at least a third laden |
+| Payload Bay | Quick-cycle rack | Reloads twice as fast | −40% rack size |
+| Payload Bay | Smart seekers | −40% lock time | −20% missile damage |
+
+### Specialist variants
+| Against | System | Variant | Gain | Cost |
+|---|---|---|---|---|
+| Jammers | Armor | Faraday plating | Jam bar 50% larger | −10% hull |
+| Jammers | Reactor | Fast-reboot reactor | Jam bar drains after 0.75 s at 25%/s (not 1.5 s at 10%/s) | −15% energy capacity |
+| Jammers | Shield Emitter | Snap-back emitter | Shields jump back to 30% when a Jam bar first appears; once per 60 s | −20% shield capacity |
+| Jammers | Cargo Hold | Sealed hold | A hooked hold gives up half, not all | −15% capacity |
+| Jammers | Payload Bay | Tether cutter | Flares break shock-harpoon tethers | −25% rack size |
+| Brood | Weapons (kinetic) | Shredder rounds | +35% to Brood hulls; a hit stops regrowth for 10 s | −15% to faction shields |
+| Brood | Weapons (laser) | Cautery lance | +40% to Bloom Nodes and Seeders | −20% to ships |
+| Brood | Payload Bay | Incendiary warheads | Missiles +50% to nodes and Seeders | −25% to ships |
+| Brood | Armor | Spore-sealed plating | Spores stack to 1, not 3 | −8% hull |
+| Brood | Shield Emitter | Haze-tuned emitter | Ignores Bloom haze's recharge penalty | −10% shields everywhere |
+| Brood | Drive | Scent baffles | Blood scent ignores you above 25% hull | −8% top speed |
+
+Unbound pilots get a mirror set at the haven's black market (scan baffles, jammer emitters, long harpoons), with numbers left open until simulation so they don't stack with the haven upgrades into automatic takes. Core stations stock anti-jam parts; front-line depots on the Bloom border stock anti-Brood parts.
+
+### Knock-on changes
+- Legend perks 5 and 6 become "start each galaxy with one variant fitted for free", then a second.
+- Each faction's AI wings favour certain variants (Halcyon: Bastion and Flicker), so enemies can be read and countered.
+- Saves convert Mk IV and V systems to Mk III plus a free variant chosen at the first Shipyard visit.
+
+### Build stages
+1. Prototype: Drive and Payload Bay variants with free swaps and loss on destruction.
+2. All general variants, Mk I–III, save conversion, perk rewording.
+3. Specialists, then the Unbound mirror once jamming is in the build.
+4. Faction doctrines and stocking.
+
+### Balance rules (proposed; must hold when built)
+- No variant wins more than about 60% of mirror duels against the same hull with another variant at equal Mk.
+- The duel tables keep their shape: no hull class jumps a tier.
+- The pay ladder holds: hauling over mining over combat over beacon running.
+
+## Blast mining (design, not built; next build phase)
+Full spec: the Claude doc [Driftgate: Blast Mining](https://claude.ai/artifact/1hGfqjnu4axL6uLLAxb1LP).
+
+### The idea
+The mining laser is removed. Mining and salvage both work by blasting: survey a rock, fire charges at its fault points, crack it open and vacuum up the ore. Placement decides yield, so skill, not hours on one rock, sets a miner's income.
+
+### The loop
+1. **Survey.** Pulse a scan; for 20 s the rock's fault lines glow and its fault points are marked. Faint cracks are visible within 100 m without one.
+2. **Fire charges** from up to 300 m. They fly straight at 300 m/s with a lead marker and stick where they hit; a ring on each fault point turns green while your aim would land on point.
+3. **Back off and detonate.** The HUD warns until you're 120 m clear; detonating inside that takes a second press.
+4. **Vacuum.** The collector pulls nuggets within 250 m in front of you. After 90 s the cloud disperses.
+
+Controls on mining hulls (which carry no swarm launcher): `F` fires a charge, `3` detonates, `4` cancels (charges go inert and return to the magazine), hold `F` on a cloud to collect. Set charges cancel themselves if you leave the system.
+
+### Fault points and yield
+Small rocks (up to 50 units) have 2 fault points, medium (51–90) 3, large (over 90) 4. On point is within 5 m, near within 15 m. Aurorite and Vantium shrink the window to 3 m.
+
+| Placement | Share released |
+|---|---|
+| Every fault point has exactly one charge on point | 90% |
+| All on or near, at least one near | 70% |
+| Half or more on or near | 50% |
+| Mostly off point | 25% |
+| Extra charges beyond the fault-point count | −10% each |
+
+Too few charges crack the rock partly; the rest stays as a smaller rock. Unreleased ore and nuggets left when a cloud disperses go into the system's debris pool, which regrows into rock, so nothing is created or destroyed. In Wrack the Salvage Yard harvests that pool for whoever holds it.
+
+### Salvage
+Capital wrecks crack the same way. Each salvage point sits on the joint where its section meets the hull; a charge on the joint bursts that section into a cloud, scored as above. **The reactor core must be perfect:** one near or off charge sets it off, a 600 m blast that heavily damages every ship inside and destroys the whole wreck, sending its salvage to the debris pool. The HUD warning reaches 600 m while core charges are set. Smaller ships still spill crates.
+
+### Gear
+| Hull | Today | Launchers | Charges (Mk I / II / III) | Collector (Mk I / II / III) |
+|---|---|---|---|---|
+| Light Miner | 1 laser | 1 | 4 / 5 / 6 | 6 / 7.2 / 8.4 units/s |
+| Medium Miner | 2 lasers | 2 | 6 / 8 / 10 | 9 / 10.8 / 12.6 units/s |
+| Heavy Miner | 3 lasers | 3 | 10 / 13 / 16 | 12 / 14.4 / 16.8 units/s |
+
+Charges work like missiles: the magazine refills after a 20 s countdown, and no matter is used. Launchers fire a volley per press. Only mining hulls blast or collect; haulers stay out of mining.
+
+### Risk
+- Anything within 120 m of a blast takes shield and hull damage; hitting another faction's ship counts as hostile fire.
+- Clouds show on every radar in the system and anyone with a collector can take from them.
+- Ships and guard drones inside a cloud show on radar only within 300 m and can't be missile-locked from outside it.
+- AI Unbound turn toward fresh clouds; clouds near Bloom space draw Brood Grazers.
+- Charges stick only to rocks and wrecks and can't be fired within 400 m of a station or jumpgate.
+
+### What changes with the laser gone
+The Mining Laser system becomes the Blast Rig (Mk I–III; variants in Ship upgrade choices). Legend perk 3, Miner's eye, becomes "charges reach 400 m, on-point window 2 m wider". Hull descriptions, the training lessons (crack a practice rock, crack a practice wreck), HUD and help text change. In multiplayer the host resolves where charges land, the release and the cloud. AI miners, simulated off-screen, and guard drones are unchanged. Comets get fault points too. Saves convert a Mining Laser to a Blast Rig at the same Mk, capped at III.
+
+### Build stages
+1. Rock blasting on the Light Miner; the laser removed.
+2. Every mining hull, Blast Rig Mk I–III, training, HUD, perk rewording, income tuning.
+3. Salvage: wreck joints and the volatile core.
+4. Risk and multiplayer.
+
+### Balance rules (must hold when built)
+- At good placement each hull earns what it does today: about 12k an hour for a Light Miner, 15.5k for a Medium and 20k for a Heavy on the best field within 2 jumps.
+- Mining stays below hauling on the pay ladder.
+- The closed economy balances to the unit: every unit not collected reaches the debris pool.
+
+### Open questions
+- Does blast mining ship in the current build phase, or wait with the upgrade rework?
+- Should a cloud's cover block missile locks from outside it entirely, or only slow them?
