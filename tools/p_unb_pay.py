@@ -24,11 +24,15 @@ rep("The Fence's Den buys anything at ${Math.round(unbFenceRate()*100)}% of mark
 open(P,'w',encoding='utf-8').write(s);print('Unbound pay applied')
 # second pass: at 2.5x a bot pilot made 4-10k an hour, still under the band, and each pilot drained the Unbound treasury by about
 # 18k an hour. The premium goes to 4x, and the haven now sells its surplus loot on to the Freeports at 90% of their market price,
-# every kind of goods and up to 20 of each a tick (it sold only raw ore, 8 at a time, at 80% of base value), keeping what the slip needs.
+# up to 20 of each kind a tick, keeping what the slip needs.
 s=open(P,encoding='utf-8').read()
 rep("const STOLEN_K=2.5;","const STOLEN_K=4;")
-rep("function pirFence(want){const st=S.econ.stock.pirate,N=S.econ.stock.neutral;if(!st||!N)return;\n  for(const[k,keep]of[['xc',40],['ir',140],['fe',260],['nu',Math.max(30,(want.nu||0)+20)],['cu',Math.max(80,(want.cu||0)+40)]]){const n=Math.min(8,(st[k]||0)-keep);if(n<=0)continue;const pr=Math.floor(baseValue(k)*.8),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m)}}",
-    "function pirFence(want){const st=S.econ.stock.pirate,N=S.econ.stock.neutral;if(!st||!N)return;const KEEP={xc:40,ir:140,fe:260,nu:Math.max(30,(want.nu||0)+20),cu:Math.max(80,(want.cu||0)+40),keel:99,frame:99,lattice:99,core:99};\n  for(const k of Object.keys(st)){if(MUNITIONS.has(k)||!ITEMS[k])continue;const keep=Math.max(KEEP[k]!=null?KEEP[k]:10,(want[k]||0)+5),n=Math.min(20,(st[k]||0)-keep);if(n<=0)continue;const pr=Math.max(1,Math.floor(price(N,k)*.9)),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m)}}")
+# only what pilots fenced is sold on (S.econ.fenced counts it): selling the AI Unbound's whole stock collapsed the Brood (12% -> 0.4%
+# of galaxies won) and cut galaxies from about two hours to 75 minutes, so the AI economy keeps its old ore sales untouched
+rep("inv.take(P.cargo,k,can);inv.add(S.econ.stock.pirate,k,can);if(P.stolen[k]){P.stolen[k]=Math.max(0,P.stolen[k]-Math.min(can,nS));",
+    "inv.take(P.cargo,k,can);inv.add(S.econ.stock.pirate,k,can);{const F=S.econ.fenced=S.econ.fenced||{};F[k]=(F[k]||0)+can}if(P.stolen[k]){P.stolen[k]=Math.max(0,P.stolen[k]-Math.min(can,nS));")
+rep("const pr=Math.floor(baseValue(k)*.8),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m)}}",
+    "const pr=Math.floor(baseValue(k)*.8),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m)}}\n  {const F=S.econ.fenced||{};for(const k of Object.keys(F)){if(MUNITIONS.has(k)||!ITEMS[k]){delete F[k];continue}const n=Math.min(20,F[k],(st[k]||0)-((want[k]||0)+5));if(n<=0)continue;const pr=Math.max(1,Math.floor(price(N,k)*.9)),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m);F[k]-=m;if(F[k]<=0)delete F[k]}}}")
 open(P,'w',encoding='utf-8').write(s);print('Unbound pay pass 2 applied')
 # at 4x, six runs (Raider, Corsair, Plunderer, 2 seeds): 12.8k, 9.7k, 11.2k, 14.0k and 38.8k an hour (one Raider run died with its
 # hold every time and fenced nothing), about 17k on average, inside the band; the treasury ended above its start in all but one run.
