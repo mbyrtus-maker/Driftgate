@@ -1298,3 +1298,4 @@ Selling the AI Unbound's whole stockpile to the Freeports collapsed the Brood (1
 
 **Fixes found by the bots:** Unbound games threw an error every 40–70 s from the faction supply-contract timer (pushed on its own); autopilot with a target that had gone; docking at, undocking from, or sitting docked at a station or outpost that was destroyed.
 
+**Ostrova's late game.** Ostrova expanded furthest (peak 6.7 systems) but faded by the deadline (3.1 systems, the fewest capitals alive) and won only 21% of deadline ties, so it averaged about 27% against 29% for the other two over 760 galaxies. Its carriers now spend 8% less time in the slip and need one wire and one coil fewer (`CAR_K` 0.92; 0.8 overshot to 35.8%). 240 galaxies: Ostrova 28.7%, Halcyon 28.7%, Varkesh 28.3%, Brood 14.2%.
