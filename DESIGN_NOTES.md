@@ -1336,3 +1336,23 @@ War check, 500 games, 2.2 h:
 | With freeport parts | 22% | 26% | 24% | 28% |
 
 The Seals slow the three powers' capital programmes slightly, which lifts the Brood from the bottom; the spread between the four sides narrows from about 12 points to about 6. Variants tried: fewer Seals (1/2/1), Seals off the general trade list, and cheaper recipes without Xenocrystal; none changed the picture beyond noise.
+
+## Faction war rebalance after the freeport parts (Oct 2026)
+Targets from the design ethos: each faction about 30%, the Brood about 10%, in AI-only galaxies (480+ games), and the Brood
+dangerous: spreading out of The Bloom, not sitting at home.
+
+**What was wrong.** Compact Seals slowed the three powers' capital ships and lifted the Brood to 28% (it was 19% just before).
+Nearly all Brood wins were deadline ties: it held the most systems at two hours while the factions fought each other.
+Simply slowing the Brood (offensives and seeding at 3.3x their interval) hit 32/32/26/10 but left the Brood peaking at 2.3
+systems, stuck at home.
+
+**The change.**
+- **The Brood can't win on the deadline count** (`TIE_SIDES` is the three factions). It wins only by holding 7 systems for
+  20 minutes, like anyone; at the deadline the leading faction wins. Help and the map lesson say so.
+- **The Brood is more aggressive:** `brOff` 1.42 → 1.1 and `brBuild` 1.65 → 1.15 (shorter gaps between offensives and Seeder
+  launches).
+- **Faction station mining** (`BAL.ext`): Halcyon 0.70 → 0.69, Varkesh 1.20 → 1.22, Ostrova 1.22 → 1.12.
+
+**Result** (480 galaxies, 2.2 h): Halcyon 31%, Varkesh 29%, Ostrova 28%, Brood 12%. The Brood peaks at 4.7 systems on
+average and reaches 5 or more in 41% of galaxies (it was 3.2 and about 10% before the Seals, 2.3 and 1% in the slowed
+version). Each share is ±4 points.
