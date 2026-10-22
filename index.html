@@ -6447,7 +6447,7 @@ function trDroneEnts(){return W.ents.filter(e=>e.train&&e.alive)}
 function trFrig(){const f=S.player.faction;let e=W.ents.find(x=>x.role==='frigate'&&x.tok&&x.side===f&&x.alive);if(!e){const t=makeCarrier(f,W.sid,{});t.train=true;e=W.ents.find(x=>x.tok===t)}
   if(e){const p=W.player;qRot(p.q,0,0,1,_f);e.x=p.x+_f.x*1800;e.y=p.y+60;e.z=p.z+_f.z*1800;e.tok.dest=e.tok.sector;W.tgt={kind:'ship',ref:e}}}
 // a harmless wrecked escort for the salvage lesson: built from materials added to the practice galaxy's books, no Brood visit
-function trMiner(){const P=S.player;if(P.cls!=='skiff'){P.cls='skiff';refreshPlayerStats();feed('Training: you are now flying a Light Miner. Only mining ships carry a blast rig.','info')}}
+function trMiner(){const P=S.player;if(P.cls!=='skiff'){P.cls='skiff';refreshPlayerStats();P.blN=blCap(P);P.blT=0;feed('Training: you are now flying a Light Miner. Only mining ships carry a blast rig.','info')}}
 function trWreck(){trMiner();const p=W.player;if(!p)return;qRot(p.q,0,0,1,_f);const foe=FAC_IDS.find(f=>hostile(S.player.faction,f))||'pirate';
   const e={type:'ship',side:foe,fac:foe,cls:'escort',st:{radius:CLASSES.escort.radius},q:qCopy(q0(),p.q),x:p.x+_f.x*700,y:p.y+40,z:p.z+_f.z*700,load:{},cargo:{},tok:{name:'Training hulk'}};
   const w=devLedger(()=>{inv.addAll(e.load,{plate:24,wire:12,coil:6,fe:40,cu:24,ir:8});return makeWreck(e)});if(w){w.broodAt=0;w.until=S.T+1800;w.name='Training hulk'}}
@@ -6465,7 +6465,7 @@ const TRAIN=[
   {x:'Three harmless Unbound target drones are ahead of you. Press <kbd>T</kbd> to target the nearest hostile (<kbd>Q</kbd> cycles).',ok:()=>W.tgt&&W.tgt.kind==='ship'&&W.tgt.ref.train},
   {x:'Shoot one down. <kbd>Space</kbd> or click fires; <kbd>1</kbd> kinetic cannons, <kbd>2</kbd> lasers. Aim at the lead marker, or hold <kbd>Z</kbd> to track it. Break shields first: hulls die fast after. Damage earns a share of the bounty, so you don’t need the kill shot.',ok:()=>trDroneEnts().length<3},
   {x:'Missiles: keep a target near your nose until the lock completes, then press <kbd>C</kbd>. Missiles hit 1.8× harder once shields are down and reload on a cooldown.',setup:()=>{if(!trDroneEnts().length)trDrones()},ok:()=>W.missiles.some(m=>m.src===W.player)},
-  {x:'If something locks onto you, press <kbd>B</kbd> for flares: they spoof missiles tracking you. Try it now.',ok:()=>W.flareCd>0},
+  {x:'If something locks onto you, press <kbd>B</kbd> for flares: they spoof missiles tracking you and cost 30 energy (stop firing for a moment if the bar is low). Try it now.',ok:()=>W.flareCd>0},
   {x:'Finish the remaining drones.',ok:()=>!trDroneEnts().length},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Bounties, swarms and wings.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships, shared by damage dealt. Heavy Fighters, Bombers, Heavy Bombers, Advanced Scouts and the Wraith also carry a swarm launcher (<kbd>3</kbd>): eight micro-missiles, most at your target and the rest at whoever flies beside it. Shields recharge 2.5 s after the last hit. Combat ships fly in wings, and when a wing is cut down to one or two ships the survivors run for home.'}]},
  {t:'Mining and trade',setup:trMiner,steps:[
