@@ -1294,7 +1294,7 @@ Measured with a duel test that now uses the game's real weapon mix (45% of facti
 
 Selling the AI Unbound's whole stockpile to the Freeports collapsed the Brood (12% to 0.4% of galaxies) and cut galaxies to 75 minutes, so the haven sells on only what pilots fenced (`S.econ.fenced`).
 
-**Faction war** (240 galaxies): after the pass Varkesh 31.2%, Halcyon 28.3%, Ostrova 25.8%, Brood 14.6%; Varkesh's station mining rate 1.24 to 1.20 to bring it down about 3 points (1.12 overshot to 21%).
+**Faction war** (240 galaxies): after the pass Varkesh 31.2%, Halcyon 28.3%, Ostrova 25.8%, Brood 14.6%; Varkesh's station mining rate 1.24 to 1.20 (1.12 overshot to 21%): Halcyon 32.1%, Varkesh 28.3%, Ostrova 26.2%, Brood 13.3%, median galaxy 116 minutes. The closed economy still balances to the unit (8 full galaxies, every raw material and credits exact).
 
 **Fixes found by the bots:** Unbound games threw an error every 40–70 s from the faction supply-contract timer (pushed on its own); autopilot with a target that had gone; docking at, undocking from, or sitting docked at a station or outpost that was destroyed.
 
