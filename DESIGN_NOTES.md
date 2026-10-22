@@ -372,7 +372,7 @@ hidden. A tab with several views shows them as a second row; each tab remembers 
 |---|---|---|
 | 1 | **Overview** | `home`: what you can do now. Sell your hold (one button, hold only, never the vault), deliver to a contract you can fill, fit an upgrade you have parts for, repair. Then jobs (campaign move, best contracts, operations), the war (systems held by each side) and where your goods are. |
 | 2 | **Trade** | Market (hold and vault columns, Store and Load on each row; Claim Beacon for credits), Best runs, Vault. At Scrapheart: Fence, Black market. |
-| 3 | **Jobs** | Contracts and supply drives, then the campaign and missions, on one page. At Scrapheart: Marks, Wanted. |
+| 3 | **Jobs** | One list of every paid job (`jobsList`): the campaign move (pinned), contracts here, blockade runs, freeport requests, front-line resupply, faction orders, operations, convoy raids, convoy escorts and beacon bounties. Filter All · Haul · Mine · Fight · Scout (with counts), sort by pay or distance; jobs you can do now come first, jobs your hull can't do sit at the bottom, dimmed, saying what they need. Picking a job opens its details and its button beside the list. At Scrapheart: Marks, Wanted. |
 | 4 | **Ship** | Systems (upgrades, variants, specialists), Refits (freeports), Hangar (ship bay), Shipyard. |
 | 5 | **Station** | Fabricate, Station works, Outpost controls. At Scrapheart: the haven's works. |
 
@@ -382,11 +382,11 @@ hidden. A tab with several views shows them as a second row; each tab remembers 
 - **Displayed prices are paid prices.** A station's local price levels are set up before the screen draws (`mkOf`), so the
   first visit no longer lists a lower sell price than the sale pays.
 - **Claim Beacons for credits** (`CLAIM_PRICE` 450 cr): sold at the player's own faction's stations and depots, paid to its
-  treasury, delivered to the vault like any purchase. Fabricating one still works. A beacon weighs 32 t, so carrying one
-  takes a hold that big (a Light Hauler or bigger).
+  treasury, delivered to the vault like any purchase. Fabricating one still works (2 Alloy Plate, 2 Conduit).
+- **A beacon weighs 12 t**, so every fighter (Light Fighter 14 t) can carry one. **Scouts can't**, whatever their hold:
+  loading one into a Scout or Advanced Scout is refused, and a scout in an outpost's ring doesn't claim it.
 - Every in-game text names the new tabs (Jobs, Trade → Market, Ship → Systems, Station → Fabricate and so on).
-- Design mock-ups: the "Driftgate dock menu proposal" canvas. Still to come from it: a single sorted job list with role
-  filters and a detail panel, and the market's best-runs side panel.
+- Design mock-ups: the "Driftgate dock menu proposal" canvas. Still to come from it: the market's best-runs side panel.
 
 ---
 
@@ -1446,7 +1446,7 @@ Fifteen lessons were too long for a first session, and most players want one job
   one before it in the full order.
 - **First-time tips.** Lessons a course skips are still met in play: the first time a pilot enters Bloom space or is jammed,
   a one-off tip explains it (`firstTip`, kept in `driftgate.tips`). Not shown during training.
-- **Claim practice (Combat course).** "Fighting for territory" has the cadet fabricate a Claim Beacon from parts training
-  puts in the vault, load it into the hold, and claim a practice outpost (`trPost`: unclaimed, kept out of `S.outposts`
-  so the war never sees it, removed after the step) by sitting in its ring.
+- **Claim practice (Combat course).** "Fighting for territory" has the cadet buy a Claim Beacon at the station, load it
+  (training swaps a scout for a Light Fighter, since scouts can't carry one), and claim a practice outpost (`trPost`:
+  unclaimed, kept out of `S.outposts` so the war never sees it, removed after the step) by sitting in its ring.
 - Checked by flying every course end to end in a browser (full, combat, mining, hauling, scouting).

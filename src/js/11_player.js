@@ -330,8 +330,8 @@ function structUpdate(dt){
   if(capturable){
     const claim=new Set(),rpClaim={};let block=false,noBeacon=false;
     for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if((e.isPlayer&&(S.player.docked||W.dead)||mHid(e)))continue;if(d3(e,OE)>450)continue;
-      if(e.isPlayer){if(!S.unb&&(S.player.cargo.beacon||0)>0&&o.owner!=='player'&&o.owner!==S.player.faction)claim.add('player');else if(o.owner==='player')block=true;else noBeacon=true}
-      else if(e.rp){const R=S.pilots[e.rp];if(R&&(R.cargo.beacon||0)>0&&o.owner!==e.side){claim.add(e.side);rpClaim[e.side]=e.rp}else if(o.owner===e.side)block=true;else if(W.t-(e.capMsgT||-9)>6){e.capMsgT=W.t;netMsg(e.rp,'flash',o.owner?'Defenses down. You need a Claim Beacon in your hold to take it.':'Unclaimed outpost. Carry a Claim Beacon into the ring to claim it.')}}
+      if(e.isPlayer){if(!S.unb&&(S.player.cargo.beacon||0)>0&&!isScoutCls(S.player.cls)&&o.owner!=='player'&&o.owner!==S.player.faction)claim.add('player');else if(o.owner==='player')block=true;else noBeacon=true}
+      else if(e.rp){const R=S.pilots[e.rp];if(R&&(R.cargo.beacon||0)>0&&!isScoutCls(R.cls)&&o.owner!==e.side){claim.add(e.side);rpClaim[e.side]=e.rp}else if(o.owner===e.side)block=true;else if(W.t-(e.capMsgT||-9)>6){e.capMsgT=W.t;netMsg(e.rp,'flash',o.owner?'Defenses down. You need a Claim Beacon in your hold to take it.':'Unclaimed outpost. Carry a Claim Beacon into the ring to claim it.')}}
       else if(e.role==='strike'&&e.side!==o.owner)claim.add(e.side);
       if(o.owner&&e.side===o.owner&&!e.isPlayer)block=true;}
     if(claim.has('player'))claim.delete(S.player.faction);

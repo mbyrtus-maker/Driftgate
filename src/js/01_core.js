@@ -75,7 +75,7 @@ const ITEMS={
   coil:{name:'Flux Coil',recipe:{wire:2,ir:2},col:'#acd6ff'},
   lattice:{name:'Crystal Lattice',recipe:{plate:2,xc:2},forge:true,col:'#d9bbff'},
   core:{name:'Resonance Core',recipe:{lattice:1,coil:1,xc:2},forge:true,col:'#ffd27a'},
-  beacon:{name:'Claim Beacon',recipe:{plate:4,wire:4,coil:1},col:'#f0b24a'},
+  beacon:{name:'Claim Beacon',recipe:{plate:2,wire:2},col:'#f0b24a'},
   missile:{name:'Seeker Missile',recipe:{wire:1,ir:1},col:'#ff8f6b'},
   torpedo:{name:'Siege Torpedo',recipe:{plate:1,coil:1,ir:2},col:'#ffcf5a'},
   drone:{name:'Guard Drone',recipe:{plate:1,wire:1,coil:1},col:'#9fe0c8'},
