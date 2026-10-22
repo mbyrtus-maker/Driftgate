@@ -2603,9 +2603,9 @@ function campBuild(f,m,mn){const sid=m.sector;if(!canBuildIn(sid,f))return'gone'
   const tier=factionTier(f),cls=[];for(let i=0;i<3+Math.min(3,m.boost||0);i++){const cl=pickFighter('patrol'),ld=loadout('patrol',tier,cl);if(takeFrom(ld,srcs)){inv.addAll(force,ld);cls.push(cl)}}
   if(cls.length<CR_ESC_MIN){inv.addAll(R,force);return null}   // never without an escort
   const ev={id:S.nextId++,type:'build',att:f,sector:sid,eta:S.T+80,stage:'inbound',force,n:cls.length,tier,cls,site:stationSite(sid),prog:0,camp:m.id};S.events.push(ev);announce(ev);return ev}
-// the faction holds its other attacks and constructor convoys while its campaign strike forms and flies, and for the last
-// CAMP_SAVE seconds of the supply drive before it, so the stores can field the strike
-let CAMP_SAVE=210,CAMP_MN=3,CAMP_RES_K=.35;
+// the faction holds its other attacks and constructor convoys while its campaign strike forms and flies (CAMP_SAVE would also
+// hold them for the end of the supply drive before it: 0 measured best in the faction war)
+let CAMP_SAVE=0,CAMP_MN=3,CAMP_RES_K=.35;
 function campBusy(f){const P=S.plans&&S.plans[f],m=P&&P.mv;if(!m)return false;if(m.kind==='take'||m.kind==='build')return m.stage==='active'||m.stage==='brief';return m.stage==='active'&&!!P.next&&S.T>m.until-CAMP_SAVE}
 // run every strategic tick (10 s) on the host
 function campTick(){if(NET.cl||S.T<100)return;S.plans=S.plans||{};

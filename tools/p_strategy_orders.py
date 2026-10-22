@@ -1,7 +1,8 @@
 # Patch: campaign strikes that launch, and strategy orders beside the supply drive.
 # 1. Strikes. A campaign strike had to field its ships from stores the faction's other attacks kept draining, and 3 in 4 never
-#    launched ("the stores could not field it"). Now the faction holds its other attacks and constructor convoys while its campaign
-#    strike forms, waits up to 4 minutes for the ships, and goes with fewer when pilots sign on (each one counts as a ship).
+#    launched ("the stores could not field it"). Now command sets materials aside for it during the supply drive (a war chest),
+#    holds its other attacks and constructor convoys while the strike forms, waits up to 4 minutes for the ships, and goes with
+#    three, or fewer when pilots sign on (each one counts as a ship).
 # 2. Strategy orders. With each campaign target command posts an intel order (recon, or a beacon push) and a combat order (interdiction,
 #    sabotage or screening the gate) beside the supply drive; each one done sends the strike in with 2 more ships. It also answers
 #    threats as they come: a counter-attack when its ground is hit, a hunt for an enemy capital ship near its space, a Brood purge.
@@ -14,9 +15,9 @@ def rep(a,b,n=1):
 
 # ---------------- 1. strikes
 rep("function campBusy(f){const P=S.plans&&S.plans[f],m=P&&P.mv;return!!m&&m.kind==='take'&&m.stage==='active'}",
-    "// the faction holds its other attacks and constructor convoys while its campaign strike forms and flies, and for the last\n"
-    "// CAMP_SAVE seconds of the supply drive before it, so the stores can field the strike\n"
-    "let CAMP_SAVE=210,CAMP_MN=3,CAMP_RES_K=.35;\n"
+    "// the faction holds its other attacks and constructor convoys while its campaign strike forms and flies (CAMP_SAVE would also\n"
+    "// hold them for the end of the supply drive before it: 0 measured best in the faction war)\n"
+    "let CAMP_SAVE=0,CAMP_MN=3,CAMP_RES_K=.35;\n"
     "function campBusy(f){const P=S.plans&&S.plans[f],m=P&&P.mv;if(!m)return false;if(m.kind==='take'||m.kind==='build')return m.stage==='active'||m.stage==='brief';return m.stage==='active'&&!!P.next&&S.T>m.until-CAMP_SAVE}")
 rep("function planBuild(f){const terr=territory(f)","function planBuild(f){if(FACTIONS[f]&&campBusy(f))return;const terr=territory(f)")
 rep("function campOffensive(f,m){","function campOffensive(f,m,mn){")
