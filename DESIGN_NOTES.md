@@ -1272,3 +1272,29 @@ The Mining Laser system becomes the Blast Rig (Mk I–III; variants in Ship upgr
 
 The Heavy Miner's gap is the home market: 880 t sold at one station in half an hour fetched 8.6 cr/t, against 12–14 for small loads, so a Heavy Miner that spreads its sales does better. Variants at Mk II, before the reload change: Bulk hold +53% on the Light Miner and +19% on the Medium (the hold is what limits a miner, so its handling cost barely matters); Survey rig +24% on the Light Miner. Single 30-minute runs vary by about ±15%.
 
+## Balance pass 2 (Oct 2026)
+
+Measured with a duel test that now uses the game's real weapon mix (45% of faction ships and 20% of pirates on lasers) and a truly plain opponent (the old test's "plain" ship fitted its faction doctrine variant half the time), plus live-game role bots for pay. Patches, in order after main: `p_blast_sections`, `p_mkcurve`, `p_balance_var3`, `p_ap_guard`, `p_pay_ladder`, `p_unb_pay`, `p_faction_trim`.
+
+**Blast mining.** A full hold takes several charges: each charge blows off one chunk of its fault-point section, at most 7, 9 or 14 units (Light, Medium, Heavy Miner), and releases 90% on point, 50% near, 25% off. Magazines hold 5, 6 and 7 charges and reload in 90, 100 and 110 s. The previous fix (reloads only) is replaced: one magazine had filled the hold, so placement barely mattered. Mk I per hour: on point 12.1k / 14.5k / 18.9k, near 8.8k / 11.0k / 14.9k, off 4.3k / 5.6k / 8.3k. Mining variants all land within 10% of a plain rig (Bulk hold +1% / −10% / 0%).
+
+**Mk curve.** Same hull and pilot: Mk II beats Mk I about 60% of the time, Mk III 65%, a fully Aurora-tuned Mk III 70%, on every hull. The combat step is small (`MK_LV` 0.178 at Mk II, 0.36 at Mk III) and scaled per hull by `MK_HULL` (Heavy Fighter [0.80, 0.58] for Mk II and Mk III); engines, holds, blast rigs and payload reloads keep their full steps. Aurora tuning gives combat systems +4% (was +3%). Hull-against-hull matchups keep their shape from Mk I to tuned Mk III (the tables are in the tuning report).
+
+**Variants** (every variant, specialist and stacked build on all 9 hulls; outliers outside 40–60% fixed and rechecked at 160–240 duels): Surge core recharges at half speed for a second after firing (it stopped dead); Haze-tuned −6% shields, Cautery −12% lasers against ships, Incendiary −15% missiles against ships, Snap-back −8% shields, Jammer emitters −10% damage; Heavy cannons +35% damage; Ablative +35 hull and Bastion +35 shield capacity, flat (a percentage was worth most on the biggest hulls). Every single variant now wins 41–58% on every hull; three-variant stacks 50–64% against a ship with none.
+
+**Pay ladder** (Mk I, 30 game minutes, 2 seeds a hull; targets: hauling 15.6k / 19.9k / 25.2k, Unbound between mining and hauling, mining 12k / 15.6k / 20k, combat 5k–15k by skill, scouting 3.5k–7k):
+
+| Career | Measured an hour | Change |
+|---|---|---|
+| Hauling | Light 14.9k, Medium 15.6k–20.7k, Heavy 26k–38k at 22% depth (eased to 26%) | Fees 3.5% / 2% / 1%; pilot trades move the local price 100% / 60% / 26% per unit by hauler size (`HAUL_MK`) |
+| Unbound | 9.7k–38.8k, about 17k average | Jammed or tethered ships can't use a gate; the Fence pays its share of the market price, not base value, and 4x market for stolen goods; the haven sells pilot-fenced loot on to Freeports at 90% of market |
+| Mining | 12.1k / 14.5k / 18.9k | Chunks per charge (above) |
+| Combat | 2.7k–8.3k, about 5.6k for a cautious bot | Kill bounties x2 (`BOUNTY_MUL` 8) |
+| Scouting | 5.1k–6.1k (was 13k–19k) | Flip bonus 60, beacon missions 80, residual 4 cr/min |
+
+Selling the AI Unbound's whole stockpile to the Freeports collapsed the Brood (12% to 0.4% of galaxies) and cut galaxies to 75 minutes, so the haven sells on only what pilots fenced (`S.econ.fenced`).
+
+**Faction war** (240 galaxies): after the pass Varkesh 31.2%, Halcyon 28.3%, Ostrova 25.8%, Brood 14.6%; Varkesh's station mining rate 1.24 to 1.20 to bring it down about 3 points (1.12 overshot to 21%).
+
+**Fixes found by the bots:** Unbound games threw an error every 40–70 s from the faction supply-contract timer (pushed on its own); autopilot with a target that had gone; docking at, undocking from, or sitting docked at a station or outpost that was destroyed.
+
