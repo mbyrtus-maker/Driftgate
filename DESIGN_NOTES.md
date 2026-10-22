@@ -1313,3 +1313,26 @@ Selling the AI Unbound's whole stockpile to the Freeports collapsed the Brood (1
 
 **AI miners blast.** Faction and Unbound miners set two or three charges on a rock's fault points, back off, detonate, and scoop the chunk, instead of holding a laser on it. Ore still comes at their drilling rate (it builds up while the cycle runs and leaves with the chunk), so their output is unchanged. Brood Grazers still graze. Crew pilots see the cycle too: the host's snapshot of each system carries every blasting miner's charges and chunk.
 
+
+## Freeport parts (built)
+Two parts that only the Freeport Compact makes, from goods traders sell it, and sells only at its freeports (`FP_ONLY`).
+
+| Part | Recipe (made at freeports) | Needed for |
+|---|---|---|
+| **Calibration Matrix** (`matrix`) | 2 conduit, 1 Flux Coil, 1 Xenocrystal | every Mk III upgrade (`upgRecipe`) |
+| **Compact Seal** (`seal`) | 4 plate, 2 Flux Coil, 2 Xenocrystal | every capital build for the three powers and players: shipyard 2, carrier 3, escort 1 (`CAP_SEAL`) |
+
+- **Made at freeports only.** `neutralIndustry` keeps up to `FP_MAKE` (16 Matrices, 12 Seals) in the Compact's shared stock. Players can't fabricate them.
+- **Bought only at a freeport.** Buying either at a faction market is refused. Seals can be sold to a faction station (it builds with them); Matrices only sell back to the Compact.
+- **Factions fetch Seals.** `sealRun` sends a merchant from the nearest freeport to the faction's home station when its next capital step (shipyard, carrier, escorts) is short of Seals, paid from the treasury. The cargo can be raided like any other. Seals are also a trade item, so ordinary merchants move them on a price gap.
+- **The Brood and the Unbound are exempt** (`sealed`): the Brood grows its ships and the Unbound smuggle theirs.
+- Costs go through `yardCost(f)`, `carCostF(f)` and `escCost(f)`; the ledger stays exact (`seal`/`matrix` are recipe items).
+
+War check, 500 games, 2.2 h:
+
+| Build | Halcyon | Ostrova | Varkesh | Brood |
+|---|---|---|---|---|
+| Before (two runs) | 29%, 31% | 29%, 25% | 24%, 25% | 19%, 19% |
+| With freeport parts | 22% | 26% | 24% | 28% |
+
+The Seals slow the three powers' capital programmes slightly, which lifts the Brood from the bottom; the spread between the four sides narrows from about 12 points to about 6. Variants tried: fewer Seals (1/2/1), Seals off the general trade list, and cheaper recipes without Xenocrystal; none changed the picture beyond noise.
