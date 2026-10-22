@@ -15,7 +15,7 @@ SETUP=r"""(()=>{window._fs={won:null};galaxyWon=function(s,how){_fs.won=[Math.ro
 import os
 RELOAD=os.environ.get('RELOAD')=='1'
 async def boot(pg):
-  await pg.goto('file://'+D+FILE+'?name=Tester');await pg.wait_for_function('window.__dg&&__dg.ev("MDL.ready")',timeout=60000)
+  await pg.goto('file://'+D+FILE+'?name=Tester',timeout=180000,wait_until='domcontentloaded');await pg.wait_for_function('window.__dg&&__dg.ev("MDL.ready")',timeout=60000)
   await pg.evaluate("selFac='halcyon';document.getElementById('bLaunch').click()");await pg.wait_for_timeout(800)
   if TUNE:await pg.evaluate('c=>__dg.ev(c)',TUNE+';1')
   await pg.evaluate('c=>__dg.ev(c)',SETUP)
