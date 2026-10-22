@@ -138,6 +138,9 @@ function buildScout(fk,g,L,eng,fc){const H=fk==='pirate'?[.6,.56,.46]:mixC([.78,
 function buildShip(fk,cls,g,L,eng){
   const fc=hexRGB(fk==='pirate'?PIRATE.col:FACTIONS[fk].col),S2=f=>{f(1);f(-1)};
   if(fk==='brood'){buildBrood(cls,g,L,eng,fc);return}if(cls==='frigate'){buildFrigate(fk,g,L,eng,fc);return}if(cls==='gunboat'){buildGunboat(fk,g,L,eng,fc);return}if(cls==='constructor'){buildConstructor(fk,g,L,eng,fc);return}if(cls==='scout'){buildScout(fk,g,L,eng,fc);return}
+  if(cls==='limpet'){const D=[.2,.21,.24],M=[.55,.57,.6];g.set(0,.06,0).cyl(.6,.66,.12,12,D,0,true);g.set(0,.13,0).cyl(.62,.62,.04,12,fc,.7);
+    g.set(0,.14,0,null,1,.55,1).sphere(.46,4,10,M,0);for(let i=0;i<4;i++){const a=i/4*TAU+TAU/8;g.set(Math.cos(a)*.66,.04,Math.sin(a)*.66).box(.2,.1,.2,D)}
+    g.set(0,.48,0).box(.03,.26,.03,D);g.set(0,.62,0).sphere(.09,3,6,fc,1);return}
   if(cls==='drone'){const D=[.26,.28,.32],M=[.62,.64,.68];g.set().sphere(.5,6,8,M,0);g.set().torus(.8,.07,18,4,fc,.75);g.set(0,0,.45).sphere(.15,4,6,fc,1);
     S2(s=>{g.set(.6*s,0,-.08).box(.3,.07,.46,D,0);L.seg([.8*s,0,0],[.8*s,0,-.35],fc)});nacelle(g,0,0,-.95,-.38,.16,D,fc,eng);return}
   if(fk==='halcyon'){const H=[.8,.84,.86],D=[.24,.3,.34],G=[.55,.9,1],under=(k,i,p)=>p[1]<-.03?D:H;
@@ -480,7 +483,7 @@ function draw3D(){
   for(const c of sec.crates){if(!inView(c.x,c.y,c.z,20))continue;qAxis(.3,1,.2,t*1.1+c.id,_qs);qNorm(_qs);mModel(MM,c.x,c.y,c.z,_qs,16,16,16);drawMesh(GEN.crate,MM);drawMesh(GEN.crateL,MM,c.derelict?rgb(PLAYER_COL):[.9,.88,.8])}
   const hideP=cam.mode==='cockpit'||S.player.docked||W.dead;
   if(W.bridge){const F=W.bridge.f,O=bridgeOrigin(F);mModel(MM,O.x,O.y,O.z,F.q,1,1,1);qRot(F.q,.22,1,.3,_u);const l=hyp(_u.x,_u.y,_u.z);G.uniform3f(PM.u.uL,_u.x/l,_u.y/l,_u.z/l);G.uniform3fv(PM.u.uSun,BR_SUN);G.uniform3fv(PM.u.uAmb,BR_AMB);drawMesh(bridgeMesh(F.fac),MM);useMesh()}
-  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f&&!mdlHas(e.fac==='brood'?BROOD_MDL[e.cls]:e.cls))continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=e.side==='pirate'?'pirate':e.fac,m=shipMesh(fac,e.cls);
+  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f&&!mdlHas(e.fac==='brood'?BROOD_MDL[e.cls]:e.cls))continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=e.side==='pirate'?'pirate':e.fac,m=shipMesh(fac,e.role==='limpet'?'limpet':e.cls);
     mModel(MM,e.x,e.y,e.z,e.q,sc,sc,sc);const hurt=W.t-e.lastHit<.08;drawMesh(m.hull,MM,ONE3,hurt?[.35,.25,.15]:ZERO3);drawMesh(m.rim,MM);
     if(hasTur(e.cls)&&!(W.gunseat&&gsEnt()===e)){const T=e.tur||{yaw:Math.PI,pitch:.1};turretQ(e,T,_gq3);qRot(e.q,0,.4*sc,-.38*sc,_u);mModel(MM,e.x+_u.x,e.y+_u.y,e.z+_u.z,_gq3,sc,sc,sc);const tm=gturretMesh(fac);drawMesh(tm.hull,MM,ONE3,ZERO3);drawMesh(tm.rim,MM)}}
   drawBerthed();
@@ -499,7 +502,7 @@ function draw3D(){
     if(!o.owner||o.breached||o.cap.p>0){mModel(MM,OE.x,OE.y,OE.z,OE.q||q0(),450,450,450);drawMesh(GEN.ring,MM,rgb(o.cap.side?sideCol(o.cap.side):'#ece4cf'),ZERO3,.35+.6*o.cap.p)}}
   {const D=GEN.dust,A=D.arr,sp=hyp(W.player.vx,W.player.vy,W.player.vz);const al=clamp(sp/250,.15,.8);for(let i=0;i<D.base.length;i++){const b=D.base[i],o=i*8;A[o]=((b[0]-cam.x)%1000+1000)%1000-500+cam.x;A[o+1]=((b[1]-cam.y)%1000+1000)%1000-500+cam.y;A[o+2]=((b[2]-cam.z)%1000+1000)%1000-500+cam.z;A[o+3]=.6;A[o+4]=.68;A[o+5]=.85;A[o+6]=al;A[o+7]=1.4}
     G.useProgram(PP.p);G.uniformMatrix4fv(PP.u.uVP,false,VP);G.uniform3f(PP.u.uOff,0,0,0);G.uniform1f(PP.u.uPx,DPR);G.bindBuffer(G.ARRAY_BUFFER,D.buf);G.bufferData(G.ARRAY_BUFFER,A,G.DYNAMIC_DRAW);attribs([3,4,1],8);G.drawArrays(G.POINTS,0,D.base.length);curMesh=null}
-  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead||cam.mode==='cockpit'))continue;if(W.bridge&&e===W.bridge.f)continue;const sc=e.st.radius*1.25,m=shipMesh(e.side==='pirate'?'pirate':e.fac,e.cls),c=rgb((e.isPlayer?S.player.trail:e.trail)||(e.isPlayer?FAC(e.fac).col:sideCol(e.side)));
+  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead||cam.mode==='cockpit'))continue;if(W.bridge&&e===W.bridge.f)continue;const sc=e.st.radius*1.25;if(e.role==='limpet'){if((t*2.2+e.x*.01)%1<.45){qRot(e.q,0,.66*sc,0,_u);sprite(e.x+_u.x,e.y+_u.y,e.z+_u.z,sc*1.1,rgb(sideCol(e.side)),.95)}continue}const m=shipMesh(e.side==='pirate'?'pirate':e.fac,e.cls),c=rgb((e.isPlayer?S.player.trail:e.trail)||(e.isPlayer?FAC(e.fac).col:sideCol(e.side)));
     const fl=e.thrusting?(e.boosting?1.9:1.25)+Math.sin(t*50+sc)*.15:.5;qRot(e.q,0,0,-1,_f);
     for(const en of m.eng){qRot(e.q,en[0]*sc,en[1]*sc,en[2]*sc,_u);const ex=e.x+_u.x,ey=e.y+_u.y,ez=e.z+_u.z,rr=en[3]*sc;sprite(ex,ey,ez,rr*3*fl,c,.85);sprite(ex,ey,ez,rr*1.3*fl,[1,1,1],.75);
       if(e.thrusting){const Lt=rr*(e.boosting?16:9);streak(ex,ey,ez,ex+_f.x*Lt,ey+_f.y*Lt,ez+_f.z*Lt,rr*.8,c,.32)}}

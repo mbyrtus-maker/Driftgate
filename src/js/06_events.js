@@ -177,12 +177,14 @@ function limpetK(R,src){if(!R||!R.pings||!src)return 1;const P=R.pings[sideNorm(
 function lpWarn(E,msg,alert){const sd=sideNorm(lpSide(E));if(FAC_IDS.includes(sd))facFeed(sd,msg,alert?'bad':'news');const t=E.role==='frigate'?E.tok:null;if(!t)return;
   if(t.side==='player'||(t.owner&&isMe(t.owner))||(W.bridge&&W.bridge.f&&W.bridge.f.tok===t))flash(msg,alert);
   if(NET.host){if(t.owner&&!isMe(t.owner))netMsg(t.owner,'flash',msg,alert);for(const pid of crewAboard(t))if(!isMe(pid))netMsg(pid,'flash',msg,alert)}}
-function limpetStick(e){const E=e.lh,q=E.q||q0();qRot(q,e.loc.x,e.loc.y,e.loc.z,_lpV);e.x=E.x+_lpV.x;e.y=E.y+_lpV.y;e.z=E.z+_lpV.z;e.vx=E.vx||0;e.vy=E.vy||0;e.vz=E.vz||0;qCopy(e.q,q)}
-const _lpV={x:0,y:0,z:0};
+function limpetStick(e){const E=e.lh,q=E.q||q0();qRot(q,e.loc.x,e.loc.y,e.loc.z,_lpV);e.x=E.x+_lpV.x;e.y=E.y+_lpV.y;e.z=E.z+_lpV.z;e.vx=E.vx||0;e.vy=E.vy||0;e.vz=E.vz||0;
+  // stood on the hull: the model's +y along the outward normal
+  qRot(q,0,0,1,_lpF);qLook(_lpV.x,_lpV.y,_lpV.z,_lpF.x,_lpF.y,_lpF.z,e.q);qMul(e.q,_lpR,e.q)}
+const _lpV={x:0,y:0,z:0},_lpF={x:0,y:0,z:0},_lpR=qAxis(1,0,0,Math.PI/2,{x:0,y:0,z:0,w:1});
 // on the hull, on the side the scout came from (a random side when the system reloads)
 function limpetSpawn(E,f,at){const q=E.q||q0(),r=lpRad(E)*.92;let dx,dy,dz;if(at){dx=at.x-E.x;dy=at.y-E.y;dz=at.z-E.z}else{const o=rdir();dx=o.x;dy=o.y;dz=o.z}const l0=hyp(dx,dy,dz)||1,v={x:0,y:0,z:0};
   qRot({x:-q.x,y:-q.y,z:-q.z,w:q.w},dx/l0*r,dy/l0*r,dz/l0*r,v);
-  const e=makeNPC('limpet',f,'drone',1,{},'limpet');e.fac=f;e.st={...e.st,hull:LIMPET_HP,sCap:0,radius:8};e.hull=LIMPET_HP;e.shield=0;e.lh=E;e.lf=f;e.loc=v;limpetStick(e);W.ents.push(e);return e}
+  const e=makeNPC('limpet',f,'drone',1,{},'limpet');e.fac=f;e.st={...e.st,hull:LIMPET_HP,sCap:0,radius:5};e.hull=LIMPET_HP;e.shield=0;e.lh=E;e.lf=f;e.loc=v;limpetStick(e);W.ents.push(e);return e}
 function limpetDrop(e){e.alive=false;const i=W.ents.indexOf(e);if(i>=0)W.ents.splice(i,1);if(W.tgt&&W.tgt.ref===e)W.tgt=null}
 function limpetPlant(E,f,by,at){const R=lpRec(E),sd=lpSide(E);if(!R||!FAC_IDS.includes(f)||!sd||sd==='neutral'||!hostile(f,sideNorm(sd)))return false;
   R.pings=R.pings||{};R.pings[f]={by:by||null,until:S.T+LIMPET_LIFE};for(const l of W.ents.slice())if(l.role==='limpet'&&l.lh===E&&l.lf===f)limpetDrop(l);limpetSpawn(E,f,at);
