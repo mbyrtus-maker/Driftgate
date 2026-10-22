@@ -3079,7 +3079,7 @@ function gateKey(a,b){return[a,b].sort().join('-')}
 // ============================================================ audio: everything synthesized, low and soft; a global low-pass caps brightness
 const AU={ctx:null,on:{sfx:true,music:false},voices:0};
 try{const v=JSON.parse(localStorage.getItem('driftgate.audio2')||'null');if(v&&typeof v.sfx==='boolean')AU.on=v}catch(e){}
-if(!(AU.on.mvol>=0))AU.on.mvol=45;if(!(AU.on.svol>=0))AU.on.svol=100;   // music and effects volume, 0-100
+if(!(AU.on.mvol>=0))AU.on.mvol=35;if(!AU.on.mv2){if(AU.on.mvol===45)AU.on.mvol=35;AU.on.mv2=1}if(!(AU.on.svol>=0))AU.on.svol=100;   // music and effects volume, 0-100
 function auSave(){try{localStorage.setItem('driftgate.audio2',JSON.stringify(AU.on))}catch(e){}}
 function auOK(){return!!(AU.ctx&&AU.ctx.state==='running')}
 function auInit(){
