@@ -49,6 +49,9 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .ordc .ot{display:flex;justify-content:space-between;gap:8px;padding:5px 9px;border-left:3px solid;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim)}.ordc .ot b{color:var(--ivory);font-weight:600}
 .ordc .om{padding:5px 9px 0 12px;line-height:1.3;color:var(--ivory)}.ordc .os{display:flex;justify-content:space-between;gap:8px;padding:4px 9px 0 12px;font-size:11.5px;color:var(--dim)}.ordc .os .go{color:var(--amber)}.ordc .os .ok{color:var(--ok)}
 .ordc .obar{margin:6px 9px 0 12px;height:4px;background:rgba(236,228,207,.12)}.ordc .obar i{display:block;height:100%}
+.ordc .oi{border-left:2px solid transparent;margin:3px 0 0 1px;padding-bottom:3px;pointer-events:auto;cursor:pointer}.ordc .oi.sel{border-left-color:var(--amber);background:rgba(240,180,80,.08)}
+.ordc .oi.op .om{font-size:12px;padding-left:10px}.ordc .oi.op .os{padding-left:10px}.ordc .oi.op.defend .om{color:#f3c3b8}.ordc .oi .om,.ordc .oi .os,.ordc .oi .obar{margin-left:-2px}
+.ordc .onx{padding:6px 9px 0 12px;font-size:10.5px;color:var(--faint);letter-spacing:.04em}.ordc .onx kbd{font-size:10px}
 .chip{font-size:11px;letter-spacing:.09em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--line-hi);background:rgba(5,7,13,.65);color:var(--ivory)}
 .chip.bad{border-color:var(--danger);color:var(--danger)}
 .chip.warn{border-color:var(--amber);color:var(--amber)}
@@ -346,7 +349,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       </div>
     </div>
     <div class="hud" id="contacts" aria-label="Contacts"></div>
-    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Comms</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Friendly ops · O joins the top one</div><div class="cops" id="cOps"></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
+    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Comms</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Under attack here · O targets the attacker</div><div class="cops" id="cOps"></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
     <div class="hud" id="hPrompt"></div>
     <div class="hud" id="feed" aria-live="polite"></div>
     <div id="touch" hidden>
@@ -530,7 +533,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
               <kbd>V</kbd><span>Chase or cockpit camera</span>
               <kbd>`</kbd><span>Show or hide the on-screen touch buttons</span>
               <kbd>Hold</kbd><span>A full hold makes any ship heavier. Haulers, miners and constructors at full load turn, accelerate and brake at about half rate and slide wide through turns</span>
-              <kbd>P</kbd><span>Campaign orders: sign on to your faction's next move (shown under the system name), then set a course to it</span>
+              <kbd>P</kbd><span>Orders: sign on to the order picked in the orders card (your faction's campaign move, its strikes and convoys, calls to defend) and set a course to it. <kbd>Shift</kbd>+<kbd>P</kbd> picks the next order, or click one</span>
               <kbd>I</kbd><span>then 3 — call a faction constructor to build a depot here (area must be mostly clear when you call)</span>
               <kbd>J</kbd><span>Autopilot to your target (gate, station, rock) or the next jump on your course</span>
               <kbd>L</kbd><span>Auto-level on/off (rolls you back level with the sector)</span>
@@ -2653,7 +2656,16 @@ function campCourse(m){const P=S.player;let to=m.sector;
   else if(m.kind==='mine')to=(P.cargo[m.item]||0)>=5?nearestOwnStation(m.f,P.sector)||m.sector:(oreField(m.item,P.sector,m.f)||P.sector);
   if(!to)return;if(to===P.sector){flash(m.kind==='mine'?((P.cargo[m.item]||0)>=5?`Dock here to deliver your ${ITEMS[m.item].name} (Economy → Orders).`:`${ITEMS[m.item].name} is in the rocks here: target a rock (Tab) and hold F to mine, then dock at a ${FACTIONS[m.f].short} station.`):m.kind==='haul'?'You are there: dock and open Economy → Orders.':'You are in the target system. Hold near the action.');return}
   P.route=to;if(W&&!P.docked){apOn=true;const g=routeNext();if(g)W.tgt={kind:'gate',ref:g};flash(`Course set to ${DEF[to].name}. Autopilot on: steer to take back control.`)}else flash(`Course set to ${DEF[to].name}. Undock and press J to fly it.`)}
-function planKey(){if(S.unb){flash('The Unbound take no campaign orders. Check the Marks tab at the haven.',true);return}const C=myCamp(),m=C&&C.mv;if(!m){flash('No campaign orders right now. Your faction posts its next move shortly.',true);return}
+// every order your faction has going: the campaign move first, then its strikes, convoys and calls to defend (not trouble right here)
+let ordPick=null;
+function ordKey(o){return o.t==='camp'?'c'+o.m.id:o.op.ev&&o.op.ev.id!=null?'e'+o.op.ev.id:o.op.kind+':'+(o.op.ev&&o.op.ev.type)+':'+o.op.sector}
+function orderList(){if(S.unb||!S.player.faction||!FACTIONS[S.player.faction])return[];const C=myCamp(),m=C&&C.mv,out=[];if(m)out.push({t:'camp',m,label:m.title});
+  for(const op of friendlyOps()){if(op.kind==='local')continue;if(m&&m.evId&&op.ev&&op.ev.id===m.evId)continue;out.push({t:'op',op,label:op.label})}
+  for(const o of out)o.key=ordKey(o);return out.slice(0,5)}
+function ordSel(L){const i=L.findIndex(o=>o.key===ordPick);return i<0?0:i}
+function planKey(next){if(S.unb){flash('The Unbound take no campaign orders. Check the Marks tab at the haven.',true);return}const L=orderList();if(!L.length){flash('No orders right now. Your faction posts its next campaign move shortly.',true);return}
+  let i=ordSel(L);if(next){if(L.length<2){flash('That is your only order right now.');ordPick=L[0].key;return}i=(i+1)%L.length;ordPick=L[i].key;flash(`Order ${i+1} of ${L.length}: ${L[i].label}. Press P to take it.`);if(!MUTE)SFX.ui&&SFX.ui();return}
+  ordPick=L[i].key;if(L[i].t==='op'){joinOp(L[i].op);return}const m=L[i].m;
   const k=pkey();if(!m.acc.includes(k)){if(NET.cl){netSend({t:'plan',id:m.id});m.acc.push(k);feed(`Signed on: ${m.title}. ${campHow(m)}`,'good')}else campAccept(k,m);SFX.count(true)}
   campCourse(m)}
 // Orders tab: the campaign at a glance, plus deliveries for supply drives
@@ -2690,23 +2702,25 @@ function cdsHtml(){const P=S.player,p=W.player,torp=CLASSES[P.cls].torp,cap=pRac
 let cmSig={s:''};try{if(localStorage.getItem('dg_comms_min')==='1')setTimeout(()=>{const c=$('hComms');if(c){c.classList.add('min');$('cmTog').textContent='show';$('cmHead').setAttribute('aria-expanded','false')}},0)}catch(e){}
 function commsUpdate(){const P=S.player,dl=Math.max(0,(P.distT||0)-S.T),fc=W.flareCd||0,nEv=innerHeight>=940?8:innerHeight>=820?6:5,last=FEED.slice(-nEv);
   $('hCds').innerHTML=cdsHtml();
-  const ops=friendlyOps().slice(0,3),osig=ops.map(o=>o.label+opWhen(o)).join('~');
+  const ops=friendlyOps().filter(o=>o.kind==='local'||S.unb).slice(0,3),osig=ops.map(o=>o.label+opWhen(o)).join('~');
   if(osig!==cmSig.o){cmSig.o=osig;$('cOpsT').hidden=!ops.length;$('cOps').innerHTML=ops.map((o,i)=>`<button type="button" class="ct op ${o.kind}" data-op="${i}"><i></i><span>${esc(o.label)}</span><em>${esc(opWhen(o))}</em></button>`).join('')}
   const sig=nEv+'|'+FEED.length+'|'+(last.length?last[last.length-1].rt:0)+'|'+Math.ceil(dl)+'|'+Math.ceil(fc)+'|'+Math.floor(S.T/15);if(sig===cmSig.s)return;cmSig.s=sig;
   const ago=t=>{const d=Math.max(0,S.T-t);return d<60?Math.round(d)+'s':Math.round(d/60)+'m'};
   $('cEv').innerHTML=last.length?last.slice().reverse().map(f=>`<div class="${f.kind}" title="${esc(f.msg)}"><span>${esc(f.msg)}</span><em>${ago(f.t)}</em></div>`).join(''):'<div class="news"><span>Quiet on all channels.</span></div>';
   const K=(k,l,w)=>`<div${w?' class="wait"':''}><kbd>${k}</kbd>${l}</div>`;
-  $('cKeys').innerHTML=K('U',dl>0?`Distress ${Math.ceil(dl)}s`:'Distress',dl>0)+K('I','Comms menu')+K('Y','Assist friendly')+K('O','Join operation')+K('P','Campaign orders')+K('B',fc>0?`Flares ${Math.ceil(fc)}s`:'Flares',fc>0)
+  $('cKeys').innerHTML=K('U',dl>0?`Distress ${Math.ceil(dl)}s`:'Distress',dl>0)+K('I','Comms menu')+K('Y','Assist friendly')+K('O','Join operation')+K('P','Take order')+K('⇧P','Next order')+K('B',fc>0?`Flares ${Math.ceil(fc)}s`:'Flares',fc>0)
     +`<div class="sub">In the comms menu (I): <kbd>1</kbd> guard · <kbd>2</kbd> escort · <kbd>3</kbd> construction · <kbd>4</kbd> distress</div>`}
-function campHud(){const el=$('hOrd');if(!el)return;if(S.unb){el.hidden=true;return}const C=myCamp(),m=C&&C.mv,f=S.player.faction;if(!C||(!m&&!C.goal)){el.hidden=false;el.innerHTML=`<div class="ot" style="border-color:${sideCol(f)}"><span>${esc(FACTIONS[f].short)} orders</span><b>${controlCounts()[f]||0}/${VIC_NEED} systems</b></div><div class="om" style="color:var(--dim)">No campaign move right now. Command posts the next one shortly.</div>`;return}el.hidden=false;
-  const n=controlCounts()[f]||0,k=pkey();let h=`<div class="ot" style="border-color:${sideCol(f)}"><span>${esc(FACTIONS[f].short)} · ${esc(DOCTRINE[f].name)}</span><b>${n}/${VIC_NEED} systems</b></div>`;
-  if(!m){el.innerHTML=h+`<div class="om">Goal reached. Hold the line.</div>`;return}
-  const signed=m.acc.includes(k),left=m.stage==='active'&&m.until?Math.max(0,Math.round(m.until-S.T)):Math.max(0,Math.round(m.brief-S.T)),ev=m.evId&&S.events.find(e=>e.id===m.evId);
-  const st=m.stage==='brief'?`Opens in ${left} s`:m.kind==='mine'||m.kind==='haul'?`${Math.floor(m.prog)}/${m.need} · ${fmtT(left)}`:ev?(ev.stage==='engaged'?'Fighting now':ev.stage==='building'?`Building ${Math.round((ev.prog||0)*100)}%`:ev.hold&&S.T>=ev.eta?'Holding at the gate':`Inbound · ${Math.max(0,Math.round(ev.eta-S.T))} s`):'Under way';
-  h+=`<div class="om">${esc(m.title)}</div>`;
-  if((m.kind==='mine'||m.kind==='haul')&&m.stage==='active')h+=`<div class="obar"><i style="width:${clamp(m.prog/m.need*100,0,100)}%;background:${sideCol(f)}"></i></div>`;
-  h+=`<div class="os"><span>${st}</span><span class="${signed?'ok':'go'}">${signed?'✓ Signed on · P course':'P · sign on'}</span></div>`;
-  el.innerHTML=h}
+function campHud(){const el=$('hOrd');if(!el)return;if(S.unb){el.hidden=true;return}const C=myCamp(),m=C&&C.mv,f=S.player.faction,L=orderList(),si=ordSel(L),pick=L[si],multi=L.length>1;el.hidden=false;
+  const n=controlCounts()[f]||0,k=pkey(),cs=C&&(m||C.goal);let h=`<div class="ot" style="border-color:${sideCol(f)}"><span>${esc(FACTIONS[f].short)} ${cs?'· '+esc(DOCTRINE[f].name):'orders'}</span><b>${n}/${VIC_NEED} systems</b></div>`;
+  if(!m)h+=C&&C.goal?`<div class="om">Goal reached. Hold the line.</div>`:`<div class="om" style="color:var(--dim)">No campaign move right now. Command posts the next one shortly.</div>`;
+  else{const on=!multi||(pick&&pick.t==='camp'),signed=m.acc.includes(k),left=m.stage==='active'&&m.until?Math.max(0,Math.round(m.until-S.T)):Math.max(0,Math.round(m.brief-S.T)),ev=m.evId&&S.events.find(e=>e.id===m.evId);
+    const st=m.stage==='brief'?`Opens in ${left} s`:m.kind==='mine'||m.kind==='haul'?`${Math.floor(m.prog)}/${m.need} · ${fmtT(left)}`:ev?(ev.stage==='engaged'?'Fighting now':ev.stage==='building'?`Building ${Math.round((ev.prog||0)*100)}%`:ev.hold&&S.T>=ev.eta?'Holding at the gate':`Inbound · ${Math.max(0,Math.round(ev.eta-S.T))} s`):'Under way';
+    h+=`<div class="oi${multi&&on?' sel':''}" data-ord="${L[0]?L[0].key:''}"><div class="om">${esc(m.title)}</div>`;
+    if((m.kind==='mine'||m.kind==='haul')&&m.stage==='active')h+=`<div class="obar"><i style="width:${clamp(m.prog/m.need*100,0,100)}%;background:${sideCol(f)}"></i></div>`;
+    h+=`<div class="os"><span>${st}</span><span class="${signed?'ok':'go'}">${signed?(on?'✓ Signed on · P course':'✓ Signed on'):on?'P · sign on':''}</span></div></div>`}
+  for(const o of L){if(o.t!=='op')continue;const on=o===pick;h+=`<div class="oi op ${o.op.kind}${on?' sel':''}" data-ord="${o.key}"><div class="om">${esc(o.label)}</div><div class="os"><span>${esc(opWhen(o.op))}</span><span class="go">${on?(o.op.kind==='assist'?'P · join':'P · defend'):''}</span></div></div>`}
+  if(multi)h+=`<div class="onx"><kbd>⇧P</kbd> next order · ${si+1} of ${L.length}</div>`;
+  if(el._h!==h){el._h=h;el.innerHTML=h}}
 // map: the next move of your faction, and of rivals where your sensors (or the Hollow Relay) can see it
 function campKnown(m){return!!m&&(m.f===S.player.faction||covered(m.sector)||hasIntel())}
 function campMapHtml(){if(!S.plans)return'';let h='';for(const f of FAC_IDS){const C=S.plans[f];if(!C)continue;const m=C.mv,n=controlCounts()[f]||0;
@@ -3831,7 +3845,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(W&&W.bridge&&W.bridge.panel){const i=['Digit1','Digit2','Digit3','Digit4','Digit5'].indexOf(c);if(i>=0){W.bridge.panel=FC_TABS[i][0];renderConsole(true);return}}
   if(W&&W.bridge&&!W.bridge.panel&&(c==='KeyT'||c==='KeyQ')){bridgeTarget(c==='KeyQ');return}
   if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd'){const tk=W.bridge.f.tok;if(fGuest(tk)){openConsole('strat');flash('Take command first to use the command chair.',true)}else if(NET.on&&tk.owner&&!crewCan(tk,curPid(),'helm')){flash('The command chair goes with the Helm station.',true)}else sitChair()}else openConsole(n.id)}return}if(S.player.docked)undock();else if(W&&W.player&&W.player.landed)liftOff();else if(S.unb&&hookTarget()){if(NET.cl){const T=hookTarget();MP.hookOn=1;netSend({t:'hook',on:1,id:netTid(T)})}return}else if(S.unb&&lairNear()){lairDock(lairNear());return}else tryDock();return}
-  if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey();return}
+  if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey(e.shiftKey);return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
   if(commsOpen()&&(c==='Digit1'||c==='Digit2'||c==='Digit3'||c==='Digit4')){commsPick(c==='Digit1'?'guard':c==='Digit2'?'escort':c==='Digit3'?'build':'help');return}
@@ -4094,6 +4108,7 @@ function blPts(a){if(a.wpt){const w=wreckOf(S.sectors[W.sid],a),R=WPT_R*.9;let d
   a._fpk=key;a._fp=out;return out}
 function blRate(q,P){const r=BL_REL[q]||0,cap=vF(P,'blRelCap');return cap?Math.min(cap,r):r}
 function blTick(P,dt){const cap=blCap(P);if(!cap){P.blN=0;P.blT=0;return}if(P.blN==null)P.blN=cap;if(P.blN>cap)P.blN=cap;
+  if(P.docked&&P.docked!=='bridge'&&P.docked!=='turret'){P.blN=cap;P.blT=0;return}   // the dock reloads the magazine: launch with every charge
   if(P.blN<cap){const h=blHull(P.cls);if(!(P.blT>0))P.blT=h.reload;P.blT-=dt;if(P.blT<=0){P.blN=cap;P.blT=0;if(P===S.player&&!MUTE&&running)feed('Blast charges reloaded.','info')}}else P.blT=0}
 function blNearStation(e){if(W.stationEnt&&d3(W.stationEnt,e)<BL.stationR+(W.stationEnt.st?W.stationEnt.st.radius||0:0))return true;for(const g of GATES[W.sid]||[])if(d3(g,e)<BL.stationR)return true;return false}
 function blSay(P,t,bad){if(P===S.player||!P.pid||isMe(P.pid))flash(t,!!bad);else netMsg(P.pid,'flash',t,!!bad)}
@@ -6000,7 +6015,8 @@ function fsBlocked(){flash('Full screen isn\'t allowed in this embedded view. Op
 function fsLabel(){const b=$('bFull');if(b)b.innerHTML=fsEl()?'Exit full <kbd>F11</kbd>':'Full <kbd>F11</kbd>';setTimeout(()=>{resize();if(!$('map').hidden)drawMap()},60)}
 document.addEventListener('fullscreenchange',fsLabel);document.addEventListener('webkitfullscreenchange',fsLabel);
 $('bFull').addEventListener('click',e=>{e.currentTarget.blur();toggleFull()});$('bHelp').addEventListener('click',()=>toggleSheet('help'));
-$('hComms').addEventListener('pointerdown',e=>{const ob=e.target.closest('[data-op]');if(ob&&W){e.preventDefault();e.stopPropagation();joinOp(friendlyOps()[+ob.dataset.op])}});
+$('hComms').addEventListener('pointerdown',e=>{const ob=e.target.closest('[data-op]');if(ob&&W){e.preventDefault();e.stopPropagation();joinOp(friendlyOps()[+ob.dataset.op]);return}
+  const od=e.target.closest('[data-ord]');if(od&&W&&od.dataset.ord){e.preventDefault();e.stopPropagation();ordPick=od.dataset.ord;planKey(false)}});
 $('cmHead').addEventListener('click',e=>{e.stopPropagation();const c=$('hComms'),mn=!c.classList.contains('min');c.classList.toggle('min',mn);$('cmTog').textContent=mn?'show':'hide';$('cmHead').setAttribute('aria-expanded',String(!mn));try{localStorage.setItem('dg_comms_min',mn?'1':'0')}catch(er){}$('cmHead').blur()});
 const mcv=$('mapCv'),mctx=mcv.getContext('2d');
 function mapXY(d,w,h){const pad=46,sz=Math.min(w,h)-pad*2,ox=(w-sz)/2,oy=(h-sz)/2;return[ox+d.x*sz,oy+d.y*sz]}
@@ -6348,7 +6364,7 @@ const TRAIN=[
  {t:'Winning the war',steps:[
   {x:'Press <kbd>M</kbd> for the galaxy map: territory, operations, beacons, wrecks, pinged enemy capitals and every faction’s progress.',ok:()=>!$('map').hidden},
   {x:'A faction wins by holding <b>7 systems for 20 minutes</b>, or by holding the most systems at the <b>two-hour deadline</b>. Stations, depots and outposts hold a system; the others band together against whoever leads. Close the map (<kbd>M</kbd>).',ok:()=>$('map').hidden},
-  {x:'Press <kbd>P</kbd> to read your faction’s campaign orders and sign on to its next move.',ok:()=>!!keys.KeyP},
+  {x:'Press <kbd>P</kbd> to read your faction’s campaign orders and sign on to its next move. When it has several going, <kbd>Shift</kbd>+<kbd>P</kbd> picks between them.',ok:()=>!!keys.KeyP},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>How a galaxy ends.</b> The moment a side holds 7 systems, a 20-minute clock starts (the chip at the top of the screen shows it); drop below 7 and it resets. Every pilot who helped a campaign move earns a victory bonus when their faction wins (3,000 cr plus parts, paid into your vault at the start of the next galaxy). If no one manages that within <b>two hours</b>, the side holding the most systems at the deadline wins instead (ties go to most stations, then capital ships, then the richest stores). Either way a new galaxy begins, with the winner starting 40% richer and with the parts for a capital shipyard.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>The Brood can win too.</b> If the Bloom holds 7 systems for 20 minutes, the galaxy is consumed and no pilot earns a Legend point, not even the half point for a lost galaxy. When anyone gets close, the other powers call a truce and turn on them; against the Brood the <b>Containment Accord</b> starts much earlier, at 5 Brood systems, so watch the map.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Legend points.</b> Fly most of a galaxy (at least 30 minutes) for one faction. If it wins you earn a Legend point; if it loses you still earn half a point. Points raise you through ten levels, each with a permanent perk for scouts, haulers, miners, fighters and commanders. Your record is on the start screen’s leaderboard. Your first Legend point also unlocks <b>the Unbound</b> on the start screen.'},
