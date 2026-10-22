@@ -1,0 +1,604 @@
+<meta charset="utf-8">
+<title>Driftgate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Saira+Semi+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: full-bleed 3D flight view with a 2D instrument overlay; HUD clusters pinned to the four corners; dock, map and help are notched console sheets. Single deliberate dark theme (cockpit at night). */
+:root{
+  --void:#05070d; --deep:#0a0f1d; --sheet:#0c1222; --sheet-2:#111a2e; --line:#232d45; --line-hi:#36435f;
+  --ivory:#ece4cf; --dim:#8c91a5; --faint:#5a647c; --amber:#f0b24a; --danger:#ff5d4f; --ok:#7ad9a7;
+  --f-display:'Big Shoulders Display','Arial Narrow','Helvetica Neue',sans-serif;
+  --f-ui:'Saira Semi Condensed','Arial Narrow',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--void);color:var(--ivory);font-family:var(--f-ui);font-size:14px;overflow:hidden}
+button{font:inherit;color:inherit}
+#app{position:fixed;inset:0;overflow:hidden;background:var(--void)}
+#gl,#ov{position:absolute;inset:0;width:100%;height:100%;display:block}
+#gl{cursor:crosshair;touch-action:none}
+#ov{pointer-events:none}
+kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid var(--line-hi);border-radius:2px;color:var(--dim)}
+
+.hud{position:absolute;pointer-events:none}
+.hud button{pointer-events:auto}
+#hTL{top:calc(14px + env(safe-area-inset-top,0px));left:16px;max-width:min(48vw,440px)}
+.sec-name{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:.05em;text-transform:uppercase;line-height:1;text-wrap:balance}
+.sec-sub{font-size:13px;color:var(--dim);margin-top:5px;letter-spacing:.02em}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.dchip{display:inline-block;font-size:10.5px;letter-spacing:.06em;padding:1px 6px;border:1px solid var(--line-hi);margin:0 4px 3px 0;white-space:nowrap}.dchip i{font-style:normal;opacity:.75}.dchip.hi{border-color:var(--amber);color:var(--amber)}.dchip.lo{border-color:var(--ok);color:var(--ok)}
+.dboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}.dcard{border:1px solid var(--line);background:rgba(5,7,13,.45);padding:8px 10px}.dch{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:5px}.dch b{font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase}.dch span{font-size:11px;color:var(--dim)}.dcr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px;margin-top:3px}.dcr em{font-style:normal;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);width:46px}
+.bayc{border:1px solid var(--line);background:rgba(5,7,13,.45);padding:10px 12px;margin-bottom:10px}.bayc.cur{border-color:var(--line-hi)}
+.bayh{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}.bayh b{font-family:var(--f-display);font-size:16px;letter-spacing:.1em;text-transform:uppercase}.bayh em{font-style:normal;color:var(--dim);font-size:12px}
+.bays{font-size:12px;color:var(--dim)}.bayslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:8px}
+.bsl{display:flex;align-items:center;gap:6px;font-size:12px;border:1px solid rgba(255,255,255,.06);padding:4px 6px}.bsl span{flex:1;color:var(--dim)}.bsl b{font-family:var(--f-mono);font-weight:400}
+#hML{left:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:min(36vw,340px)}#hML:empty{display:none}#hML .chip{font-size:12px;padding:4px 9px;letter-spacing:.06em;white-space:normal;line-height:1.35}
+.sec-bcn{font-size:13px;margin-top:5px;letter-spacing:.02em;color:var(--dim)}.sec-bcn b{font-weight:600}
+.schips{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}.schips .chip{font-size:6.5px;padding:1px 4px;letter-spacing:.08em}.schips:empty{display:none}
+#hTR .holdline{display:none}
+.mpbox{margin:2px 0 4px}.mpor{align-self:center;color:var(--faint);font-size:13px}.mpinv{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 26px 0;padding:8px 10px;border:1px solid var(--amber);border-radius:8px;background:rgba(240,178,74,.07)}.mpinv span{color:var(--amber);font-weight:600;font-size:13px}.mpinv code{font-family:var(--f-mono);font-size:12.5px;color:var(--ivory);word-break:break-all;flex:1 1 220px}.mprow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;padding:0 26px}.mpin{flex:1 1 150px;min-width:0;background:var(--deep);border:1px solid var(--line-hi);color:var(--ivory);padding:9px 11px;border-radius:8px;font:inherit;font-size:14px}.mpin:focus{outline:2px solid var(--amber);outline-offset:1px}
+.netchip{margin-top:8px;font-size:12px;color:var(--dim);line-height:1.45}.netchip b{color:var(--ok);font-weight:600}.netchip small{color:var(--faint)}
+.netban{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(10,15,29,.92);border:1px solid var(--amber);color:var(--amber);padding:8px 14px;border-radius:8px;font-size:13px;z-index:30}
+.chatin{position:absolute;left:16px;bottom:calc(120px + env(safe-area-inset-bottom,0px));width:min(420px,calc(100% - 32px));background:rgba(10,15,29,.94);border:1px solid var(--line-hi);color:var(--ivory);padding:9px 11px;border-radius:8px;font:inherit;font-size:14px;z-index:30}
+.fd.chat{color:#bfe3ff}
+.ordc{margin-top:10px;width:min(330px,calc(100vw - 32px));background:rgba(5,7,13,.72);border:1px solid var(--line);padding:0 0 7px;font-size:12.5px}
+.ordc .ot{display:flex;justify-content:space-between;gap:8px;padding:5px 9px;border-left:3px solid;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim)}.ordc .ot b{color:var(--ivory);font-weight:600}
+.ordc .om{padding:5px 9px 0 12px;line-height:1.3;color:var(--ivory)}.ordc .os{display:flex;justify-content:space-between;gap:8px;padding:4px 9px 0 12px;font-size:11.5px;color:var(--dim)}.ordc .os .go{color:var(--amber)}.ordc .os .ok{color:var(--ok)}
+.ordc .obar{margin:6px 9px 0 12px;height:4px;background:rgba(236,228,207,.12)}.ordc .obar i{display:block;height:100%}
+.ordc .oi{border-left:2px solid transparent;margin:3px 0 0 1px;padding-bottom:3px;pointer-events:auto;cursor:pointer}.ordc .oi.sel{border-left-color:var(--amber);background:rgba(240,180,80,.08)}
+.ordc .oi.op .om{font-size:12px;padding-left:10px}.ordc .oi.op .os{padding-left:10px}.ordc .oi.op.defend .om{color:#f3c3b8}.ordc .oi .om,.ordc .oi .os,.ordc .oi .obar{margin-left:-2px}
+.ordc .otg{font-style:normal;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:0 5px;margin-right:6px;vertical-align:1px}.ordc .otg.cmb{color:#ff9d93;background:rgba(255,93,79,.16)}.ordc .otg.intel{color:#8fc3ff;background:rgba(143,195,255,.14)}.ordc .otg.log{color:var(--amber);background:rgba(240,178,74,.14)}
+.ordc .oi.sd .om{font-size:12px;padding-left:10px}.ordc .oi.sd .os{padding-left:10px}
+.ordc .onx{padding:6px 9px 0 12px;font-size:10.5px;color:var(--faint);letter-spacing:.04em}.ordc .onx kbd{font-size:10px}
+.chip{font-size:11px;letter-spacing:.09em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--line-hi);background:rgba(5,7,13,.65);color:var(--ivory)}
+.chip.bad{border-color:var(--danger);color:var(--danger)}
+.chip.warn{border-color:var(--amber);color:var(--amber)}
+.chip.good{border-color:var(--ok);color:var(--ok)}
+#hTR{top:calc(14px + env(safe-area-inset-top,0px));right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.cr{font-family:var(--f-mono);font-size:20px;font-weight:600;color:var(--amber);font-variant-numeric:tabular-nums}
+.cr small{font-size:11px;color:var(--dim);font-weight:400;margin-right:6px;letter-spacing:.1em}
+.holdline{font-size:12px;color:var(--dim)}
+.holdline b{color:var(--ivory);font-family:var(--f-mono);font-weight:400}
+.hbtns{display:flex;gap:6px}
+.sndpop{pointer-events:auto;position:absolute;top:44px;right:0;width:300px;background:rgba(5,7,13,.94);border:1px solid var(--line-hi);padding:10px 12px;z-index:40;font-size:13px}
+.sndpop .sph{font-family:var(--f-display);font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+.sprow{display:grid;grid-template-columns:86px 1fr 40px;align-items:center;gap:8px;margin:6px 0}
+.sprow label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.sprow input[type=range]{width:100%;accent-color:var(--amber);cursor:pointer}
+.sprow b{font-family:var(--f-mono);font-weight:400;text-align:right;color:var(--ivory)}
+.sndpop p{margin:6px 0 0;color:var(--dim);font-size:12px;line-height:1.4}
+.hbtn{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;background:rgba(5,7,13,.7);border:1px solid var(--line-hi);padding:4px 10px;cursor:pointer}
+.hbtn:hover,.hbtn:focus-visible{border-color:var(--amber);color:var(--amber);outline:none}
+#hBL{left:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:14px;align-items:flex-end}
+#radar{width:340px;height:300px;display:block}
+#hBL>div{zoom:2;max-width:300px}
+@media (max-width:1499px),(max-height:820px){#hBL>div{zoom:1.5;max-width:330px}#radar{width:270px;height:238px}}#hBL .flight{gap:4px 12px}#hBL .cds{gap:4px 10px}
+.bars{width:230px;display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:52px 1fr 44px;align-items:center;gap:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.bar .tr{height:7px;background:rgba(255,255,255,.06);position:relative;overflow:hidden}
+.bar .fl{position:absolute;inset:0 auto 0 0;width:50%}
+.bar .v{font-family:var(--f-mono);font-size:11px;color:var(--ivory);text-align:right;letter-spacing:0}
+#bS .fl{background:#6fb7ff}#bH .fl{background:var(--ivory)}#bE .fl{background:var(--amber)}
+#bS.low .fl{background:var(--amber)}
+#fcon{background:rgba(2,3,7,.3)}#fcon .console{width:min(1100px,100%);background:rgba(12,16,28,.92)}
+.fgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
+#stratc{width:100%;aspect-ratio:1/1;max-height:62vh;display:block;background:#05080f;border:1px solid var(--line);cursor:crosshair}
+.fbtns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}.fbtns .btn{padding:6px 10px;font-size:12px}.fbtns .btn[aria-pressed="true"]{border-color:var(--amber);color:var(--amber)}
+.pips{display:flex;gap:3px}.pips i{width:14px;height:10px;background:rgba(255,255,255,.08)}.pips i.on{background:var(--amber)}
+.prow{display:grid;grid-template-columns:110px auto 1fr auto;gap:10px;align-items:center;margin:8px 0}
+@media (max-width:760px){.fgrid{grid-template-columns:1fr}}
+#bS.down,#bH.down{color:var(--danger);animation:shblink .6s steps(1) infinite}
+#bH.down .fl{background:var(--danger)}
+#bS.down .tr{box-shadow:0 0 0 1px var(--danger)}
+#bS.down .v{color:var(--danger)}
+@keyframes shblink{50%{opacity:.4}}
+.flight{display:flex;gap:14px;font-size:11px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;flex-wrap:wrap}
+.flight b{font-family:var(--f-mono);color:var(--ivory);font-weight:400;letter-spacing:0}
+.shipname{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase}
+#hBR{right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}#hTgt{width:272px}#hTgt:empty{display:none}
+.comms{background:rgba(5,7,13,.72);border:1px solid var(--line);font-size:12px;pointer-events:none;width:clamp(280px,calc(100vw - 1010px),440px)}
+.cmh{all:unset;pointer-events:auto;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 10px;cursor:pointer;font-family:var(--f-display);font-weight:600;letter-spacing:.16em;text-transform:uppercase;font-size:12px;color:var(--ivory)}
+.cmh em{font-style:normal;font-family:var(--f-body,inherit);font-weight:400;letter-spacing:.08em;font-size:10px;color:var(--faint)}
+.cmh:focus-visible{outline:1px solid var(--amber)}
+.cmb{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;padding:0 10px 9px}.comms{min-width:0;overflow:hidden}.comms.min .cmb{display:none}
+.cmt{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-top:3px}
+#hComms .ordc{margin:0;width:auto;min-width:0}#hComms .ordc .om{overflow-wrap:anywhere}
+.cops{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}.cops:empty{display:none}.cops .ct{pointer-events:auto;margin:0}
+.cev{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}.cev div{padding-top:1px;padding-bottom:1px}.cev div{display:flex;gap:6px;border-left:2px solid var(--line-hi);padding-left:6px;line-height:1.3}
+.cev div span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ivory)}.cev div em{font-style:normal;color:var(--faint);font-family:var(--f-mono);font-size:10px}
+.cev .good{border-left-color:var(--ok)}.cev .bad{border-left-color:var(--danger)}.cev .warn{border-left-color:var(--amber)}.cev .news span{color:var(--dim)}
+.ckeys{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:3px 10px;color:var(--dim)}.ckeys div{display:flex;gap:6px;align-items:center;white-space:nowrap}.ckeys kbd{color:var(--ivory);min-width:12px;text-align:center}
+.ckeys .wait{color:var(--amber)}.ckeys .sub{display:block;grid-column:1/-1;font-size:10.5px;color:var(--faint);white-space:normal;line-height:1.6}
+.cds{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-top:5px}
+.cd{display:flex;align-items:center;gap:5px}.cd i{display:block;width:42px;height:4px;background:rgba(236,228,207,.13);position:relative;overflow:hidden}
+.cd i b{position:absolute;left:0;top:0;bottom:0;background:var(--amber)}.cd.rdy i b{background:var(--ok)}.cd u{text-decoration:none;font-family:var(--f-mono);color:var(--ivory);letter-spacing:0}
+.tp{background:rgba(5,7,13,.72);border:1px solid var(--line);padding:10px 12px;display:grid;gap:5px}
+.tp .tn{font-family:var(--f-display);font-weight:600;font-size:17px;letter-spacing:.08em;text-transform:uppercase;line-height:1.05}
+.tp .ts{font-size:12px;color:var(--dim)}
+.tp .row{display:flex;justify-content:space-between;font-size:12px;color:var(--dim)}
+.tp .row b{font-family:var(--f-mono);font-weight:400;color:var(--ivory)}
+.mini{height:5px;background:rgba(255,255,255,.07);position:relative}
+.mini i{position:absolute;inset:0 auto 0 0}
+#hPrompt{left:50%;transform:translateX(-50%);bottom:calc(330px + env(safe-area-inset-bottom,0px));text-align:center;font-size:14px;letter-spacing:.04em;max-width:min(560px,calc(100% - 32px))}
+#hPrompt span{display:inline-block;background:rgba(5,7,13,.75);border:1px solid var(--line-hi);padding:6px 12px}
+#hPrompt span.alert{border-color:var(--danger);color:var(--danger)}
+@media(min-width:700px){#hud.ckm #hBL>div{display:none}}
+#hud.ckscope #hPrompt{bottom:calc(min(34vh,300px) + env(safe-area-inset-bottom,0px))}
+#feed{display:none!important}
+.fd{font-size:12.5px;line-height:1.35;background:linear-gradient(90deg,rgba(5,7,13,.8),rgba(5,7,13,0));padding:3px 10px 3px 8px;border-left:2px solid var(--line-hi)}
+.fd.good{border-left-color:var(--ok)}.fd.bad{border-left-color:var(--danger)}.fd.warn{border-left-color:var(--amber)}.fd.news{color:var(--dim)}
+#fade{position:absolute;inset:0;background:#cfe6ff;opacity:0;pointer-events:none;transition:opacity .25s}
+#deathMsg{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+#deathMsg div{font-family:var(--f-display);font-weight:800;font-size:clamp(40px,8vw,84px);letter-spacing:.08em;color:var(--danger);text-transform:uppercase;text-align:center;line-height:.95}
+#deathMsg small{display:block;font-family:var(--f-ui);font-weight:400;font-size:14px;color:var(--ivory);letter-spacing:.02em;margin-top:10px;text-transform:none}
+#glErr{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--ivory);font-size:16px}
+
+#comms{position:absolute;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:7;width:min(300px,calc(100% - 32px));display:flex;flex-direction:column;gap:4px;padding:10px 12px 12px;background:rgba(10,16,30,.92);border:1px solid #7ad9a7;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+#comms[hidden]{display:none}.cm-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-family:var(--f-display);font-weight:800;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:#7ad9a7;margin-bottom:4px}.cm-h b{font-family:var(--f-ui);font-weight:600;font-size:13px;letter-spacing:.02em;text-transform:none;color:var(--ivory);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm-o{display:flex;gap:10px;align-items:center;background:transparent;border:1px solid var(--line-hi);color:var(--ivory);font:inherit;font-size:14px;padding:6px 8px;cursor:pointer;text-align:left}.cm-o:hover{border-color:#7ad9a7;color:#7ad9a7}.cm-o kbd{min-width:30px;text-align:center}.cm-l{display:flex;flex-direction:column;gap:4px}.cm-o:disabled{opacity:.5;cursor:default}.cm-o:disabled:hover{border-color:var(--line-hi);color:var(--ivory)}.cm-n{font-size:12px;color:var(--dim);margin-top:2px}
+#dev{position:absolute;top:calc(118px + env(safe-area-inset-top,0px));max-height:calc(100% - 140px);overflow:auto;left:50%;transform:translateX(-50%);z-index:8;width:min(340px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;padding:12px 14px 14px;background:var(--sheet);border:1px solid var(--amber);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#dev[hidden]{display:none}.dv-sec{font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);margin-top:6px;border-top:1px solid var(--line);padding-top:8px}.dv-l{font-size:12px;color:var(--dim);align-self:center;white-space:nowrap}.dv-s input[type=number]{width:64px;background:var(--sheet-2);color:var(--ivory);border:1px solid var(--line-hi);font:inherit;font-size:13px;padding:4px 6px}#dev .dv-s .btn{flex:1}.dv-types{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:12.5px;color:var(--ivory)}.dv-types label{display:flex;gap:6px;align-items:center;cursor:pointer}.dv-s{display:flex;gap:6px}.dv-s.wr{flex-wrap:wrap}#dev .dv-s.wr .btn{flex:1 1 calc(50% - 3px);width:auto}.dv-s select{flex:1;min-width:0;background:var(--sheet-2);color:var(--ivory);border:1px solid var(--line-hi);font:inherit;font-size:13px;padding:4px 6px}#dev .dv-s .btn{width:auto;flex:none}#dev .btn{max-width:none;width:100%;text-align:left;white-space:normal;font-size:13px;letter-spacing:.08em}#dev .btn:hover{border-color:var(--amber);color:var(--amber)}
+.dv-h{display:flex;justify-content:space-between;align-items:center;font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.dv-x{background:none;border:0;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:0 2px}.dv-m{font-size:12px;color:var(--dim);min-height:1.3em}
+.sheet{position:absolute;inset:0;background:rgba(2,3,7,.72);display:grid;place-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));z-index:5}
+.console{width:min(1000px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--sheet);border:1px solid var(--line-hi);clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px));min-height:0}
+.c-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:16px 22px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.c-title{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.c-sub{font-size:13px;color:var(--dim);margin-top:4px}
+.c-meta{display:flex;gap:18px;align-items:flex-end;font-size:12px;color:var(--dim);flex-wrap:wrap}
+.c-meta b{display:block;font-family:var(--f-mono);font-size:16px;color:var(--ivory);font-weight:600}
+.c-meta .amber{color:var(--amber)}
+.tabs{display:flex;gap:2px;padding:0 22px;border-bottom:1px solid var(--line);overflow-x:auto;flex:none}
+.c-head,.c-foot,.startfoot{flex:none}
+.tab{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase;background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px 8px;color:var(--dim);cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ivory);border-bottom-color:var(--amber)}
+.tab:focus-visible{outline:1px solid var(--amber)}
+.c-body{padding:16px 22px 18px;overflow:auto;min-height:0}
+.c-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 22px;border-top:1px solid var(--line);flex-wrap:wrap}
+.note{font-size:12.5px;color:var(--dim);max-width:62ch;line-height:1.45}
+.btn{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;background:transparent;border:1px solid var(--line-hi);padding:5px 11px;cursor:pointer;white-space:nowrap}
+.btn:hover:not(:disabled),.btn:focus-visible{border-color:var(--amber);color:var(--amber);outline:none}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.pri{background:var(--amber);border-color:var(--amber);color:#1a1205}
+.btn.pri:hover:not(:disabled){background:#ffc867;color:#1a1205}
+.btn.sm{font-size:12px;padding:3px 8px}
+.btn.bad{border-color:var(--danger);color:var(--danger)}
+.tblw{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{font-weight:500;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.t td{padding:7px 8px;border-bottom:1px solid rgba(35,45,69,.6);vertical-align:middle}
+table.t td.r,table.t th.r{text-align:right}
+table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.act{display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap}
+.sw{display:inline-block;width:9px;height:9px;margin-right:8px;vertical-align:baseline;transform:rotate(45deg)}
+.iname{white-space:nowrap}
+.mass{font-family:var(--f-mono);font-size:11px;color:var(--faint);margin-left:6px}
+.req{display:inline-flex;gap:4px;align-items:center;font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;border:1px solid var(--line-hi);margin:2px 4px 2px 0;white-space:nowrap}
+.req.ok{border-color:rgba(122,217,167,.5);color:var(--ok)}
+.req.no{border-color:rgba(255,93,79,.45);color:#ff9b91}
+.slots{display:grid;gap:10px}
+.slot{display:grid;grid-template-columns:150px 70px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.slot .sn{font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:.1em;text-transform:uppercase}
+.slot .ss{font-size:12px;color:var(--dim)}
+.mk{font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:.04em;color:var(--amber)}.mk{white-space:nowrap}
+.pips{display:flex;gap:3px;margin-top:3px}
+.pips i{width:10px;height:4px;background:var(--line-hi)}
+.pips i.on{background:var(--amber)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.h3{font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+.empty{color:var(--faint);font-size:13px;padding:10px 0}
+.err{color:#ff9b91;font-size:13px;min-height:18px}
+.okmsg{color:var(--ok)}
+.c-foot .err{flex:1 1 220px;min-width:0}
+.rep{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rep .hb{width:120px;height:6px;background:rgba(255,255,255,.08);position:relative}
+.rep .hb i{position:absolute;inset:0 auto 0 0;background:var(--ivory)}
+.rep .hb i.low{background:var(--danger)}
+.rep span{font-size:12px;color:var(--dim);font-family:var(--f-mono)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:12.5px}
+.kv span{color:var(--dim)}
+.kv b{font-family:var(--f-mono);font-weight:400;text-align:right;font-variant-numeric:tabular-nums}
+
+#start .console{width:min(1080px,100%)}
+.brand{padding:18px 26px 0}
+.brand h1{font-family:var(--f-display);font-weight:800;font-size:clamp(36px,6vw,70px);letter-spacing:.12em;line-height:.85;margin:0;text-transform:uppercase;background:linear-gradient(180deg,var(--ivory) 30%,#9aa3b9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand p{color:var(--dim);max-width:80ch;margin:8px 0 0;line-height:1.45;font-size:13.5px}
+.facs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 26px}
+.fac{position:relative;text-align:left;background:var(--sheet-2);border:1px solid var(--line);padding:10px 14px;cursor:pointer;display:grid;gap:4px;min-width:0}
+.fac:hover,.fac:focus-visible{border-color:var(--line-hi);outline:none}
+.fac[aria-pressed="true"]{border-color:var(--fc);box-shadow:inset 0 0 0 1px var(--fc)}
+.fac canvas{width:100%;height:58px;display:block}
+.fac .fn{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.08em;text-transform:uppercase;color:var(--fc);line-height:1}
+.fac .fb{font-size:13px;color:var(--dim);line-height:1.4}
+.fac .ft{font-family:var(--f-mono);font-size:11.5px;color:var(--ivory)}
+.cls{background:var(--sheet-2);border:1px solid var(--line);padding:8px 12px;cursor:pointer;text-align:left;min-width:150px}
+.cls[aria-pressed="true"]{border-color:var(--amber)}
+.cls b{display:block;font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:.1em;text-transform:uppercase}
+.cls span{font-size:12px;color:var(--dim)}
+#start .console{height:100%}
+.sbody{flex:1;min-height:0;overflow:auto;padding-bottom:10px}
+.step{display:flex;align-items:center;gap:10px;padding:14px 26px 8px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.step i{font-style:normal;display:grid;place-items:center;width:22px;height:22px;border:1px solid var(--amber);color:var(--amber);font-family:var(--f-mono);font-size:12px;letter-spacing:0}
+.roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 26px}
+.role{background:var(--sheet-2);border:1px solid var(--line);padding:12px 14px;cursor:pointer;text-align:left;display:grid;gap:4px;min-width:0}
+.role b{font-family:var(--f-display);font-weight:700;font-size:19px;letter-spacing:.1em;text-transform:uppercase}
+.role span{font-size:12.5px;color:var(--dim);line-height:1.4}
+.role[aria-pressed="true"]{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+.role:hover,.cls:hover{border-color:var(--line-hi)}
+.shippick{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:12px;padding:0 26px}
+.ships{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;align-content:start}
+.ships .cls{min-width:0;display:grid;gap:2px}
+.ships .cls em{font-style:normal;font-size:11px;color:var(--amber);letter-spacing:.08em;text-transform:uppercase}
+.shipcard{background:var(--sheet-2);border:1px solid var(--line);padding:12px 14px;display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center;min-width:0}
+.shipcard canvas{width:150px;height:120px;display:block}
+.shipcard .sn2{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.08em;text-transform:uppercase;line-height:1}
+.shipcard .sc{font-size:11px;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin:3px 0 6px}
+.shipcard .sd{font-size:12.5px;color:var(--dim);line-height:1.4;margin-bottom:8px}
+.sbar{display:grid;grid-template-columns:70px 1fr;gap:8px;align-items:center;font-size:11px;color:var(--dim);margin:3px 0}
+.sbar div{height:5px;background:rgba(255,255,255,.07)}.sbar div i{display:block;height:100%;background:var(--amber)}
+.snote{padding:16px 26px 0;font-size:12px}
+.startfoot{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 26px 16px;flex-wrap:wrap;border-top:1px solid var(--line);background:var(--sheet)}
+.ssum{font-size:13px;color:var(--dim)}.ssum b{color:var(--ivory);font-weight:600}
+
+#map .console{width:min(1180px,100%);height:100%}
+.mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;min-height:0;flex:1}
+#mapCv{width:100%;height:100%;min-height:320px;display:block;cursor:pointer}
+.mapside{border-left:1px solid var(--line);overflow-y:auto;overflow-x:hidden;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-content:start}
+.opr>div{min-width:0}.opr .btn{white-space:normal;max-width:45%}
+.log{display:grid;gap:3px;font-size:12px;color:var(--dim);max-height:180px;overflow:auto}
+.log div b{font-family:var(--f-mono);font-weight:400;color:var(--faint);margin-right:6px}
+
+.helpgrid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px;align-items:baseline}
+.keys kbd{font-size:11px;color:var(--ivory)}
+.help p{color:var(--dim);line-height:1.55;margin:0 0 10px;max-width:62ch}
+.help p b{color:var(--ivory);font-weight:500}
+
+#touch{position:absolute;right:16px;bottom:calc(150px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(2,62px);gap:10px}
+#touch button{width:62px;height:62px;border-radius:50%;border:1px solid var(--line-hi);background:rgba(5,7,13,.55);font-family:var(--f-display);font-weight:600;letter-spacing:.1em;font-size:12px;text-transform:uppercase;touch-action:none}
+#touch button.on{border-color:var(--amber);color:var(--amber)}
+#contacts{right:16px;top:calc(122px + env(safe-area-inset-top,0px));width:250px;pointer-events:auto}
+.ctt{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding:0 2px 5px}
+.ctt b{color:var(--danger);font-weight:600}
+.opr{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 10px;margin-bottom:6px;border-left:3px solid #7ad9a7;background:rgba(122,217,167,.06);font-size:13px}.opr.defend{border-color:var(--danger);background:rgba(255,93,79,.07)}.opr span{color:var(--dim);font-size:12px}.opr .btn{flex:none}
+.cs{text-decoration:none;font-style:normal;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-right:6px;padding:0 4px;border-radius:2px}.cs.b{color:#ff8a7e;background:rgba(255,93,79,.16)}.cs.w{color:var(--amber);background:rgba(240,178,74,.12)}.cs.g{color:#7ad9a7;background:rgba(122,217,167,.1)}
+.ct.op{grid-template-columns:8px minmax(0,1fr);row-gap:0}.ct.op em{grid-column:2;font-size:10.5px}.ct.op span{white-space:normal;line-height:1.25}.ct.op i{width:8px;height:8px;align-self:start;margin-top:4px;border-radius:50%}
+.ct.op.assist i{background:#7ad9a7}.ct.op.defend i,.ct.op.local i{background:var(--danger);animation:shblink .8s steps(1) infinite}.ct.op.defend,.ct.op.local{border-color:rgba(255,93,79,.35)}
+.ct{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:8px;align-items:center;width:100%;text-align:left;background:rgba(5,7,13,.62);border:1px solid transparent;padding:4px 8px;margin-bottom:2px;font-size:12px;cursor:pointer}
+.ct:hover,.ct:focus-visible{border-color:var(--line-hi);outline:none}
+.ct.sel{border-color:#ff5d4f;background:rgba(60,12,10,.7)}.cs.t{color:#fff;background:#d8483c}.ct.stn i{transform:none;border-radius:1px;width:9px;height:9px}.opr.tsel{outline:2px solid #ff5d4f;background:rgba(255,93,79,.12)}
+.ct i{width:7px;height:7px;transform:rotate(45deg)}
+.ct span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ct.h span{color:#ffb3aa}
+.ct em{font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--dim)}
+.ctk{font-size:10.5px;color:var(--faint);padding:3px 2px 0;line-height:1.5}
+@media (max-width:760px){#contacts{display:none}#touch{bottom:calc(130px + env(safe-area-inset-bottom,0px))}#touch button{width:54px;height:54px}}
+
+@media (max-width:760px){
+  .sec-name{font-size:21px}.sec-sub{font-size:11.5px}
+  #radar{width:116px;height:102px}
+  #hBL>div{zoom:1}
+  .schips .chip{font-size:10px;padding:2px 6px}
+  #hML{top:auto;bottom:calc(300px + env(safe-area-inset-bottom,0px));transform:none}#hML .chip{font-size:10.5px;padding:3px 7px}.sec-bcn{font-size:11.5px}
+  .bars{width:150px}.bar{grid-template-columns:44px 1fr 36px;font-size:10px}
+  #hBR{width:180px;bottom:auto;top:calc(200px + env(safe-area-inset-top,0px))}
+  #hComms .cev,#hComms .ckeys,#hComms .cmt{display:none}
+  #hComms,#hTgt{width:180px}
+  #feed{top:calc(100px + env(safe-area-inset-top,0px));transform:none;width:calc(100% - 32px)}
+  .fd{font-size:11.5px}
+  .facs{grid-template-columns:1fr}
+  .fac canvas{height:64px}
+  .roles{grid-template-columns:1fr}
+  .shippick{grid-template-columns:1fr}
+  .shipcard{grid-template-columns:110px minmax(0,1fr)}.shipcard canvas{width:110px;height:96px}
+  .fac .fb:nth-of-type(n){font-size:12px}
+  .mapwrap{grid-template-columns:1fr;grid-template-rows:minmax(300px,1fr) auto}
+  .mapside{border-left:0;border-top:1px solid var(--line)}
+  .slot{grid-template-columns:1fr auto}
+  .slot .rq{grid-column:1/-1}
+  .grid2,.helpgrid{grid-template-columns:1fr}
+  .c-title{font-size:23px}
+  #hPrompt{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
+}
+@media (prefers-reduced-motion:reduce){#fade{transition:none}#bS.down{animation:none}}
+.fccmd{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px;padding:10px 14px;border:1px solid var(--amber);border-radius:4px;background:rgba(240,178,74,.08)}.fccmd span{opacity:.8;font-size:.92em}.fccmd.sm{padding:6px 12px;border-color:rgba(236,228,207,.25);background:transparent}.fccmd .fbtns{flex:none;margin:0}
+.mtabs{display:flex;gap:2px}.stabs{display:flex;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(236,228,207,.12)}
+#dTabs{flex-direction:column;align-items:stretch;gap:0;overflow-x:visible}#dTabs .mtabs,#dTabs .stabs{overflow-x:auto;flex:none}#dTabs .stabs{margin-top:0;padding:4px 0 2px}.stab{font-size:.86em;opacity:.85}.stab[aria-selected=true]{opacity:1}
+#train{position:absolute;top:calc(118px + env(safe-area-inset-top,0px));left:16px;z-index:8;width:min(330px,calc(100% - 32px));background:rgba(10,16,30,.94);border:1px solid var(--amber);box-shadow:0 8px 24px rgba(0,0,0,.5);padding:10px 12px;font-size:13px;line-height:1.45;color:var(--ivory)}
+#train .trh{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--amber);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+#train .trx{background:none;border:1px solid var(--line);color:var(--ivory);width:24px;height:22px;cursor:pointer}
+#train .trs{margin:8px 0}#train kbd{border:1px solid var(--line);padding:0 4px;font-size:11px}
+#train .trp{display:flex;gap:4px;margin-bottom:8px}#train .trp i{flex:1;height:3px;background:var(--line)}#train .trp i.d{background:var(--ok)}#train .trp i.c{background:var(--amber)}
+#train .trb{display:flex;gap:6px;flex-wrap:wrap}#train .trb .btn{flex:none}
+@media (min-width:900px){body.trn .sheet{padding-left:362px}}
+@media (max-width:640px){#train{top:auto!important;bottom:calc(170px + env(safe-area-inset-bottom,0px));left:16px}}
+#legBody{padding:14px 22px 22px;overflow:auto}#legend .lgt{width:100%;border-collapse:collapse;font-size:13px}#legend .lgt th{text-align:left;color:var(--dim);font-weight:500;padding:4px 6px;border-bottom:1px solid var(--line)}#legend .lgt td{padding:5px 6px;border-bottom:1px solid rgba(35,45,69,.6)}#legend .lgt tr.me td{background:rgba(240,178,74,.08)}
+#legend .lgtag{color:var(--dim);font-size:12px}#legend .lgp{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px}#legend .lgp>div{border:1px solid var(--line);padding:6px 8px;font-size:12.5px;opacity:.55}#legend .lgp>div.on{opacity:1;border-color:var(--amber)}
+#legend .lgs{display:flex;flex-wrap:wrap;gap:8px 16px}#legend .lgs label{display:flex;gap:6px;align-items:center;font-size:13px}#legend .lgs input,#legend .lgs select{background:var(--deep);color:var(--ivory);border:1px solid var(--line);padding:3px 6px}
+@media (max-width:640px){#legend .lgt th:nth-child(5),#legend .lgt td:nth-child(5),#legend .lgt th:nth-child(6),#legend .lgt td:nth-child(6){display:none}}
+</style>
+
+<div id="app">
+  <canvas id="gl" aria-label="Flight view"></canvas>
+  <canvas id="ov"></canvas>
+
+  <div id="train" hidden></div>
+  <div id="hud" hidden>
+    <div class="hud" id="hML"></div>
+    <div class="hud" id="hTL"><div class="sec-name" id="hSec"></div><div class="sec-sub" id="hSub"></div><div class="sec-bcn" id="hBcn" hidden></div><div class="chips" id="hChips"></div><div class="netchip" id="netChip" hidden></div></div>
+    <div class="netban" id="netBanner" hidden></div><input id="chatIn" class="chatin" hidden maxlength="160" autocomplete="off" placeholder="Message everyone · Enter sends · Esc cancels">
+    <div class="hud" id="hTR">
+      <div class="cr"><small>CREDITS</small><span id="hCr">0</span></div>
+      <div class="holdline">Hold <b id="hHold">0/0</b></div>
+      <div class="hbtns"><button class="hbtn" id="bSnd" type="button" aria-label="Sound and music" aria-expanded="false">Sound <kbd>N</kbd></button><button class="hbtn" id="bCam" type="button">View <kbd>V</kbd></button><button class="hbtn" id="bMap" type="button">Map <kbd>M</kbd></button><button class="hbtn" id="bFull" type="button" aria-label="Full screen">Full <kbd>F11</kbd></button><button class="hbtn" id="bHelp" type="button" aria-label="Controls and help">?</button><button class="hbtn" id="bInvite" type="button" hidden>Invite</button><button class="hbtn" id="bQuit" type="button" aria-label="Save and quit">Quit</button></div><div class="sndpop" id="sndPop" hidden><div class="sph">Sound</div>
+        <div class="sprow"><label><input type="checkbox" id="sfxOn"> Effects</label><input type="range" id="sfxVol" min="0" max="100" step="5" aria-label="Effects volume"><b id="sfxVolV"></b></div>
+        <div class="sprow"><label><input type="checkbox" id="musOn"> Music</label><input type="range" id="musVol" min="0" max="100" step="5" aria-label="Music volume"><b id="musVolV"></b></div>
+        <p>Music follows the space you're in: Halcyon, Ostrova, Varkesh, freeports, Brood space and open space. Battle music takes over when shields start taking fire. N cycles all on → muted → effects only.</p></div>
+    </div>
+    <div class="hud" id="hBL">
+      <canvas id="radar" width="680" height="600" aria-label="Radar"></canvas>
+      <div>
+        <div class="shipname" id="hShip"></div>
+        <div class="bars">
+          <div class="bar" id="bS">Shield<div class="tr"><div class="fl"></div></div><span class="v"></span></div>
+          <div class="bar" id="bH">Hull<div class="tr"><div class="fl"></div></div><span class="v"></span></div>
+          <div class="bar" id="bE">Energy<div class="tr"><div class="fl"></div></div><span class="v"></span></div>
+        </div>
+        <div class="flight"><span>Speed <b id="hSpd">0</b></span><span>Assist <b id="hFA">ON</b></span><span><i id="hMslL" style="font-style:normal">Missiles</i> <b id="hMsl">0</b></span><span>Gun <b id="hWpn">KINETIC</b></span></div><div class="cds" id="hCds"></div><div class="schips" id="hSChips"></div>
+      </div>
+    </div>
+    <div class="hud" id="contacts" aria-label="Contacts"></div>
+    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Command</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Under attack here · O targets the attacker</div><div class="cops" id="cOps"></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
+    <div class="hud" id="hPrompt"></div>
+    <div class="hud" id="feed" aria-live="polite"></div>
+    <div id="touch" hidden>
+      <button type="button" data-t="thrust">Thrust</button><button type="button" data-t="fire">Fire</button>
+      <button type="button" data-t="boost">Boost</button><button type="button" data-t="mine">Mine</button>
+      <button type="button" data-t="tgt">Target</button><button type="button" data-t="act">Act</button>
+      <button type="button" data-t="msl">Missile</button><button type="button" data-t="flare">Flare</button>
+      <button type="button" data-t="wpn">Gun</button>
+    </div>
+  </div>
+  <div id="fade"></div>
+  <div id="deathMsg" hidden><div>Hull breached<small>Your cargo and one component's last upgrade spilled as salvage. Respawning at home.</small></div></div>
+  <div id="glErr" hidden>Your browser could not start WebGL, which Driftgate needs for 3D. Try another browser or enable hardware acceleration.</div>
+
+  <section class="sheet" id="start" hidden>
+    <div class="console">
+      <div class="sbody">
+        <div class="brand">
+          <h1>Driftgate</h1>
+          <p>Three powers, an alien Brood, fifteen sectors and one closed economy. Every plate, coil and crystal was mined from a rock that already existed. Mine it, forge it, bolt it to your ship, and fight over the stations and outposts that make the best parts possible.</p>
+        </div>
+        <div class="note snote" id="legacy" style="padding-top:8px"></div>
+        <div class="note snote" id="ver" style="padding-top:2px;opacity:.55;font-size:11px"></div>
+        <div class="mpbox" id="mpBox"><div class="step"><i>✦</i><span>Play with friends <small style="color:var(--faint);font-weight:400">(optional)</small></span></div>
+          <div class="mprow"><button class="btn pri" id="bNewGal" type="button">Create a galaxy for friends</button><span class="mpor">or enter a friend's code</span><input id="mpCode" class="mpin" placeholder="e.g. amber-falcon-42" maxlength="24" autocomplete="off" spellcheck="false"><button class="btn" id="bMp" type="button">Join</button></div>
+          <div class="mpinv" id="mpInv" hidden><span>Invite link</span><code id="mpLink"></code><button class="btn sm" id="bCopy" type="button">Copy link</button></div>
+          <div class="note snote" id="mpStat">To play together, one of you presses <b>Create a galaxy for friends</b> and sends the invite link (or the code) to the others. Everyone who uses the same code shares one galaxy, up to four pilots. Leave it empty to play solo.</div></div>
+        <div class="step"><i>1</i><span>Your callsign</span></div>
+        <div class="mprow" style="margin:0 0 4px"><input id="mpName" class="mpin" placeholder="Callsign (required)" maxlength="16" autocomplete="off" spellcheck="false" style="flex:0 1 320px"></div>
+        <div class="step"><i>2</i><span>Choose your faction</span></div>
+        <div class="facs" id="facs"></div>
+        <div class="step"><i>3</i><span>Choose your role</span></div>
+        <div class="roles" id="roles"></div>
+        <div class="step"><i>4</i><span>Choose your ship</span></div>
+        <div class="shippick"><div class="ships" id="clsrow"></div><div class="shipcard" id="shipcard"></div></div>
+        <div class="note snote">Mouse steers (offset from centre) · W thrust · S brake · A/D roll · Shift afterburner · Click or Space fires · 1/2 kinetic or laser · T/Q target hostiles · C missile when locked · B flares · F mines · E docks · V camera · M map · H full manual. You can change hull later at any core station.</div>
+      </div>
+      <div class="startfoot">
+        <div class="ssum" id="ssum"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="bContinue" type="button" hidden>Continue saved pilot</button>
+          <button class="btn" id="bLegend" type="button" title="Legend points, levels and perks">Leaderboard</button><button class="btn" id="bTrain" type="button" title="An offline flight school that walks through every major system">Training</button><button class="btn pri" id="bLaunch" type="button">Launch</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet" id="fcon" hidden>
+    <div class="console">
+      <div class="c-head"><div><div class="c-title" id="fcTitle"></div><div class="c-sub" id="fcSub"></div></div><div class="c-meta" id="fcMeta"></div></div>
+      <div class="tabs" role="tablist" id="fcTabs"></div>
+      <div id="fcCmd"></div>
+      <div class="c-body" id="fcBody"></div>
+      <div class="c-foot"><div class="err" id="fcErr"></div><button class="btn" type="button" data-fc="close">Step away <kbd style="color:inherit;border-color:currentColor">E</kbd></button></div>
+    </div>
+  </section>
+  <style>
+#win .console{width:min(1120px,100%)!important;max-height:calc(100vh - 32px);overflow:auto}
+#win .brand h1{margin-bottom:4px}
+.dbf{margin:14px 26px 6px;text-align:left}
+@media (max-width:560px){.dbf{margin:14px 14px 6px}}
+.dbh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:10px}
+.dbh span{font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
+.dbh em{font-style:normal;font-size:12px;color:var(--dim)}
+.dbgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+.dbmapw{min-width:0}
+#dbMap{width:100%;aspect-ratio:1/1;max-height:440px;display:block;background:#05080f;border:1px solid var(--line)}
+.dbsl{display:flex;align-items:center;gap:8px;margin-top:6px}
+.dbsl input{flex:1;accent-color:var(--amber);min-width:0}
+.dbsl b{font-family:var(--f-mono);font-weight:400;font-size:12px;color:var(--ivory);min-width:56px;text-align:right}
+.dbside{min-width:0}
+.dbst{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+#dbChart{width:100%;height:150px;display:block;background:rgba(5,7,13,.5);border:1px solid var(--line)}
+.dbleg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:5px;font-size:11.5px;color:var(--dim)}
+.dbleg i{display:inline-block;width:10px;height:3px;margin-right:5px;vertical-align:middle}
+.dbtp{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:baseline;width:100%;padding:7px 9px;margin-bottom:5px;border:1px solid var(--line);background:rgba(5,7,13,.45);font-size:13px;line-height:1.35}
+.dbtp:hover,.dbtp:focus-visible{border-color:var(--amber)}
+.dbtp b{font-family:var(--f-display);color:var(--amber);font-size:16px}
+.dbtp em{font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--dim)}
+.dbnone{font-size:12.5px;color:var(--dim)}
+.dbtw{overflow-x:auto}
+.dbt{width:100%;border-collapse:collapse;font-size:12.5px}
+.dbt th{font-weight:500;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.dbt td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:top}
+.dbt .r{text-align:right;font-variant-numeric:tabular-nums}
+.dbyou{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);border:1px solid var(--amber);padding:0 4px;margin-left:4px}
+.dbaw{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.dbaw span{font-size:10.5px;letter-spacing:.06em;color:var(--ok);border:1px solid rgba(122,217,167,.5);padding:0 5px}
+.dbev{margin-top:12px;font-size:12.5px}
+.dbev summary{cursor:pointer;color:var(--dim);letter-spacing:.06em}
+.dbe{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:10px;width:100%;padding:3px 2px}
+.dbe:hover span,.dbe:focus-visible span{color:var(--ivory)}
+.dbe em{font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--faint);min-width:56px}
+.dbe span{color:var(--dim);border-left:2px solid var(--line-hi);padding-left:7px}
+@media (max-width:760px){.dbgrid{grid-template-columns:1fr}}
+</style>
+  <section class="sheet" id="win" hidden>
+    <div class="console" style="width:min(720px,100%)"><div class="brand"><h1 style="font-size:clamp(34px,6vw,64px)" id="winT"></h1><p id="winP"></p></div><div id="dbBox"></div><div class="startfoot"><div class="ssum" id="winS"></div><div class="ssum" id="winL" hidden style="color:#ffd27a"></div><div class="ssum" id="winV" hidden style="color:#ffd27a"></div><button class="btn pri" id="bNext" type="button">Begin the next galaxy</button></div></div>
+  </section>
+  <section class="sheet" id="dock" hidden>
+    <div class="console">
+      <div class="c-head"><div><div class="c-title" id="dTitle"></div><div class="c-sub" id="dSub"></div></div><div class="c-meta" id="dMeta"></div></div>
+      <div class="tabs" role="tablist" id="dTabs"></div>
+      <div class="c-body" id="dBody"></div>
+      <div class="c-foot"><div class="err" id="dErr"></div><div id="dRep" class="rep"></div><button class="btn" data-act="invite" id="dInvite" type="button" hidden>Copy invite link</button><button class="btn" data-act="quit" type="button" title="Save your pilot and return to the title screen">Save &amp; quit</button><button class="btn pri" data-act="launch" type="button">Launch <kbd style="color:inherit;border-color:currentColor">E</kbd></button></div>
+    </div>
+  </section>
+
+  <section class="sheet" id="map" hidden>
+    <div class="console">
+      <div class="c-head"><div><div class="c-title">Galaxy</div><div class="c-sub">Jumpgate network, territory and the conserved economy. Click a sector for detail.</div></div><button class="btn" data-close="map" type="button">Close <kbd>M</kbd></button></div>
+      <div class="mapwrap"><canvas id="mapCv"></canvas><div class="mapside" id="mapSide"></div></div>
+    </div>
+  </section>
+
+  <div id="comms" hidden role="dialog" aria-label="Comms">
+    <div class="cm-h"><span>Comms</span><b id="cmTo"></b></div>
+    <div class="cm-l" id="cmList"></div>
+    <div class="cm-n" id="cmN"></div>
+  </div>
+  <div id="dev" hidden role="dialog" aria-label="Developer tools">
+    <div class="dv-h"><span>Developer</span><button type="button" class="dv-x" data-dev="close" aria-label="Close">×</button></div>
+    <button type="button" class="btn" data-dev="cr">Credits: +10,000</button>
+    <button type="button" class="btn" data-dev="res">Vault: +10 of each resource</button>
+    <div class="dv-s wr"><button type="button" class="btn" data-dev="frig">Friendly carrier</button><button type="button" class="btn" data-dev="fesc">Friendly escort</button></div>
+    <button type="button" class="btn" data-dev="gunboat">Fly a heavy bomber (AI on the turret)</button>
+    <button type="button" class="btn" data-dev="scout">Fly a scout (bubble cockpit, long-range scan)</button>
+    <button type="button" class="btn" data-dev="wraith">Fly the Wraith (Legendary Ace stealth fighter: K for stealth)</button>
+    <button type="button" class="btn" data-dev="gbwing">Spawn friendly heavy bomber to crew</button>
+    <div class="dv-s"><select id="devShip" aria-label="Ship"></select><button type="button" class="btn" data-dev="hull">Fly it</button></div>
+    <div class="dv-sec">Enemies</div>
+    <div class="dv-s"><label class="dv-l" for="devSide">Side</label><select id="devSide" aria-label="Enemy side"></select></div>
+    <div class="dv-s wr"><button type="button" class="btn" data-dev="efrig">Enemy carrier</button><button type="button" class="btn" data-dev="eesc">Enemy escort</button><button type="button" class="btn" data-dev="levi">Brood Hive Ship</button></div>
+    <div class="dv-s"><label class="dv-l" for="devN">Squadron</label><input id="devN" type="number" min="1" max="20" value="4" aria-label="Squadron size"><span class="dv-l">ships</span></div>
+    <div class="dv-types" id="devTypes"></div>
+    <button type="button" class="btn" data-dev="squad">Spawn enemy squadron</button>
+    <div class="dv-m" id="devMsg">Ctrl+Alt+D toggles this panel.</div>
+  </div>
+  <section class="sheet" id="legend" hidden>
+    <div class="console">
+      <div class="c-head"><div><div class="c-title">Legendary status</div><div class="c-sub">Galaxy wins, levels and permanent perks.</div></div><button class="btn" data-close="legend" type="button">Close</button></div>
+      <div class="sbody" id="legBody"></div>
+    </div>
+  </section>
+  <section class="sheet" id="help" hidden>
+    <div class="console">
+      <div class="c-head"><div><div class="c-title">Pilot's Manual</div><div class="c-sub">Controls, and how the economy holds together.</div></div><button class="btn" data-close="help" type="button">Close <kbd>Esc</kbd></button></div>
+      <div class="c-body help">
+        <div class="helpgrid">
+          <div>
+            <div class="h3">Flight</div>
+            <div class="keys">
+              <kbd>Mouse</kbd><span>Steer. The further the pointer sits from the centre ring, the harder you turn</span>
+              <kbd>Arrows</kbd><span>Pitch and yaw without the mouse</span>
+              <kbd>W / S</kbd><span>Thrust / brake (reverse thrust with assist off)</span>
+              <kbd>A / D</kbd><span>Roll</span>
+              <kbd>Shift</kbd><span>Afterburner: a kick of speed on press, then higher top speed while held (drains energy)</span>
+              <kbd>X</kbd><span>Flight assist. On: sideways slip bleeds off slowly so turns slide. Off: pure Newtonian drift</span>
+              <kbd>Space · Click</kbd><span>Fire the selected gun</span>
+              <kbd>1 / 2</kbd><span>Select kinetic cannons / lasers</span>
+              <kbd>F · Right-click</kbd><span>Mining laser on targeted or nearest rock</span>
+              <kbd>T</kbd><span>Target nearest hostile</span>
+              <kbd>Y</kbd><span>Assist: target whoever is attacking a friendly</span>
+              <kbd>I</kbd><span>Comms. First press: Command (1 escort me, 2 guard me, 3 request a depot or shipyard, 4 distress call). Each press after steps to the next friendly ship nearby, with what it can do: a wing guards, escorts, forms up on you or attacks your target; a freighter takes you on as its escort; a carrier clears you to land (resupply) or launches its fighters on your target. Firing closes the menu</span>
+              <kbd>U</kbd><span>Distress call: nearby friendlies cover you and your faction sends a wing from the closest station (90 s recharge)</span>
+              <kbd>O</kbd><span>Join the top friendly operation (course + autopilot)</span>
+              <kbd>Q</kbd><span>Cycle through hostiles, nearest first</span>
+              <kbd>G</kbd><span>Target the ship closest to your nose</span>
+              <kbd>Hold Z</kbd><span>Track: auto-turn onto the target's lead marker</span>
+              <kbd>Click</kbd><span>Target a ship, or a row in the Contacts list</span>
+              <kbd>R</kbd><span>Target nearest asteroid</span>
+              <kbd>Tab</kbd><span>Cycle all targets, including jumpgates</span>
+              <kbd>C · Middle-click</kbd><span>Launch a missile once locked (×1.8 damage once the target's shields are down)</span>
+              <kbd>3</kbd><span>Heavy Fighter / Bomber / Heavy Bomber / Advanced Scout only — Swarm Pod: eight micro-missiles at your target and ships near it, no lock needed (reloads on a cooldown)</span>
+              <kbd>B</kbd><span>Flares: spoof missiles tracking you (30 energy, 5 s recharge)</span>
+              <kbd>E</kbd><span>Dock / launch</span>
+              <kbd>V</kbd><span>Chase or cockpit camera</span>
+              <kbd>`</kbd><span>Show or hide the on-screen touch buttons</span>
+              <kbd>Hold</kbd><span>A full hold makes any ship heavier. Haulers, miners and constructors at full load turn, accelerate and brake at about half rate and slide wide through turns</span>
+              <kbd>P</kbd><span>Orders: sign on to the order picked in the orders card (your faction's campaign move; its recon, beacon, interdiction, sabotage and screening orders; counter-attacks, capital hunts and Brood purges; its strikes and convoys) and set a course to it. <kbd>Shift</kbd>+<kbd>P</kbd> picks the next order, or click one</span>
+              <kbd>I</kbd><span>then 3 (on the Command page): call a faction constructor to build a depot here (area must be mostly clear when you call)</span>
+              <kbd>J</kbd><span>Autopilot to your target (gate, station, rock) or the next jump on your course</span>
+              <kbd>L</kbd><span>Auto-level on/off (rolls you back level with the sector)</span>
+              <kbd>Wheel</kbd><span>Chase camera distance</span>
+              <kbd>F11</kbd><span>Full screen on/off (or the Full button at the top right)</span>
+              <kbd>M</kbd><span>Galaxy map and economy ledger</span>
+              <kbd>N</kbd><span>Sound: all on → music off → muted</span>
+            </div>
+            <div class="h3" style="margin-top:18px">Instruments</div>
+            <p>The amber ring ahead of you is where your guns point. Put it on the target's diamond lead marker to hit a moving ship. The green circle shows which way you are actually drifting. The radar is a disc around your ship: blips sit on stalks above or below the disc to show height.</p>
+            <p><b>Missiles.</b> Target a hostile and keep it inside the dashed lock ring around your gun reticle. A diamond closes in on the target; when it turns red and reads LOCKED, press C. Missiles home on the target but turn slower than ships, so hard turns and flares can beat them. Red arrows on the ring around the centre point to hostiles off-screen; a blinking warning means someone is locking you or a missile is inbound.</p>
+            <p><b>Structures hold territory.</b> A system belongs to whoever has a station, depot or outpost there (home systems belong to their faction). Capital ships don't hold systems. A depot is taken in two steps: break its shield and hull (bombers, escort torpedoes, a carrier's wing), then land assault ships, carried by carriers (3) and escorts (1), to overcome its garrison of 1 to 3 loads. Assault ships aren't used up: they land their marines and fly back to their ship, ready again a minute later, though the garrison shoots down about one in five. Without enough assault ships a broken depot is destroyed instead. Bloom Nodes are burned out, and faction core stations only go dark.</p>
+            <p><b>Distress calls.</b> When a friendly station, depot or outpost is attacked anywhere in the galaxy, it radios every pilot of its faction: a two-tone chirp and a message saying who is under attack, where and how many jumps away. The call goes into the Friendly ops list, and O sets course to it.</p>
+            <p><b>Magazines, not ammunition.</b> Missiles, torpedoes and swarm pods never need building or loading. Each hull carries a set number of shots (more with Weapons Mk). Once a magazine is below full, a reload countdown runs (missiles 20 s, torpedoes 35 s, swarm pods 30 s at Payload Bay Mk I) and then it refills completely; the HUD shows the count and the countdown. Each Payload Bay upgrade in the Shipyard cuts reload times by 15%, down to a floor of 10 s for missiles, 20 s for torpedoes and 15 s for swarm pods. Only Aurora tuning on the bay (made with deep-space Aurorite) goes below the floor: Aurora tuning takes 2 s off every reload. You can target hostile stations, depots and outposts with T, Q or a click as well as ships and capital ships. Guns and missiles only chip station armour; torpedoes and capital guns do the real damage.</p>
+            <p><b>Hulls.</b> Every pilot starts in a Light hull (a Light Fighter, Light Miner or Light Hauler) or a Scout. The Advanced Scout is bought later with credits. You can switch between those starter hulls for free at any core station Shipyard. Bigger hulls are bought with credits at a core station's Shipyard, one ship at a time: if it's destroyed you relaunch in your role's starter hull and must buy another, and switching to a different hull trades yours in for half its price. Components (Mk I–III) still cost materials. Miners and haulers come in Light, Medium and Heavy: bigger charge magazines and chunks, more guard drones and bigger holds as they grow. Only mining ships carry a blast rig. Load Guard Drones into your drone bay in the Shipyard; they launch with you and defend your ship. Light fighters are the fastest, accelerate hardest, turn tightest, burn the least energy on afterburner and shake missiles best (flares work more often), but carry small racks and thin armour. Medium fighters are nearly as quick and nimble with heavier guns: both can out-run and out-turn heavies and bombers, and staying out of a heavy's nose is how you survive its swarm. Heavy fighters trade speed for armour, bigger guns and a larger missile rack. Bombers are slow and tough and carry Siege Torpedoes: lock an outpost (it takes longer), launch, and each torpedo hits it three times as hard as a missile. Torpedoes are slow and turn badly, but fighter guns can't touch one once it's away: only station, depot and capital-ship point-defence turrets can shoot them down. Stop the bombers before they launch, and escort your own so they get their shots off (enemy torpedoes show a yellow TORPEDO marker). Change hull at your faction's main station.</p>
+            <p><b>Kinetic vs laser.</b> Both guns share your Weapons upgrade. Kinetic cannons (1) fire slugs that take time to arrive, so aim at the diamond lead marker; they sip energy, reach about 950 m and hit hull 15% harder. Lasers (2) hit instantly wherever your nose points, no lead needed, but drain about three times the energy, reach only 820 m and are 25% stronger against shields and weaker against hull. The reticle becomes a diamond in laser mode and turns red when the beam is on a target. A good pattern: strip shields with lasers, then finish the hull with kinetics.</p>
+            <p><b>Stations and depots.</b> Faction stations and depots carry shields and turrets (6 on a main station, 4 on a depot) that fire on hostiles within about 1.3–1.5 km and shoot down torpedoes. Knock a station's shield down and its turrets go offline for 20 seconds; the station itself cannot be destroyed.</p>
+            <p><b>The Unbound.</b> Pirates who answer to no one, and who keep to space no faction calls home: you won't meet them in a faction's core or frontier systems. Their base is Scrapheart Haven, a station dug into a giant asteroid in The Wrack, with a slipway beside it. As the galaxy goes on they build an escort (around 25 minutes in), a second escort (around 45) and finally a carrier (after an hour), if they can mine, salvage, plunder and fence the parts. The Wrack has no copper or Vantium, so they buy those from the Freeport Compact and skim Hollow Verge's Vantium field when nobody holds the hub. Unbound capitals raid depots in contested and open space and strip their stores; they don't capture them. Beat the haven down and it goes dark for a while (its slipway stops) but it can't be destroyed. Take the Wrack Salvage Yard from them and their income drops.</p>
+            <p><b>Ambushes from the rocks.</b> Most Unbound wings in contested and open space go to ground: they land on asteroids, power down, and vanish from sensors beyond 320 m, exactly like a pilot hugging a rock. When a freighter, miner or pilot drifts within about 850 m they lift off together (their guns take 2.5 s to come back) and pounce. Hitting a landed ship knocks it off the rock. A Scout's or Advanced Scout's long-range radar picks landed ships out of the clutter at 1.6 km, so a scout flying ahead of a convoy is worth its weight.</p>
+            <p><b>Enemy aces.</b> Each faction fields three named aces and the Unbound two captains: veterans in tuned ships who shoot straighter and take a lot more killing. Destroy enough of a side's ships (wingmates of its aces and capital ships count most) and one of its aces takes an interest; a while later it comes through a gate with its wing, hunting you. Aces won't follow you into your own faction's core system. They carry big bounties, paid to everyone who damaged them, and they remember: an ace that kills you gets a higher price, and the record between you carries over to the next galaxy on this device. Shot down twice, an ace retires and someone new takes the name. The Missions tab lists the aces hunting your side under <i>Wanted</i>.</p>
+            <p><b>Signals in quiet space.</b> The nine quiet systems hold faint signals that only a Scout's or Advanced Scout's long-range radar can see (◇ on screen, Tab to target). Hold within 320 m for 8 seconds to scan one: a derelict cache of parts to scoop, a fragment of the old logs (the Archive pays for them, and the relay pattern in each reveals every Brood and Unbound capital ship for 5 minutes), a drifting Aurorite shard any miner can cut, or, rarely, a lost capital hulk from the last war, broadcast to your faction so miners can cut it apart for 15 minutes. Every scan pays a survey fee. All of it comes out of the galaxy's drifting debris and outer drift, so nothing is created.</p>
+            <p><b>The debrief.</b> When a galaxy ends, the victory screen shows how it went: a territory map you can scrub or play back, the systems each power held over time, the three turning points that decided it, and every pilot's kills, aces, ore, orders, beacons and scans, with awards for the best in each.</p>
+<p><b>The Brood.</b> A fourth power grown, not built, out of The Bloom (top of the map). Their ships are tough and their hulls regrow out of combat. Brood swarms take outposts, plant Bloom Nodes and try to destroy stations. Every faction hunts them first, then goes back to fighting each other.</p>
+            <p><b>Station works stand in space.</b> No station, depot or freeport starts with any: each faction and the Freeport Compact build them over time once they have the materials. Every module a station builds (habitat and life support, storage vaults, production works, shield works) is its own structure beside the station; the defence platform hangs beneath it carrying the extra turrets, and a capital shipyard is an open slipway further out, with the hull visible in the slip while a capital ship builds. Only torpedoes and capital guns hurt them, and the station's guns shoot down torpedoes aimed at them. A destroyed module loses all its levels and its materials fall as debris; destroying the habitat knocks the station's production and missiles offline for a minute and cuts its crew room; a destroyed shipyard takes any capital ship in its slip with it. Target them like anything else (T, Q).</p>
+            <p><b>Stations can fall.</b> Guns chip station and depot armour at a tenth of their damage and missiles at a quarter; Bomber torpedoes hit five times as hard. Once the shield breaks the turrets go dark and the hull takes the hits. A depot at zero hull is captured if the attackers have enough assault loads in the system, otherwise destroyed, its frames and stores scattering as debris; main stations and the Bloom Heart only go dark for a while. Station point defence only reaches about 700 m, so launch salvos. Siege fleets bring bombers while their fighters picket the station.</p>
+            <p><b>Heavy Bombers.</b> A two-seat siege hull sold for credits at any core station's Shipyard; no orbital docks needed. The pilot flies on twin forward cannons and a torpedo bay (siege torpedoes crack stations, outposts and station works; lock them like missiles), plus a swarm launcher. It's tougher and quicker than a Bomber but slower than a fighter. A second pilot can pull alongside a friendly heavy bomber at matched speed and press E to take the rear turret: the mouse aims, click or Space fires, C launches from the shared torpedo bay, and E climbs back out to your own ship. When nobody is in the turret, an AI gunner tracks and fires at whatever comes near.</p>
+            <p><b>Comms.</b> Press I for Command, your call-ins: 1 escort me (a wing forms up on you), 2 guard me, 3 ask your faction to build (a capital shipyard in your home system, a depot anywhere else; it draws on the faction's stores and the reply says what is missing), 4 distress call. Each press of I after that steps to the next friendly ship nearby, and the menu shows what that ship can do. A fighter wing guards or escorts it, forms up on you, or attacks your target. A supply freighter signs you on as its escort (paid when it docks). A carrier clears you to land on its deck (cargo it needs unloads into its store) or sends its fighters at your target. A ship under fire offers to target its attacker. Guard and escort last two minutes. Firing closes the menu.</p>
+            <p><b>Commanding a capital ship.</b> Fly up to your carrier or escort and press E to dock: you step onto its bridge. Walk with WASD (Shift to hurry); click the view to look around with the mouse (Esc releases it), and press E at a console. The helm and weapons consoles sit just behind the forward window, the strategic table is in the middle, and there are windows port and starboard. The command chair on the raised dais at the back (E) brings up every console in one place: strategic, helm, weapons, engineering and comms (1 to 5 switch tabs). E or Esc stands you up again. The Comms console by the starboard window sends guard and escort orders to nearby friendly fighters and asks your faction to build a depot or a shipyard. <b>Strategic</b> shows the sector live: click space to move there, click a hostile to give it to the capital battery. <b>Navigation</b> sets throttle and runs the jump drive: capital ships need no gates, the drive spins up (20 s at normal power) and jumps to a neighbouring system from anywhere, or follows a plotted course. <b>Weapons</b> sets the battery (automatic, a chosen target, or hold fire), point defence priorities, and whether a carrier's wing screens it or attacks. <b>Engineering</b> splits 12 units of power between engines, shields, the battery and point defence. The hatch at the back returns you to your fighter.</p>
+            <p><b>Playing with friends.</b> Friends can share a galaxy (it is built for up to four pilots): on the start screen everyone types a callsign and the same galaxy code. The first pilot in hosts; the others join them. Each of you picks your own faction, so you can fly together or fight each other. Press Enter in flight to message everyone. Every pilot keeps a copy of the latest save, so anyone can host the next session, and if the host leaves mid-game another pilot takes over within a few seconds. While nobody is online the galaxy waits, frozen. Outposts you claim and depots you build belong to your faction.</p>
+            <p><b>Fighter screens.</b> Friendly fighter wings in a capital ship's system form up around it (up to three wings) and screen it: they push out to catch bombers before they can launch, then take on anything else closing in. Once a torpedo is away, the screen can't stop it; only the capital ship's point defence can. Your own capitals are screened by your faction's wings.</p>
+            <p><b>Legendary status.</b> Each time your faction wins a galaxy you flew for (at least 30 minutes, and most of your time that galaxy) you earn a Legend point; if it loses, you still earn half a point. Points raise you through ten levels, each with a permanent perk: faster beacon flips for scouts, bigger holds for haulers, faster and longer-reaching lasers for miners, starting in your own ship, Mk II systems, command rank, a reserve hull, a mission bonus and, at Legendary Ace, the Wraith stealth fighter. Other pilots see your rank next to your callsign. The Leaderboard on the start screen shows every record on this device and your perk settings.</p>
+            <p><b>Winning the galaxy.</b> A side that controls 7 systems for 20 minutes wins. If no one has done that after two hours of play, the side holding the most systems at that moment wins (ties go to most stations and depots, then capital ships, then the richest stores); the HUD counts down the last 30 minutes and shows who leads. The nine quiet systems (thin fields, little traffic) don't raise that bar, but holding one with a depot or outpost counts toward it. The galaxy resets, and the winner starts the next one with a finished capital shipyard and 40% richer stores; if it was your faction, you start with 4,000 extra credits and a crate of parts.</p>
+            <p><b>Freeport parts.</b> The Freeport Compact makes two parts nobody else can, from the goods traders sell it, and sells them only at its freeports. A <b>Calibration Matrix</b> goes into every Mk III upgrade. A <b>Compact Seal</b> goes into every capital build: 2 for a shipyard, 3 for a carrier, 1 for an escort. The powers send merchants out to buy Seals, so cutting a faction's freeport traffic slows its fleet. You can sell Seals to your own faction's station (it builds with them); Matrices only sell back to the Compact.</p>
+            <p><b>Capital ships.</b> At your faction's main station you can build a Capital Shipyard (4 Depot Frames, 4 Capital Keels, 4 Crystal Lattice, 40 plates, 2 Compact Seals and 5,000 cr). It commissions one Fleet Carrier per faction (6 Keels, 4 Lattice, 2 Resonance Cores, 12 conduit, 4 frames, 10 coil, 3 Compact Seals) and Escorts (1 Seal each). The carrier has no main gun: six point-defence turrets, a wing of 6 fighters and bombers, and 3 assault ships for capturing depots. It builds its own craft aboard from a store of materials and asks its faction for more; supply convoys fly out to it. AI carriers wait one system back from their target and strike through the gate. Fighter guns chip a capital's armour at a tenth of their damage; torpedoes and capital guns do the real damage. The Brood grows a Hive Ship and Prowlers in The Bloom.</p>
+            <p><b>Vantium.</b> A dense, green-veined sixth ore that every Capital Keel needs (8 per keel), so no shipyard, carrier or escort gets built without it. It lies in only four fields: the three contested forge systems (Kestrel Drift, The Shoal, Cinder Reach), each between two powers, and the richest field in Hollow Verge, the hub all three border. Like Aurorite it only re-forms in its own fields. Factions push for those systems when they run short, and the Freeport Compact sells a little at a steep price.</p>
+            <p><b>Aurorite.</b> A fifth ore that exists only in the three deep-space sectors (Ashen Expanse, Glass Shallows, Lantern Deep), glowing teal in the rock. It never re-forms anywhere else: dust from wrecks drifts back toward deep space. Fabricate it into Aurora Tuning (2 Aurorite + 1 Flux Coil) and attune each component once in the Upgrades tab: +6% to engines, holds and blast rigs, or +4% to shields, guns, armour and power (one Aurora Tuning each). Fully tuned, a ship wins about 55% of fights against the same ship untuned. Whoever holds depots in deep space mines Aurorite, and their fighters start showing up tuned.</p>
+            <p><b>Missiles and swarms.</b> Missiles and swarm micro-missiles hit 1.8× harder once a target's shield is down, so break shields with guns and finish with missiles. Heavy Fighters, Bombers, Heavy Bombers and Advanced Scouts carry a swarm launcher with 2 pods (fire with 3): eight micro-missiles fan out at your target and anything flying near it. Flares fool only about half of them. AI heavy fighters and bombers sometimes carry one too.</p>
+            <p><b>Constructors.</b> Factions send escorted constructor convoys to build forward depots in sectors without a station, and to rebuild lost frontier depots. A forward depot costs one Depot Frame and is lightly built (2 turrets, 2 module slots); its faction expands it into a full depot when it can spare a second frame. Constructors are flown only by faction command. To get a depot built, fly to a system with no station, make sure the area is mostly clear (no more than one hostile within 3 km, no hostile capital ship in the system) and call one in through comms (I, then 3). If command has no constructor ready it assembles one as soon as its stores allow, then it sets out from the nearest friendly station and jumps system by system to you, always with an escort of at least two fighters. The site doesn't have to stay clear while it travels, but the convoy has to survive to build.</p>
+            <p><b>Logistics.</b> Each faction's core station is its warehouse; each depot keeps its own store. A depot mines into its store, runs its life support, works and fighter hangar from it, and (with a production module) turns ore into plates, conduit and coil. Freight convoys carry surplus ore to the warehouse and components out to depots that are building and to carriers in the field. Convoys are real freighters: they can be caught on the way, and a destroyed freighter spills half its hold as salvage. The Missions tab lists enemy convoys within reach under Convoy raids, with a bounty for each, and our own convoys under Convoy escort: sign on, fly with one, and Command pays when it docks.</p>
+            <p><b>Bounties.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships. You don't need the kill shot: everyone who damaged it is paid their share of the bounty (and War effort) by damage dealt. Unbound pirates pay a fifth more than a rival faction's ships, and an enemy ace pays more than anything else: 3,500 cr to start (4,200 for an Unbound captain), more for every pilot it has killed.</p>
+            <p><b>Torpedoes are siege weapons.</b> They hit a small ship for under a third of their damage, so they're for capital ships, stations and outposts, not dogfights.</p>
+            <p><b>Galaxy events.</b> Every few minutes something happens somewhere, announced in the feed and marked on the map. <b>Comet</b>: drifting debris pulls together into a comet in Kestrel Drift, The Shoal, Cinder Reach, Hollow Verge or The Wrack. It holds up to about 110 t of ore, mostly Xenocrystal, for about 4 minutes before it breaks up again. Blast it with charges like a rock; you can't land on it, and AI miners leave it alone, so it's there for pilots. <b>Derelict cargo</b>: a faction freighter has broken up and left a glowing crate of components (plates, conduit, coils, sometimes Crystal Lattice or iridium) drifting in a system for about 5 minutes. Fly into it to scoop it into your hold. It's anyone's: Unbound pirates go for it too. <b>Ion storm</b>: for 2½ minutes shields don't recharge there and radar is blind. <b>Gate collapse</b>: one jumpgate link is down for 2 minutes. <b>Requisition</b>: a faction pulls stock for its war effort, and prices for that item climb at its stations.</p>
+            <p><b>War effort.</b> Orders delivered, supply-drive loads, campaign moves, beacon flips and enemy ships shot down earn your faction War effort. It fades over about 20 minutes, and while it lasts your faction's fleets fight harder in the battles fought out of sight. The Campaign section (Missions, or Orders during a supply drive) shows the current bonus.</p>
+            <p><b>Sensors, not omniscience.</b> You only hear about strikes, convoys and battles in sectors your side can see: sectors with a friendly station or depot (plus their neighbours), friendly outposts, and wherever a friendly scout is (plus neighbours). Holding the Hollow Relay taps the whole network. The map dims sectors you cannot see. Scout hulls are the fastest ships, see the whole sector and the sectors next door, but carry light guns and turn slowly. The Scout fires its missiles in pairs from two launchers; the Advanced Scout has one launcher plus a swarm launcher.</p>
+            <p><b>Crewing together.</b> In multiplayer, a pilot docked at the same station as a squadmate's Heavy Bomber can sign on to its turret (Hangar, then Shipyard): when the pilot launches you go with them, straight into the turret. Any pilot of your faction can dock with a squadmate's carrier or escort as crew. From the Strategic console the commander can give a crew member one station (Helm, Weapons or Engineering). While it's assigned only that crew member can use it, even the commander can't, and the crew member can't use anything else. It returns to the commander the moment the crew member steps away from the console or leaves the bridge. The command chair goes with the Helm.</p>
+            <p><b>Escorts.</b> A light capital ship commissioned at a capital shipyard (1 Capital Keel, 2 Crystal Lattice, 1 Resonance Core, 10 conduit, 24 plates, 8 coil, 2 missiles; 90 s in the slip). Quick on the helm, with fast jumps. It has no main cannon: six anti-fighter batteries tear into fighters and torpedoes, and twin torpedo launchers hit capital ships, stations, station works and heavy craft. It carries one assault ship, guards the carrier, and screens friendly capital ships from bomber strikes. Dock with it to fly it: its bridge has the same helm and consoles as the carrier's, with the battery controls driving the torpedo launchers.</p>
+            <p><b>Hugging a rock.</b> Slow below 70 m/s next to an asteroid and press E to land on it. Everything but your radar powers down: no engines, guns, missiles or shields, and no recharge. Enemy ships, turrets and stations lose you unless they come within 320 m, and missiles chasing you lose their lock. Press E to lift off: the ship reboots, so guns and launchers stay cold for 4 s while energy surges back, and shields start charging from empty once the boot is done. You can turn in place to watch while landed.</p>
+            <p><b>Sector beacons.</b> Every system has a beacon (◆ on the map, filled in the colour of the team holding it) set well away from the centre: press Tab to target it. Fly a Scout or Advanced Scout within 250 m of it and hold there for 10 seconds to flip it to your faction. While your faction holds it, that system is scanned for your side all the time and its market prices reach your Trade screen live. Flipping one pays you a one-off bonus of 60 cr from your faction's treasury, then 4 cr a minute while your side holds it, for up to 10 minutes after you last flipped or re-secured it. A flipped beacon is secured for 3 minutes: nobody can flip it. Then it fades for 2 minutes: an enemy scout can flip it, a friendly scout can hold it again to re-secure it for another 3 minutes, and if nobody does it drops back to neutral. In a system your side holds (home space, or your station or outpost there) the local crew keeps your beacon secured; out in contested and open space a scout has to keep coming back. Two teams' scouts on the same beacon block each other. AI scouts flip beacons too.</p>
+            <p><b>Pinging capital ships.</b> In a Scout or Advanced Scout, keep an enemy carrier or escort targeted within 4 km for 4 seconds to ping it. For 5 minutes your whole side sees where it is on the galaxy map (M) and on capital ships' Strategic and Helm maps, wherever it goes. If it's destroyed while tagged, you're paid a scouting bonus: 500 cr for a carrier, 300 for an escort.</p>
+            <p><b>Hauling for the war.</b> <i>Front-line resupply:</i> land on a friendly carrier's flight deck with the plate and coil its store lacks and they unload straight into it, paid the market rate times a front-line bonus: up to ×2.2 when the carrier is out where the fighting is (Economy → Orders lists which carriers need what). <i>Blockade runs:</i> stations that are cut off or under siege pay about four times value for goods brought in person; anything you own counts, but carrying the cargo through hostile space nearby draws enemy interceptors. <i>Convoys:</i> in a hauling ship, set a course and call a convoy from Economy → Orders: a faction escort wing flies with you through every jump and goes home when you dock at a friendly station at the destination; other pilots who fly escort are paid per jump.</p>
+            <p><b>Capital wrecks.</b> A destroyed carrier or escort leaves a wreck for 5 minutes. Blast its glowing salvage points with charges on their joint rings and scoop the chunks: a third of what's inside comes out as intact components. The reactor core holds the best of it, but every charge on it must be on point, or it blows in a 600 m blast and takes the whole wreck. The Brood come for wrecks and eat them fast.</p>
+            <p><b>Wings.</b> Combat ships fly in wings of three or more and share targets. When a wing is cut down to one or two ships, the survivors break off and run for home.</p>
+            <p><b>Shields.</b> Hits flare blue on your shield bubble and the screen edges. When the shield collapses it bursts outward, the edges glow red and the shield bar blinks: boost away with Shift. Shields start recharging 2.5 s after the last hit, except in an ion storm.</p>
+            <p>To jump, line up in front of a gate ring with your nose pointing straight through it (within 20°) and hold steady: the gate counts down 5 seconds, then flings you through. Turn away or fly off and the countdown resets. Autopilot (J) lines up for you. Gates through Hollow Verge charge a toll to whoever holds the Hollow Relay.</p>
+          </div>
+          <div>
+            <div class="h3">The closed economy</div>
+            <p><b>Nothing is created.</b> Ferrite, Cuprite, Iridium and Xenocrystal exist as a fixed total mass. Mining moves ore from rocks into holds. Fabrication combines it into plates, conduit, coils, lattices and cores. Upgrades bolt those parts permanently into your ship.</p>
+            <p><b>Nothing is destroyed.</b> Wrecked ships spill half their parts as salvage; the rest becomes debris, which drifts between sectors and slowly re-forms into new asteroids. Credits work the same way: every credit you earn left a faction treasury.</p>
+            <p><b>Why own an outpost.</b> The three Forges (Kestrel, Shoal, Cinder) are the only places Crystal Lattice and Resonance Cores can be made. The Hollow Relay collects gate tolls and gives early warning of strike groups. The Wrack Salvage Yard harvests debris. Owned outposts also skim ore from their sector's fields.</p>
+            <p><b>Claiming.</b> Fabricate a Claim Beacon, fly to an unclaimed or breached outpost, and hold its ring until the claim completes. Hostile outposts must be shot down to zero hull first. Fortify yours with parts, because the factions and the Unbound will come for it.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- model pack: CC0 models by Quaternius (Lowpoly Spaceships) and Kenney (Space Kit), converted to faction-recolourable triangles -->
