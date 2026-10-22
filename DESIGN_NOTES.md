@@ -8,6 +8,7 @@ Every system should follow these, and new work is checked against them.
 - **Credits go to pilots who fight and scout.** Scouts are paid for beacons. Fighters are paid for enemies destroyed, and larger enemies pay more. Damage earns a share of the credit, so you don't need the kill shot.
 - **Materials are real and they move.** Raw ore is mined, then turned into components at stations and depots with forges. Components are hauled to wherever they're needed to build station upgrades, ships and station works.
 - **Missions serve the war.** They're set up to flip beacons, take control of sectors, destroy enemy assets and disrupt enemy logistics.
+- **The war is even, and the Brood is the outside threat.** Across galaxies with no pilots in them, each of Halcyon, Varkesh and Ostrova wins about 30% of the time and the Brood about 10%. Any change that touches the strategic AI, the economy or the campaign is checked against these targets in a large batch of simulated galaxies (at least 480, so each share is known to about ±4 points), and tuned back if it moves them.
 
 ---
 
