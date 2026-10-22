@@ -286,7 +286,7 @@ function neutralIndustry(){fpRebuild();const st=S.econ.stock.neutral;if(!st)retu
 const FP_MAKE={matrix:16,seal:12};   // how many of each the Compact keeps in stock across its freeports
 // station missile battery (defence level 2+): one missile at a time at the nearest hostile, drawn from the owner's stores
 function stMissiles(SE,dt){const R=SE.rec;if(!R||SE.offline)return;const d=devOf(R);if(d.def<2||starving(R))return;SE.mcd=(SE.mcd||rnd(2,5))-dt;if(SE.mcd>0)return;SE.mcd=Math.max(3.5,8-d.def*1.5);
-  let t=null,bd=1600;for(const e of W.ents){if(e.type!=='ship'||!e.alive||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!stHostile(SE,e))continue;const dd=d3(e,SE);if(dd<bd){bd=dd;t=e}}if(!t||NET.cl)return;
+  let t=null,bd=1600;for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!stHostile(SE,e))continue;const dd=d3(e,SE);if(dd<bd){bd=dd;t=e}}if(!t||NET.cl)return;
   const src=R.owner==='player'?R.stock:S.econ.stock[R.owner];if(!src||!inv.take(src,'missile',1))return;
   const sh={x:SE.x,y:SE.y+40,z:SE.z,vx:0,vy:0,vz:0,q:qLook(t.x-SE.x,t.y-SE.y-40,t.z-SE.z,0,1,0,q0()),st:{radius:70},side:SE.fac==='neutral'?'neutral':SE.fac};launchMissile(sh,t,3,'missile')}
 

@@ -549,7 +549,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
             <p><b>Escorts.</b> A light capital ship commissioned at a capital shipyard (1 Capital Keel, 2 Crystal Lattice, 1 Resonance Core, 10 conduit, 24 plates, 8 coil, 2 missiles; 90 s in the slip). Quick on the helm, with fast jumps. It has no main cannon: six anti-fighter batteries tear into fighters and torpedoes, and twin torpedo launchers hit capital ships, stations, station works and heavy craft. It carries one assault ship, guards the carrier, and screens friendly capital ships from bomber strikes. Dock with it to fly it: its bridge has the same helm and consoles as the carrier's, with the battery controls driving the torpedo launchers.</p>
             <p><b>Hugging a rock.</b> Slow below 70 m/s next to an asteroid and press E to land on it. Everything but your radar powers down: no engines, guns, missiles or shields, and no recharge. Enemy ships, turrets and stations lose you unless they come within 320 m, and missiles chasing you lose their lock. Press E to lift off: the ship reboots, so guns and launchers stay cold for 4 s while energy surges back, and shields start charging from empty once the boot is done. You can turn in place to watch while landed.</p>
             <p><b>Sector beacons.</b> Every system has a beacon (◆ on the map, filled in the colour of the team holding it) set well away from the centre: press Tab to target it. Fly a Scout or Advanced Scout within 250 m of it and hold there for 10 seconds to flip it to your faction. While your faction holds it, that system is scanned for your side all the time and its market prices reach your Trade screen live. Flipping one pays you a one-off bonus of 60 cr from your faction's treasury, then 4 cr a minute while your side holds it, for up to 10 minutes after you last flipped or re-secured it. A flipped beacon is secured for 3 minutes: nobody can flip it. Then it fades for 2 minutes: an enemy scout can flip it, a friendly scout can hold it again to re-secure it for another 3 minutes, and if nobody does it drops back to neutral. In a system your side holds (home space, or your station or outpost there) the local crew keeps your beacon secured; out in contested and open space a scout has to keep coming back. Two teams' scouts on the same beacon block each other. AI scouts flip beacons too.</p>
-            <p><b>Pinging capital ships.</b> In a Scout or Advanced Scout, keep an enemy carrier or escort targeted within 4 km for 4 seconds to ping it. For 5 minutes your whole side sees where it is on the galaxy map (M) and on capital ships' Strategic and Helm maps, wherever it goes. If it's destroyed while tagged, you're paid a scouting bonus: 500 cr for a carrier, 300 for an escort.</p>
+            <p><b>Limpets.</b> A Scout or Advanced Scout carries one limpet, rearmed whenever it docks. Target an enemy carrier, escort, station or depot and hold F (the mining key) within 600 m of its hull for 2 seconds in total: the count keeps while you fly through range, so plant it on a fast pass. For 3 minutes your whole side does 25% more damage to the target, sees a marked capital ship on the galaxy map (M) and on capital ships' Strategic and Helm maps, and your side's fighters and bombers in the system go for it. The target's side is warned. Enemy fighters and pilots can shoot a limpet off; turrets and point defence can't. If a capital ship is destroyed with your limpet on it, you're paid a scouting bonus: 500 cr for a carrier, 300 for an escort.</p>
             <p><b>Hauling for the war.</b> <i>Front-line resupply:</i> land on a friendly carrier's flight deck with the plate and coil its store lacks and they unload straight into it, paid the market rate times a front-line bonus: up to ×2.2 when the carrier is out where the fighting is (Economy → Orders lists which carriers need what). <i>Blockade runs:</i> stations that are cut off or under siege pay about four times value for goods brought in person; anything you own counts, but carrying the cargo through hostile space nearby draws enemy interceptors. <i>Convoys:</i> in a hauling ship, set a course and call a convoy from Economy → Orders: a faction escort wing flies with you through every jump and goes home when you dock at a friendly station at the destination; other pilots who fly escort are paid per jump.</p>
             <p><b>Capital wrecks.</b> A destroyed carrier or escort leaves a wreck for 5 minutes. Blast its glowing salvage points with charges on their joint rings and scoop the chunks: a third of what's inside comes out as intact components. The reactor core holds the best of it, but every charge on it must be on point, or it blows in a 600 m blast and takes the whole wreck. The Brood come for wrecks and eat them fast.</p>
             <p><b>Wings.</b> Combat ships fly in wings of three or more and share targets. When a wing is cut down to one or two ships, the survivors break off and run for home.</p>
@@ -760,8 +760,8 @@ const CLASSES={
   frigate:{name:'Frigate',hull:3000,shield:14,speed:.42,turn:.32,weapon:1,cargo:0,drill:0,radius:110,rack:0,boost:1,agile:.3,acc:.35,desc:'Capital ship.'},
   picket:{name:'Picket',hull:32,shield:.55,speed:1.35,turn:3.6,weapon:.6,cargo:0,drill:0,radius:11,rack:.5,boost:1.2,agile:1.4,acc:1.4,desc:'Small escort fighter, 2 missiles.'},
   drone:{name:'Guard Drone',acc:1.4,hull:24,shield:.4,speed:1.3,turn:3.6,weapon:.5,cargo:0,drill:0,radius:9,rack:0,boost:1.1,agile:1.3,desc:'Escort drone.'},
-  scout:{name:'Scout',acc:1.35,bcost:.8,hull:60,shield:.75,speed:1.78,turn:1.35,weapon:.5,cargo:10,drill:0,radius:11,rack:1,twin:true,boost:1.3,agile:.5,radar:true,desc:'The fastest hull in the galaxy, and one of the hardest to turn. Two missile launchers fire a pair on every shot. Long-range radar sees the whole sector and reports the next ones. Flips sector beacons (hold within 250 m). Pings enemy capital ships (keep one targeted within 4 km for 4 s).'},
-  scout2:{name:'Advanced Scout',acc:1.3,bcost:.85,hull:78,shield:.9,speed:1.72,turn:1.25,weapon:.6,cargo:10,drill:0,radius:12,rack:.75,swarm:2,boost:1.3,agile:.46,radar:true,desc:'Nearly as fast as the Scout and even slower to turn. One missile launcher plus a swarm launcher (2 pods, fire with 3). Long-range radar. Flips sector beacons (hold within 250 m). Pings enemy capital ships (keep one targeted within 4 km for 4 s).'},
+  scout:{name:'Scout',acc:1.35,bcost:.8,hull:60,shield:.75,speed:1.78,turn:1.35,weapon:.5,cargo:10,drill:0,radius:11,rack:1,twin:true,boost:1.3,agile:.5,radar:true,desc:'The fastest hull in the galaxy, and one of the hardest to turn. Two missile launchers fire a pair on every shot. Long-range radar sees the whole sector and reports the next ones. Flips sector beacons (hold within 250 m). Plants one limpet on an enemy capital ship or station (hold F within 600 m for 2 s; rearms when docked).'},
+  scout2:{name:'Advanced Scout',acc:1.3,bcost:.85,hull:78,shield:.9,speed:1.72,turn:1.25,weapon:.6,cargo:10,drill:0,radius:12,rack:.75,swarm:2,boost:1.3,agile:.46,radar:true,desc:'Nearly as fast as the Scout and even slower to turn. One missile launcher plus a swarm launcher (2 pods, fire with 3). Long-range radar. Flips sector beacons (hold within 250 m). Plants one limpet on an enemy capital ship or station (hold F within 600 m for 2 s; rearms when docked).'},
   constructor:{name:'Constructor',acc:.75,hull:240,shield:1.25,speed:.72,turn:1.25,weapon:.55,cargo:160,drill:0,radius:26,rack:.5,boost:.85,agile:.65,desc:'Carries Depot Frames for faction depots; call one in from comms (I, then 3 on the Command page).'},
   courier:{name:'Light Hauler',hull:120,shield:.95,speed:1.05,turn:2.1,weapon:.7,cargo:60,drill:0,radius:16,rack:.5,boost:1.05,agile:.95,acc:1,drones:1,desc:'60 t hold, 1 guard drone, quick for a hauler.'},
   freighter:{drones:2,name:'Medium Hauler',acc:.8,hull:170,shield:1.1,speed:.95,turn:1.7,weapon:.75,cargo:100,drill:0,radius:21,rack:.75,boost:.9,agile:.75,desc:'100 t hold, 2 guard drones, 5.5% market fee. The workhorse: nearly as quick as a Light Hauler.'},
@@ -1985,13 +1985,13 @@ function wePts(f){const g=weFac(f);return g&&S.we?(S.we[g]||0):0}
 function weBonus(f){return WE.max*(1-Math.exp(-wePts(f)/WE.scale))}
 function weMul(f){return 1+weBonus(f)}
 function weTick(){if(!S.we)return;const k=Math.exp(-10/WE.tau);for(const f in S.we){S.we[f]*=k;if(S.we[f]<.01)delete S.we[f]}}
-function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'?K.drone:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
+function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'||e.role==='limpet'?K.drone:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
 // ---- kill credit. Every pilot who damaged a ship is paid their share of its bounty (and War effort) by damage dealt, so the
 // kill shot isn't needed. AI damage counts in the total but pays no one; the kill shot only adds to the kill count.
 // Bounties grow with the size of the ship.
 const BOUNTY_MUL=8;   // the pay ladder: hauling, then mining, then combat, then beacon running
 const PIRATE_MUL=1.2; // the Unbound prey on everyone: their ships (and captains) carry a fifth more bounty than a rival faction's
-function bountyOf(e){if(e.role==='drone')return 40;if(e.role==='frigate')return e.cls==='escort'?1400:2800;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
+function bountyOf(e){if(e.role==='drone')return 40;if(e.role==='limpet')return 60;if(e.role==='frigate')return e.cls==='escort'?1400:2800;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
   return Math.max(40,Math.round(BOUNTY_MUL*(e.side==='pirate'?PIRATE_MUL:1)*(25+20*(e.tier||1))*Math.pow(Math.max(.3,r),.6)/5)*5)}
 function dmgRec(e,src,at,d){if(!(d>0)||e.isPlayer)return;const k=at&&at.src&&at.src.rp?at.src.rp:src==='player'?'me':'_ai';(e.dmg=e.dmg||{})[k]=(e.dmg[k]||0)+d}
 function killNoun(e){return e.role==='miner'?'miner':e.role==='hauler'?'hauler':e.role==='trader'?(e.tradeT&&e.tradeT.kind==='haul'?'supply freighter':'trader'):e.role==='builder'?'constructor':e.role==='drone'?'drone':e.role==='frigate'?(e.tok?capName(e.tok):'capital ship'):CLASSES[e.cls]?CLASSES[e.cls].name.toLowerCase():'fighter'}
@@ -2418,7 +2418,7 @@ function neutralIndustry(){fpRebuild();const st=S.econ.stock.neutral;if(!st)retu
 const FP_MAKE={matrix:16,seal:12};   // how many of each the Compact keeps in stock across its freeports
 // station missile battery (defence level 2+): one missile at a time at the nearest hostile, drawn from the owner's stores
 function stMissiles(SE,dt){const R=SE.rec;if(!R||SE.offline)return;const d=devOf(R);if(d.def<2||starving(R))return;SE.mcd=(SE.mcd||rnd(2,5))-dt;if(SE.mcd>0)return;SE.mcd=Math.max(3.5,8-d.def*1.5);
-  let t=null,bd=1600;for(const e of W.ents){if(e.type!=='ship'||!e.alive||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!stHostile(SE,e))continue;const dd=d3(e,SE);if(dd<bd){bd=dd;t=e}}if(!t||NET.cl)return;
+  let t=null,bd=1600;for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!stHostile(SE,e))continue;const dd=d3(e,SE);if(dd<bd){bd=dd;t=e}}if(!t||NET.cl)return;
   const src=R.owner==='player'?R.stock:S.econ.stock[R.owner];if(!src||!inv.take(src,'missile',1))return;
   const sh={x:SE.x,y:SE.y+40,z:SE.z,vx:0,vy:0,vz:0,q:qLook(t.x-SE.x,t.y-SE.y-40,t.z-SE.z,0,1,0,q0()),st:{radius:70},side:SE.fac==='neutral'?'neutral':SE.fac};launchMissile(sh,t,3,'missile')}
 
@@ -2988,27 +2988,71 @@ function beaconTick(){if(NET.cl||!S.beacons)return;
     const st=bcnState(B);if(st!=='locked'&&bcnCrew(sid,B.owner))beaconSecure(sid,B.owner,null);else if(st==='lapsed')beaconLapse(sid)}
   for(const t of S.scouts||[]){if(t.live)continue;const B=S.beacons[t.sector];if(!B)continue;if(B.owner===t.side){if(bcnState(B)==='fading'&&Math.random()<.35)beaconSecure(t.sector,t.side,null);continue}if(bcnState(B)==='locked')continue;const Rs=S.stations[t.sector],guarded=Rs&&Rs.owner&&hostile(t.side,Rs.owner);
     if(Math.random()<(guarded?.08:.22))beaconFlip(t.sector,t.side,null)}}
-// ---- scout pings: a Scout or Advanced Scout that holds an enemy capital ship (carrier or escort, or the Brood's) in its
-// target lock within PING_R for PING_T seconds tags it. For PING_LIFE its position shows to the scout's whole side on the
-// galaxy map (M) and on capital ships' Strategic and Helm maps, wherever it goes. If it's destroyed while tagged, the scout
-// who pinged it is paid a bonus from their faction's treasury.
-const PING_R=4000,PING_T=4,PING_LIFE=300,PING_PAY={carrier:500,escort:300};
+// ---- scout limpets: a Scout or Advanced Scout carries one limpet, rearmed whenever it docks. With an enemy carrier, escort,
+// station or depot targeted, hold the mining key (F) within LIMPET_R of its hull for LIMPET_T seconds in total (progress
+// keeps while you fly through range, so a fast pass works) to plant it. For LIMPET_LIFE the planter's side does LIMPET_DMG
+// damage to the target, sees a marked capital on the galaxy and Strategic maps, and its AI fighters and bombers in the
+// system go for it. The limpet is a small object on the hull (an NPC ship, role 'limpet'): enemy fighters and pilots can
+// shoot it off; turrets, point defence and capital guns can't. The target's side is warned. A capital ship destroyed with
+// a limpet on it pays the scout who planted it. The tag lives on the record (capital token, station record or outpost),
+// so the limpet comes back with the system when it reloads (limpetSync).
+const LIMPET_R=600,LIMPET_T=2,LIMPET_LIFE=180,LIMPET_DMG=1.25,LIMPET_HP=45,PING_PAY={carrier:500,escort:300};
 function capPinged(t,f){const P=t&&t.pings&&t.pings[f];return!!P&&P.until>S.T}
-function capPing(t,f,by){if(!t||!FAC_IDS.includes(f)||!hostile(f,t.side))return;t.pings=t.pings||{};const was=capPinged(t,f);t.pings[f]={by:by||null,until:S.T+PING_LIFE};
-  const nm=`${t.side==='brood'?'Brood '+broodCap(t):sideName(t.side)+' '+capName(t)} ${t.name}`;
-  if(by)keyFeed(by,`📡 ${was?'Re-pinged':'Pinged'} ${nm} in ${DEF[t.sector].name}: your side can see it on the galaxy and Strategic maps for ${PING_LIFE/60} minutes. If it's destroyed while tagged you're paid ${fmt(PING_PAY[t.cls]||300)} cr.`,'good');
-  if(!was)facFeed(f,`📡 ${nm} pinged in ${DEF[t.sector].name}: tracked for ${PING_LIFE/60} minutes.`,'info')}
-function capPingPay(t){if(!t||!t.pings)return;for(const f in t.pings){const P=t.pings[f];if(!P||P.until<=S.T||!P.by||!hostile(f,t.side))continue;const got=payKey(P.by,f,PING_PAY[t.cls]||300);if(got)keyFeed(P.by,`📡 The ${capName(t)} ${t.name} you pinged has been destroyed: +${fmt(got)} cr scouting bonus.`,'good')}t.pings={}}
-function pingTarget(){const p=W.player,T=W.tgt&&W.tgt.kind==='ship'?W.tgt.ref:null;if(!p||!T||!T.alive||T.role!=='frigate'||!T.tok||!hostile('player',T.side))return null;return T}
-// the player's own lock, every frame (host, single player and client alike: a client asks the host to record the ping)
-function pingTick(dt){const F=W.pingF||(W.pingF={id:null,t:0});const T=pingTarget(),p=W.player;
-  if(!T||!isScoutCls(S.player.cls)||S.player.docked||d3(T,p)>PING_R||(capPinged(T.tok,S.player.faction)&&T.tok.pings[S.player.faction].until-S.T>PING_LIFE-60)){F.t=Math.max(0,F.t-dt*2);return}
-  if(F.id!==T.tok.id){F.id=T.tok.id;F.t=0}F.t+=dt;
-  if(F.t>=PING_T){F.t=0;if(NET.cl)netSend({t:'ping',id:T.tok.id});else capPing(T.tok,S.player.faction,pkey());SFX.count(true);flash(`📡 Pinged ${T.tok.name}: tracked for ${PING_LIFE/60} minutes.`)}}
-function pingChip(){const T=pingTarget();if(!T||!isScoutCls(S.player.cls)||S.player.docked)return null;const d=d3(T,W.player),t=T.tok,F=W.pingF||{};
-  if(capPinged(t,S.player.faction)&&!(F.id===t.id&&F.t>0))return[`📡 ${t.name} pinged · tracked ${fmtT(t.pings[S.player.faction].until-S.T)}`,'good'];
-  if(d>PING_R)return[`📡 Close to ${PING_R/1000} km to ping ${t.name} (${fmt(Math.round(d))} m)`,'warn'];
-  return[`📡 Pinging ${t.name} ${Math.round(clamp((F.id===t.id?F.t:0)/PING_T,0,1)*100)}% · keep it targeted`,'warn']}
+// tracked on the maps: a limpet, or a lead from elsewhere (an anomaly's log) that only shows where it is
+function capTrackUntil(t,f){return Math.max(capPinged(t,f)?t.pings[f].until:0,(t&&t.seen&&t.seen[f])||0)}
+const capTracked=(t,f)=>capTrackUntil(t,f)>S.T;
+function capTrack(t,f,dur){if(!t||!FAC_IDS.includes(f))return;t.seen=t.seen||{};t.seen[f]=Math.max(t.seen[f]||0,S.T+(dur||300))}
+function lpRec(E){return!E?null:E.type==='station'?E.rec:E.type==='outpost'?E.o:E.role==='frigate'?E.tok:null}
+function lpSide(E){return!E?null:E.type==='station'?E.fac:E.type==='outpost'?E.o.owner:E.side}
+function lpRad(E){return E.st?E.st.radius:E.r||100}
+function lpName(E){const R=lpRec(E);if(!R)return'the target';if(E.role==='frigate')return`${R.side==='brood'?'Brood '+broodCap(R):sideName(sideNorm(R.side))+' '+capName(R)} ${R.name}`;return E.type==='station'?E.name:R.name}
+function limpetK(R,src){if(!R||!R.pings||!src)return 1;const P=R.pings[sideNorm(src)];return P&&P.until>S.T?LIMPET_DMG:1}
+// the target's side hears about it; the capital's commander and crew get an alert
+function lpWarn(E,msg,alert){const sd=sideNorm(lpSide(E));if(FAC_IDS.includes(sd))facFeed(sd,msg,alert?'bad':'news');const t=E.role==='frigate'?E.tok:null;if(!t)return;
+  if(t.side==='player'||(t.owner&&isMe(t.owner))||(W.bridge&&W.bridge.f&&W.bridge.f.tok===t))flash(msg,alert);
+  if(NET.host){if(t.owner&&!isMe(t.owner))netMsg(t.owner,'flash',msg,alert);for(const pid of crewAboard(t))if(!isMe(pid))netMsg(pid,'flash',msg,alert)}}
+function limpetStick(e){const E=e.lh,q=E.q||q0();qRot(q,e.loc.x,e.loc.y,e.loc.z,_lpV);e.x=E.x+_lpV.x;e.y=E.y+_lpV.y;e.z=E.z+_lpV.z;e.vx=E.vx||0;e.vy=E.vy||0;e.vz=E.vz||0;qCopy(e.q,q)}
+const _lpV={x:0,y:0,z:0};
+// on the hull, on the side the scout came from (a random side when the system reloads)
+function limpetSpawn(E,f,at){const q=E.q||q0(),r=lpRad(E)*.92;let dx,dy,dz;if(at){dx=at.x-E.x;dy=at.y-E.y;dz=at.z-E.z}else{const o=rdir();dx=o.x;dy=o.y;dz=o.z}const l0=hyp(dx,dy,dz)||1,v={x:0,y:0,z:0};
+  qRot({x:-q.x,y:-q.y,z:-q.z,w:q.w},dx/l0*r,dy/l0*r,dz/l0*r,v);
+  const e=makeNPC('limpet',f,'drone',1,{},'limpet');e.fac=f;e.st={...e.st,hull:LIMPET_HP,sCap:0,radius:8};e.hull=LIMPET_HP;e.shield=0;e.lh=E;e.lf=f;e.loc=v;limpetStick(e);W.ents.push(e);return e}
+function limpetDrop(e){e.alive=false;const i=W.ents.indexOf(e);if(i>=0)W.ents.splice(i,1);if(W.tgt&&W.tgt.ref===e)W.tgt=null}
+function limpetPlant(E,f,by,at){const R=lpRec(E),sd=lpSide(E);if(!R||!FAC_IDS.includes(f)||!sd||sd==='neutral'||!hostile(f,sideNorm(sd)))return false;
+  R.pings=R.pings||{};R.pings[f]={by:by||null,until:S.T+LIMPET_LIFE};for(const l of W.ents.slice())if(l.role==='limpet'&&l.lh===E&&l.lf===f)limpetDrop(l);limpetSpawn(E,f,at);
+  const nm=lpName(E),cap=E.role==='frigate',pct=Math.round((LIMPET_DMG-1)*100);
+  if(by)keyFeed(by,`🧲 Limpet on ${nm}: your side hits it ${pct}% harder for ${LIMPET_LIFE/60} minutes${cap?` and tracks it on the maps. If it's destroyed with the limpet on, you're paid ${fmt(PING_PAY[R.cls]||300)} cr`:''}. Enemy fighters can shoot it off.`,'good');
+  facFeed(f,`🧲 Limpet planted on ${nm} in ${DEF[W.sid].name}: +${pct}% damage against it for ${LIMPET_LIFE/60} minutes.`,'info');
+  lpWarn(E,`⚠ ${sideName(f)} limpet on ${nm}! Enemy weapons hit it ${pct}% harder until fighters shoot the limpet off.`,true);SFX.count(true);return true}
+// shot off: the tag goes with it
+function limpetShot(e,src,at){const E=e.lh,R=lpRec(E),P=R&&R.pings&&R.pings[e.lf];if(P){delete R.pings[e.lf];if(P.by)keyFeed(P.by,`🧲 Your limpet on ${lpName(E)} was shot off.`,'bad');lpWarn(E,`Limpet shot off ${lpName(E)}.`,false)}
+  fxBoom(e,30,'#ffcf5a');fxSpark(e,'#ffcf5a',8);limpetDrop(e);payKill(e,src,at)}
+function limpetThink(e){const E=e.lh,R=lpRec(E),P=R&&R.pings&&R.pings[e.lf],sd=E&&lpSide(E);e.boosting=e.thrusting=false;
+  if(P&&P.until<=S.T&&W.ents.includes(E)){delete R.pings[e.lf];lpWarn(E,`The limpet on ${lpName(E)} has burned out.`,false);limpetDrop(e);return}
+  if(!E||!P||!W.ents.includes(E)||(E.type==='ship'&&!E.alive)||(E.type==='station'&&W.stationEnt!==E)||!sd||!hostile(e.lf,sideNorm(sd))){limpetDrop(e);return}
+  limpetStick(e)}
+// the host keeps one limpet object per live tag in the loaded system
+function limpetSync(dt){if(NET.cl||!W)return;W.lpT=(W.lpT||0)-dt;if(W.lpT>0)return;W.lpT=1;
+  for(const E of W.ents.slice()){const R=(E.type==='ship'&&E.alive&&E.role==='frigate')||E.type==='station'||E.type==='outpost'?lpRec(E):null;if(!R||!R.pings)continue;
+    for(const f in R.pings){if(!capPinged(R,f)||!hostile(f,sideNorm(lpSide(E)||'neutral')))continue;if(!W.ents.some(l=>l.role==='limpet'&&l.lh===E&&l.lf===f))limpetSpawn(E,f,null)}}}
+function capPingPay(t){if(!t||!t.pings)return;for(const f in t.pings){const P=t.pings[f];if(!P||P.until<=S.T||!P.by||!hostile(f,t.side))continue;const got=payKey(P.by,f,PING_PAY[t.cls]||300);if(got)keyFeed(P.by,`🧲 The ${capName(t)} ${t.name} you put a limpet on has been destroyed: +${fmt(got)} cr scouting bonus.`,'good')}t.pings={}}
+function limpetTarget(){const p=W.player,t=W.tgt;if(!p||!t||!validTgt(t)||!FAC_IDS.includes(S.player.faction))return null;const E=t.ref;if(t.kind==='ship'){if(!E.alive||E.role!=='frigate'||!E.tok)return null}else if(t.kind==='outpost'){if(E.o.breached)return null}else if(t.kind!=='station')return null;
+  const sd=lpSide(E);if(!sd||sd==='neutral'||!hostile('player',sd))return null;return E}
+const lpSurf=(E,p)=>d3(E,p)-lpRad(E);
+// the player's hold on F in a scout, from blPilotUpdate (host, single player and client alike: a client asks the host)
+function limpetHold(hold,dt){const F=W.lpF||(W.lpF={E:null,t:0,h:false}),P=S.player,p=W.player,E=limpetTarget(),press=hold&&!F.h;F.h=hold;
+  if(press&&P.limpetUsed){flash('No limpet aboard: dock at a friendly station or outpost to rearm.');return}
+  if(press&&!E&&W.t-(W.drillMsg||0)>3){W.drillMsg=W.t;flash('Target an enemy carrier, escort, station or depot to plant a limpet. Scouts carry no mining laser.')}
+  if(F.E!==E){F.E=E;F.t=0}
+  if(!(E&&hold&&!P.limpetUsed&&lpSurf(E,p)<=LIMPET_R&&!capPinged(lpRec(E),P.faction))){F.t=Math.max(0,F.t-dt*.5);return}
+  F.t+=dt;if(F.t<LIMPET_T)return;F.t=0;P.limpetUsed=true;
+  if(NET.cl)netSend({t:'limpet',k:E.type==='ship'?'cap':E.type,id:E.type==='ship'?E.tok.id:null,at:{x:p.x,y:p.y,z:p.z}});else limpetPlant(E,P.faction,pkey(),p);
+  flash(`🧲 Limpet planted on ${lpName(E)}.`)}
+function limpetChip(){const P=S.player;if(!isScoutCls(P.cls)||P.docked||!W.player)return null;const E=limpetTarget();if(!E)return null;const R=lpRec(E),nm=lpName(E),F=W.lpF||{};
+  if(capPinged(R,P.faction))return[`🧲 Limpet on ${nm} · ${fmtT(R.pings[P.faction].until-S.T)} · +${Math.round((LIMPET_DMG-1)*100)}% damage`,'good'];
+  if(P.limpetUsed)return['🧲 Limpet spent · dock to rearm','warn'];
+  if(F.E===E&&F.t>0)return[`🧲 Planting ${Math.round(clamp(F.t/LIMPET_T,0,1)*100)}% · hold ${kb('mine')} within ${LIMPET_R} m`,'warn'];
+  const d=lpSurf(E,W.player);return[d>LIMPET_R?`🧲 Limpet ready · close to ${LIMPET_R} m of ${nm} (${fmt(Math.round(Math.max(0,d)))} m), hold ${kb('mine')}`:`🧲 Hold ${kb('mine')} to plant a limpet on ${nm}`,'warn']}
 // a live AI scout makes for an enemy or empty beacon in its system when nothing is chasing it
 function scoutBeaconGoal(e){const B=S.beacons&&S.beacons[W.sid];if(!B||!bcnCan(B,e.side))return null;return B}
 // client: show your own progress while the host decides
@@ -3462,10 +3506,10 @@ function fireLance(e,T){if(e.cls==='escort'){if(T&&T.type&&(T.type==='ship'?T.al
   const v=vAt(e);if(v>.05)SFX.lance(Math.min(1,v*1.3))}
 function frigTurrets(e,dt){mdlFrigTurrets(e);const R=e.st.radius*1.1,C=e.tok&&fOwn(e.tok)?fctl(e.tok):null,mode=C?C.pd:'torps',pm=pmul(e.tok,'pd');if(mode==='hold'||pm<=0)return;for(const tu of e.turrets){if((tu.jamOff||0)>W.t)continue;tu.cool-=dt*pm;if(tu.cool>0)continue;qRot(e.q,tu.p[0]*R,tu.p[1]*R,tu.p[2]*R,_u);const wp={x:e.x+_u.x,y:e.y+_u.y,z:e.z+_u.z};let t=null,bd=800;
     if(mode!=='fighters')for(const m of W.missiles)if(m.kind==='torpedo'&&m.tgt===e&&hostile(e.side,m.side)){const d=d3(m,wp);if(d<bd){bd=d;t=m}}
-    if(!t){bd=e.cls==='escort'?1400:1150;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o.role==='frigate'||!hostile(e.side,o.side))continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;const d=d3(o,wp);if(d<bd){bd=d;t=o}}}
+    if(!t){bd=e.cls==='escort'?1400:1150;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o.role==='frigate'||o.role==='limpet'||!hostile(e.side,o.side))continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;const d=d3(o,wp);if(d<bd){bd=d;t=o}}}
     if(!t&&mode==='fighters'){bd=800;for(const m of W.missiles)if(m.kind==='torpedo'&&m.tgt===e&&hostile(e.side,m.side)){const d=d3(m,wp);if(d<bd){bd=d;t=m}}}
     if(t){const es=e.cls==='escort';tu.cool=es?.3:.42;turretShot(wp,t,1300,es?15:10,e.side,12,'pd');if(W.t-(e.pdSnd||0)>2.2&&W.t-(W.pdG||-9)>1.1){const v=vAt(e);if(v>.04){e.pdSnd=W.t;W.pdG=W.t;SFX.pd(Math.min(1,v*1.4))}}}else tu.cool=.3}}
-function frigateThink(e,dt){const t=e.tok;if(!t||!S.frigates.includes(t)){e.role='leave';return}t.hull=e.hull;t.shield=e.shield;if(jamDark(e)){e.charging=0;e.thrusting=false;return}const C=fOwn(t)?fctl(t):null;
+function frigateThink(e,dt){const t=e.tok;if(!t||!S.frigates.includes(t)){e.role='leave';return}if(t.dummy){e.vx=e.vy=e.vz=0;e.thrusting=e.boosting=false;e.hull=e.st.hull;e.shield=e.st.sCap;return}t.hull=e.hull;t.shield=e.shield;if(jamDark(e)){e.charging=0;e.thrusting=false;return}const C=fOwn(t)?fctl(t):null;
   frigTurrets(e,dt);
   const nx=frigHop(t);
   if(nx){if(!t.spin||t.spin.to!==nx)t.spin={to:nx,p:0};t.spin.p+=dt/JUMP_TIME*pmul(t,'eng')*(isEsc(t)?ESC_JUMP:1);e.charging=t.spin.p;drumTick(e,t.spin.p,dt);if(Math.random()<.3)fxSpark({x:e.x+rnd(-80,80),y:e.y+rnd(-40,40),z:e.z+rnd(-80,80)},'#bfe0ff',2);
@@ -3762,9 +3806,9 @@ function drawStrat(){const B=W&&W.bridge;if(!B||(B.panel!=='strat'&&B.panel!=='n
   for(const b of W.shots)if(b.cap){g.strokeStyle=hexA(b.col,.9);g.lineWidth=2;g.beginPath();g.moveTo(X(b.x),Y(b.z));g.lineTo(X(b.x-b.vx*.05),Y(b.z-b.vz*.05));g.stroke()}
   for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer)continue;const col=e.side==='player'?PLAYER_COL:sideCol(e.side),x=X(e.x),y=Y(e.z);qRot(e.q,0,0,1,_f);const a=Math.atan2(-_f.x,_f.z);
     g.save();g.translate(x,y);g.rotate(a);g.fillStyle=col;g.beginPath();if(e.role==='frigate'){g.moveTo(0,-11);g.lineTo(6,0);g.lineTo(0,11);g.lineTo(-6,0)}else{const r=e.role==='drone'?2.5:4;g.moveTo(0,-r*1.5);g.lineTo(r,r);g.lineTo(-r,r)}g.closePath();g.fill();g.restore();
-    if(e.role==='frigate'){g.fillStyle=col;g.fillText(e.tok?e.tok.name:'',x,y-16);if(e.tok&&capPinged(e.tok,S.player.faction)){g.strokeStyle=hexA('#ffcf5a',.6+.3*Math.sin(performance.now()/250));g.lineWidth=1.6;g.beginPath();g.arc(x,y,17,0,TAU);g.stroke()}}}
-  {const L=(S.frigates||[]).filter(t=>capPinged(t,S.player.faction));if(L.length){g.textAlign='left';g.font='700 10px "Saira Semi Condensed",sans-serif';g.fillStyle='#ffcf5a';g.fillText('📡 PINGED ENEMY CAPITALS',10,16);g.font='600 10px "Saira Semi Condensed",sans-serif';
-    L.slice(0,6).forEach((t,i)=>{const j=HOP[W.sid][t.sector]||0;g.fillStyle=sideCol(t.side);g.fillText(`${t.name} · ${t.side==='brood'?'Brood':capName(t)} · ${DEF[t.sector].name}${j?` (${j} jump${j>1?'s':''})`:' (here)'} · ${fmtT(t.pings[S.player.faction].until-S.T)}`,10,30+i*13)});g.textAlign='center'}}
+    if(e.role==='frigate'){g.fillStyle=col;g.fillText(e.tok?e.tok.name:'',x,y-16);if(e.tok&&capTracked(e.tok,S.player.faction)){g.strokeStyle=hexA('#ffcf5a',.6+.3*Math.sin(performance.now()/250));g.lineWidth=1.6;g.beginPath();g.arc(x,y,17,0,TAU);g.stroke()}}}
+  {const L=(S.frigates||[]).filter(t=>capTracked(t,S.player.faction));if(L.length){g.textAlign='left';g.font='700 10px "Saira Semi Condensed",sans-serif';g.fillStyle='#ffcf5a';g.fillText('📡 TRACKED ENEMY CAPITALS',10,16);g.font='600 10px "Saira Semi Condensed",sans-serif';
+    L.slice(0,6).forEach((t,i)=>{const j=HOP[W.sid][t.sector]||0;g.fillStyle=sideCol(t.side);g.fillText(`${t.name} · ${t.side==='brood'?'Brood':capName(t)} · ${DEF[t.sector].name}${j?` (${j} jump${j>1?'s':''})`:' (here)'} · ${capPinged(t,S.player.faction)?'🧲 ':''}${fmtT(capTrackUntil(t,S.player.faction)-S.T)}`,10,30+i*13)});g.textAlign='center'}}
   {const x=X(F.x),y=Y(F.z);g.strokeStyle=PLAYER_COL;g.lineWidth=2;g.beginPath();g.arc(x,y,16,0,TAU);g.stroke();if(C.movePt){g.setLineDash([4,4]);g.beginPath();g.moveTo(x,y);g.lineTo(X(C.movePt.x),Y(C.movePt.z));g.stroke();g.setLineDash([]);g.beginPath();g.arc(X(C.movePt.x),Y(C.movePt.z),5,0,TAU);g.stroke()}
     const T=C.tgt;if(T&&C.lanceMode==='target'){g.strokeStyle='#ff5d4f';g.beginPath();g.arc(X(T.x),Y(T.z),14,0,TAU);g.stroke();g.beginPath();g.moveTo(x,y);g.lineTo(X(T.x),Y(T.z));g.stroke()}
     const tk=F.tok,rng=isCar(tk)?0:isEsc(tk)?TORP_RANGE:2600;g.setLineDash([2,4]);if(rng){g.strokeStyle='rgba(255,93,79,.25)';g.beginPath();g.arc(x,y,rng*sc,0,TAU);g.stroke()}g.strokeStyle='rgba(111,183,255,.25)';g.beginPath();g.arc(x,y,1150*sc,0,TAU);g.stroke();g.setLineDash([])}
@@ -3821,7 +3865,7 @@ function _r0(F,i){return _axis(F,'r')[i]}function _u0(F,i){return _axis(F,'u')[i
 function tgtLive(g){if(!g)return false;if(g.type==='works')return!!(W.works&&W.works.includes(g));return g.type==='station'?W.stationEnt===g:g.type==='outpost'?W.outpostEnt===g&&!g.o.breached:g.alive&&W.ents.includes(g)}
 function batteryTgt(F){const C=fctl(F.tok);if(C.lanceMode==='hold')return null;if(C.lanceMode==='target')return tgtLive(C.tgt)?C.tgt:null;if(F.lanceT!==undefined&&!NET.cl)return tgtLive(F.lanceT)?F.lanceT:null;
   let T=null;const SE=W.stationEnt;if(SE&&hostile(F.side,SE.fac))T=SE;let bd=2600;for(const o of W.ents)if(o.role==='frigate'&&o.alive&&o!==F&&hostile(F.side,o.side)){const d=d3(o,F);if(d<bd){bd=d;T=o}}if(!T){const OE=W.outpostEnt;if(OE&&OE.o.owner&&hostile(F.side,OE.o.owner)&&!OE.o.breached&&d3(OE,F)<2600)T=OE}return T}
-function tgtKind(e){return e.type==='works'?'Station works':e.type==='station'?(e.rec&&e.rec.kind==='depot'?'Depot':'Station'):e.type==='outpost'?'Outpost':e.role==='frigate'?'Frigate':CLASSES[e.cls].name}
+function tgtKind(e){return e.type==='works'?'Station works':e.type==='station'?(e.rec&&e.rec.kind==='depot'?'Depot':'Station'):e.type==='outpost'?'Outpost':e.role==='frigate'?'Frigate':e.role==='limpet'?'Limpet':CLASSES[e.cls].name}
 function tgtBars(e){if(e.type==='works')return[0,wkHp(e)/wkMax(e)];if(e.type==='station')return[e.shield/(e.sMax||1),e.rec?e.rec.hull/e.rec.hMax:1];if(e.type==='outpost'){const os=oStats(e.o);return[e.o.shield/os.sMax,e.o.hull/os.hMax]}return[e.shield/e.st.sCap,e.hull/e.st.hull]}
 function wingTgt(F){const C=fctl(F.tok);return C.tgt&&tgtLive(C.tgt)?C.tgt:null}
 function drawWingCard(c,F,C){const T=wingTgt(F),w=380,x=VW/2-w/2,y=100,h=T?58:44,m=(WING_MIS[C.pickets]||[C.pickets])[0];
@@ -3939,7 +3983,7 @@ const KEY_ACTS=[
   ['fa','KeyX','Flight assist on/off: on, sideways slip bleeds off; off, pure drift'],['level','KeyL','Auto-level on/off'],['autopilot','KeyJ','Autopilot to your target or the next jump on your course'],['act','KeyE','Dock, launch, land on a rock, board, hook a jammed ship']]],
  ['Weapons',[['fire','Space','Fire the selected gun (or left-click)'],['kin','Digit1','Kinetic cannons'],['las','Digit2','Lasers'],['msl','KeyC','Launch a missile once locked (or middle-click)'],
   ['swarm','Digit3','Swarm pods: Heavy Fighter, Bombers, Advanced Scout, Wraith'],['jam','Digit4','Jam mode: Unbound only'],['flare','KeyB','Flares: spoof missiles tracking you (30 energy)'],['track','KeyZ','Hold: auto-turn onto the target\'s lead marker']]],
- ['Mining',[['mine','KeyF','Fire a blast charge at the targeted rock; hold on a chunk or cloud to scoop (or right-click)'],['det','Digit5','Detonate your charges (back off 120 m first)'],['cancel','Digit6','Cancel set charges (they return to the magazine)']]],
+ ['Mining',[['mine','KeyF','Fire a blast charge at the targeted rock; hold on a chunk or cloud to scoop (or right-click). In a Scout: hold to plant a limpet'],['det','Digit5','Detonate your charges (back off 120 m first)'],['cancel','Digit6','Cancel set charges (they return to the magazine)']]],
  ['Targets',[['tgtH','KeyT','Nearest hostile'],['cycleH','KeyQ','Cycle hostiles, nearest first'],['ahead','KeyG','The ship closest to your nose'],['ast','KeyR','Nearest rock (again: rescan it)'],['cycle','Tab','Cycle all targets, gates included'],['assist','KeyY','Whoever is attacking a friendly']]],
  ['Command',[['comms','KeyI','Comms: Command, then the friendly ships nearby'],['distress','KeyU','Distress call'],['op','KeyO','Join the top friendly operation'],['orders','KeyP','Sign on to the picked order (Shift: pick the next)'],['stealth','KeyK','Wraith stealth, or Unbound false colours']]],
  ['Screens',[['map','KeyM','Galaxy map'],['help','KeyH','This manual'],['cam','KeyV','Chase or cockpit camera'],['sound','KeyN','Sound: all on, music off, muted'],['touch','Backquote','Show or hide touch buttons']]]];
@@ -4054,7 +4098,7 @@ function hostileList(){const p=W.player;return W.ents.filter(e=>e.type==='ship'&
 function hostileTargets(){const p=W.player,l=hostileList().map(e=>({kind:'ship',ref:e}));const SE=W.stationEnt,OE=W.outpostEnt;if(SE&&hostile('player',SE.fac))l.push({kind:'station',ref:SE});if(OE&&OE.o.owner&&hostile('player',OE.o.owner)&&!OE.o.breached)l.push({kind:'outpost',ref:OE});for(const w of W.works||[])if(hostile('player',w.fac))l.push({kind:'works',ref:w});return l}
 function cycleHostile(){if(!W||S.player.docked)return;const l=hostileTargets();if(!l.length){flash('No hostiles in this sector.');return}const i=l.findIndex(t=>W.tgt&&W.tgt.ref===t.ref);W.tgt=l[(i+1)%l.length]}
 function targetAhead(){if(!W||S.player.docked)return;const p=W.player;qRot(p.q,0,0,1,_f);let best=null,bs=1e9;for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.isPlayer)continue;const dx=e.x-p.x,dy=e.y-p.y,dz=e.z-p.z,d=hyp(dx,dy,dz)||1,ang=Math.acos(clamp((_f.x*dx+_f.y*dy+_f.z*dz)/d,-1,1));if(ang>.6)continue;const sc=ang*3+d/4000-(hostile('player',e.side)?.3:0);if(sc<bs){bs=sc;best=e}}if(best)W.tgt={kind:'ship',ref:best};else flash('Nothing ahead. Turn toward a contact.')}
-function shipLabel(e){if(e.pname)return e.pname+' · '+hullName(e.fac,e.cls);if(e.side==='player')return e.role==='frigate'&&e.tok?e.tok.name:'Your '+(e.role==='drone'?'guard drone':e.role==='picket'?'picket':'wingman');if(e.role==='frigate'&&e.tok)return`${e.side==='brood'?'Brood':FACTIONS[e.side].short} ${e.tok.name}`;return(e.side==='pirate'?'Unbound':FAC(e.fac).short)+' '+hullName(e.side,e.cls)}
+function shipLabel(e){if(e.role==='limpet')return`${sideName(e.side)} limpet on ${lpName(e.lh)}`;if(e.pname)return e.pname+' · '+hullName(e.fac,e.cls);if(e.side==='player')return e.role==='frigate'&&e.tok?e.tok.name:'Your '+(e.role==='drone'?'guard drone':e.role==='picket'?'picket':'wingman');if(e.role==='frigate'&&e.tok)return`${e.side==='brood'?'Brood':FACTIONS[e.side].short} ${e.tok.name}`;return(e.side==='pirate'?'Unbound':FAC(e.fac).short)+' '+hullName(e.side,e.cls)}
 function cycleTarget(){const p=W.player,all=targetables().filter(t=>t.kind!=='ast'),NAV=['gate','station','outpost','beacon','wpt'],nav=all.filter(t=>NAV.includes(t.kind)),list=all.filter(t=>!NAV.includes(t.kind)).sort((a,b)=>d3(a.ref,p)-d3(b.ref,p)).slice(0,12).concat(nav).sort((a,b)=>d3(a.ref,p)-d3(b.ref,p));   // the 12 nearest ships, works and salvage, and always the gates, station, beacon and wreck salvage points
   if(!list.length)return;const i=list.findIndex(t=>W.tgt&&t.ref===W.tgt.ref);W.tgt=list[(i+1)%list.length]}
 // ---- friendly targeting (I) and comms orders: nearby friendly fighters guard or escort a friendly ship, you included, for two minutes
@@ -4242,7 +4286,7 @@ function fireLaser(e){if(jamDark(e))return;if(e.cool>0||e.landed||e.stealth||(e.
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FAC(S.player.faction).col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
   {const me=W.player;if(me&&e.alive&&!e.ghost){if(e===me){if(srcSide&&srcSide!==me.side)musHit(e.shield>0)}else if(at&&(at.src===me||at===me))musHit(e.shield>0)}}
-  if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&(W.detach||W.t<(W.ejectT||0))))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;const h0=e.hull,s0=e.shield,rec=()=>dmgRec(e,srcSide,at,(s0-Math.max(0,e.shield))+(h0-Math.max(0,e.hull)));
+  if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&(W.detach||W.t<(W.ejectT||0))))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;if(e.role==='frigate'&&e.tok&&e.tok.pings)dmg*=limpetK(e.tok,srcSide);const h0=e.hull,s0=e.shield,rec=()=>dmgRec(e,srcSide,at,(s0-Math.max(0,e.shield))+(h0-Math.max(0,e.hull)));
   // escorts are light capitals: a torpedo that connects guts one (about 4 hits at Mk I, 2 at Mk V)
   if(e.stealth){if(e.isPlayer)stealthOff(true);else{e.stealth=false;e.masked=false;e.maskR=0;e.boot=W.t+BOOT_T}}
   if(e.cls==='escort'&&(kind||(at&&at.kind))==='torpedo'){dmg*=ESC_TORP_MUL;stat('torpHit')}
@@ -4363,7 +4407,7 @@ function chunkAt(e,s){for(const c of s.clouds||[])if(c.chunk&&d3(c,e)<c.cr+e.st.
 function blCov(o,from){if(!from||!W||!o||o.type==='station')return false;const s=S.sectors[W.sid];if(!s||!s.clouds||!s.clouds.length)return false;for(const c of s.clouds)if(d3(o,c)<c.r&&d3(o,from)>300)return true;return false}
 // pilot controls (local pilot): F fires on press, holding F by a cloud collects it
 function blPilotUpdate(p,P,st,sec,dt){const hold=!!(keys.KeyF||mouse.r||touch.mine),press=hold&&!p.blHeld;p.blHeld=hold;p.mining=null;
-  if(!blHull(P.cls)){if(press&&W.t-(W.drillMsg||0)>3){flash('No blast rig on this hull: only mining ships (Light, Medium and Heavy Miner) can mine. Switch at a core station Shipyard.');W.drillMsg=W.t}return}
+  if(!blHull(P.cls)){if(isScoutCls(P.cls)){limpetHold(hold,dt);return}if(press&&W.t-(W.drillMsg||0)>3){flash('No blast rig on this hull: only mining ships (Light, Medium and Heavy Miner) can mine. Switch at a core station Shipyard.');W.drillMsg=W.t}return}
   {const ch=!NET.cl&&chunkAt(p,sec);if(ch){p.mining=ch;blCollect(p,P,ch,dt,sec)}}
   const cl=hold?blCloudNear(p,sec):null;if(cl){p.mining=cl;if(!NET.cl)blCollect(p,P,cl,dt,sec);return}
   if(press){if(NET.cl)netSend({t:'blast',k:'fire'});else blFire(p,P)}}
@@ -4443,7 +4487,7 @@ function wreckWorld(dt){const s=S.sectors[W.sid];if(!s.wrecks||!s.wrecks.length)
     if(w.broodAt&&S.T>=w.broodAt){w.broodAt=0;let n=0;for(let i=0;i<(w.broodN||2);i++){const e=spawnNPC('miner','brood');if(e){const g=pick(GATES[W.sid]);e.x=g.x*.92;e.y=g.y*.92;e.z=g.z*.92;e.ai.ast=pick(w.pts);e.scav=1;n++}}
       if(n&&p&&!S.player.docked)feed(`✕ Brood scavengers (${n}) have come through the gate for the ${w.name} wreck.`,'warn')}
     if(Math.random()<dt*.8&&!MUTE){const pt=pick(w.pts);fxSpark(pt,'#ffb066',2)}}}
-function killShip(e,src,at){
+function killShip(e,src,at){if(e.role==='limpet'){limpetShot(e,src,at);return}
   e.alive=false;e.killed=true;if(e.sortie||e.sortieEv){const ev=S.events.find(v=>v.id===(e.sortie||e.sortieEv));if(ev){if(e.sortie&&ev.stage==='gather')ev.pending=Math.max(0,ev.pending-1);if(e.sortieEv){const i=ev.craft.indexOf(e.cls);if(i>=0)ev.craft.splice(i,1);ev.lost++}}}if((e.role==='trader'||e.role==='hauler')&&src==='pirate'&&FAC_IDS.includes(e.side)){S.raidT=S.raidT||{};S.raidT[e.side]=S.T}if(e.role==='trader'&&e.home.startsWith('trader:'))traderLost(e);if(e.role==='scout'&&e.home.startsWith('scout:')){const id=e.home.split(':')[1];S.scouts=S.scouts.filter(t=>String(t.id)!==id);if(e.side===S.player.faction)feed(`Our scout was shot down in ${DEF[W.sid].name}.`,'bad')}fxBoom(e,e.st.radius*2.6,e.isPlayer?PLAYER_COL:sideCol(e.side));
   if(e.drones)for(const d of e.drones)if(d.alive){d.role='leave';d.mom=null}
   if(e.side==='player'&&e.role==='drone')feed('One of your guard drones was destroyed.','bad');
@@ -4480,7 +4524,7 @@ function respawn(){if(W&&W.player){W.player.landed=null;W.player.stealth=false;W
   enterSector(P.sector);openDock();save();
 }
 function damageStation(E,dmg,by,kind,src){if(E&&E.fac==='brood'&&E.rec){const k=src&&src.rp?src.rp:by==='player'?'me':null;if(k){(E.rec.pHits=E.rec.pHits||{})[k]=W.t;E.rec.pHit=W.t}}if(by==='player'&&W.player&&d3(E,W.player)<3000)musHit(((E.shield||0)>0)||((E.rec&&E.rec.shield)||0)>0);if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
-  E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
+  dmg*=limpetK(E.rec,by);E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
   if(!E.offline){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.offline=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! Its turrets are offline and the hull is exposed.`:`${E.name}'s shield collapsed. Its turrets are offline and the hull is exposed.`,mine?'bad':'warn')}
   if(!R||dmg<=0)return;R.hull-=dmg;if(Math.random()<.3)fxSpark({x:E.x+rnd(-60,60),y:E.y+rnd(-60,60),z:E.z+rnd(-60,60)},'#ffcf8a',3);
   if(R.hull<=0&&R.kind==='depot'&&R.owner!=='brood'&&E.lastHitBy&&E.lastHitBy!=='brood'){const g=garrison(R);if(capLoads(R.sid,E.lastHitBy)>=g){useLoads(R.sid,E.lastHitBy,g,R);captureDepot(R.sid,E.lastHitBy);return}}
@@ -4500,7 +4544,7 @@ function razeStation(sid,by){const R=S.stations[sid];if(!R||(R.owner==='neutral'
   if(WORLDS[sid]&&WORLDS[sid]!==W)return inW(WORLDS[sid],()=>razeStationFx(sid,R));razeStationFx(sid,R)}
 function razeStationFx(sid,R){if(W&&W.sid===sid&&W.stationEnt&&W.stationEnt.rec===R){const E=W.stationEnt;if(W===LW&&S.player.docked==='station')undock();if(NET.host)netKickDocked(sid,'station');fxBoom(E,260,sideCol(R.owner));fxBoom(E,160,'#ffe2b0');const i=W.ents.indexOf(E);if(i>=0)W.ents.splice(i,1);W.stationEnt=null;if(W.tgt&&W.tgt.ref===E)W.tgt=null;
     for(const e of W.ents)if(e.npc&&e.role==='strike'&&e.ai.siege)e.role='leave'}}
-function damageOutpost(E,dmg){if(NET.cl)return;
+function damageOutpost(E,dmg,by){if(NET.cl)return;dmg*=limpetK(E.o,by);
   const o=E.o;if(o.owner)distressCall(W.sid,o.name,o.owner,null);E.lastHit=W.t;if(o.shield>0){const a=Math.min(o.shield,dmg);o.shield-=a;dmg-=a}
   if(dmg>0){o.hull-=dmg;fxSpark({x:E.x+rnd(-50,50),y:E.y+rnd(-30,30),z:E.z+rnd(-50,50)},'#ffcf8a',3)}
   if(o.hull<=0&&!o.breached){o.hull=0;o.breached=S.T;o.shield=0;fxBoom(E,160,sideCol(o.owner));
@@ -4518,7 +4562,7 @@ function steer(e,tx,ty,tz,dt,arrive,mul){const dx=tx-e.x,dy=ty-e.y,dz=tz-e.z,d=h
 function brake(e,dt){const v=hyp(e.vx,e.vy,e.vz);if(v<1)return;const acc=Math.min(e.st.thrust,v/dt);e.vx-=e.vx/v*acc*dt;e.vy-=e.vy/v*acc*dt;e.vz-=e.vz/v*acc*dt}
 function faceDir(e,dx,dy,dz,dt){const L=hyp(dx,dy,dz);if(L<1e-6)return 0;dx/=L;dy/=L;dz/=L;qRot(e.q,0,0,1,_f);const ang=Math.acos(clamp(_f.x*dx+_f.y*dy+_f.z*dz,-1,1));qRot(e.q,0,1,0,_u);qLook(dx,dy,dz,_u.x,_u.y,_u.z,_tq);qTowards(e.q,_tq,e.st.turn*handling(e).turn*dt);return ang}
 const faceTo=(e,p,dt)=>faceDir(e,p.x-e.x,p.y-e.y,p.z-e.z,dt);
-function findHostile(e,range){let best=null,bd=range;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e)continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;if(!hostile(e.side,o.side)&&!(S.unb&&o.rp&&e.side==='brood'))continue;if(S.unb&&o.rp&&FAC_IDS.includes(e.side)&&unbCoverP(S.pilots[o.rp],e.side))continue;const d=d3(o,e)*((o.role==='hauler'||o.tradeT&&o.tradeT.kind==='haul')&&(e.role==='raider'||e.role==='pirate')?.5:1)*(o.side==='brood'&&e.side!=='brood'?.6:1)*(e.side==='brood'?bloodScent(o):1)*(o.role==='frigate'?(isBmb(e.cls)?.35:1.6):1);if(d<bd){bd=d;best=o}}return best}
+function findHostile(e,range){let best=null,bd=range;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e)continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;if(!hostile(e.side,o.side)&&!(S.unb&&o.rp&&e.side==='brood'))continue;if(S.unb&&o.rp&&FAC_IDS.includes(e.side)&&unbCoverP(S.pilots[o.rp],e.side))continue;const d=d3(o,e)*((o.role==='hauler'||o.tradeT&&o.tradeT.kind==='haul')&&(e.role==='raider'||e.role==='pirate')?.5:1)*(o.side==='brood'&&e.side!=='brood'?.6:1)*(e.side==='brood'?bloodScent(o):1)*(o.role==='frigate'?(isBmb(e.cls)?.35:1.6)*(o.tok&&capPinged(o.tok,sideNorm(e.side))?.4:1):1)*(o.role==='limpet'?.5:1);if(d<bd){bd=d;best=o}}return best}
 function bomberRun(e,OE,dt){const ai=e.ai,dx=OE.x-e.x,dy=OE.y-e.y,dz=OE.z-e.z,d=hyp(dx,dy,dz)||1;
   if(!ai.stand){const r=rdir(.8);ai.stand={x:OE.x+r.x*1500,y:OE.y+r.y*1500,z:OE.z+r.z*1500}}
   if(d>1700||d<1100)steer(e,ai.stand.x,ai.stand.y,ai.stand.z,dt,true,.8);else brake(e,dt*.5);
@@ -4592,7 +4636,7 @@ function detonate(m,i){if(m.harp){W.missiles.splice(i,1);harpHit(m);return}if(m.
     damageShip(e,(m.incend?(e.side==='brood'&&e.role==='builder'?1.5:.85):1)*m.dmg*mul*(d<e.st.radius+28?1:.45)*(tp&&e.role!=='frigate'?TORP_SMALL:1),m.side,m)}}
   if(m.tgt&&m.tgt.type==='station'&&W.stationEnt===m.tgt&&hostile(m.side,m.tgt.fac)&&d3(m.tgt,m)<240)damageStation(m.tgt,m.dmg*(tp?TORP_STATION:1)*(m.incend&&m.tgt.fac==='brood'?1.5:1),m.side,m.kind,m.src);
   if(W.works&&W.works.length)wkBlast(m,tp,BR);
-  const T=m.tgt;if(T&&T.type==='outpost'&&!T.o.breached&&T.o.owner&&hostile(m.side,T.o.owner)&&d3(T,m)<(tp?230:170))damageOutpost(T,m.dmg*(tp?3:1.5));
+  const T=m.tgt;if(T&&T.type==='outpost'&&!T.o.breached&&T.o.owner&&hostile(m.side,T.o.owner)&&d3(T,m)<(tp?230:170))damageOutpost(T,m.dmg*(tp?3:1.5),m.side);
   toDebris(s,m.inv)}
 function deployFlares(e){const fl=[];for(let i=0;i<3;i++){const d=rdir(),f={decoy:true,x:e.x,y:e.y,z:e.z,vx:e.vx*.4+d.x*120,vy:e.vy*.4+d.y*120,vz:e.vz*.4+d.z*120,life:3.2};W.decoys.push(f);fl.push(f)}
   const chance=Math.min(.95,(e.isPlayer||e.flares?.8:.6)*(1+.3*((CLASSES[e.cls].agile||1)-1)));for(const m of W.missiles)if(m.tgt===e&&d3(m,e)<1700&&Math.random()<chance*(m.kind==='torpedo'?.5:m.kind==='swarm'?.55:1))m.tgt=pick(fl);fxSpark(e,'#fff1c0',10)}
@@ -4630,7 +4674,8 @@ function despawn(e){if(e.drones)for(const d of e.drones)if(d.alive&&W.ents.inclu
   returnHome(e);e.alive=false;{const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null}
 function npcThink(e,dt){
   const ai=e.ai,s=S.sectors[W.sid];ai.t-=dt;e.life+=dt;e.mining=null;e.thrusting=false;if(jamDark(e)){e.boosting=false;return}
-  if(e.role==='drone'){droneThink(e,dt);return}
+  if(e.role==='limpet'){limpetThink(e);return}
+  if(e.role==='drone'){if(e.mom&&jamDark(e.mom)){e.boosting=false;e.thrusting=false;return}droneThink(e,dt);return}
   if(e.role==='frigate'){frigateThink(e,dt);return}
   if(e.role==='picket'){if(e.order&&e.order.kind==='attack'&&orderThink(e,dt))return;droneThink(e,dt);return}
   if(e.role==='scout'){scoutThink(e,dt);return}
@@ -4797,7 +4842,7 @@ function pbuildTick(dt){const B=W.pbuild;if(!B)return;if((B.pid||NET.me)!==(CTX|
   takeFrom(DEPOT_COST,[P.cargo]);const Rr=makeStation(W.sid,NET.on?S.player.faction:'player','depot',B,{...DEPOT_COST});addStationEnt(Rr);fxBoom(Rr,160,PLAYER_COL);SFX.clunk();
   feed(`${Rr.name} is online. Dock to use its store; it mines this sector for you and its turrets defend it.`,'good');save()}
 function playerUpdate(dt){
-  const p=W.player,P=S.player,st=p.st;pbuildTick(dt);if(P.docked||W.dead)return;if(jamDark(p)){p.boosting=false;p.thrusting=false;return}
+  const p=W.player,P=S.player,st=p.st;pbuildTick(dt);if(P.docked&&P.docked!=='turret')P.limpetUsed=false;if(P.docked||W.dead)return;if(jamDark(p)){p.boosting=false;p.thrusting=false;return}
   if(p.landed){landedTick(dt);updateLock(dt);return}
   if(apOn){const man=keys.KeyW||keys.KeyS||keys.KeyA||keys.KeyD||keys.ArrowLeft||keys.ArrowRight||keys.ArrowUp||keys.ArrowDown||touch.on||(mouse.in&&mouse.aim&&hyp(mouse.x-VW/2,mouse.y-VH/2)>Math.min(VW,VH)*.42*.25);
     if(man){apOn=false;flash('Autopilot off.')}else{p.wx=p.wy=p.wz=0;autopilot(p,dt);levelRoll(p,dt);if(keys.Space||mouse.l||touch.fire){if(P.wpn==='laser'&&!p.jamMode)fireLaser(p);else fire(p)}updateLock(dt);pickupAndGates(p,P,st);return}}
@@ -5041,13 +5086,13 @@ function structUpdate(dt){
     if(!SE.offline&&W.t-SE.lastHit>6&&!storm)SE.shield=Math.min(SE.sMax,SE.shield+SE.sMax*.03*dt);
     if(!SE.offline)for(const[ti,tu]of SE.turrets.entries()){tu.cool-=dt;if(tu.cool>0)continue;if(tu.mod&&SE.rec&&starving(SE.rec)){tu.cool=1;continue}qRot(SE.q,tu.p[0],tu.p[1],tu.p[2],_u);const wp={x:SE.x+_u.x,y:SE.y+_u.y,z:SE.z+_u.z};let t=null,bd=SE.range;
       if(ti%2===0)for(const m of W.missiles)if(m.kind==='torpedo'&&(m.tgt===SE||(m.tgt&&m.tgt.type==='works'&&m.tgt.fac===SE.fac))&&hostile(SE.fac,m.side)){const d=d3(m,wp);if(d<Math.min(bd,700)){bd=d;t=m}}
-      if(!t)for(const e of W.ents){if(e.type!=='ship'||!e.alive||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!hostile(SE.fac,e.side))continue;const d=d3(e,wp);if(d<bd){bd=d;t=e}}
+      if(!t)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!hostile(SE.fac,e.side))continue;const d=d3(e,wp);if(d<bd){bd=d;t=e}}
       if(t){tu.cool=SE.core?.45:.55;tu.aim=turretShot(wp,t,1300,STN[SE.kind||'core'].dmg*(1+.12*(SE.rec?devOf(SE.rec).def:0))*(t.role==='frigate'?3:1),SE.fac,22);if(t.role==='frigate')W.shots[W.shots.length-1].cap=true}else tu.cool=.3}}
   if(SE)stMissiles(SE,dt);
   const OE=W.outpostEnt;if(!OE)return;const o=OE.o,os=oStats(o);
   if(o.breached){if(S.T>o.breached+90){o.breached=0;o.hull=os.hMax*.25;feed(`${o.name} rebooted its defenses.`,'news')}if(Math.random()<.3)fxSpark({x:OE.x+rnd(-60,60),y:OE.y+rnd(-30,30),z:OE.z+rnd(-60,60)},'#ffb35a',1)}
   else{if(W.t-OE.lastHit>6&&!(S.sectors[W.sid].storm>S.T))o.shield=Math.min(os.sMax,o.shield+os.sMax*.04*dt);if(W.t-OE.lastHit>12)o.hull=Math.min(os.hMax,o.hull+os.hMax*.004*dt);
-    if(o.owner){OE.cool-=dt;if(OE.cool<=0){let t=null,bd=os.range;for(const m of W.missiles)if(m.kind==='torpedo'&&m.tgt===OE&&hostile(o.owner,m.side)){const d=d3(m,OE);if(d<bd){bd=d;t=m}}if(!t)for(const e of W.ents){if(e.type!=='ship'||!e.alive||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,OE))))continue;if(!hostile(o.owner,e.side))continue;const d=d3(e,OE);if(d<bd){bd=d;t=e}}
+    if(o.owner){OE.cool-=dt;if(OE.cool<=0){let t=null,bd=os.range;for(const m of W.missiles)if(m.kind==='torpedo'&&m.tgt===OE&&hostile(o.owner,m.side)){const d=d3(m,OE);if(d<bd){bd=d;t=m}}if(!t)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,OE))))continue;if(!hostile(o.owner,e.side))continue;const d=d3(e,OE);if(d<bd){bd=d;t=e}}
       if(t){OE.cool=1/os.rof;OE.aim=turretShot({x:OE.x,y:OE.y+40,z:OE.z},t,1250,os.dmg,o.owner,40)}else OE.cool=.25}}}
   const capturable=!o.owner||o.breached;
   if(capturable){
@@ -5068,9 +5113,9 @@ function structUpdate(dt){
 function shotsUpdate(dt){
   const s=S.sectors[W.sid],OE=W.outpostEnt,SE=W.stationEnt;
   for(let i=W.shots.length-1;i>=0;i--){const b=W.shots[i],ox=b.x,oy=b.y,oz=b.z;b.x+=b.vx*dt;b.y+=b.vy*dt;b.z+=b.vz*dt;b.ttl-=dt;let hit=b.ttl<=0;
-    if(!hit)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e===b.src)continue;if(e.isPlayer&&(S.player.docked||W.dead))continue;if(!hostile(b.side,e.side)&&!(S.unb&&((b.src&&b.src.rp&&e.side==='brood')||(e.rp&&b.side==='brood'))))continue;if(segHit(ox,oy,oz,b.x,b.y,b.z,e,e.st.radius*1.15+5)){if(b.jam){if(e.role==='frigate')capJamShot(e,b);else jamHit(e,b)}else damageShip(e,b.dmg,b.side,b,b.cap?'capital':'kinetic');if(b.cap)fxBoom(b,40,'#ffd9a0');hit=true;break}}
+    if(!hit)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e===b.src)continue;if(e.role==='limpet'&&(b.sty==='turret'||b.cap))continue;if(e.isPlayer&&(S.player.docked||W.dead))continue;if(!hostile(b.side,e.side)&&!(S.unb&&((b.src&&b.src.rp&&e.side==='brood')||(e.rp&&b.side==='brood'))))continue;if(segHit(ox,oy,oz,b.x,b.y,b.z,e,e.st.radius*1.15+5)){if(b.jam){if(e.role==='frigate')capJamShot(e,b);else jamHit(e,b)}else damageShip(e,b.dmg,b.side,b,b.cap?'capital':'kinetic');if(b.cap)fxBoom(b,40,'#ffd9a0');hit=true;break}}
     if(!hit&&!(b.src&&b.src.cls!=='frigate'))for(const m of W.missiles){if(m.kind!=='torpedo'||!hostile(b.side,m.side))continue;if(segHit(ox,oy,oz,b.x,b.y,b.z,m,16)){m.hp-=b.dmg;fxSpark(m,'#ffe0b0',3);if(m.hp<=0)killTorp(m,b.side);hit=true;break}}
-    if(!hit&&OE&&OE.o.owner&&!OE.o.breached&&hostile(b.side,OE.o.owner)&&segHit(ox,oy,oz,b.x,b.y,b.z,OE,OE.r)){damageOutpost(OE,b.dmg);hit=true}
+    if(!hit&&OE&&OE.o.owner&&!OE.o.breached&&hostile(b.side,OE.o.owner)&&segHit(ox,oy,oz,b.x,b.y,b.z,OE,OE.r)){damageOutpost(OE,b.dmg,b.side);hit=true}
     if(!hit&&SE&&hostile(b.side,SE.fac)){if(!SE.offline&&SE.shield>0&&segHit(ox,oy,oz,b.x,b.y,b.z,SE,165)){damageStation(SE,b.dmg,b.side,b.cap?'capital':'kinetic',b.src);fxSpark(b,'#9fd0ff',3);if(b.cap)fxBoom(b,50,'#9fd0ff');hit=true}else if(segHit(ox,oy,oz,b.x,b.y,b.z,SE,75)){if(SE.offline||SE.shield<=0)damageStation(SE,b.dmg,b.side,b.cap?'capital':'kinetic',b.src);if(b.cap)fxBoom(b,50,'#ffd9a0');fxSpark(b,'#ffd9a0',2);hit=true}}
     if(!hit&&W.works&&W.works.length&&wkShot(b,ox,oy,oz))hit=true;
     if(!hit)for(const a of s.ast){if(d3(a,b)<astR(a)){fxSpark(b,'#b9ab96',2);hit=true;break}}
@@ -5092,10 +5137,10 @@ function worldUpdate(dt){
   if(W.pendingFJump){const J=W.pendingFJump;W.pendingFJump=null;bridgeJump(J.tok,J.to);return}
   if(W.bridge)bridgeUpdate(dt);
   if(W.gunseat)gunseatUpdate(dt);
-  if(JIN.t<JIN.d)JIN.t+=dt;if(W.docking&&!W.jump)dockingUpdate(dt);else if(W.detach&&!W.jump)detachUpdate(dt);else if(!W.jump&&JIN.t>=.45)playerUpdate(dt);else if(!W.jump)levelRoll(W.player,dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}if(NET.cl)beaconLocal(dt);if(!W.jump){pingTick(dt);spotTick(dt);fgScout()}}
+  if(JIN.t<JIN.d)JIN.t+=dt;if(W.docking&&!W.jump)dockingUpdate(dt);else if(W.detach&&!W.jump)detachUpdate(dt);else if(!W.jump&&JIN.t>=.45)playerUpdate(dt);else if(!W.jump)levelRoll(W.player,dt);if((W.faT=(W.faT||0)-dt)<=0){W.faT=1;friendlyAlerts()}if(NET.cl)beaconLocal(dt);if(!W.jump){spotTick(dt);fgScout()}}
   if(NET.cl){clientWorld(dt);return}
   if(NET.host)netWorld(dt);
-  groupsUpdate();
+  groupsUpdate();limpetSync(dt);
   for(const e of W.ents.slice()){if(e.npc&&e.alive)npcThink(e,dt)}
   beaconWorld(dt);wreckWorld(dt);blkHunt();if(W===LW||!LW)for(const Q of allPilots())if(Q&&Q.convoy&&S.T>Q.convoy.until){const k=Q===S.player?null:Object.keys(S.pilots||{}).find(id=>S.pilots[id]===Q);runAs(k,()=>convoyEnd(false,'it ran out of time'))}
   for(const e of gunboatsIn())tickTurret(e,dt);
@@ -5942,7 +5987,7 @@ function hudUpdate(){hudFit();
   for(const g of GATES[W.sid])if(S.gateDown[gateKey(W.sid,g.to)])chips.push(['Gate to '+DEF[g.to].name+' down','bad']);
   for(const ev of S.events){if(ev.sector!==W.sid)continue;if(ev.type==='comet')chips.push(['Comet in sector','good']);if(ev.type==='derelict')chips.push(['Derelict cargo','good']);if(ev.type==='offensive'){if(ev.stage==='engaged')chips.push([`${sideName(ev.att)} assault in progress`,'bad']);else if(evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'swarm':'strike'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,'warn'])}if(ev.type==='build'&&ev.stage==='inbound'&&evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'Seeder':'constructor'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,friendSide(ev.att)?'good':'warn'])}
   if(o&&o.cap.p>0)sc.push([`${o.name}: ${sideName(o.cap.side)} claiming ${Math.round(o.cap.p*100)}%`,o.cap.side==='player'?'good':'warn']);
-  {const bc=beaconChip();if(bc)sc.push(bc)}{const pc=pingChip();if(pc)sc.push(pc)}{const sp=spotChip();if(sp)sc.push(sp)}{const cc=convoyChip();if(cc)sc.push(cc)}
+  {const bc=beaconChip();if(bc)sc.push(bc)}{const pc=limpetChip();if(pc)sc.push(pc)}{const sp=spotChip();if(sp)sc.push(sp)}{const cc=convoyChip();if(cc)sc.push(cc)}
 
   // your own ship's status lives with the ship readout at the bottom: hold, mining, handling, flight modes
   {const m=invMass(P.cargo),cap=p.st.cargo||1,f=m/cap;sc.unshift([`Hold ${m}/${cap} t`,f>=.98?'bad':f>.7?'warn':''])}
@@ -5967,7 +6012,7 @@ function hudUpdate(){hudFit();
     $('contacts').innerHTML=`<div class="ctt"><span>Contacts</span>${nh?`<b>${nh} hostile</b>`:'<span>No hostiles</span>'}</div>`+structRows(ref,selR)+cl.map(([e,d,h])=>`<button type="button" class="ct${h?' h':''}${selR===e?' sel':''}" data-cid="${e.id}"><i style="background:${sideCol(e.side)}"></i><span>${esc(shipLabel(e))}${(n=>n?` <small style="opacity:.6">+${n} drone${n>1?'s':''}</small>`:'')((e.drones||[]).filter(d=>d.alive).length)}</span><em>${selR===e?'<u class="cs t">target</u>':(st=>st?`<u class="cs ${st[1]}">${st[0]}</u>`:'')(stOf(e))}${fmt(d)} m</em></button>`).join('')+`<div class="ctk">${detAll()?'Full sector picture':'Radar 2.8 km · a scout or friendly station shows the whole sector'} · T nearest · Y assist · Q next · G ahead · I friendly</div>`
 }
   let th='';if(W.tgt&&validTgt(W.tgt)){const T=W.tgt.ref,dist=Math.round(d3(T,p));
-    if(W.tgt.kind==='ship'){const col=sideCol(T.side);th=`<div class="tp"><div class="tn" style="color:${col}">${esc(aceOfEnt(T)&&T.pname?T.pname:T.tok?T.tok.name:hullName(T.side==="player"?S.player.faction:T.side,T.cls))}</div>${aceTgtLine(T)}<div class="ts">${esc(sideName(T.side))} · ${CLASSES[T.cls].name} · ${T.role==='strike'?'strike group':T.role==='frigate'?'capital ship':T.role} · Mk ${ROMAN[T.tier]} · ${T.wpn==='laser'?'lasers':'kinetic'} · ${hostile('player',T.side)?'hostile':'friendly'}${T.tuned?' · <span style="color:#6ff2cf">Aurora-tuned ✦</span>':''}</div>${S.unb&&T.role==='frigate'?`<div class="ts" style="color:#b7c6ff">${jamDark(T)?`JAMMED DARK · ${Math.max(0,Math.ceil(T.jamOff-W.t))} s · hold E to hook its store`:`Capital jam ${Math.round((T.cjam||0)*100)}% · turrets jammed ${(T.turrets||[]).filter(x=>(x.jamOff||0)>W.t).length}/${(T.turrets||[]).length}`}</div>`:''}${S.unb&&T.role!=='frigate'&&(T.jam>0||jamDark(T))?`<div class="ts" style="color:#b7c6ff">${jamDark(T)?`JAMMED DARK · ${Math.max(0,Math.ceil(T.jamOff-W.t))} s · hold E within ${hookReach(T)} m to hook`:`Jam bar ${Math.round(jamFrac(T)*100)}%`}${T.teth&&T.teth.until>W.t?' · tethered':''}</div>`:''}${T.vr?`<div class="ts" style="color:#9fe0c8">Fitted: ${Object.values(T.vr).map(id=>esc(VARIANTS[id].name)+' ('+esc(VARIANTS[id].cost)+')').join(', ')}</div>`:''}${T.side==='brood'&&T.role==='miner'&&invMass(T.cargo||{})>0?`<div class="ts" style="color:#9be35a">Belly: ${fmt(invMass(T.cargo))} t of ore. It spills when the Grazer dies.</div>`:''}${T.role==='frigate'?(T.cls==='escort'?'<div class="ts" style="color:var(--amber)">Light capital: guns and missiles wear it down; a torpedo that hits guts it</div>':'<div class="ts" style="color:var(--amber)">Capital ship: guns drain its shield; only torpedoes and capital guns hurt its hull</div>'):''}
+    if(W.tgt.kind==='ship'){const col=sideCol(T.side);th=`<div class="tp"><div class="tn" style="color:${col}">${esc(T.role==='limpet'?'Limpet':aceOfEnt(T)&&T.pname?T.pname:T.tok?T.tok.name:hullName(T.side==="player"?S.player.faction:T.side,T.cls))}</div>${aceTgtLine(T)}<div class="ts">${esc(sideName(T.side))} · ${CLASSES[T.cls].name} · ${T.role==='strike'?'strike group':T.role==='frigate'?'capital ship':T.role} · Mk ${ROMAN[T.tier]} · ${T.wpn==='laser'?'lasers':'kinetic'} · ${hostile('player',T.side)?'hostile':'friendly'}${T.tuned?' · <span style="color:#6ff2cf">Aurora-tuned ✦</span>':''}</div>${S.unb&&T.role==='frigate'?`<div class="ts" style="color:#b7c6ff">${jamDark(T)?`JAMMED DARK · ${Math.max(0,Math.ceil(T.jamOff-W.t))} s · hold E to hook its store`:`Capital jam ${Math.round((T.cjam||0)*100)}% · turrets jammed ${(T.turrets||[]).filter(x=>(x.jamOff||0)>W.t).length}/${(T.turrets||[]).length}`}</div>`:''}${S.unb&&T.role!=='frigate'&&(T.jam>0||jamDark(T))?`<div class="ts" style="color:#b7c6ff">${jamDark(T)?`JAMMED DARK · ${Math.max(0,Math.ceil(T.jamOff-W.t))} s · hold E within ${hookReach(T)} m to hook`:`Jam bar ${Math.round(jamFrac(T)*100)}%`}${T.teth&&T.teth.until>W.t?' · tethered':''}</div>`:''}${T.vr?`<div class="ts" style="color:#9fe0c8">Fitted: ${Object.values(T.vr).map(id=>esc(VARIANTS[id].name)+' ('+esc(VARIANTS[id].cost)+')').join(', ')}</div>`:''}${T.side==='brood'&&T.role==='miner'&&invMass(T.cargo||{})>0?`<div class="ts" style="color:#9be35a">Belly: ${fmt(invMass(T.cargo))} t of ore. It spills when the Grazer dies.</div>`:''}${T.role==='frigate'?(T.cls==='escort'?'<div class="ts" style="color:var(--amber)">Light capital: guns and missiles wear it down; a torpedo that hits guts it</div>':'<div class="ts" style="color:var(--amber)">Capital ship: guns drain its shield; only torpedoes and capital guns hurt its hull</div>'):''}
       <div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.st.sCap*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(T.hull)}</b></div><div class="mini"><i style="width:${T.hull/T.st.hull*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
     else if(W.tgt.kind==='ast')th=`<div class="tp"><div class="tn">${T.comet?'Comet':T.seam?'Xenocrystal Seam':'Asteroid'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${ITEMS[k].name} ${T.ore[k]} t`).join(' · ')}</div>${T.seam?'<div class="ts" style="color:#d9bbff">Protected home vein: a limited supply that refills slowly. Turn it into Crystal Lattice and Resonance Cores at your home station.</div>':''}<div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Fire charges at its fault points with F (rings turn green on point), back off 120 m and press ${kb('det')}. Fly into the chunks that come off to scoop them.</div></div>`;
     else if(W.tgt.kind==='beacon'){const own=T.owner,mine=T.by&&isMe(T.by),sc=isScoutCls(S.player.cls);th=`<div class="tp"><div class="tn" style="color:${own?sideCol(own):'var(--ivory)'}">Sector beacon</div><div class="ts">${own?'Held by '+FACTIONS[own].name+(T.by?' · flipped '+fmtT(S.T-T.T)+' ago':''):'Unclaimed'}${mine?' · <b>yours</b>, paying '+BCN_RES+' cr/min':''}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">${own===S.player.faction?'Scanning this system for your side.':sc?`Hold within ${BCN_R} m for ${BCN_T} s to flip it: +${BCN_FLIP} cr, then ${BCN_RES} cr a minute (for ${BCN_RES_T/60} min after your last flip or re-secure) and a constant scan here.`:'Only a Scout or Advanced Scout can flip it.'}</div></div>`}
@@ -6249,7 +6294,7 @@ function drawMap(){
     brMapMarks(c,d,x,y,r,t);
     const oid=OUT_BY_SECTOR[d.id];if(oid){const o=S.outposts[oid];c.fillStyle=col;c.font='800 13px "Big Shoulders Display",sans-serif';c.textAlign='center';c.fillText(o.type==='forge'?'F':o.type==='relay'?'R':'Y',x,y+5);if(o.owner==='player'){c.strokeStyle=PLAYER_COL;c.lineWidth=1.5;c.beginPath();c.arc(x,y,r+6,0,TAU);c.stroke()}}
     if(!covered(d.id)){c.fillStyle='rgba(7,11,22,.55)';c.beginPath();c.arc(x,y,r+3,0,TAU);c.fill()}else{c.strokeStyle='rgba(122,217,167,.25)';c.setLineDash([2,4]);c.lineWidth=1;c.beginPath();c.arc(x,y,r+21,0,TAU);c.stroke();c.setLineDash([])}
-    {const fs=(S.frigates||[]).filter(t=>t.sector===d.id&&(t.side==='player'||t.side===S.player.faction||covered(d.id)||capPinged(t,S.player.faction)));let fx=x-r-6;for(const t of fs){const col=fMine(t)?PLAYER_COL:sideCol(t.side);c.fillStyle=col;c.strokeStyle='#070b16';c.lineWidth=1.5;c.beginPath();c.moveTo(fx,y+r+24);c.lineTo(fx+6,y+r+30);c.lineTo(fx,y+r+36);c.lineTo(fx-6,y+r+30);c.closePath();c.fill();c.stroke();if(capPinged(t,S.player.faction)){c.strokeStyle=hexA('#ffcf5a',.55+.35*Math.sin(performance.now()/250));c.lineWidth=1.4;c.beginPath();c.arc(fx,y+r+30,10,0,TAU);c.stroke()}fx-=13}
+    {const fs=(S.frigates||[]).filter(t=>t.sector===d.id&&(t.side==='player'||t.side===S.player.faction||covered(d.id)||capTracked(t,S.player.faction)));let fx=x-r-6;for(const t of fs){const col=fMine(t)?PLAYER_COL:sideCol(t.side);c.fillStyle=col;c.strokeStyle='#070b16';c.lineWidth=1.5;c.beginPath();c.moveTo(fx,y+r+24);c.lineTo(fx+6,y+r+30);c.lineTo(fx,y+r+36);c.lineTo(fx-6,y+r+30);c.closePath();c.fill();c.stroke();if(capPinged(t,S.player.faction)){c.strokeStyle=hexA('#ffcf5a',.55+.35*Math.sin(performance.now()/250));c.lineWidth=1.4;c.beginPath();c.arc(fx,y+r+30,10,0,TAU);c.stroke()}fx-=13}
       if(S.yards&&Object.keys(S.yards).some(k=>S.yards[k].sector===d.id&&k!=='brood')){c.fillStyle='#ece4cf';c.font='600 9px "Saira Semi Condensed",sans-serif';c.textAlign='left';c.fillText('YARD',x+r+3,y+r+2)}
       for(const t of S.frigates||[])if(fMine(t)&&t.dest&&t.dest!==t.sector&&t.sector===d.id){const[x2,y2]=mapXY(DEF[t.dest],w,h);c.strokeStyle='rgba(240,178,74,.55)';c.setLineDash([3,4]);c.lineWidth=1.5;c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke();c.setLineDash([])}}
     {const V=vaultList(S.player).find(v=>v.sid===d.id&&v.m>0);if(V){c.fillStyle=V.open?PLAYER_COL:'#9a8f7a';c.font='700 9px "Saira Semi Condensed",sans-serif';c.textAlign='left';c.fillText('▣ VAULT',x+r+5,y-r+6)}}
@@ -6278,6 +6323,7 @@ function broodMeter(b){const col=b>=6?'var(--danger)':b>=5?'var(--amber)':sideCo
 // the keys that matter right now, under the prompt: what this hull can do with this target in this moment (at most six)
 function keysNow(){const P=S.player,p=W&&W.player;if(!p||P.docked||W.bridge||W.gunseat||W.dead||touchUI())return[];const k=[],T=W.tgt&&validTgt(W.tgt)?W.tgt:null;
   if(blHull(P.cls)){const set=(S.sectors[W.sid].charges||[]).filter(ch=>ch.o===blKey(P)).length;if(T&&(T.kind==='ast'||T.kind==='wpt'))k.push([kb('mine'),'charge']);if(set)k.push([kb('det'),`detonate ${set}`],[kb('cancel'),'cancel']);if(p.mining)k.push([kb('mine'),'hold to scoop'])}
+  if(isScoutCls(P.cls)&&!P.limpetUsed&&limpetTarget())k.push([kb('mine'),'hold: limpet']);
   if(T&&T.kind==='ship'&&hostile('player',T.ref.side)){if(W.lock&&W.lock.locked&&P.rack>0)k.push([kb('msl'),'missile']);if((P.swarm||0)>0&&swarmCap(P))k.push([kb('swarm'),'swarm']);k.push([kb('track'),'hold to track'])}
   if(W.missiles.some(m=>m.tgt===p&&m.kind!=='swarm'))k.unshift([kb('flare'),'flares']);
   if(T&&(T.kind==='gate'||T.kind==='station'||T.kind==='ast'||T.kind==='outpost'))k.push([kb('autopilot'),'autopilot']);
@@ -6359,7 +6405,7 @@ let selFac='halcyon',selCls='interceptor';
 const ROLES={combat:{name:'Combat',desc:'Fight for outposts and stations, escort convoys, hunt the Brood.',ships:['interceptor','striker','heavy','bomber']},
   mining:{name:'Mining',desc:'Strip asteroids, sell ore and fabricate parts. Guard drones keep you company.',ships:['skiff','prospector','dredger']},
   hauling:{name:'Hauling',desc:'Big holds for trade runs and supply contracts. Guard drones ride along.',ships:['courier','freighter','bulker']},
-  scouting:{name:'Scouting',desc:'The fastest hulls, slow to turn. Flip sector beacons for your faction: each scans its sector for your side and pays you while it holds. Ping enemy capital ships so your side can track them, and earn a bonus when one dies.',ships:['scout','scout2']}};
+  scouting:{name:'Scouting',desc:'The fastest hulls, slow to turn. Flip sector beacons for your faction: each scans its sector for your side and pays you while it holds. Plant limpets on enemy capital ships and stations so your side hits them harder, and earn a bonus when a marked capital dies.',ships:['scout','scout2']}};
 function launchCls(){if(selFac==='pirate')return'raider';return START_HULLS.includes(selCls)&&ROLES[selRole].ships.includes(selCls)?selCls:ROLES[selRole].ships.find(k=>START_HULLS.includes(k))}
 let selRole='combat';
 function roleOf(cls){for(const r in ROLES)if(ROLES[r].ships.includes(cls))return r;return'combat'}
@@ -6489,6 +6535,11 @@ function trDrones(){const p=W.player;qRot(p.q,0,0,1,_f);const out=[];for(let i=0
 function trDroneEnts(){return W.ents.filter(e=>e.train&&e.alive)}
 function trFrig(){const f=S.player.faction;let e=W.ents.find(x=>x.role==='frigate'&&x.tok&&x.side===f&&x.alive);if(!e){const t=makeCarrier(f,W.sid,{});t.train=true;e=W.ents.find(x=>x.tok===t)}
   if(e){const p=W.player;qRot(p.q,0,0,1,_f);e.x=p.x+_f.x*1800;e.y=p.y+60;e.z=p.z+_f.z*1800;e.tok.dest=e.tok.sector;W.tgt={kind:'ship',ref:e}}}
+// a harmless enemy escort for the limpet step: it holds still, never fires and can't be hurt, and leaves after the step
+function trDummy(){const foe=FAC_IDS.find(f=>hostile(S.player.faction,f));const p=W.player;if(!foe||!p)return;let e=W.ents.find(x=>x.role==='frigate'&&x.tok&&x.tok.dummy&&x.alive);
+  if(!e){const t=makeEscort(foe,W.sid,{});t.dummy=true;t.name='Training escort';e=W.ents.find(x=>x.tok===t)}if(!e)return;qRot(p.q,0,0,1,_f);e.x=p.x+_f.x*2200;e.y=p.y+80;e.z=p.z+_f.z*2200;e.vx=e.vy=e.vz=0;W.tgt={kind:'ship',ref:e};S.player.limpetUsed=false}
+function trDummyGone(){for(const t of (S.frigates||[]).filter(x=>x.dummy)){S.frigates=S.frigates.filter(x=>x!==t);const e=W.ents.find(x=>x.tok===t);if(e){e.alive=false;const i=W.ents.indexOf(e);if(i>=0)W.ents.splice(i,1);if(W.tgt&&W.tgt.ref===e)W.tgt=null}}
+  for(const l of W.ents.slice())if(l.role==='limpet'&&!W.ents.includes(l.lh))limpetDrop(l)}
 // a harmless wrecked escort for the salvage lesson: built from materials added to the practice galaxy's books, no Brood visit
 function trHull(cls,name){const P=S.player;if(P.cls===cls)return;P.cls=cls;refreshPlayerStats();feed(`Training: you are now flying a ${name}.`,'info')}
 function trMiner(){const P=S.player;if(P.cls!=='skiff'){P.cls='skiff';refreshPlayerStats();P.blN=blCap(P);P.blT=0;feed('Training: you are now flying a Light Miner. Only mining ships carry a blast rig.','info')}}
@@ -6534,7 +6585,8 @@ const TRAIN=[
   {x:'Press <kbd>'+kb('cycle')+'</kbd> until the sector beacon (◆) is targeted, then <kbd>'+kb('autopilot')+'</kbd> to fly there.',ok:()=>W.tgt&&W.tgt.kind==='beacon'},
   {x:'Hold within 250 m of the beacon for 10 seconds to flip it to your faction. A held beacon scans its system for your side, feeds its market prices to you, and pays you a bonus plus 4 cr a minute for 10 minutes after you last flip or re-secure it.',ok:()=>{const B=S.beacons[W.sid];return B&&B.owner===S.player.faction}},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Holding a beacon.</b> For <b>3 minutes</b> after a flip nobody can flip it (the ring on the map empties as the lock runs out). Then it <b>fades for 2 minutes</b>: an enemy scout can flip it, and a friendly scout can hold it again to re-secure it. If nobody does, it drops back to neutral. In a system your side holds, the local crew keeps your beacon secured; out in contested space a scout has to keep coming back.'},
-  {ack:1,ok:()=>!!S.training.ack,x:'<b>Pinging capital ships.</b> In a scout, keep an enemy carrier or escort targeted within <b>4 km for 4 seconds</b>. For 5 minutes your whole side sees it on the galaxy map and on capital ships’ Strategic and Helm maps, wherever it goes. If it’s destroyed while tagged, you’re paid a scouting bonus: 500 cr for a carrier, 300 for an escort.'},
+  {setup:trDummy,x:()=>'<b>Limpets.</b> Your scout carries one limpet. A training escort is ahead and targeted: it won’t fire. Fly at it (<kbd>'+kb('autopilot')+'</kbd> works), and once you are within <b>600 m</b> of its hull hold <kbd>'+kb('mine')+'</kbd> for <b>2 seconds</b>. Keep flying: the count keeps while you are in range, so a fast pass plants it.',ok:()=>{const e=W.ents.find(x=>x.tok&&x.tok.dummy);return!!e&&capPinged(e.tok,S.player.faction)}},
+  {ack:1,setup:trDummyGone,ok:()=>!!S.training.ack,x:()=>'<b>What a limpet does.</b> For <b>3 minutes</b> your whole side hits the target 25% harder, sees a marked capital ship on the galaxy and Strategic maps, and your side’s fighters and bombers nearby go for it. It works on carriers, escorts, stations and depots. The target’s side is warned, and their <b>fighters can shoot it off</b>; turrets and point defence can’t. You carry one: <b>dock to rearm</b>. If a capital ship dies with your limpet on it you’re paid 500 cr for a carrier, 300 for an escort.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Sensors, not omniscience.</b> You only see strikes, convoys and battles where your side has eyes: systems with a friendly station or depot (and their neighbours), friendly outposts, held beacons, and wherever a friendly scout or capital ship is (and next door). The map dims what you can’t see. Holding the Hollow Relay taps the whole network.'}]},
  {t:'Hugging a rock',steps:[
   {x:'Target an asteroid (<kbd>'+kb('ast')+'</kbd>), slow below <b>70 m/s</b> close to it and press <kbd>'+kb('act')+'</kbd> to land. Landed, you power down everything but radar, shields included: enemies beyond 320 m lose you.',ok:()=>!!W.player.landed},
@@ -6588,7 +6640,7 @@ const TRAIN=[
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Beating a take.</b> Keep your shields up, or break away with the afterburner while the bar drains (stop being hit for 1.5 s and it falls 10% a second). After a take your ship is hardened for a minute. Their <b>harpoons</b> fill a third of the bar and let them hook from 400 m; flares cut the line if you fit a Tether cutter. Anti-jam variants stretch the bar, reboot faster, snap shields back or seal half your hold.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Flying for the pirates.</b> With a Legend point, the <b>Unbound</b> card unlocks on the start screen. You start at Scrapheart Haven in The Wrack. <kbd>4</kbd> is jam mode (jammers and harpoons); hold <kbd>'+kb('act')+'</kbd> beside a jammed ship to hook its hold; <kbd>'+kb('stealth')+'</kbd> raises false colours, a neutral transponder that works while a faction’s heat with you is cool. Fence the loot, grow the haven’s works, and earn your Legend point with Infamy and a Deed.'}]},
  {t:'Winning the war',steps:[
-  {x:'Press <kbd>'+kb('map')+'</kbd> for the galaxy map: territory, operations, beacons, wrecks, pinged enemy capitals and every faction’s progress.',ok:()=>!$('map').hidden},
+  {x:'Press <kbd>'+kb('map')+'</kbd> for the galaxy map: territory, operations, beacons, wrecks, enemy capitals marked by limpets and every faction’s progress.',ok:()=>!$('map').hidden},
   {x:'A faction wins by holding <b>7 systems for 20 minutes</b>, or by holding the most systems at the <b>two-hour deadline</b>. The Brood can only win by holding 7, so stop it before it gets there. Stations, depots and outposts hold a system; the others band together against any faction that reaches 7. Close the map (<kbd>'+kb('map')+'</kbd>).',ok:()=>$('map').hidden},
   {x:'The orders card (Command panel, right) lists your faction’s campaign move and its faction orders: recon, beacon pushes, interdiction, sabotage, screening, counter-attacks, capital hunts and Brood purges, each with its pay. <kbd>Shift</kbd>+<kbd>'+kb('orders')+'</kbd> steps to the next order; <kbd>'+kb('orders')+'</kbd> signs on to the picked one and sets your course. Press <kbd>'+kb('orders')+'</kbd>.',ok:()=>!!(S.training.pk||keys.KeyP)},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>How a galaxy ends.</b> The moment a side holds 7 systems, a 20-minute clock starts (the chip at the top of the screen shows it); drop below 7 and it resets. Every pilot who helped a campaign move earns a victory bonus when their faction wins (3,000 cr plus parts, paid into your vault at the start of the next galaxy). If no one manages that within <b>two hours</b>, the side holding the most systems at the deadline wins instead (ties go to most stations, then capital ships, then the richest stores). Either way a new galaxy begins, with the winner starting 40% richer and with the parts for a capital shipyard.'},
@@ -6604,7 +6656,7 @@ const TR_CORE=['Flight','Weapons','The station','Upgrades and variants'],TR_END=
     hauling:{name:'Hauling',les:['Hauling for the war','Logistics and raiding']},scouting:{name:'Scouting',les:['Scouts and beacons','Hugging a rock']}};
 function trIdx(t){return TRAIN.findIndex(L=>L.t===t)}
 function trPlan(track){if(track==='full')return TRAIN.map((_,i)=>i);const tr=TR_TRACKS[track]||TR_TRACKS.combat;return[...TR_CORE,...tr.les,...TR_END].map(trIdx).filter(i=>i>=0)}
-function trAdvance(){const T=S.training;T.k++;T.i=T.k<T.plan.length?T.plan[T.k]:TRAIN.length;T.j=0;trEnter()}
+function trAdvance(){const T=S.training;trDummyGone();T.k++;T.i=T.k<T.plan.length?T.plan[T.k]:TRAIN.length;T.j=0;trEnter()}
 function trNext(){const T=S.training;T.j++;if(T.j>=TRAIN[T.i].steps.length){T.done.push(T.i);feed(`✓ Training: ${TRAIN[T.i].t} complete.`,'good');SFX.count&&SFX.count(true);trAdvance();return}trEnter()}
 function trainTick(){const T=S.training;if(!T||!W||!W.player)return;const c=trCur();
   if(c){let ok=false;try{ok=c.s.ok()}catch(e){}if(ok&&W.t>=(T.cool||0)){T.cool=W.t+.6;trNext()}}
@@ -6819,7 +6871,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'convoy':{const P=S.pilots&&S.pilots[pid];if(!P)break;if(m.dest&&DEF[m.dest])P.route=String(m.dest);netMsg(pid,'flash',runAs(pid,()=>convoyCall()));break}
     case 'convoyoff':{if(S.pilots&&S.pilots[pid]&&S.pilots[pid].convoy)runAs(pid,()=>convoyEnd(false,'you called it off'));break}
     case 'resup':{const t=(S.frigates||[]).find(x=>x.id===m.id),P=S.pilots&&S.pilots[pid];if(t&&P)runAs(pid,()=>carResupply(t,P,pid));break}
-    case 'ping':{const t=(S.frigates||[]).find(x=>x.id===m.id),P=S.pilots&&S.pilots[pid];if(t&&P&&isScoutCls(P.cls))capPing(t,P.faction,pid);break}
+    case 'limpet':{const P=S.pilots&&S.pilots[pid],w=P&&WORLDS[P.sector];if(!P||!w||!isScoutCls(P.cls)||P.limpetUsed)break;P.limpetUsed=true;inW(w,()=>{const E=m.k==='cap'?W.ents.find(e=>e.role==='frigate'&&e.alive&&e.tok&&e.tok.id===m.id):m.k==='station'?W.stationEnt:m.k==='outpost'?W.outpostEnt:null;if(E)limpetPlant(E,P.faction,pid,m.at)});break}
     case 'dev':{if(m.k==='efrig'||m.k==='levi'||m.k==='eesc'){netMsg(pid,'flash',runAs(pid,()=>devEnemyFrig(String(m.side||''),m.k==='levi',m.k==='eesc')));break}
       if(m.k==='squad'){const sd=String(m.side||'');if(!(FACTIONS[sd]||sd==='pirate'||sd==='brood'))break;netMsg(pid,'flash',runAs(pid,()=>devSquad(sd,+m.n,Array.isArray(m.types)?m.types.map(String).slice(0,6):[])));break}
       if(m.k==='gbwing'){netMsg(pid,'flash',runAs(pid,()=>devGunboat()));break}if(m.k==='hull'){const r=runAs(pid,()=>devHull(String(m.cls||'')));if(MP.rp[pid]&&!P.docked){spawnRP(pid)}sendPR(c,true,true);send(L,syncMsg(c));netMsg(pid,'flash',r);if(P.docked)send(L,{t:'actr',err:''});break}if(m.k==='frig'||m.k==='fesc'){netMsg(pid,'flash',devFrigFor(pid,m.k==='fesc'));sendFtok(c);break}if(m.k==='cr'){devLedger(()=>{P.credits+=10000});sendPR(c,false,true);netMsg(pid,'flash','Developer: +10,000 credits.');break}if(m.k==='res'){runAs(pid,()=>devRes(P));sendPR(c,false,true);send(L,syncMsg(c));if(P.docked)send(L,{t:'actr',err:''});netMsg(pid,'flash','Developer: added 10 of every resource to your vault.')}break}
@@ -7419,7 +7471,7 @@ function anomOpen(sid,A,k,ent){const L=anomsIn(sid),i=L.indexOf(A);if(i<0)return
   if(kind==='cache'){const o=partsFrom(driftTake(rnd(40,90),['fe','cu','ir'],sid));const x=driftTake(ri(2,6),['xc'],sid);inv.addAll(o,x);s.crates.push({id:S.nextId++,x:Math.round(A.x),y:Math.round(A.y),z:Math.round(A.z),inv:o,until:S.T+600,derelict:1});
     msg=`◇ Scan complete: a derelict cache in ${nm}. ${Object.keys(o).map(q=>`${o[q]} ${ITEMS[q].name}`).join(', ')}. Fly into it to scoop it.`}
   else if(kind==='log'){const n=ri(0,LORE.length-1);let got=0;if(isMe(k)){try{const m=JSON.parse(localStorage.getItem(LORE_KEY)||'[]');if(!m.includes(n)){m.push(n);localStorage.setItem(LORE_KEY,JSON.stringify(m))}got=m.length}catch(e){}}
-    const pay=payKey(k,f,300);for(const t of S.frigates||[])if((t.side==='brood'||t.side==='pirate')&&hostile(f,t.side))capPing(t,f,null);
+    const pay=payKey(k,f,300);for(const t of S.frigates||[])if((t.side==='brood'||t.side==='pirate')&&hostile(f,t.side))capTrack(t,f);
     msg=`◇ Decoded fragment${got?` (${got} of ${LORE.length} in your archive)`:''}: “${LORE[n]}” The Archive pays ${fmt(pay)} cr, and the relay pattern in it gives away where every Brood and Unbound capital ship is for 5 minutes.`}
   else if(kind==='hulk'){const o=driftTake(rnd(170,260),null,sid);wreckMix(o);const big=Math.random()<.45,R=(big?120:70)*1.25,q=qNorm({x:rnd(-1,1),y:rnd(-1,1),z:rnd(-1,1),w:rnd(-1,1)}),pts=wreckPts(o,false),seen={},mf=pick(FAC_IDS);
     for(const p of pts){const Lo=WPT_OFF[p.k],n=seen[p.k]=(seen[p.k]||0)+1,off=Array.isArray(Lo[0])?Lo[n-1]||Lo[0]:Lo;qRot(q,off[0]*R,off[1]*R,off[2]*R,_bv1);Object.assign(p,{id:S.nextId++,wpt:1,x:Math.round(A.x+_bv1.x),y:Math.round(A.y+_bv1.y),z:Math.round(A.z+_bv1.z),heat:0,last:oreTotal(p),h0:oreTotal(p)})}

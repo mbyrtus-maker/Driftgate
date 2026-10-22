@@ -154,27 +154,71 @@ function beaconTick(){if(NET.cl||!S.beacons)return;
     const st=bcnState(B);if(st!=='locked'&&bcnCrew(sid,B.owner))beaconSecure(sid,B.owner,null);else if(st==='lapsed')beaconLapse(sid)}
   for(const t of S.scouts||[]){if(t.live)continue;const B=S.beacons[t.sector];if(!B)continue;if(B.owner===t.side){if(bcnState(B)==='fading'&&Math.random()<.35)beaconSecure(t.sector,t.side,null);continue}if(bcnState(B)==='locked')continue;const Rs=S.stations[t.sector],guarded=Rs&&Rs.owner&&hostile(t.side,Rs.owner);
     if(Math.random()<(guarded?.08:.22))beaconFlip(t.sector,t.side,null)}}
-// ---- scout pings: a Scout or Advanced Scout that holds an enemy capital ship (carrier or escort, or the Brood's) in its
-// target lock within PING_R for PING_T seconds tags it. For PING_LIFE its position shows to the scout's whole side on the
-// galaxy map (M) and on capital ships' Strategic and Helm maps, wherever it goes. If it's destroyed while tagged, the scout
-// who pinged it is paid a bonus from their faction's treasury.
-const PING_R=4000,PING_T=4,PING_LIFE=300,PING_PAY={carrier:500,escort:300};
+// ---- scout limpets: a Scout or Advanced Scout carries one limpet, rearmed whenever it docks. With an enemy carrier, escort,
+// station or depot targeted, hold the mining key (F) within LIMPET_R of its hull for LIMPET_T seconds in total (progress
+// keeps while you fly through range, so a fast pass works) to plant it. For LIMPET_LIFE the planter's side does LIMPET_DMG
+// damage to the target, sees a marked capital on the galaxy and Strategic maps, and its AI fighters and bombers in the
+// system go for it. The limpet is a small object on the hull (an NPC ship, role 'limpet'): enemy fighters and pilots can
+// shoot it off; turrets, point defence and capital guns can't. The target's side is warned. A capital ship destroyed with
+// a limpet on it pays the scout who planted it. The tag lives on the record (capital token, station record or outpost),
+// so the limpet comes back with the system when it reloads (limpetSync).
+const LIMPET_R=600,LIMPET_T=2,LIMPET_LIFE=180,LIMPET_DMG=1.25,LIMPET_HP=45,PING_PAY={carrier:500,escort:300};
 function capPinged(t,f){const P=t&&t.pings&&t.pings[f];return!!P&&P.until>S.T}
-function capPing(t,f,by){if(!t||!FAC_IDS.includes(f)||!hostile(f,t.side))return;t.pings=t.pings||{};const was=capPinged(t,f);t.pings[f]={by:by||null,until:S.T+PING_LIFE};
-  const nm=`${t.side==='brood'?'Brood '+broodCap(t):sideName(t.side)+' '+capName(t)} ${t.name}`;
-  if(by)keyFeed(by,`📡 ${was?'Re-pinged':'Pinged'} ${nm} in ${DEF[t.sector].name}: your side can see it on the galaxy and Strategic maps for ${PING_LIFE/60} minutes. If it's destroyed while tagged you're paid ${fmt(PING_PAY[t.cls]||300)} cr.`,'good');
-  if(!was)facFeed(f,`📡 ${nm} pinged in ${DEF[t.sector].name}: tracked for ${PING_LIFE/60} minutes.`,'info')}
-function capPingPay(t){if(!t||!t.pings)return;for(const f in t.pings){const P=t.pings[f];if(!P||P.until<=S.T||!P.by||!hostile(f,t.side))continue;const got=payKey(P.by,f,PING_PAY[t.cls]||300);if(got)keyFeed(P.by,`📡 The ${capName(t)} ${t.name} you pinged has been destroyed: +${fmt(got)} cr scouting bonus.`,'good')}t.pings={}}
-function pingTarget(){const p=W.player,T=W.tgt&&W.tgt.kind==='ship'?W.tgt.ref:null;if(!p||!T||!T.alive||T.role!=='frigate'||!T.tok||!hostile('player',T.side))return null;return T}
-// the player's own lock, every frame (host, single player and client alike: a client asks the host to record the ping)
-function pingTick(dt){const F=W.pingF||(W.pingF={id:null,t:0});const T=pingTarget(),p=W.player;
-  if(!T||!isScoutCls(S.player.cls)||S.player.docked||d3(T,p)>PING_R||(capPinged(T.tok,S.player.faction)&&T.tok.pings[S.player.faction].until-S.T>PING_LIFE-60)){F.t=Math.max(0,F.t-dt*2);return}
-  if(F.id!==T.tok.id){F.id=T.tok.id;F.t=0}F.t+=dt;
-  if(F.t>=PING_T){F.t=0;if(NET.cl)netSend({t:'ping',id:T.tok.id});else capPing(T.tok,S.player.faction,pkey());SFX.count(true);flash(`📡 Pinged ${T.tok.name}: tracked for ${PING_LIFE/60} minutes.`)}}
-function pingChip(){const T=pingTarget();if(!T||!isScoutCls(S.player.cls)||S.player.docked)return null;const d=d3(T,W.player),t=T.tok,F=W.pingF||{};
-  if(capPinged(t,S.player.faction)&&!(F.id===t.id&&F.t>0))return[`📡 ${t.name} pinged · tracked ${fmtT(t.pings[S.player.faction].until-S.T)}`,'good'];
-  if(d>PING_R)return[`📡 Close to ${PING_R/1000} km to ping ${t.name} (${fmt(Math.round(d))} m)`,'warn'];
-  return[`📡 Pinging ${t.name} ${Math.round(clamp((F.id===t.id?F.t:0)/PING_T,0,1)*100)}% · keep it targeted`,'warn']}
+// tracked on the maps: a limpet, or a lead from elsewhere (an anomaly's log) that only shows where it is
+function capTrackUntil(t,f){return Math.max(capPinged(t,f)?t.pings[f].until:0,(t&&t.seen&&t.seen[f])||0)}
+const capTracked=(t,f)=>capTrackUntil(t,f)>S.T;
+function capTrack(t,f,dur){if(!t||!FAC_IDS.includes(f))return;t.seen=t.seen||{};t.seen[f]=Math.max(t.seen[f]||0,S.T+(dur||300))}
+function lpRec(E){return!E?null:E.type==='station'?E.rec:E.type==='outpost'?E.o:E.role==='frigate'?E.tok:null}
+function lpSide(E){return!E?null:E.type==='station'?E.fac:E.type==='outpost'?E.o.owner:E.side}
+function lpRad(E){return E.st?E.st.radius:E.r||100}
+function lpName(E){const R=lpRec(E);if(!R)return'the target';if(E.role==='frigate')return`${R.side==='brood'?'Brood '+broodCap(R):sideName(sideNorm(R.side))+' '+capName(R)} ${R.name}`;return E.type==='station'?E.name:R.name}
+function limpetK(R,src){if(!R||!R.pings||!src)return 1;const P=R.pings[sideNorm(src)];return P&&P.until>S.T?LIMPET_DMG:1}
+// the target's side hears about it; the capital's commander and crew get an alert
+function lpWarn(E,msg,alert){const sd=sideNorm(lpSide(E));if(FAC_IDS.includes(sd))facFeed(sd,msg,alert?'bad':'news');const t=E.role==='frigate'?E.tok:null;if(!t)return;
+  if(t.side==='player'||(t.owner&&isMe(t.owner))||(W.bridge&&W.bridge.f&&W.bridge.f.tok===t))flash(msg,alert);
+  if(NET.host){if(t.owner&&!isMe(t.owner))netMsg(t.owner,'flash',msg,alert);for(const pid of crewAboard(t))if(!isMe(pid))netMsg(pid,'flash',msg,alert)}}
+function limpetStick(e){const E=e.lh,q=E.q||q0();qRot(q,e.loc.x,e.loc.y,e.loc.z,_lpV);e.x=E.x+_lpV.x;e.y=E.y+_lpV.y;e.z=E.z+_lpV.z;e.vx=E.vx||0;e.vy=E.vy||0;e.vz=E.vz||0;qCopy(e.q,q)}
+const _lpV={x:0,y:0,z:0};
+// on the hull, on the side the scout came from (a random side when the system reloads)
+function limpetSpawn(E,f,at){const q=E.q||q0(),r=lpRad(E)*.92;let dx,dy,dz;if(at){dx=at.x-E.x;dy=at.y-E.y;dz=at.z-E.z}else{const o=rdir();dx=o.x;dy=o.y;dz=o.z}const l0=hyp(dx,dy,dz)||1,v={x:0,y:0,z:0};
+  qRot({x:-q.x,y:-q.y,z:-q.z,w:q.w},dx/l0*r,dy/l0*r,dz/l0*r,v);
+  const e=makeNPC('limpet',f,'drone',1,{},'limpet');e.fac=f;e.st={...e.st,hull:LIMPET_HP,sCap:0,radius:8};e.hull=LIMPET_HP;e.shield=0;e.lh=E;e.lf=f;e.loc=v;limpetStick(e);W.ents.push(e);return e}
+function limpetDrop(e){e.alive=false;const i=W.ents.indexOf(e);if(i>=0)W.ents.splice(i,1);if(W.tgt&&W.tgt.ref===e)W.tgt=null}
+function limpetPlant(E,f,by,at){const R=lpRec(E),sd=lpSide(E);if(!R||!FAC_IDS.includes(f)||!sd||sd==='neutral'||!hostile(f,sideNorm(sd)))return false;
+  R.pings=R.pings||{};R.pings[f]={by:by||null,until:S.T+LIMPET_LIFE};for(const l of W.ents.slice())if(l.role==='limpet'&&l.lh===E&&l.lf===f)limpetDrop(l);limpetSpawn(E,f,at);
+  const nm=lpName(E),cap=E.role==='frigate',pct=Math.round((LIMPET_DMG-1)*100);
+  if(by)keyFeed(by,`🧲 Limpet on ${nm}: your side hits it ${pct}% harder for ${LIMPET_LIFE/60} minutes${cap?` and tracks it on the maps. If it's destroyed with the limpet on, you're paid ${fmt(PING_PAY[R.cls]||300)} cr`:''}. Enemy fighters can shoot it off.`,'good');
+  facFeed(f,`🧲 Limpet planted on ${nm} in ${DEF[W.sid].name}: +${pct}% damage against it for ${LIMPET_LIFE/60} minutes.`,'info');
+  lpWarn(E,`⚠ ${sideName(f)} limpet on ${nm}! Enemy weapons hit it ${pct}% harder until fighters shoot the limpet off.`,true);SFX.count(true);return true}
+// shot off: the tag goes with it
+function limpetShot(e,src,at){const E=e.lh,R=lpRec(E),P=R&&R.pings&&R.pings[e.lf];if(P){delete R.pings[e.lf];if(P.by)keyFeed(P.by,`🧲 Your limpet on ${lpName(E)} was shot off.`,'bad');lpWarn(E,`Limpet shot off ${lpName(E)}.`,false)}
+  fxBoom(e,30,'#ffcf5a');fxSpark(e,'#ffcf5a',8);limpetDrop(e);payKill(e,src,at)}
+function limpetThink(e){const E=e.lh,R=lpRec(E),P=R&&R.pings&&R.pings[e.lf],sd=E&&lpSide(E);e.boosting=e.thrusting=false;
+  if(P&&P.until<=S.T&&W.ents.includes(E)){delete R.pings[e.lf];lpWarn(E,`The limpet on ${lpName(E)} has burned out.`,false);limpetDrop(e);return}
+  if(!E||!P||!W.ents.includes(E)||(E.type==='ship'&&!E.alive)||(E.type==='station'&&W.stationEnt!==E)||!sd||!hostile(e.lf,sideNorm(sd))){limpetDrop(e);return}
+  limpetStick(e)}
+// the host keeps one limpet object per live tag in the loaded system
+function limpetSync(dt){if(NET.cl||!W)return;W.lpT=(W.lpT||0)-dt;if(W.lpT>0)return;W.lpT=1;
+  for(const E of W.ents.slice()){const R=(E.type==='ship'&&E.alive&&E.role==='frigate')||E.type==='station'||E.type==='outpost'?lpRec(E):null;if(!R||!R.pings)continue;
+    for(const f in R.pings){if(!capPinged(R,f)||!hostile(f,sideNorm(lpSide(E)||'neutral')))continue;if(!W.ents.some(l=>l.role==='limpet'&&l.lh===E&&l.lf===f))limpetSpawn(E,f,null)}}}
+function capPingPay(t){if(!t||!t.pings)return;for(const f in t.pings){const P=t.pings[f];if(!P||P.until<=S.T||!P.by||!hostile(f,t.side))continue;const got=payKey(P.by,f,PING_PAY[t.cls]||300);if(got)keyFeed(P.by,`🧲 The ${capName(t)} ${t.name} you put a limpet on has been destroyed: +${fmt(got)} cr scouting bonus.`,'good')}t.pings={}}
+function limpetTarget(){const p=W.player,t=W.tgt;if(!p||!t||!validTgt(t)||!FAC_IDS.includes(S.player.faction))return null;const E=t.ref;if(t.kind==='ship'){if(!E.alive||E.role!=='frigate'||!E.tok)return null}else if(t.kind==='outpost'){if(E.o.breached)return null}else if(t.kind!=='station')return null;
+  const sd=lpSide(E);if(!sd||sd==='neutral'||!hostile('player',sd))return null;return E}
+const lpSurf=(E,p)=>d3(E,p)-lpRad(E);
+// the player's hold on F in a scout, from blPilotUpdate (host, single player and client alike: a client asks the host)
+function limpetHold(hold,dt){const F=W.lpF||(W.lpF={E:null,t:0,h:false}),P=S.player,p=W.player,E=limpetTarget(),press=hold&&!F.h;F.h=hold;
+  if(press&&P.limpetUsed){flash('No limpet aboard: dock at a friendly station or outpost to rearm.');return}
+  if(press&&!E&&W.t-(W.drillMsg||0)>3){W.drillMsg=W.t;flash('Target an enemy carrier, escort, station or depot to plant a limpet. Scouts carry no mining laser.')}
+  if(F.E!==E){F.E=E;F.t=0}
+  if(!(E&&hold&&!P.limpetUsed&&lpSurf(E,p)<=LIMPET_R&&!capPinged(lpRec(E),P.faction))){F.t=Math.max(0,F.t-dt*.5);return}
+  F.t+=dt;if(F.t<LIMPET_T)return;F.t=0;P.limpetUsed=true;
+  if(NET.cl)netSend({t:'limpet',k:E.type==='ship'?'cap':E.type,id:E.type==='ship'?E.tok.id:null,at:{x:p.x,y:p.y,z:p.z}});else limpetPlant(E,P.faction,pkey(),p);
+  flash(`🧲 Limpet planted on ${lpName(E)}.`)}
+function limpetChip(){const P=S.player;if(!isScoutCls(P.cls)||P.docked||!W.player)return null;const E=limpetTarget();if(!E)return null;const R=lpRec(E),nm=lpName(E),F=W.lpF||{};
+  if(capPinged(R,P.faction))return[`🧲 Limpet on ${nm} · ${fmtT(R.pings[P.faction].until-S.T)} · +${Math.round((LIMPET_DMG-1)*100)}% damage`,'good'];
+  if(P.limpetUsed)return['🧲 Limpet spent · dock to rearm','warn'];
+  if(F.E===E&&F.t>0)return[`🧲 Planting ${Math.round(clamp(F.t/LIMPET_T,0,1)*100)}% · hold ${kb('mine')} within ${LIMPET_R} m`,'warn'];
+  const d=lpSurf(E,W.player);return[d>LIMPET_R?`🧲 Limpet ready · close to ${LIMPET_R} m of ${nm} (${fmt(Math.round(Math.max(0,d)))} m), hold ${kb('mine')}`:`🧲 Hold ${kb('mine')} to plant a limpet on ${nm}`,'warn']}
 // a live AI scout makes for an enemy or empty beacon in its system when nothing is chasing it
 function scoutBeaconGoal(e){const B=S.beacons&&S.beacons[W.sid];if(!B||!bcnCan(B,e.side))return null;return B}
 // client: show your own progress while the host decides

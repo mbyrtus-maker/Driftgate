@@ -79,7 +79,7 @@ function fireLaser(e){if(jamDark(e))return;if(e.cool>0||e.landed||e.stealth||(e.
   W.beams.push({src:e,x:R.x,y:R.y,z:R.z,ttl:.11,col:e.isPlayer?FAC(S.player.faction).col:sideCol(e.side)})}
 function damageShip(e,dmg,srcSide,at,kind){
   {const me=W.player;if(me&&e.alive&&!e.ghost){if(e===me){if(srcSide&&srcSide!==me.side)musHit(e.shield>0)}else if(at&&(at.src===me||at===me))musHit(e.shield>0)}}
-  if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&(W.detach||W.t<(W.ejectT||0))))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;const h0=e.hull,s0=e.shield,rec=()=>dmgRec(e,srcSide,at,(s0-Math.max(0,e.shield))+(h0-Math.max(0,e.hull)));
+  if(!e.alive||e.inJump||e.ghost||(e.isPlayer&&(W.detach||W.t<(W.ejectT||0))))return;if(NET.cl){if(e.isPlayer)return;e.lastHit=W.t;if(e.shield>0){e.shHitT=W.t;e.shHitA=.4;fxSpark(at||e,'#8fc8ff',3)}else fxSpark(at||e,'#ffd9a0',3);return}e.lastHit=W.t;e.lastHitBy=srcSide;if(e.role==='frigate'&&e.tok&&e.tok.pings)dmg*=limpetK(e.tok,srcSide);const h0=e.hull,s0=e.shield,rec=()=>dmgRec(e,srcSide,at,(s0-Math.max(0,e.shield))+(h0-Math.max(0,e.hull)));
   // escorts are light capitals: a torpedo that connects guts one (about 4 hits at Mk I, 2 at Mk V)
   if(e.stealth){if(e.isPlayer)stealthOff(true);else{e.stealth=false;e.masked=false;e.maskR=0;e.boot=W.t+BOOT_T}}
   if(e.cls==='escort'&&(kind||(at&&at.kind))==='torpedo'){dmg*=ESC_TORP_MUL;stat('torpHit')}
@@ -200,7 +200,7 @@ function chunkAt(e,s){for(const c of s.clouds||[])if(c.chunk&&d3(c,e)<c.cr+e.st.
 function blCov(o,from){if(!from||!W||!o||o.type==='station')return false;const s=S.sectors[W.sid];if(!s||!s.clouds||!s.clouds.length)return false;for(const c of s.clouds)if(d3(o,c)<c.r&&d3(o,from)>300)return true;return false}
 // pilot controls (local pilot): F fires on press, holding F by a cloud collects it
 function blPilotUpdate(p,P,st,sec,dt){const hold=!!(keys.KeyF||mouse.r||touch.mine),press=hold&&!p.blHeld;p.blHeld=hold;p.mining=null;
-  if(!blHull(P.cls)){if(press&&W.t-(W.drillMsg||0)>3){flash('No blast rig on this hull: only mining ships (Light, Medium and Heavy Miner) can mine. Switch at a core station Shipyard.');W.drillMsg=W.t}return}
+  if(!blHull(P.cls)){if(isScoutCls(P.cls)){limpetHold(hold,dt);return}if(press&&W.t-(W.drillMsg||0)>3){flash('No blast rig on this hull: only mining ships (Light, Medium and Heavy Miner) can mine. Switch at a core station Shipyard.');W.drillMsg=W.t}return}
   {const ch=!NET.cl&&chunkAt(p,sec);if(ch){p.mining=ch;blCollect(p,P,ch,dt,sec)}}
   const cl=hold?blCloudNear(p,sec):null;if(cl){p.mining=cl;if(!NET.cl)blCollect(p,P,cl,dt,sec);return}
   if(press){if(NET.cl)netSend({t:'blast',k:'fire'});else blFire(p,P)}}
@@ -280,7 +280,7 @@ function wreckWorld(dt){const s=S.sectors[W.sid];if(!s.wrecks||!s.wrecks.length)
     if(w.broodAt&&S.T>=w.broodAt){w.broodAt=0;let n=0;for(let i=0;i<(w.broodN||2);i++){const e=spawnNPC('miner','brood');if(e){const g=pick(GATES[W.sid]);e.x=g.x*.92;e.y=g.y*.92;e.z=g.z*.92;e.ai.ast=pick(w.pts);e.scav=1;n++}}
       if(n&&p&&!S.player.docked)feed(`✕ Brood scavengers (${n}) have come through the gate for the ${w.name} wreck.`,'warn')}
     if(Math.random()<dt*.8&&!MUTE){const pt=pick(w.pts);fxSpark(pt,'#ffb066',2)}}}
-function killShip(e,src,at){
+function killShip(e,src,at){if(e.role==='limpet'){limpetShot(e,src,at);return}
   e.alive=false;e.killed=true;if(e.sortie||e.sortieEv){const ev=S.events.find(v=>v.id===(e.sortie||e.sortieEv));if(ev){if(e.sortie&&ev.stage==='gather')ev.pending=Math.max(0,ev.pending-1);if(e.sortieEv){const i=ev.craft.indexOf(e.cls);if(i>=0)ev.craft.splice(i,1);ev.lost++}}}if((e.role==='trader'||e.role==='hauler')&&src==='pirate'&&FAC_IDS.includes(e.side)){S.raidT=S.raidT||{};S.raidT[e.side]=S.T}if(e.role==='trader'&&e.home.startsWith('trader:'))traderLost(e);if(e.role==='scout'&&e.home.startsWith('scout:')){const id=e.home.split(':')[1];S.scouts=S.scouts.filter(t=>String(t.id)!==id);if(e.side===S.player.faction)feed(`Our scout was shot down in ${DEF[W.sid].name}.`,'bad')}fxBoom(e,e.st.radius*2.6,e.isPlayer?PLAYER_COL:sideCol(e.side));
   if(e.drones)for(const d of e.drones)if(d.alive){d.role='leave';d.mom=null}
   if(e.side==='player'&&e.role==='drone')feed('One of your guard drones was destroyed.','bad');
@@ -317,7 +317,7 @@ function respawn(){if(W&&W.player){W.player.landed=null;W.player.stealth=false;W
   enterSector(P.sector);openDock();save();
 }
 function damageStation(E,dmg,by,kind,src){if(E&&E.fac==='brood'&&E.rec){const k=src&&src.rp?src.rp:by==='player'?'me':null;if(k){(E.rec.pHits=E.rec.pHits||{})[k]=W.t;E.rec.pHit=W.t}}if(by==='player'&&W.player&&d3(E,W.player)<3000)musHit(((E.shield||0)>0)||((E.rec&&E.rec.shield)||0)>0);if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
-  E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
+  dmg*=limpetK(E.rec,by);E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
   if(!E.offline){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.offline=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! Its turrets are offline and the hull is exposed.`:`${E.name}'s shield collapsed. Its turrets are offline and the hull is exposed.`,mine?'bad':'warn')}
   if(!R||dmg<=0)return;R.hull-=dmg;if(Math.random()<.3)fxSpark({x:E.x+rnd(-60,60),y:E.y+rnd(-60,60),z:E.z+rnd(-60,60)},'#ffcf8a',3);
   if(R.hull<=0&&R.kind==='depot'&&R.owner!=='brood'&&E.lastHitBy&&E.lastHitBy!=='brood'){const g=garrison(R);if(capLoads(R.sid,E.lastHitBy)>=g){useLoads(R.sid,E.lastHitBy,g,R);captureDepot(R.sid,E.lastHitBy);return}}
@@ -337,7 +337,7 @@ function razeStation(sid,by){const R=S.stations[sid];if(!R||(R.owner==='neutral'
   if(WORLDS[sid]&&WORLDS[sid]!==W)return inW(WORLDS[sid],()=>razeStationFx(sid,R));razeStationFx(sid,R)}
 function razeStationFx(sid,R){if(W&&W.sid===sid&&W.stationEnt&&W.stationEnt.rec===R){const E=W.stationEnt;if(W===LW&&S.player.docked==='station')undock();if(NET.host)netKickDocked(sid,'station');fxBoom(E,260,sideCol(R.owner));fxBoom(E,160,'#ffe2b0');const i=W.ents.indexOf(E);if(i>=0)W.ents.splice(i,1);W.stationEnt=null;if(W.tgt&&W.tgt.ref===E)W.tgt=null;
     for(const e of W.ents)if(e.npc&&e.role==='strike'&&e.ai.siege)e.role='leave'}}
-function damageOutpost(E,dmg){if(NET.cl)return;
+function damageOutpost(E,dmg,by){if(NET.cl)return;dmg*=limpetK(E.o,by);
   const o=E.o;if(o.owner)distressCall(W.sid,o.name,o.owner,null);E.lastHit=W.t;if(o.shield>0){const a=Math.min(o.shield,dmg);o.shield-=a;dmg-=a}
   if(dmg>0){o.hull-=dmg;fxSpark({x:E.x+rnd(-50,50),y:E.y+rnd(-30,30),z:E.z+rnd(-50,50)},'#ffcf8a',3)}
   if(o.hull<=0&&!o.breached){o.hull=0;o.breached=S.T;o.shield=0;fxBoom(E,160,sideCol(o.owner));
@@ -355,7 +355,7 @@ function steer(e,tx,ty,tz,dt,arrive,mul){const dx=tx-e.x,dy=ty-e.y,dz=tz-e.z,d=h
 function brake(e,dt){const v=hyp(e.vx,e.vy,e.vz);if(v<1)return;const acc=Math.min(e.st.thrust,v/dt);e.vx-=e.vx/v*acc*dt;e.vy-=e.vy/v*acc*dt;e.vz-=e.vz/v*acc*dt}
 function faceDir(e,dx,dy,dz,dt){const L=hyp(dx,dy,dz);if(L<1e-6)return 0;dx/=L;dy/=L;dz/=L;qRot(e.q,0,0,1,_f);const ang=Math.acos(clamp(_f.x*dx+_f.y*dy+_f.z*dz,-1,1));qRot(e.q,0,1,0,_u);qLook(dx,dy,dz,_u.x,_u.y,_u.z,_tq);qTowards(e.q,_tq,e.st.turn*handling(e).turn*dt);return ang}
 const faceTo=(e,p,dt)=>faceDir(e,p.x-e.x,p.y-e.y,p.z-e.z,dt);
-function findHostile(e,range){let best=null,bd=range;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e)continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;if(!hostile(e.side,o.side)&&!(S.unb&&o.rp&&e.side==='brood'))continue;if(S.unb&&o.rp&&FAC_IDS.includes(e.side)&&unbCoverP(S.pilots[o.rp],e.side))continue;const d=d3(o,e)*((o.role==='hauler'||o.tradeT&&o.tradeT.kind==='haul')&&(e.role==='raider'||e.role==='pirate')?.5:1)*(o.side==='brood'&&e.side!=='brood'?.6:1)*(e.side==='brood'?bloodScent(o):1)*(o.role==='frigate'?(isBmb(e.cls)?.35:1.6):1);if(d<bd){bd=d;best=o}}return best}
+function findHostile(e,range){let best=null,bd=range;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e)continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;if(!hostile(e.side,o.side)&&!(S.unb&&o.rp&&e.side==='brood'))continue;if(S.unb&&o.rp&&FAC_IDS.includes(e.side)&&unbCoverP(S.pilots[o.rp],e.side))continue;const d=d3(o,e)*((o.role==='hauler'||o.tradeT&&o.tradeT.kind==='haul')&&(e.role==='raider'||e.role==='pirate')?.5:1)*(o.side==='brood'&&e.side!=='brood'?.6:1)*(e.side==='brood'?bloodScent(o):1)*(o.role==='frigate'?(isBmb(e.cls)?.35:1.6)*(o.tok&&capPinged(o.tok,sideNorm(e.side))?.4:1):1)*(o.role==='limpet'?.5:1);if(d<bd){bd=d;best=o}}return best}
 function bomberRun(e,OE,dt){const ai=e.ai,dx=OE.x-e.x,dy=OE.y-e.y,dz=OE.z-e.z,d=hyp(dx,dy,dz)||1;
   if(!ai.stand){const r=rdir(.8);ai.stand={x:OE.x+r.x*1500,y:OE.y+r.y*1500,z:OE.z+r.z*1500}}
   if(d>1700||d<1100)steer(e,ai.stand.x,ai.stand.y,ai.stand.z,dt,true,.8);else brake(e,dt*.5);
@@ -429,7 +429,7 @@ function detonate(m,i){if(m.harp){W.missiles.splice(i,1);harpHit(m);return}if(m.
     damageShip(e,(m.incend?(e.side==='brood'&&e.role==='builder'?1.5:.85):1)*m.dmg*mul*(d<e.st.radius+28?1:.45)*(tp&&e.role!=='frigate'?TORP_SMALL:1),m.side,m)}}
   if(m.tgt&&m.tgt.type==='station'&&W.stationEnt===m.tgt&&hostile(m.side,m.tgt.fac)&&d3(m.tgt,m)<240)damageStation(m.tgt,m.dmg*(tp?TORP_STATION:1)*(m.incend&&m.tgt.fac==='brood'?1.5:1),m.side,m.kind,m.src);
   if(W.works&&W.works.length)wkBlast(m,tp,BR);
-  const T=m.tgt;if(T&&T.type==='outpost'&&!T.o.breached&&T.o.owner&&hostile(m.side,T.o.owner)&&d3(T,m)<(tp?230:170))damageOutpost(T,m.dmg*(tp?3:1.5));
+  const T=m.tgt;if(T&&T.type==='outpost'&&!T.o.breached&&T.o.owner&&hostile(m.side,T.o.owner)&&d3(T,m)<(tp?230:170))damageOutpost(T,m.dmg*(tp?3:1.5),m.side);
   toDebris(s,m.inv)}
 function deployFlares(e){const fl=[];for(let i=0;i<3;i++){const d=rdir(),f={decoy:true,x:e.x,y:e.y,z:e.z,vx:e.vx*.4+d.x*120,vy:e.vy*.4+d.y*120,vz:e.vz*.4+d.z*120,life:3.2};W.decoys.push(f);fl.push(f)}
   const chance=Math.min(.95,(e.isPlayer||e.flares?.8:.6)*(1+.3*((CLASSES[e.cls].agile||1)-1)));for(const m of W.missiles)if(m.tgt===e&&d3(m,e)<1700&&Math.random()<chance*(m.kind==='torpedo'?.5:m.kind==='swarm'?.55:1))m.tgt=pick(fl);fxSpark(e,'#fff1c0',10)}
@@ -467,7 +467,8 @@ function despawn(e){if(e.drones)for(const d of e.drones)if(d.alive&&W.ents.inclu
   returnHome(e);e.alive=false;{const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null}
 function npcThink(e,dt){
   const ai=e.ai,s=S.sectors[W.sid];ai.t-=dt;e.life+=dt;e.mining=null;e.thrusting=false;if(jamDark(e)){e.boosting=false;return}
-  if(e.role==='drone'){droneThink(e,dt);return}
+  if(e.role==='limpet'){limpetThink(e);return}
+  if(e.role==='drone'){if(e.mom&&jamDark(e.mom)){e.boosting=false;e.thrusting=false;return}droneThink(e,dt);return}
   if(e.role==='frigate'){frigateThink(e,dt);return}
   if(e.role==='picket'){if(e.order&&e.order.kind==='attack'&&orderThink(e,dt))return;droneThink(e,dt);return}
   if(e.role==='scout'){scoutThink(e,dt);return}

@@ -713,11 +713,36 @@ Carriers, escorts, and the Brood Hive Ship and Prowler leave a wreck when they d
 - **Brood advantage.** Brood miners always go for wrecks and digest them twice as fast. A wreck within 3 jumps of Brood space draws a Brood scavenger party through a gate after 20–90 s, sooner the closer it is. Faction miners also salvage wrecks some of the time.
 - **Map and alerts.** A feed alert announces each wreck. An amber ✕ with time left shows on the galaxy map in systems you have intel on, and the system panel lists each wreck's tonnage and time left.
 
-## Scout pings on capital ships (built)
-- **How.** In a Scout or Advanced Scout, keep an enemy carrier or escort (or the Brood's capitals) targeted within 4 km for 4 s. A HUD chip shows progress.
-- **Effect.** For 5 minutes, the scout's whole side sees the ship on the galaxy map (M), even without sensor cover, marked with a pulsing ring. Capital ships' Strategic and Helm maps ring it when it's in the same system and list every pinged enemy capital with its system, jumps away and time left. You can re-ping a ship once at least a minute of its tag has run.
-- **Pay.** If a pinged ship is destroyed while tagged, live or off-screen, the scout who pinged it gets 500 cr for a carrier or 300 cr for an escort, from their faction's treasury.
-- **Multiplayer.** A guest's ping goes to the host, which records it.
+## Scout limpets (built, replaces scout pings)
+Scouts get a role at a siege: they mark a target so everyone else's damage counts. The limpet buffs; it disables nothing.
+
+- **Carry.** A Scout or Advanced Scout carries one limpet. It rearms whenever the pilot docks (station, outpost or a carrier's bridge).
+- **Plant.** Target an enemy carrier, escort, station or depot (or a Brood capital or node) and hold the mining key (F)
+  within **600 m of its hull** for **2 seconds in total**. The count keeps while the scout is in range and only drains slowly
+  outside it, so a fast pass plants it: the scout's speed is its defence. One limpet per side per target.
+- **Effect, 3 minutes.**
+  - The planter's side does **+25% damage** to the target, from every weapon (`LIMPET_DMG` in `damageShip`,
+    `damageStation`, `damageOutpost`).
+  - A marked capital shows to the whole side on the galaxy map and capital ships' Strategic and Helm maps, as pings did.
+  - The side's AI fighters and bombers in the system go for a marked capital (`findHostile` weights it).
+  - It does **not** stop shield regeneration or disable turrets.
+- **Counterplay.** The limpet is a small object on the hull (an NPC ship, role `limpet`, 45 hull). **Enemy fighters and
+  pilots can shoot it off**, and defending AI fighters go for it. **Turrets, point defence, station missiles and capital
+  guns can't** (they skip it, and their shots pass through it). Shooting one off pays a 60 cr bounty.
+- **Warnings.** The target's side gets a feed line when a limpet goes on; a capital's commander and crew aboard get an alert
+  flash. They hear again when it's shot off or burns out.
+- **Pay.** A capital ship destroyed with the limpet on, live or off-screen, pays the scout 500 cr (carrier) or 300 cr (escort).
+- **Off-screen.** The tag lives on the target's record (`pings` on the capital token, station record or outpost), so it
+  runs out on time off-screen and the limpet object comes back when the system loads (`limpetSync`). AI scouts don't plant
+  limpets, and the war simulator is unchanged.
+- **Tracking without a limpet.** Map tracking is now its own tag (`capTrack`): an anomaly's log still reveals Brood and
+  Unbound capitals on the map without any damage bonus.
+- **Training.** The Scouts lesson has the cadet plant one on a harmless training escort.
+- **Multiplayer.** A guest's plant goes to the host, which places it in the guest's system.
+
+## Drones go dark with a jammed ship (built)
+Guard drones are slaved to their ship. While the ship they guard is jammed, they drift without firing; they come back when
+it does. This makes a hauler's drones no help once the Unbound have it jammed, so the jam itself is what drones must stop.
 
 ## Legend points for a loss (built)
 - **Rule.** A win earns 1 Legend point, as before. A loss earns ½, under the same condition as a win: at least 30 minutes, and most of your time, flown for that faction.
@@ -752,7 +777,7 @@ There are 12 lessons and 67 steps. Hands-on steps check what you did; "Got it" c
 2. **Weapons:** bounties, swarms and wings.
 3. **Mining and trade:** ores, hulls and drones.
 4. **The station:** vaults.
-5. **Scouts and beacons:** lock and fade, pings, sensors.
+5. **Scouts and beacons:** lock and fade, limpets, sensors.
 6. **Hugging a rock.**
 7. **Salvage and wrecks:** a practice hulk to mine, crates and galaxy events.
 8. **Hauling for the war:** Orders, front-line resupply, blockade runs, convoys.
