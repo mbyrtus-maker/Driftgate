@@ -21,7 +21,7 @@ function hudUpdate(){hudFit();
   if(p.stealth)sc.unshift([`Stealth · hidden beyond ${STEALTH_R} m · no shields, guns, locks or afterburner · K to power up`,'good']);else if(p.landed)sc.unshift(['Landed · powered down · hidden from enemy radar · E to lift off','good']);else if(p.boot&&W.t<p.boot)sc.unshift([`Systems rebooting · weapons in ${Math.ceil(p.boot-W.t)} s`,'warn']);
   if(p.mining&&!P.docked){const k=mainOre(p.mining);sc.splice(1,0,[`Mining ${k?ITEMS[k].name:'rock'}${invMass(P.cargo)>=p.st.cargo-.5?' · hold full':''}`,invMass(P.cargo)>=p.st.cargo-.5?'bad':'good'])}
   {const H=handling(p);if(H.L>.2&&!P.docked)sc.push([`Laden ${Math.round(H.L*100)}% · ${HEAVY_CLS.has(P.cls)?'heavy':'slower'} handling −${Math.round((1-H.turn)*100)}% turn`,H.L>.65&&HEAVY_CLS.has(P.cls)?'bad':'warn'])}
-  keysNowRender();
+  keysNowRender();try{firstTips()}catch(e){}
   $('hChips').innerHTML=chips.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');$('hSChips').innerHTML='';{const h=P.docked||W.bridge?'':sc.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');if($('hML').innerHTML!==h)$('hML').innerHTML=h}
   {const el=$('hBcn'),B=S.beacons&&S.beacons[W.sid],on=!!B&&isScoutCls(P.cls)&&!P.docked;el.hidden=!on;if(on){const d=Math.round(d3(p,B)),F=W.bcnF||{},mine=B.owner===P.faction,col=B.owner?sideCol(B.owner):'#ece4cf',flip=F.side&&F.t>0?` · flipping ${Math.round(clamp(F.t/BCN_T,0,1)*100)}%`:'';
     const st=bcnState(B),left=fmtT(bcnLeft(B)),sts=st==='locked'?` · secured ${left}`:st==='fading'?(mine?` · <b style="color:var(--amber)">fading: re-secure within ${left}</b>`:` · fading: flip it now (${left})`):'';

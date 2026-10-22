@@ -1356,3 +1356,59 @@ systems, stuck at home.
 **Result** (480 galaxies, 2.2 h): Halcyon 31%, Varkesh 29%, Ostrova 28%, Brood 12%. The Brood peaks at 4.7 systems on
 average and reaches 5 or more in 41% of galaxies (it was 3.2 and about 10% before the Seals, 2.3 and 1% in the slowed
 version). Each share is ±4 points.
+
+## Editing the game: source files (built)
+`index.html` is still the one file the site and the artifact serve, but it is now **built** from `src/`. Edit `src/`, never
+`index.html` directly.
+
+- `src/page.html` (markup and CSS), `src/data/*.html` (sound pack and model data), `src/script_open.html`, `src/js/01_core.js`
+  … `17_main.js`, `src/end.html`. `src/ORDER.txt` lists the join order.
+- `python3 tools/build.py` joins them into `index.html`; `python3 tools/build.py --check` fails if the two disagree.
+  Each JS file starts with a `//@src NN_name.js` marker line in `index.html`, so a line there maps back to its file.
+- `python3 tools/split.py` regenerates `src/` from `index.html` (for a change someone made to `index.html` by hand: split,
+  then commit both).
+- `tools/prepublish.sh` pulls, runs the build check and a syntax check, and refuses to go on with uncommitted changes. Run it
+  before pushing or publishing the artifact.
+- All code still lives in one closure at run time: the files are cut points, not modules, so names stay global to the game.
+
+## Key rebinding and the keys strip (built)
+- **Rebindable keys.** Help → Keys lists every action by group (Flight, Weapons, Mining, Targets, Command, Screens). Click an
+  action, press a key: a key already in use swaps with it. "Reset all keys" restores the defaults. Bindings are kept in this
+  browser (`driftgate.keys`). `KEY_ACTS` defines the actions, `KEY_DEF` the defaults, `keyOf(code)` maps a pressed key to its
+  default code so the game's handlers are unchanged, and `kb(id)` gives the current key's name for any text.
+- **Every text names the player's key.** Training, help, prompts and flashes use `kb()`, so a rebound key shows correctly.
+- **Separate keys, no context key.** Blast mining's detonate moved from 3 to **5** and cancel from 4 to **6**, so each digit
+  does one thing on every hull (3 on a mining hull says where detonate went; 4 is jam mode on Unbound ships). Comms menu
+  and bridge digits use the raw keys.
+- **Keys strip.** In flight, a line on the HUD shows the few keys that matter right now, from `keysNow()`: charge, detonate
+  and cancel on a mining hull; missile, swarm and track against a hostile target; flares when a missile is inbound;
+  autopilot to a gate, station or rock; distress below 35% hull; target keys when nothing is targeted.
+
+## The Brood on the HUD (built)
+The Brood wins by holding 7 systems for 20 minutes, and players were not seeing it coming.
+- From **4 systems** the HUD shows a chip: "Brood n/7 systems · k from the win clock".
+- When the Brood first reaches **5, 6 and 7** systems (once per rise), every pilot gets a feed line, a flash and the accord
+  sound (`broodWatch`, from `victoryTick`).
+- The galaxy map's control panel shows a Brood meter: systems held out of 7, and the win clock when it runs.
+
+## Training by role (built)
+Fifteen lessons were too long for a first session, and most players want one job.
+- **Courses.** "Training" on the start screen opens a picker: a short **core** (Flight, Weapons, The station, Upgrades and
+  variants), then the lessons for one role, then **Winning the war**. The role chosen on the start screen is highlighted.
+  "Full course" is all fifteen in order.
+
+| Course | Role lessons |
+|---|---|
+| Combat | Fighting for territory, Comms and capital ships, The Brood |
+| Mining | Mining and trade, Salvage and wrecks, Hugging a rock |
+| Hauling | Hauling for the war, Logistics and raiding |
+| Scouting | Scouts and beacons, Hugging a rock |
+
+- `TR_CORE`, `TR_TRACKS`, `TR_END` define the courses; `trPlan(track)` gives the lesson list and `S.training.plan` holds it.
+  The header counts lessons in the course, not in the whole set.
+- **Lessons stand alone.** Each one puts the pilot in the hull it needs (`trHull`, `trMiner`), launches them when a lesson
+  has to start in flight (salvage), and tells them to dock or launch when the step needs it. A lesson must not rely on the
+  one before it in the full order.
+- **First-time tips.** Lessons a course skips are still met in play: the first time a pilot enters Bloom space or is jammed,
+  a one-off tip explains it (`firstTip`, kept in `driftgate.tips`). Not shown during training.
+- Checked by flying every course end to end in a browser (full, combat, mining, hauling, scouting).

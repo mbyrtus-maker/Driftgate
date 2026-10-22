@@ -243,7 +243,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
 .sbar div{height:5px;background:rgba(255,255,255,.07)}.sbar div i{display:block;height:100%;background:var(--amber)}
 .snote{padding:16px 26px 0;font-size:12px}
 .startfoot{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 26px 16px;flex-wrap:wrap;border-top:1px solid var(--line);background:var(--sheet)}
-.ssum{font-size:13px;color:var(--dim)}.ssum b{color:var(--ivory);font-weight:600}
+.ssum{font-size:13px;color:var(--dim)}.trpick{flex:1 1 100%;border:1px solid var(--amber);background:rgba(240,178,74,.06);padding:10px 12px}.trpick .trh2{font-family:var(--f-display);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}.trpick .trbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.trpick p{margin:0;font-size:12.5px;color:var(--dim);line-height:1.45}.ssum b{color:var(--ivory);font-weight:600}
 
 #map .console{width:min(1180px,100%);height:100%}
 .mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;min-height:0;flex:1}
@@ -394,6 +394,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       </div>
       <div class="startfoot">
         <div class="ssum" id="ssum"></div>
+        <div class="trpick" id="trPick" hidden></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn" id="bContinue" type="button" hidden>Continue saved pilot</button>
           <button class="btn" id="bLegend" type="button" title="Legend points, levels and perks">Leaderboard</button><button class="btn" id="bTrain" type="button" title="An offline flight school that walks through every major system">Training</button><button class="btn pri" id="bLaunch" type="button">Launch</button>
