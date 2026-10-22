@@ -125,6 +125,7 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .mini i{position:absolute;inset:0 auto 0 0}
 #hPrompt{left:50%;transform:translateX(-50%);bottom:calc(330px + env(safe-area-inset-bottom,0px));text-align:center;font-size:14px;letter-spacing:.04em;max-width:min(560px,calc(100% - 32px))}
 #hPrompt span{display:inline-block;background:rgba(5,7,13,.75);border:1px solid var(--line-hi);padding:6px 12px}
+#hKeysNow{left:50%;transform:translateX(-50%);bottom:calc(298px + env(safe-area-inset-bottom,0px));display:flex;gap:12px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--dim);letter-spacing:.03em;max-width:min(640px,calc(100% - 32px))}#hKeysNow:empty{display:none}#hKeysNow kbd{color:var(--ivory);margin-right:4px}#hud.ckscope #hKeysNow{bottom:calc(min(34vh,300px) - 32px + env(safe-area-inset-bottom,0px))}@media (max-width:760px){#hKeysNow{display:none}}
 #hPrompt span.alert{border-color:var(--danger);color:var(--danger)}
 @media(min-width:700px){#hud.ckm #hBL>div{display:none}}
 #hud.ckscope #hPrompt{bottom:calc(min(34vh,300px) + env(safe-area-inset-bottom,0px))}
@@ -354,6 +355,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     <div class="hud" id="contacts" aria-label="Contacts"></div>
     <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Command</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Under attack here · O targets the attacker</div><div class="cops" id="cOps"></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
     <div class="hud" id="hPrompt"></div>
+    <div class="hud" id="hKeysNow" aria-label="Keys you can use now"></div>
     <div class="hud" id="feed" aria-live="polite"></div>
     <div id="touch" hidden>
       <button type="button" data-t="thrust">Thrust</button><button type="button" data-t="fire">Fire</button>
@@ -503,44 +505,9 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       <div class="c-body help">
         <div class="helpgrid">
           <div>
-            <div class="h3">Flight</div>
-            <div class="keys">
-              <kbd>Mouse</kbd><span>Steer. The further the pointer sits from the centre ring, the harder you turn</span>
-              <kbd>Arrows</kbd><span>Pitch and yaw without the mouse</span>
-              <kbd>W / S</kbd><span>Thrust / brake (reverse thrust with assist off)</span>
-              <kbd>A / D</kbd><span>Roll</span>
-              <kbd>Shift</kbd><span>Afterburner: a kick of speed on press, then higher top speed while held (drains energy)</span>
-              <kbd>X</kbd><span>Flight assist. On: sideways slip bleeds off slowly so turns slide. Off: pure Newtonian drift</span>
-              <kbd>Space · Click</kbd><span>Fire the selected gun</span>
-              <kbd>1 / 2</kbd><span>Select kinetic cannons / lasers</span>
-              <kbd>F · Right-click</kbd><span>Mining laser on targeted or nearest rock</span>
-              <kbd>T</kbd><span>Target nearest hostile</span>
-              <kbd>Y</kbd><span>Assist: target whoever is attacking a friendly</span>
-              <kbd>I</kbd><span>Comms. First press: Command (1 escort me, 2 guard me, 3 request a depot or shipyard, 4 distress call). Each press after steps to the next friendly ship nearby, with what it can do: a wing guards, escorts, forms up on you or attacks your target; a freighter takes you on as its escort; a carrier clears you to land (resupply) or launches its fighters on your target. Firing closes the menu</span>
-              <kbd>U</kbd><span>Distress call: nearby friendlies cover you and your faction sends a wing from the closest station (90 s recharge)</span>
-              <kbd>O</kbd><span>Join the top friendly operation (course + autopilot)</span>
-              <kbd>Q</kbd><span>Cycle through hostiles, nearest first</span>
-              <kbd>G</kbd><span>Target the ship closest to your nose</span>
-              <kbd>Hold Z</kbd><span>Track: auto-turn onto the target's lead marker</span>
-              <kbd>Click</kbd><span>Target a ship, or a row in the Contacts list</span>
-              <kbd>R</kbd><span>Target nearest asteroid</span>
-              <kbd>Tab</kbd><span>Cycle all targets, including jumpgates</span>
-              <kbd>C · Middle-click</kbd><span>Launch a missile once locked (×1.8 damage once the target's shields are down)</span>
-              <kbd>3</kbd><span>Heavy Fighter / Bomber / Heavy Bomber / Advanced Scout only — Swarm Pod: eight micro-missiles at your target and ships near it, no lock needed (reloads on a cooldown)</span>
-              <kbd>B</kbd><span>Flares: spoof missiles tracking you (30 energy, 5 s recharge)</span>
-              <kbd>E</kbd><span>Dock / launch</span>
-              <kbd>V</kbd><span>Chase or cockpit camera</span>
-              <kbd>`</kbd><span>Show or hide the on-screen touch buttons</span>
-              <kbd>Hold</kbd><span>A full hold makes any ship heavier. Haulers, miners and constructors at full load turn, accelerate and brake at about half rate and slide wide through turns</span>
-              <kbd>P</kbd><span>Orders: sign on to the order picked in the orders card (your faction's campaign move; its recon, beacon, interdiction, sabotage and screening orders; counter-attacks, capital hunts and Brood purges; its strikes and convoys) and set a course to it. <kbd>Shift</kbd>+<kbd>P</kbd> picks the next order, or click one</span>
-              <kbd>I</kbd><span>then 3 (on the Command page): call a faction constructor to build a depot here (area must be mostly clear when you call)</span>
-              <kbd>J</kbd><span>Autopilot to your target (gate, station, rock) or the next jump on your course</span>
-              <kbd>L</kbd><span>Auto-level on/off (rolls you back level with the sector)</span>
-              <kbd>Wheel</kbd><span>Chase camera distance</span>
-              <kbd>F11</kbd><span>Full screen on/off (or the Full button at the top right)</span>
-              <kbd>M</kbd><span>Galaxy map and economy ledger</span>
-              <kbd>N</kbd><span>Sound: all on → music off → muted</span>
-            </div>
+            <div class="h3">Controls</div>
+            <p class="note" style="margin:0 0 6px">Press Change beside an action, then the key you want. A key already in use swaps over. Saved on this device.</p>
+            <div id="keyList"></div>
             <div class="h3" style="margin-top:18px">Instruments</div>
             <p>The amber ring ahead of you is where your guns point. Put it on the target's diamond lead marker to hit a moving ship. The green circle shows which way you are actually drifting. The radar is a disc around your ship: blips sit on stalks above or below the disc to show height.</p>
             <p><b>Missiles.</b> Target a hostile and keep it inside the dashed lock ring around your gun reticle. A diamond closes in on the target; when it turns red and reads LOCKED, press C. Missiles home on the target but turn slower than ships, so hard turns and flares can beat them. Red arrows on the ring around the centre point to hostiles off-screen; a blinking warning means someone is locking you or a missile is inbound.</p>
@@ -3962,11 +3929,51 @@ const keys={},mouse={x:0,y:0,l:false,r:false,aim:false,in:false},touch={on:false
 let coarse=matchMedia('(pointer:coarse)').matches,touchLast=coarse;
 // prompts and the steering ring follow the input you used last: keys or the mouse mean keyboard wording, a tap means touch
 function touchUI(){return touchLast&&!touchOff}
-function actKey(){return touchUI()?'Act':'E'}
+function actKey(){return touchUI()?'Act':kb('act')}
+// ---- key bindings. Every action has a default key (the code the game listens for). A pilot can move any action to another
+// key in the manual (H); the binding is saved on this device. The game itself only ever sees default codes: a pressed key is
+// translated to the default code of the action bound to it, and a default key whose action moved elsewhere does nothing.
+const KEY_ACTS=[
+ ['Flight',[['thrust','KeyW','Thrust'],['brake','KeyS','Brake (reverse thrust with assist off)'],['rollL','KeyA','Roll left'],['rollR','KeyD','Roll right'],
+  ['fa','KeyX','Flight assist on/off: on, sideways slip bleeds off; off, pure drift'],['level','KeyL','Auto-level on/off'],['autopilot','KeyJ','Autopilot to your target or the next jump on your course'],['act','KeyE','Dock, launch, land on a rock, board, hook a jammed ship']]],
+ ['Weapons',[['fire','Space','Fire the selected gun (or left-click)'],['kin','Digit1','Kinetic cannons'],['las','Digit2','Lasers'],['msl','KeyC','Launch a missile once locked (or middle-click)'],
+  ['swarm','Digit3','Swarm pods: Heavy Fighter, Bombers, Advanced Scout, Wraith'],['jam','Digit4','Jam mode: Unbound only'],['flare','KeyB','Flares: spoof missiles tracking you (30 energy)'],['track','KeyZ','Hold: auto-turn onto the target\'s lead marker']]],
+ ['Mining',[['mine','KeyF','Fire a blast charge at the targeted rock; hold on a chunk or cloud to scoop (or right-click)'],['det','Digit5','Detonate your charges (back off 120 m first)'],['cancel','Digit6','Cancel set charges (they return to the magazine)']]],
+ ['Targets',[['tgtH','KeyT','Nearest hostile'],['cycleH','KeyQ','Cycle hostiles, nearest first'],['ahead','KeyG','The ship closest to your nose'],['ast','KeyR','Nearest rock (again: rescan it)'],['cycle','Tab','Cycle all targets, gates included'],['assist','KeyY','Whoever is attacking a friendly']]],
+ ['Command',[['comms','KeyI','Comms: Command, then the friendly ships nearby'],['distress','KeyU','Distress call'],['op','KeyO','Join the top friendly operation'],['orders','KeyP','Sign on to the picked order (Shift: pick the next)'],['stealth','KeyK','Wraith stealth, or Unbound false colours']]],
+ ['Screens',[['map','KeyM','Galaxy map'],['help','KeyH','This manual'],['cam','KeyV','Chase or cockpit camera'],['sound','KeyN','Sound: all on, music off, muted'],['touch','Backquote','Show or hide touch buttons']]]];
+const KEY_FIXED=[['Mouse','Steer: the further from the centre ring, the harder you turn'],['Arrows','Pitch and yaw without the mouse'],['Shift','Afterburner'],['Click','Target a ship, or a row in Contacts'],['Wheel','Chase camera distance'],['Esc','Close a screen'],['F11','Full screen']];
+const KEY_DEF={};for(const[,L]of KEY_ACTS)for(const[id,code]of L)KEY_DEF[id]=code;
+let KEYB={};try{KEYB=JSON.parse(localStorage.getItem('driftgate.keys')||'{}')||{}}catch(e){KEYB={}}
+let KEY_P2D={},KEY_AWAY=new Set();
+function keyRemap(){KEY_P2D={};KEY_AWAY=new Set();for(const id in KEYB){const d=KEY_DEF[id],ph=KEYB[id];if(!d||!ph||ph===d)continue;KEY_P2D[ph]=d;KEY_AWAY.add(d)}for(const ph in KEY_P2D)KEY_AWAY.delete(ph)}
+keyRemap();
+// the default code a physical key stands for ('' = a key whose action was moved away and nothing else took it)
+function keyOf(code){if(KEY_P2D[code])return KEY_P2D[code];return KEY_AWAY.has(code)?'':code}
+function keyName(code){return !code?'—':code.startsWith('Key')?code.slice(3):code.startsWith('Digit')?code.slice(5):code==='Backquote'?'`':code==='Space'?'Space':code==='Tab'?'Tab':code.replace(/^Arrow/,'')}
+// the key a pilot presses for an action now (for prompts, lessons and the manual)
+function kb(id){return keyName((KEYB[id])||KEY_DEF[id])}
+let keyWait=null;
+function keyListHtml(){let h='';for(const[g,L]of KEY_ACTS){h+=`<div class="h3" style="margin-top:12px">${g}</div><div class="keys">`;
+  for(const[id,,label]of L){const cur=KEYB[id]||KEY_DEF[id],moved=cur!==KEY_DEF[id];h+=`<kbd>${keyWait===id?'press a key…':esc(keyName(cur))}</kbd><span>${esc(label)} <button class="btn sm" type="button" data-rebind="${id}">${keyWait===id?'Cancel':'Change'}</button>${moved?' <span class="mass">default '+esc(keyName(KEY_DEF[id]))+'</span>':''}</span>`}
+  h+='</div>'}
+  h+=`<div class="h3" style="margin-top:12px">Fixed</div><div class="keys">${KEY_FIXED.map(([k,t])=>`<kbd>${k}</kbd><span>${t}</span>`).join('')}</div>`;
+  if(Object.keys(KEYB).length)h+=`<p style="margin-top:8px"><button class="btn sm" type="button" data-rebind="__reset">Reset all keys</button></p>`;return h}
+function keyListRender(){const el=$('keyList');if(el)el.innerHTML=keyListHtml()}
+function keySave(){try{localStorage.setItem('driftgate.keys',JSON.stringify(KEYB))}catch(e){}keyRemap();keyListRender()}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-rebind]');if(!b)return;const id=b.dataset.rebind;
+  if(id==='__reset'){KEYB={};keyWait=null;keySave();flash('All keys are back to their defaults.');return}keyWait=keyWait===id?null:id;keyListRender()});
+// while waiting for a new key, the next key press binds it (Esc cancels); a key another action uses is swapped onto that action
+addEventListener('keydown',e=>{if(!keyWait)return;e.preventDefault();e.stopImmediatePropagation();const id=keyWait;keyWait=null;
+  if(e.code==='Escape'||['ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','F11'].includes(e.code)){keyListRender();return}
+  const old=KEYB[id]||KEY_DEF[id];for(const o in KEY_DEF){if(o===id)continue;if((KEYB[o]||KEY_DEF[o])===e.code){KEYB[o]=old;flash(`${keyName(e.code)} was on another action: that action moves to ${keyName(old)}.`)}}
+  KEYB[id]=e.code;for(const o in KEYB)if(KEYB[o]===KEY_DEF[o])delete KEYB[o];keySave()},true);
+keyListRender();
+
 addEventListener('pointermove',e=>{if(e.pointerType==='mouse')touchLast=false},{passive:true});
 addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefault();toggleFull();return}
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
-  const c=e.code;if(running)auInit();
+  const c=keyOf(e.code);if(running)auInit();if(!c)return;
   if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();devCredits();return}
   if(c==='Enter'&&running&&NET.on&&!S.player.docked){e.preventDefault();openChat();return}
   if(c==='KeyN'&&running&&!keys[c]){keys[c]=true;auToggle();return}
@@ -3979,19 +3986,21 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyH'||c==='Slash'){toggleSheet('help');return}
   if(!$('map').hidden||!$('help').hidden)return;
   if(W&&W.gunseat){if(c==='KeyE'){leaveSeat();return}if(c==='KeyC'){if(NET.cl)netSend({t:'gmsl'});else W.gunseat.msl=1;return}}
-  if(W&&W.bridge&&W.bridge.panel){const i=['Digit1','Digit2','Digit3','Digit4','Digit5'].indexOf(c);if(i>=0){W.bridge.panel=FC_TABS[i][0];renderConsole(true);return}}
+  if(W&&W.bridge&&W.bridge.panel){const i=['Digit1','Digit2','Digit3','Digit4','Digit5'].indexOf(e.code);if(i>=0){W.bridge.panel=FC_TABS[i][0];renderConsole(true);return}}
   if(W&&W.bridge&&!W.bridge.panel&&(c==='KeyT'||c==='KeyQ')){bridgeTarget(c==='KeyQ');return}
   if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd'){const tk=W.bridge.f.tok;if(fGuest(tk)){openConsole('strat');flash('Take command first to use the command chair.',true)}else if(NET.on&&tk.owner&&!crewCan(tk,curPid(),'helm')){flash('The command chair goes with the Helm station.',true)}else sitChair()}else openConsole(n.id)}return}if(S.player.docked)undock();else if(W&&W.player&&W.player.landed)liftOff();else if(S.unb&&hookTarget()){if(NET.cl){const T=hookTarget();MP.hookOn=1;netSend({t:'hook',on:1,id:netTid(T)})}return}else if(S.unb&&lairNear()){lairDock(lairNear());return}else tryDock();return}
   if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey(e.shiftKey);return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
-  if(commsOpen()&&(c==='Digit1'||c==='Digit2'||c==='Digit3'||c==='Digit4')){commsPick(String(+c.slice(5)-1));return}
+  if(commsOpen()&&/^Digit[1-4]$/.test(e.code)){commsPick(String(+e.code.slice(5)-1));return}   // menus use the number keys as printed
   if(c==='KeyI'){cycleFriendly();return}
   if(c==='KeyQ')cycleHostile();
   if(c==='KeyG')targetAhead();
   if(c==='KeyC')fireMissile();
-  if(c==='Digit3'){if(blHull(S.player.cls))blKeyPress('det');else fireSwarm()}
-  if(c==='Digit4'&&blHull(S.player.cls))blKeyPress('cancel');else if(c==='Digit4'&&S.unb)jamToggle();
+  if(c==='Digit3'){if(blHull(S.player.cls))flash(`Mining ships carry no swarm launcher: ${kb('det')} detonates your charges, ${kb('cancel')} cancels them.`);else fireSwarm()}
+  if(c==='Digit5'&&blHull(S.player.cls))blKeyPress('det');
+  if(c==='Digit6'&&blHull(S.player.cls))blKeyPress('cancel');
+  if(c==='Digit4'&&S.unb)jamToggle();
   if(c==='KeyB')playerFlares();
   if(c==='Digit1')setWeapon('kinetic');
   if(c==='Digit2')setWeapon('laser');
@@ -4008,7 +4017,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyL'){S.player.level=S.player.level===false;flash(S.player.level===false?'Auto-level off: full six-axis freedom.':'Auto-level on: the ship rolls back level with the sector plane.');return}
   if(c==='KeyX'){S.player.fa=!S.player.fa;feed(`Flight assist ${S.player.fa?'on':'off'}.`)}
 });
-addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE'&&NET.cl&&MP.hookOn){MP.hookOn=0;netSend({t:'hook',on:0})}});
+addEventListener('keyup',e=>{{const k=keyOf(e.code);if(k)keys[k]=false}if(e.code==='KeyE'&&NET.cl&&MP.hookOn){MP.hookOn=0;netSend({t:'hook',on:0})}});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false});
 const glc=$('gl');
 glc.addEventListener('mousemove',e=>{if(lookLocked()&&!(W&&(W.bridge||W.gunseat))){freeLook();return}if(lookLocked()&&W){const k=.0024;if(W.bridge&&!W.bridge.panel){W.bridge.yaw-=e.movementX*k;W.bridge.pitch=clamp(W.bridge.pitch-e.movementY*k,-1.2,1.2);return}if(W.gunseat){W.gunseat.yaw=wrapA(W.gunseat.yaw-e.movementX*k);W.gunseat.pitch=clamp(W.gunseat.pitch-e.movementY*k,GT_MINP,GT_MAXP);return}}mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});
@@ -4258,7 +4267,7 @@ function wptsIn(sec){const o=[];for(const w of(sec&&sec.wrecks)||[])for(const p 
 function mineFind(sec,id){return sec.ast.find(a=>a.id===id)||wptsIn(sec).find(p=>p.id===id)||null}
 function wreckOf(sec,p){return((sec&&sec.wrecks)||[]).find(w=>w.pts.includes(p))||null}
 // ============================================================ blast mining (pilots): scan a rock, fire charges at its fault points from up to 300 m, back off
-// and detonate (3) or cancel (4), then fly into the chunks that come loose to scoop them (or hold F by one). Each charge blows off one chunk of its fault-point
+// and detonate (5) or cancel (6), then fly into the chunks that come loose to scoop them (or hold F by one). Each charge blows off one chunk of its fault-point
 // section (up to the launcher's size: 7, 9 or 14 units) and releases 90% of it on point, 50% near, 25% off, so a full hold takes
 // several charges and placement, not time on the rock, sets a miner's pay. Wreck sections crack at their joint, and a reactor core needs every charge on point or it all blows.
 // Nothing is made or lost: unreleased ore, and nuggets left when a cloud thins out, go to the system's debris pool.
@@ -4338,7 +4347,7 @@ function blCoreBlow(s,w,pt){const at={x:pt.x,y:pt.y,z:pt.z};if(!MUTE){fxBoom(at,
 // the detonate key: warns once when you are inside the blast, then a second press within 3 s goes ahead
 function blDetReq(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]).filter(c=>c.o===o);if(!mine.length){blSay(P,'No charges set. Fire them with F first.');return}
   let lim=BL.blastR,near=1e9;for(const c of mine){const T=blTgt(s,c);if(!T)continue;if(T.wpt&&T.k==='core')lim=BL.coreR;near=Math.min(near,d3(e,T))}
-  if(near<lim&&!(P.blArm&&W.t-P.blArm<3)){P.blArm=W.t;blSay(P,`Inside blast radius: move ${lim} m clear (${Math.round(near)} m). Press 3 again to detonate anyway.`,true);return}
+  if(near<lim&&!(P.blArm&&W.t-P.blArm<3)){P.blArm=W.t;blSay(P,`Inside blast radius: move ${lim} m clear (${Math.round(near)} m). Press ${kb('det')} again to detonate anyway.`,true);return}
   P.blArm=0;blDetonate(P,e)}
 function blCancel(P){const s=S.sectors[W.sid],o=blKey(P),n=(s.charges||[]).filter(c=>c.o===o).length;if(!n){blSay(P,'No charges set.');return}
   s.charges=s.charges.filter(c=>c.o!==o);P.blN=Math.min(blCap(P),(P.blN||0)+n);blSay(P,`${n} charge${n>1?'s':''} cancelled and back in the magazine.`)}
@@ -5939,6 +5948,7 @@ function hudUpdate(){hudFit();
   if(p.stealth)sc.unshift([`Stealth · hidden beyond ${STEALTH_R} m · no shields, guns, locks or afterburner · K to power up`,'good']);else if(p.landed)sc.unshift(['Landed · powered down · hidden from enemy radar · E to lift off','good']);else if(p.boot&&W.t<p.boot)sc.unshift([`Systems rebooting · weapons in ${Math.ceil(p.boot-W.t)} s`,'warn']);
   if(p.mining&&!P.docked){const k=mainOre(p.mining);sc.splice(1,0,[`Mining ${k?ITEMS[k].name:'rock'}${invMass(P.cargo)>=p.st.cargo-.5?' · hold full':''}`,invMass(P.cargo)>=p.st.cargo-.5?'bad':'good'])}
   {const H=handling(p);if(H.L>.2&&!P.docked)sc.push([`Laden ${Math.round(H.L*100)}% · ${HEAVY_CLS.has(P.cls)?'heavy':'slower'} handling −${Math.round((1-H.turn)*100)}% turn`,H.L>.65&&HEAVY_CLS.has(P.cls)?'bad':'warn'])}
+  keysNowRender();
   $('hChips').innerHTML=chips.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');$('hSChips').innerHTML='';{const h=P.docked||W.bridge?'':sc.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');if($('hML').innerHTML!==h)$('hML').innerHTML=h}
   {const el=$('hBcn'),B=S.beacons&&S.beacons[W.sid],on=!!B&&isScoutCls(P.cls)&&!P.docked;el.hidden=!on;if(on){const d=Math.round(d3(p,B)),F=W.bcnF||{},mine=B.owner===P.faction,col=B.owner?sideCol(B.owner):'#ece4cf',flip=F.side&&F.t>0?` · flipping ${Math.round(clamp(F.t/BCN_T,0,1)*100)}%`:'';
     const st=bcnState(B),left=fmtT(bcnLeft(B)),sts=st==='locked'?` · secured ${left}`:st==='fading'?(mine?` · <b style="color:var(--amber)">fading: re-secure within ${left}</b>`:` · fading: flip it now (${left})`):'';
@@ -5958,10 +5968,10 @@ function hudUpdate(){hudFit();
   let th='';if(W.tgt&&validTgt(W.tgt)){const T=W.tgt.ref,dist=Math.round(d3(T,p));
     if(W.tgt.kind==='ship'){const col=sideCol(T.side);th=`<div class="tp"><div class="tn" style="color:${col}">${esc(aceOfEnt(T)&&T.pname?T.pname:T.tok?T.tok.name:hullName(T.side==="player"?S.player.faction:T.side,T.cls))}</div>${aceTgtLine(T)}<div class="ts">${esc(sideName(T.side))} · ${CLASSES[T.cls].name} · ${T.role==='strike'?'strike group':T.role==='frigate'?'capital ship':T.role} · Mk ${ROMAN[T.tier]} · ${T.wpn==='laser'?'lasers':'kinetic'} · ${hostile('player',T.side)?'hostile':'friendly'}${T.tuned?' · <span style="color:#6ff2cf">Aurora-tuned ✦</span>':''}</div>${S.unb&&T.role==='frigate'?`<div class="ts" style="color:#b7c6ff">${jamDark(T)?`JAMMED DARK · ${Math.max(0,Math.ceil(T.jamOff-W.t))} s · hold E to hook its store`:`Capital jam ${Math.round((T.cjam||0)*100)}% · turrets jammed ${(T.turrets||[]).filter(x=>(x.jamOff||0)>W.t).length}/${(T.turrets||[]).length}`}</div>`:''}${S.unb&&T.role!=='frigate'&&(T.jam>0||jamDark(T))?`<div class="ts" style="color:#b7c6ff">${jamDark(T)?`JAMMED DARK · ${Math.max(0,Math.ceil(T.jamOff-W.t))} s · hold E within ${hookReach(T)} m to hook`:`Jam bar ${Math.round(jamFrac(T)*100)}%`}${T.teth&&T.teth.until>W.t?' · tethered':''}</div>`:''}${T.vr?`<div class="ts" style="color:#9fe0c8">Fitted: ${Object.values(T.vr).map(id=>esc(VARIANTS[id].name)+' ('+esc(VARIANTS[id].cost)+')').join(', ')}</div>`:''}${T.side==='brood'&&T.role==='miner'&&invMass(T.cargo||{})>0?`<div class="ts" style="color:#9be35a">Belly: ${fmt(invMass(T.cargo))} t of ore. It spills when the Grazer dies.</div>`:''}${T.role==='frigate'?(T.cls==='escort'?'<div class="ts" style="color:var(--amber)">Light capital: guns and missiles wear it down; a torpedo that hits guts it</div>':'<div class="ts" style="color:var(--amber)">Capital ship: guns drain its shield; only torpedoes and capital guns hurt its hull</div>'):''}
       <div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.st.sCap*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(T.hull)}</b></div><div class="mini"><i style="width:${T.hull/T.st.hull*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
-    else if(W.tgt.kind==='ast')th=`<div class="tp"><div class="tn">${T.comet?'Comet':T.seam?'Xenocrystal Seam':'Asteroid'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${ITEMS[k].name} ${T.ore[k]} t`).join(' · ')}</div>${T.seam?'<div class="ts" style="color:#d9bbff">Protected home vein: a limited supply that refills slowly. Turn it into Crystal Lattice and Resonance Cores at your home station.</div>':''}<div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Fire charges at its fault points with F (rings turn green on point), back off 120 m and press 3. Fly into the chunks that come off to scoop them.</div></div>`;
+    else if(W.tgt.kind==='ast')th=`<div class="tp"><div class="tn">${T.comet?'Comet':T.seam?'Xenocrystal Seam':'Asteroid'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${ITEMS[k].name} ${T.ore[k]} t`).join(' · ')}</div>${T.seam?'<div class="ts" style="color:#d9bbff">Protected home vein: a limited supply that refills slowly. Turn it into Crystal Lattice and Resonance Cores at your home station.</div>':''}<div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Fire charges at its fault points with F (rings turn green on point), back off 120 m and press ${kb('det')}. Fly into the chunks that come off to scoop them.</div></div>`;
     else if(W.tgt.kind==='beacon'){const own=T.owner,mine=T.by&&isMe(T.by),sc=isScoutCls(S.player.cls);th=`<div class="tp"><div class="tn" style="color:${own?sideCol(own):'var(--ivory)'}">Sector beacon</div><div class="ts">${own?'Held by '+FACTIONS[own].name+(T.by?' · flipped '+fmtT(S.T-T.T)+' ago':''):'Unclaimed'}${mine?' · <b>yours</b>, paying '+BCN_RES+' cr/min':''}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">${own===S.player.faction?'Scanning this system for your side.':sc?`Hold within ${BCN_R} m for ${BCN_T} s to flip it: +${BCN_FLIP} cr, then ${BCN_RES} cr a minute (for ${BCN_RES_T/60} min after your last flip or re-secure) and a constant scan here.`:'Only a Scout or Advanced Scout can flip it.'}</div></div>`}
     else if(W.tgt.kind==='anom'){th=anomPanel(T,dist)}
-    else if(W.tgt.kind==='wpt'){const wk=wreckOf(S.sectors[W.sid],T);th=`<div class="tp"><div class="tn">${WPT_NAME[T.k]||'Salvage point'}</div><div class="ts">Wreck of ${esc(wk?wk.name:'a capital ship')} · breaks up in ${wk?fmtT(Math.max(0,wk.until-S.T)):'?'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${T.ore[k]} ${ITEMS[k].name}`).join(' · ')}</div><div class="row">Range<b>${fmt(dist)} m</b></div>${T.k==='core'?`<div class="row">Reactor heat<b style="color:${T.heat>.6?'var(--danger)':T.heat>.3?'var(--amber)':'inherit'}">${Math.round(T.heat*100)}%</b></div><div class="ts">Every charge on the core must be on point, or the whole wreck goes up.</div>`:'<div class="ts">Fire a charge onto its joint (F), back off and press 3, then scoop the chunk.</div>'}</div>`}
+    else if(W.tgt.kind==='wpt'){const wk=wreckOf(S.sectors[W.sid],T);th=`<div class="tp"><div class="tn">${WPT_NAME[T.k]||'Salvage point'}</div><div class="ts">Wreck of ${esc(wk?wk.name:'a capital ship')} · breaks up in ${wk?fmtT(Math.max(0,wk.until-S.T)):'?'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${T.ore[k]} ${ITEMS[k].name}`).join(' · ')}</div><div class="row">Range<b>${fmt(dist)} m</b></div>${T.k==='core'?`<div class="row">Reactor heat<b style="color:${T.heat>.6?'var(--danger)':T.heat>.3?'var(--amber)':'inherit'}">${Math.round(T.heat*100)}%</b></div><div class="ts">Every charge on the core must be on point, or the whole wreck goes up.</div>`:'<div class="ts">Fire a charge onto its joint (F), back off and press '+kb('det')+', then scoop the chunk.</div>'}</div>`}
     else if(W.tgt.kind==='crate')th=`<div class="tp"><div class="tn">${T.derelict?'Derelict cargo':'Salvage'}</div><div class="ts">${Object.keys(T.inv).map(k=>`${T.inv[k]} ${ITEMS[k].name}`).join(' · ')}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Fly into it to scoop.</div></div>`;
     else if(W.tgt.kind==='outpost'){const o2=T.o,os=oStats(o2);th=`<div class="tp"><div class="tn" style="color:${sideCol(o2.owner)}">${esc(o2.name)}</div><div class="ts">${o2.owner?sideName(o2.owner):'Unclaimed'} · Level ${o2.level}${o2.breached?' · BREACHED':''}</div><div class="ts">${TYPE_TEXT[o2.type]}</div>
       <div class="row">Shield<b>${Math.round(o2.shield)}</b></div><div class="mini"><i style="width:${o2.shield/os.sMax*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(o2.hull)}</b></div><div class="mini"><i style="width:${o2.hull/os.hMax*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
@@ -6264,6 +6274,16 @@ function fmtT(t){const m=Math.floor(t/60),s=Math.floor(t%60);return`${m}:${Strin
 // the Brood's road to a win, at a glance: one cell per system it holds, against the 7 it must hold for WIN_TIME
 function broodMeter(b){const col=b>=6?'var(--danger)':b>=5?'var(--amber)':sideCol('brood');let cells='';for(let i=0;i<VIC_NEED;i++)cells+=`<i style="display:inline-block;width:14px;height:8px;margin-right:3px;background:${i<b?col:'rgba(255,255,255,.1)'}"></i>`;
   return`<div style="margin-top:8px"><div class="note" style="margin:0 0 4px">Brood threat · ${Math.min(b,VIC_NEED)} of ${VIC_NEED}${b>=VIC_NEED&&S.victory&&S.victory.side==='brood'?` · galaxy falls in ${fmtT(Math.max(0,WIN_TIME-(S.T-S.victory.since)))}`:''}</div>${cells}<div class="note" style="margin:4px 0 0">The Brood wins only by holding ${VIC_NEED} systems for ${Math.round(WIN_TIME/60)} minutes; it can't win on the deadline.</div></div>`}
+// the keys that matter right now, under the prompt: what this hull can do with this target in this moment (at most six)
+function keysNow(){const P=S.player,p=W&&W.player;if(!p||P.docked||W.bridge||W.gunseat||W.dead||touchUI())return[];const k=[],T=W.tgt&&validTgt(W.tgt)?W.tgt:null;
+  if(blHull(P.cls)){const set=(S.sectors[W.sid].charges||[]).filter(ch=>ch.o===blKey(P)).length;if(T&&(T.kind==='ast'||T.kind==='wpt'))k.push([kb('mine'),'charge']);if(set)k.push([kb('det'),`detonate ${set}`],[kb('cancel'),'cancel']);if(p.mining)k.push([kb('mine'),'hold to scoop'])}
+  if(T&&T.kind==='ship'&&hostile('player',T.ref.side)){if(W.lock&&W.lock.locked&&P.rack>0)k.push([kb('msl'),'missile']);if((P.swarm||0)>0&&swarmCap(P))k.push([kb('swarm'),'swarm']);k.push([kb('track'),'hold to track'])}
+  if(W.missiles.some(m=>m.tgt===p&&m.kind!=='swarm'))k.unshift([kb('flare'),'flares']);
+  if(T&&(T.kind==='gate'||T.kind==='station'||T.kind==='ast'||T.kind==='outpost'))k.push([kb('autopilot'),'autopilot']);
+  if(p.hull<p.st.hull*.35)k.push([kb('distress'),'distress']);
+  if(!T)k.push([kb('tgtH'),'nearest hostile'],[kb('cycle'),'cycle targets']);
+  return k.slice(0,6)}
+function keysNowRender(){const el=$('hKeysNow');if(!el)return;const h=keysNow().map(([key,t])=>`<span><kbd>${esc(key)}</kbd>${esc(t)}</span>`).join('');if(el.innerHTML!==h)el.innerHTML=h}
 function renderMapSide(){
   const d=DEF[mapSel],s=S.sectors[mapSel],oid=OUT_BY_SECTOR[mapSel],o=oid&&S.outposts[oid];
   const fields={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};for(const a of s.ast)invVec(a.ore,fields);
@@ -6476,29 +6496,29 @@ function trWreck(){trMiner();const p=W.player;if(!p)return;qRot(p.q,0,0,1,_f);co
 const trItems=()=>Object.values(S.player.cargo||{}).reduce((a,b)=>a+b,0);
 const TRAIN=[
  {t:'Flight',steps:[
-  {x:'Welcome to flight school. This practice galaxy covers every part of Driftgate in 15 lessons; skip any step or lesson with the buttons below. You are docked at your faction’s core station. Press <kbd>E</kbd> to launch.',ok:()=>!S.player.docked},
-  {x:'<kbd>W</kbd> thrusts, <kbd>S</kbd> brakes and the mouse steers: the further the pointer sits from the centre ring, the harder you turn. <kbd>A</kbd>/<kbd>D</kbd> roll. Reach <b>150 m/s</b>.',ok:()=>hyp(W.player.vx,W.player.vy,W.player.vz)>150},
-  {x:'Hold <kbd>W</kbd> and <kbd>Shift</kbd> for the afterburner: a kick of speed, then a higher top speed while held. It drains energy, and needs a little back before it lights again.',ok:()=>(keys.ShiftLeft||keys.ShiftRight)&&hyp(W.player.vx,W.player.vy,W.player.vz)>120},
-  {x:'Press <kbd>Tab</kbd> until a jumpgate is targeted, then <kbd>J</kbd> for autopilot. Jumpgates link each system to its neighbours.',ok:()=>apOn&&W.tgt&&W.tgt.kind==='gate'},
-  {x:'Autopilot will fly you through the gate. Press <kbd>J</kbd> again to take the stick back. To jump by hand, point your nose straight through a gate ring and hold steady for 5 seconds.',ok:()=>!apOn},
-  {x:'Click <b>Sound</b> at the top right to open the sound panel: switches and volume sliders for effects and music. Music follows the space you’re in (each faction, freeports, Brood space, open space), and battle music cuts in when shields, yours or your target’s, start taking fire. <kbd>N</kbd> cycles all on → muted → effects only.',ok:()=>!$('sndPop').hidden},
+  {x:'Welcome to flight school. This practice galaxy covers every part of Driftgate in 15 lessons; skip any step or lesson with the buttons below. You are docked at your faction’s core station. Press <kbd>'+kb('act')+'</kbd> to launch.',ok:()=>!S.player.docked},
+  {x:'<kbd>'+kb('thrust')+'</kbd> thrusts, <kbd>'+kb('brake')+'</kbd> brakes and the mouse steers: the further the pointer sits from the centre ring, the harder you turn. <kbd>'+kb('rollL')+'</kbd>/<kbd>'+kb('rollR')+'</kbd> roll. Reach <b>150 m/s</b>.',ok:()=>hyp(W.player.vx,W.player.vy,W.player.vz)>150},
+  {x:'Hold <kbd>'+kb('thrust')+'</kbd> and <kbd>Shift</kbd> for the afterburner: a kick of speed, then a higher top speed while held. It drains energy, and needs a little back before it lights again.',ok:()=>(keys.ShiftLeft||keys.ShiftRight)&&hyp(W.player.vx,W.player.vy,W.player.vz)>120},
+  {x:'Press <kbd>'+kb('cycle')+'</kbd> until a jumpgate is targeted, then <kbd>'+kb('autopilot')+'</kbd> for autopilot. Jumpgates link each system to its neighbours.',ok:()=>apOn&&W.tgt&&W.tgt.kind==='gate'},
+  {x:'Autopilot will fly you through the gate. Press <kbd>'+kb('autopilot')+'</kbd> again to take the stick back. To jump by hand, point your nose straight through a gate ring and hold steady for 5 seconds.',ok:()=>!apOn},
+  {x:'Click <b>Sound</b> at the top right to open the sound panel: switches and volume sliders for effects and music. Music follows the space you’re in (each faction, freeports, Brood space, open space), and battle music cuts in when shields, yours or your target’s, start taking fire. <kbd>'+kb('sound')+'</kbd> cycles all on → muted → effects only.',ok:()=>!$('sndPop').hidden},
   {x:'Close the panel (click anywhere else, or <kbd>Esc</kbd>).',ok:()=>$('sndPop').hidden}]},
  {t:'Weapons',setup:trDrones,steps:[
-  {x:'Three harmless Unbound target drones are ahead of you. Press <kbd>T</kbd> to target the nearest hostile (<kbd>Q</kbd> cycles).',ok:()=>W.tgt&&W.tgt.kind==='ship'&&W.tgt.ref.train},
-  {x:'Shoot one down. <kbd>Space</kbd> or click fires; <kbd>1</kbd> kinetic cannons, <kbd>2</kbd> lasers. Aim at the lead marker, or hold <kbd>Z</kbd> to track it. Break shields first: hulls die fast after. Damage earns a share of the bounty, so you don’t need the kill shot.',ok:()=>trDroneEnts().length<3},
-  {x:'Missiles: keep a target near your nose until the lock completes, then press <kbd>C</kbd>. Missiles hit 1.8× harder once shields are down and reload on a cooldown.',setup:()=>{if(!trDroneEnts().length)trDrones()},ok:()=>W.missiles.some(m=>m.src===W.player)},
-  {x:'If something locks onto you, press <kbd>B</kbd> for flares: they spoof missiles tracking you and cost 30 energy (stop firing for a moment if the bar is low). Try it now.',ok:()=>W.flareCd>0},
+  {x:'Three harmless Unbound target drones are ahead of you. Press <kbd>'+kb('tgtH')+'</kbd> to target the nearest hostile (<kbd>'+kb('cycleH')+'</kbd> cycles).',ok:()=>W.tgt&&W.tgt.kind==='ship'&&W.tgt.ref.train},
+  {x:'Shoot one down. <kbd>'+kb('fire')+'</kbd> or click fires; <kbd>1</kbd> kinetic cannons, <kbd>2</kbd> lasers. Aim at the lead marker, or hold <kbd>'+kb('track')+'</kbd> to track it. Break shields first: hulls die fast after. Damage earns a share of the bounty, so you don’t need the kill shot.',ok:()=>trDroneEnts().length<3},
+  {x:'Missiles: keep a target near your nose until the lock completes, then press <kbd>'+kb('msl')+'</kbd>. Missiles hit 1.8× harder once shields are down and reload on a cooldown.',setup:()=>{if(!trDroneEnts().length)trDrones()},ok:()=>W.missiles.some(m=>m.src===W.player)},
+  {x:'If something locks onto you, press <kbd>'+kb('flare')+'</kbd> for flares: they spoof missiles tracking you and cost 30 energy (stop firing for a moment if the bar is low). Try it now.',ok:()=>W.flareCd>0},
   {x:'Finish the remaining drones.',ok:()=>!trDroneEnts().length},
-  {ack:1,ok:()=>!!S.training.ack,x:'<b>Bounties, swarms and wings.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships, shared by damage dealt. Heavy Fighters, Bombers, Heavy Bombers, Advanced Scouts and the Wraith also carry a swarm launcher (<kbd>3</kbd>): eight micro-missiles, most at your target and the rest at whoever flies beside it. Shields recharge 2.5 s after the last hit. Combat ships fly in wings, and when a wing is cut down to one or two ships the survivors run for home.'}]},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Bounties, swarms and wings.</b> Command pays a bounty for every enemy ship destroyed, more for bigger ships, shared by damage dealt. Heavy Fighters, Bombers, Heavy Bombers, Advanced Scouts and the Wraith also carry a swarm launcher (<kbd>'+kb('swarm')+'</kbd>): eight micro-missiles, most at your target and the rest at whoever flies beside it. Shields recharge 2.5 s after the last hit. Combat ships fly in wings, and when a wing is cut down to one or two ships the survivors run for home.'}]},
  {t:'Mining and trade',setup:trMiner,steps:[
-  {x:'Only mining ships carry a blast rig, so training has moved you into a <b>Light Miner</b>. Press <kbd>R</kbd> to target the nearest asteroid and fly to it.',ok:()=>W.tgt&&W.tgt.kind==='ast'},
-  {x:'Mining is blasting. Fault-point rings show on the rock: from within 300 m, aim at one until it turns green and press <kbd>F</kbd> to fire a charge (if the rings fade, <kbd>R</kbd> scans again). Back off 120 m and press <kbd>3</kbd> to detonate (<kbd>4</kbd> cancels). Then fly into the chunks that come off (or hold <kbd>F</kbd> by one) and scoop <b>3 ore</b>. Each charge blows off one chunk of the rock, so a full hold takes several charges. Charges on point release the most, so placement sets your pay. Every plate and coil in Driftgate was mined from a rock that already existed: nothing is created.',setup:()=>{S.training.v.ore=trOre()},ok:()=>trOre()-(S.training.v.ore||0)>=3},
-  {x:'Fly back to the station (<kbd>Tab</kbd> to target it, <kbd>J</kbd> for autopilot) and press <kbd>E</kbd> to dock.',ok:()=>S.player.docked==='station'},
+  {x:'Only mining ships carry a blast rig, so training has moved you into a <b>Light Miner</b>. Press <kbd>'+kb('ast')+'</kbd> to target the nearest asteroid and fly to it.',ok:()=>W.tgt&&W.tgt.kind==='ast'},
+  {x:'Mining is blasting. Fault-point rings show on the rock: from within 300 m, aim at one until it turns green and press <kbd>'+kb('mine')+'</kbd> to fire a charge (if the rings fade, <kbd>'+kb('ast')+'</kbd> scans again). Back off 120 m and press <kbd>'+kb('det')+'</kbd> to detonate (<kbd>'+kb('cancel')+'</kbd> cancels). Then fly into the chunks that come off (or hold <kbd>'+kb('mine')+'</kbd> by one) and scoop <b>3 ore</b>. Each charge blows off one chunk of the rock, so a full hold takes several charges. Charges on point release the most, so placement sets your pay. Every plate and coil in Driftgate was mined from a rock that already existed: nothing is created.',setup:()=>{S.training.v.ore=trOre()},ok:()=>trOre()-(S.training.v.ore||0)>=3},
+  {x:'Fly back to the station (<kbd>'+kb('cycle')+'</kbd> to target it, <kbd>'+kb('autopilot')+'</kbd> for autopilot) and press <kbd>'+kb('act')+'</kbd> to dock.',ok:()=>S.player.docked==='station'},
   {x:'Open <b>Economy → Market</b> and sell your ore. Prices follow the owner’s real stores, so a glut sells cheap and a shortage pays well.',setup:()=>{S.training.v.ore=trOre();S.training.v.cr=S.player.credits},ok:()=>trOre()<S.training.v.ore&&S.player.credits>S.training.v.cr},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Ores and hulls.</b> Ferrite, cuprite, iridium and xenocrystal are common. <b>Aurorite</b> exists only in the three deep-space systems and tunes each component once: +6% to drives, holds and blast rigs, +4% to reactor, shields, guns and armour. <b>Vantium</b> lies in four contested fields, and every Capital Keel needs it. Bigger mining and hauling hulls, bought at a core Shipyard, carry bigger charge magazines, blow off bigger chunks and scoop faster, or carry bigger holds, plus <b>guard drones</b> that launch with you and defend your ship. Haulers don’t mine.'}]},
  {t:'The station',steps:[
   {x:'Open <b>Construction</b>: Fabricate turns ore into parts, Upgrades fit Mark I–III systems and their variants, and Station works add the structures that grow a station. Refits (pure upgrades with no catch) are sold at Freeports.',ok:()=>!$('dock').hidden&&['fab','upg','refit','works','outpost'].includes(dockTab)},
-  {ack:1,ok:()=>!!S.training.ack,x:'<b>Vaults.</b> Every friendly station and outpost keeps its own vault for you (<b>Hangar → Vault</b>). Goods stay where you store them: to use them somewhere else, you haul them there. The galaxy map (<kbd>M</kbd>) marks every system that holds your goods.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Vaults.</b> Every friendly station and outpost keeps its own vault for you (<b>Hangar → Vault</b>). Goods stay where you store them: to use them somewhere else, you haul them there. The galaxy map (<kbd>'+kb('map')+'</kbd>) marks every system that holds your goods.'},
   {x:'Open <b>Hangar → Shipyard</b> and switch to the <b>Scout</b>. Starter hulls (light fighter, light miner, light hauler, scout) are free at any core station; bigger hulls are bought.',ok:()=>S.player.cls==='scout'},
   {x:'Open <b>Missions</b>: your faction’s campaign move, its faction orders (recon, beacons, interdiction, sabotage and more), operations to join, convoy raids and escorts, and beacon bounties. <b>Economy → Orders</b> holds hauling and mining work.',ok:()=>!$('dock').hidden&&dockTab==='missions'}]},
  {t:'Upgrades and variants',setup:()=>{const P=S.player;devLedger(()=>{if((P.tiers.weapon||1)<2)P.tiers.weapon=2;inv.addAll(P.vault,VARIANTS.rapid.recipe)});refreshPlayerStats()},steps:[
@@ -6508,23 +6528,23 @@ const TRAIN=[
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Specialists</b> guard against one enemy and fit at any Mk: five against Unbound jammers (Faraday plating, Fast-reboot reactor, Snap-back emitter, Sealed hold and Tether cutter) and six against the Brood. Each costs only 3 plate and 3 conduit to fit from Upgrades at any dock, and faction markets stock them once the Bloom or the Unbound press that faction.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Everything fitted goes down with the ship.</b> Lose it and about half your variants spill into its salvage crate, with some of its parts; the rest is gone. <b>Reading the enemy:</b> faction wings fly their own variants (Halcyon favours Bastion and Flicker; Varkesh heavy plating and cannons; Ostrova Surge or Steady cores and Rapid fire). The target panel names what an enemy has fitted, and its weakness.'}]},
  {t:'Scouts and beacons',setup:()=>{const B=S.beacons&&S.beacons[W.sid];if(B&&B.owner===S.player.faction){B.owner=null;B.by=null}},steps:[
-  {x:'Launch (<kbd>E</kbd>). In a Scout the beacon status line appears under the system name.',ok:()=>!S.player.docked},
-  {x:'Press <kbd>Tab</kbd> until the sector beacon (◆) is targeted, then <kbd>J</kbd> to fly there.',ok:()=>W.tgt&&W.tgt.kind==='beacon'},
+  {x:'Launch (<kbd>'+kb('act')+'</kbd>). In a Scout the beacon status line appears under the system name.',ok:()=>!S.player.docked},
+  {x:'Press <kbd>'+kb('cycle')+'</kbd> until the sector beacon (◆) is targeted, then <kbd>'+kb('autopilot')+'</kbd> to fly there.',ok:()=>W.tgt&&W.tgt.kind==='beacon'},
   {x:'Hold within 250 m of the beacon for 10 seconds to flip it to your faction. A held beacon scans its system for your side, feeds its market prices to you, and pays you a bonus plus 4 cr a minute for 10 minutes after you last flip or re-secure it.',ok:()=>{const B=S.beacons[W.sid];return B&&B.owner===S.player.faction}},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Holding a beacon.</b> For <b>3 minutes</b> after a flip nobody can flip it (the ring on the map empties as the lock runs out). Then it <b>fades for 2 minutes</b>: an enemy scout can flip it, and a friendly scout can hold it again to re-secure it. If nobody does, it drops back to neutral. In a system your side holds, the local crew keeps your beacon secured; out in contested space a scout has to keep coming back.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Pinging capital ships.</b> In a scout, keep an enemy carrier or escort targeted within <b>4 km for 4 seconds</b>. For 5 minutes your whole side sees it on the galaxy map and on capital ships’ Strategic and Helm maps, wherever it goes. If it’s destroyed while tagged, you’re paid a scouting bonus: 500 cr for a carrier, 300 for an escort.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Sensors, not omniscience.</b> You only see strikes, convoys and battles where your side has eyes: systems with a friendly station or depot (and their neighbours), friendly outposts, held beacons, and wherever a friendly scout or capital ship is (and next door). The map dims what you can’t see. Holding the Hollow Relay taps the whole network.'}]},
  {t:'Hugging a rock',steps:[
-  {x:'Target an asteroid (<kbd>R</kbd>), slow below <b>70 m/s</b> close to it and press <kbd>E</kbd> to land. Landed, you power down everything but radar, shields included: enemies beyond 320 m lose you.',ok:()=>!!W.player.landed},
+  {x:'Target an asteroid (<kbd>'+kb('ast')+'</kbd>), slow below <b>70 m/s</b> close to it and press <kbd>'+kb('act')+'</kbd> to land. Landed, you power down everything but radar, shields included: enemies beyond 320 m lose you.',ok:()=>!!W.player.landed},
   {x:'Stay landed for five seconds and watch the contacts list.',ok:()=>W.player.landed&&W.t-W.player.landed.t>5},
-  {x:'Press <kbd>E</kbd> to lift off. Systems take four seconds to re-energise: no guns until they are back up, and shields recharge from empty.',ok:()=>!W.player.landed}]},
+  {x:'Press <kbd>'+kb('act')+'</kbd> to lift off. Systems take four seconds to re-energise: no guns until they are back up, and shields recharge from empty.',ok:()=>!W.player.landed}]},
  {t:'Salvage and wrecks',setup:trWreck,steps:[
-  {x:'A wrecked escort drifts ahead, its salvage points glowing. Destroyed carriers and escorts leave wrecks like this, and miners cut them apart (you’re back in a Light Miner). Press <kbd>Tab</kbd> until a salvage point is targeted and fly to it.',ok:()=>W.tgt&&W.tgt.kind==='wpt'},
-  {x:'Wreck sections crack at their joint ring. Fire a charge onto it (<kbd>F</kbd>), back off and press <kbd>3</kbd>, then scoop <b>6 units</b> from the chunk. A reactor core needs every charge on point, or the whole wreck goes up. A third of what’s inside a wreck comes out as intact components: plate, coil and conduit.',setup:()=>{S.training.v.it=trItems()},ok:()=>trItems()-(S.training.v.it||0)>=6},
+  {x:'A wrecked escort drifts ahead, its salvage points glowing. Destroyed carriers and escorts leave wrecks like this, and miners cut them apart (you’re back in a Light Miner). Press <kbd>'+kb('cycle')+'</kbd> until a salvage point is targeted and fly to it.',ok:()=>W.tgt&&W.tgt.kind==='wpt'},
+  {x:'Wreck sections crack at their joint ring. Fire a charge onto it (<kbd>'+kb('mine')+'</kbd>), back off and press <kbd>'+kb('det')+'</kbd>, then scoop <b>6 units</b> from the chunk. A reactor core needs every charge on point, or the whole wreck goes up. A third of what’s inside a wreck comes out as intact components: plate, coil and conduit.',setup:()=>{S.training.v.it=trItems()},ok:()=>trItems()-(S.training.v.it||0)>=6},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Reading a wreck.</b> The reactor core holds the best of it, but it must be cracked <b>perfectly</b>: one charge near or off its joint and it blows in a 600 m blast that badly damages every ship inside and destroys the whole wreck. While core charges are set, the blast warning reaches 600 m. A wreck breaks up after <b>5 minutes</b>, and the Brood come for wrecks and eat them fast. Wrecks show on the galaxy map as an amber ✕.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Other salvage.</b> A destroyed freighter or fighter spills a crate: fly into it to scoop. Galaxy events bring <b>derelict cargo</b> (an abandoned hold, free to whoever gets there first) and <b>comets</b> (rich ore that breaks up after a few minutes), and also <b>ion storms</b> (for 2½ minutes shields don’t recharge and radar reaches only about a kilometre) and <b>gate collapses</b> (one link down for 2 minutes). Watch the feed and the map.'}]},
  {t:'Hauling for the war',steps:[
-  {x:'Dock at the station (<kbd>Tab</kbd>, <kbd>J</kbd>, then <kbd>E</kbd>).',ok:()=>S.player.docked==='station'},
+  {x:'Dock at the station (<kbd>'+kb('cycle')+'</kbd>, <kbd>'+kb('autopilot')+'</kbd>, then <kbd>'+kb('act')+'</kbd>).',ok:()=>S.player.docked==='station'},
   {x:'Open <b>Hangar → Shipyard</b> and switch to the <b>Light Hauler</b>: a big hold for cargo.',ok:()=>S.player.cls==='courier'},
   {x:'Open <b>Economy → Orders</b>: delivery contracts, supply drives and freeport requests, paid from treasuries. Faction contracts take goods you mined, salvaged or made; freeport requests take anything not bought at that freeport. Jobs come small, medium and large: a bigger hold fills a big job in fewer trips, and any job can be delivered in parts.',ok:()=>!$('dock').hidden&&dockTab==='orders'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Front-line resupply.</b> Carriers build their own fighters from a store of plate and coil. Land on a friendly carrier’s flight deck carrying what it lacks and it unloads straight into the store, paid the market rate times a front-line bonus of up to ×2.2 when the carrier is out where the fighting is. Orders lists which carriers need what.'},
@@ -6536,26 +6556,26 @@ const TRAIN=[
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Logistics.</b> Each faction’s core station is its warehouse and each depot keeps its own store. Freighters carry surplus ore in and components out to depots that are building and to carriers in the field. They’re real ships: a destroyed freighter spills half its hold as salvage, and losing them starves the front.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>War effort.</b> Orders delivered, supply-drive loads, campaign moves, beacon flips and enemy ships shot down all earn your faction War effort. It fades over about 20 minutes, and while it lasts your faction’s fleets fight harder in the battles fought out of sight. The Campaign section (Missions, or Orders during a supply drive) shows the current bonus.'}]},
  {t:'Comms and capital ships',setup:trFrig,steps:[
-  {x:'Launch (<kbd>E</kbd>).',ok:()=>!S.player.docked},
-  {x:'Press <kbd>I</kbd> to open comms on the Command page: <kbd>1</kbd> escort me, <kbd>2</kbd> guard me, <kbd>3</kbd> call in a constructor to build here, <kbd>4</kbd> distress call. Press <kbd>I</kbd> again to step through the friendly ships around you. <kbd>Esc</kbd> closes it.',ok:()=>commsOpen()},
-  {x:'A carrier of your faction is holding just ahead (targeted). Fly to it (<kbd>J</kbd>), match its speed (under 140 m/s relative), and press <kbd>E</kbd> to land on its flight deck and board.',ok:()=>!!(W.bridge)},
-  {x:'You’re on the bridge, at the <b>Strategic</b> console: a live map of the system. Press <b>Take command</b> to fly this carrier (or ride along as a guest). Walk with <kbd>WASD</kbd>; <kbd>E</kbd> uses a console.',ok:()=>!!(W.bridge&&fMine(W.bridge.f.tok))},
+  {x:'Launch (<kbd>'+kb('act')+'</kbd>).',ok:()=>!S.player.docked},
+  {x:'Press <kbd>'+kb('comms')+'</kbd> to open comms on the Command page: <kbd>1</kbd> escort me, <kbd>2</kbd> guard me, <kbd>3</kbd> call in a constructor to build here, <kbd>4</kbd> distress call. Press <kbd>'+kb('comms')+'</kbd> again to step through the friendly ships around you. <kbd>Esc</kbd> closes it.',ok:()=>commsOpen()},
+  {x:'A carrier of your faction is holding just ahead (targeted). Fly to it (<kbd>'+kb('autopilot')+'</kbd>), match its speed (under 140 m/s relative), and press <kbd>'+kb('act')+'</kbd> to land on its flight deck and board.',ok:()=>!!(W.bridge)},
+  {x:'You’re on the bridge, at the <b>Strategic</b> console: a live map of the system. Press <b>Take command</b> to fly this carrier (or ride along as a guest). Walk with <kbd>WASD</kbd>; <kbd>'+kb('act')+'</kbd> uses a console.',ok:()=>!!(W.bridge&&fMine(W.bridge.f.tok))},
   {x:'Open the <b>Hangar</b> tab (on an escort this is Weapons): give the carrier’s fighters wing missions, and send strikes into the next system. Bombers crack defences; assault ships capture depots and outposts, and come back if they survive.',ok:()=>!!(W.bridge&&W.bridge.panel==='wpn')},
   {x:'Open the <b>Helm</b> tab: click the map to move, and set a jump course. <b>Engineering</b> shares power between drives, shields, the flight deck and point defence.',ok:()=>!!(W.bridge&&W.bridge.panel==='nav')},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Escorts</b> are smaller capital ships: their Weapons station fires twin torpedo bays, the weapon that really hurts capital ships and stations, and point defence shoots down incoming torpedoes. Keep fighters around your capital ships to stop enemy bombers getting their torpedoes in.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Crewing together.</b> In multiplayer any pilot of your faction can board a squadmate’s carrier or escort as crew, and the commander hands each crew member one station (Helm, Weapons, called Hangar on a carrier, or Engineering) from the Strategic console. A squadmate’s Bomber or Heavy Bomber turret can be crewed too: sign on in Hangar → Shipyard while docked together.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Getting capital ships.</b> A Capital Shipyard at your faction’s main station (4 Depot Frames, 4 Capital Keels, 4 Crystal Lattice, 40 plates, 2 Compact Seals, 5,000 cr) commissions one Fleet Carrier per faction (3 Seals) and its Escorts (1 Seal each). Seals are sold only at freeports. Friendly fighter wings in the system form up and screen capital ships from bombers.'},
-  {x:'Step away from the console and leave by the hatch (<kbd>E</kbd>): you lift straight off the deck.',ok:()=>!W.bridge}]},
+  {x:'Step away from the console and leave by the hatch (<kbd>'+kb('act')+'</kbd>): you lift straight off the deck.',ok:()=>!W.bridge}]},
  {t:'Fighting for territory',steps:[
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Holding ground.</b> Stations, depots and outposts hold systems. Fighter guns only chip their armour: <b>bombers</b> and escort torpedoes break shields and defences, then <b>assault ships</b> (from carriers and escorts) land marines to capture them. Comms <kbd>3</kbd> calls in a constructor to build a depot where you are.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Stations and depots.</b> They carry shields and turrets that shoot down torpedoes; knock a shield down and its turrets go dark for 20 seconds. Main stations can’t be destroyed, but a depot at zero hull is captured if the attackers have assault loads there, or destroyed. Stations grow modules beside them (life support, storage, production, a defence platform, hull and shield works), and a depot can build a <b>fighter hangar</b> that scrambles fighters when hostiles come close.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Outposts.</b> The three <b>Forges</b> make Crystal Lattice and Resonance Cores faster than anywhere else. The <b>Hollow Relay</b> collects gate tolls and warns of strike groups. The <b>Wrack Salvage Yard</b> harvests debris. Fabricate a Claim Beacon and hold an unclaimed or breached outpost’s ring to claim it, then fortify it with parts.'},
-  {ack:1,ok:()=>!!S.training.ack,x:'<b>Fighting together.</b> When your faction runs a strike or defence, press <kbd>O</kbd> to join it. <kbd>Y</kbd> targets whoever is attacking a nearby friendly, and <kbd>U</kbd> sends a distress call that brings your faction’s wings.'},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Fighting together.</b> When your faction runs a strike or defence, press <kbd>'+kb('op')+'</kbd> to join it. <kbd>'+kb('assist')+'</kbd> targets whoever is attacking a nearby friendly, and <kbd>'+kb('distress')+'</kbd> sends a distress call that brings your faction’s wings.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>The Brood</b> grow from The Bloom, one system at a time. Their swarms raid stations, their capital ships hunt, and they feed on wrecks. The Brood lesson covers fighting them.'},
-  {ack:1,ok:()=>!!S.training.ack,x:'<b>Special hulls.</b> The <b>Wraith</b> (Legend level 10) cloaks with <kbd>K</kbd>: hidden beyond 600 m, but no guns, shields or locks until you press <kbd>K</kbd> again or take a hit. Both bombers carry a rear dorsal turret: an AI gunner mans it, or another pilot can board and man it while you fly.'}]},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Special hulls.</b> The <b>Wraith</b> (Legend level 10) cloaks with <kbd>'+kb('stealth')+'</kbd>: hidden beyond 600 m, but no guns, shields or locks until you press <kbd>'+kb('stealth')+'</kbd> again or take a hit. Both bombers carry a rear dorsal turret: an AI gunner mans it, or another pilot can board and man it while you fly.'}]},
  {t:'The Brood',steps:[
-  {x:'Open the galaxy map (<kbd>M</kbd>). The Bloom sits at the top; Brood-held systems are <b>hatched</b>. A dashed ring with <b>SEEDER</b> and a countdown marks where a Seeder is heading; <b>ROOTING</b> counts down a young Bloom Node; <b>◆ FEED</b> marks a feeding ground.',ok:()=>!$('map').hidden},
-  {x:'Close the map (<kbd>M</kbd>).',ok:()=>$('map').hidden},
+  {x:'Open the galaxy map (<kbd>'+kb('map')+'</kbd>). The Bloom sits at the top; Brood-held systems are <b>hatched</b>. A dashed ring with <b>SEEDER</b> and a countdown marks where a Seeder is heading; <b>ROOTING</b> counts down a young Bloom Node; <b>◆ FEED</b> marks a feeding ground.',ok:()=>!$('map').hidden},
+  {x:'Close the map (<kbd>'+kb('map')+'</kbd>).',ok:()=>$('map').hidden},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>How it spreads.</b> A Seeder drifts to a system next to Bloom space and plants a Bloom Node, fragile for its first 3 minutes; then the node roots and the system is the Bloom’s. Every stage is a chance to stop it. <b>Containment orders</b> pay every faction pilot: 600 cr for a Seeder, 900 for a node burned before it roots, 1,500 after. A scout who keeps a Seeder targeted within 5 km for 3 s before it plants earns 250 cr.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Truce zones.</b> In every Brood-held system the factions can’t hurt each other: shots pass through rivals, and only the Brood is a target. The truce lasts 30 s after the last node burns, then the race to claim the system begins. Nothing can be built in a truce zone.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>The haze.</b> In Bloom space shields recharge 15% slower and radar reaches a quarter less. Each Brood hit leaves a spore that nibbles your hull for 4 s (up to 3; docking clears them). Brood wings go for the most damaged ship, so pull a hurt wingman out early. Brood hulls are tough and regrow, and kinetics beat lasers against them.'},
@@ -6564,11 +6584,11 @@ const TRAIN=[
  {t:'Jammers and the Unbound',steps:[
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Jammers.</b> Unbound pirates fly Raiders, Corsairs and Plunderers. They strip your shields, then switch to jammers: a <b>Jam bar</b> fills on your screen as they hit your bare hull. Thrust stutters and guns misfire, and at a full bar your ship goes dark for 5 to 12 seconds while they hook your hold. Jammers never kill, and they can’t touch a ship with shields up.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Beating a take.</b> Keep your shields up, or break away with the afterburner while the bar drains (stop being hit for 1.5 s and it falls 10% a second). After a take your ship is hardened for a minute. Their <b>harpoons</b> fill a third of the bar and let them hook from 400 m; flares cut the line if you fit a Tether cutter. Anti-jam variants stretch the bar, reboot faster, snap shields back or seal half your hold.'},
-  {ack:1,ok:()=>!!S.training.ack,x:'<b>Flying for the pirates.</b> With a Legend point, the <b>Unbound</b> card unlocks on the start screen. You start at Scrapheart Haven in The Wrack. <kbd>4</kbd> is jam mode (jammers and harpoons); hold <kbd>E</kbd> beside a jammed ship to hook its hold; <kbd>K</kbd> raises false colours, a neutral transponder that works while a faction’s heat with you is cool. Fence the loot, grow the haven’s works, and earn your Legend point with Infamy and a Deed.'}]},
+  {ack:1,ok:()=>!!S.training.ack,x:'<b>Flying for the pirates.</b> With a Legend point, the <b>Unbound</b> card unlocks on the start screen. You start at Scrapheart Haven in The Wrack. <kbd>4</kbd> is jam mode (jammers and harpoons); hold <kbd>'+kb('act')+'</kbd> beside a jammed ship to hook its hold; <kbd>'+kb('stealth')+'</kbd> raises false colours, a neutral transponder that works while a faction’s heat with you is cool. Fence the loot, grow the haven’s works, and earn your Legend point with Infamy and a Deed.'}]},
  {t:'Winning the war',steps:[
-  {x:'Press <kbd>M</kbd> for the galaxy map: territory, operations, beacons, wrecks, pinged enemy capitals and every faction’s progress.',ok:()=>!$('map').hidden},
-  {x:'A faction wins by holding <b>7 systems for 20 minutes</b>, or by holding the most systems at the <b>two-hour deadline</b>. The Brood can only win by holding 7, so stop it before it gets there. Stations, depots and outposts hold a system; the others band together against any faction that reaches 7. Close the map (<kbd>M</kbd>).',ok:()=>$('map').hidden},
-  {x:'The orders card (Command panel, right) lists your faction’s campaign move and its faction orders: recon, beacon pushes, interdiction, sabotage, screening, counter-attacks, capital hunts and Brood purges, each with its pay. <kbd>Shift</kbd>+<kbd>P</kbd> steps to the next order; <kbd>P</kbd> signs on to the picked one and sets your course. Press <kbd>P</kbd>.',ok:()=>!!(S.training.pk||keys.KeyP)},
+  {x:'Press <kbd>'+kb('map')+'</kbd> for the galaxy map: territory, operations, beacons, wrecks, pinged enemy capitals and every faction’s progress.',ok:()=>!$('map').hidden},
+  {x:'A faction wins by holding <b>7 systems for 20 minutes</b>, or by holding the most systems at the <b>two-hour deadline</b>. The Brood can only win by holding 7, so stop it before it gets there. Stations, depots and outposts hold a system; the others band together against any faction that reaches 7. Close the map (<kbd>'+kb('map')+'</kbd>).',ok:()=>$('map').hidden},
+  {x:'The orders card (Command panel, right) lists your faction’s campaign move and its faction orders: recon, beacon pushes, interdiction, sabotage, screening, counter-attacks, capital hunts and Brood purges, each with its pay. <kbd>Shift</kbd>+<kbd>'+kb('orders')+'</kbd> steps to the next order; <kbd>'+kb('orders')+'</kbd> signs on to the picked one and sets your course. Press <kbd>'+kb('orders')+'</kbd>.',ok:()=>!!(S.training.pk||keys.KeyP)},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>How a galaxy ends.</b> The moment a side holds 7 systems, a 20-minute clock starts (the chip at the top of the screen shows it); drop below 7 and it resets. Every pilot who helped a campaign move earns a victory bonus when their faction wins (3,000 cr plus parts, paid into your vault at the start of the next galaxy). If no one manages that within <b>two hours</b>, the side holding the most systems at the deadline wins instead (ties go to most stations, then capital ships, then the richest stores). Either way a new galaxy begins, with the winner starting 40% richer and with the parts for a capital shipyard.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>The Brood can win too.</b> If the Bloom holds 7 systems for 20 minutes, the galaxy is consumed and no pilot earns a Legend point, not even the half point for a lost galaxy. When a faction reaches 7 systems, the other powers call a truce and turn on it; against the Brood the <b>Containment Accord</b> starts earlier, at 5 Brood systems, so watch the map.'},
   {ack:1,ok:()=>!!S.training.ack,x:'<b>Legend points.</b> Fly most of a galaxy (at least 30 minutes) for one faction. If it wins you earn a Legend point; if it loses you still earn half a point. Points raise you through ten levels, each with a permanent perk for scouts, haulers, miners, fighters and commanders. Your record is on the start screen’s leaderboard. Your first Legend point also unlocks <b>the Unbound</b> on the start screen.'},
@@ -6590,7 +6610,7 @@ $('train').addEventListener('click',e=>{const b=e.target.closest('[data-tr]');if
 $('bTrain').addEventListener('click',trainStart);
 $('bLaunch').addEventListener('click',()=>{const cs=cleanCall($('mpName').value);$('mpName').value=cs;if(cs.length<2){$('ssum').innerHTML='<b style="color:var(--danger)">Choose a callsign first (step 1).</b>';$('mpName').focus();return}if(!NET.on)MP.name=cs;try{localStorage.setItem('driftgate.mpname',cs)}catch(e){}
   {const code=($('mpCode').value||'').trim();if(!NET.on&&mpSlug(code)&&mpOK()&&!$('mpBox').hidden){auInit();auApply();MP.autoLaunch={fac:selFac,cls:launchCls()};mpJoin();return}}
-  if(NET.on){auInit();auApply();mpLaunch(selFac,launchCls());return}auInit();auApply();FEED.length=0;newGame(selFac,launchCls(),cs);S.player.name=cs;if(selFac==='pirate'){S.unb=1;unbP();S.player.cls='raider'}startWith(S);feed(`Welcome aboard, ${cs}, ${selFac==='pirate'?'captain of the Unbound':'pilot of the '+FAC(selFac).name}. Your vault holds a few plates and conduit: check Construction → Upgrades for your first upgrade.`,'info');feed('Launch with E. Steer with the mouse, thrust with W. In a mining ship, R targets a rock, F fires a charge onto a fault point and 3 detonates; fly into the chunks to scoop them.','info');save()});
+  if(NET.on){auInit();auApply();mpLaunch(selFac,launchCls());return}auInit();auApply();FEED.length=0;newGame(selFac,launchCls(),cs);S.player.name=cs;if(selFac==='pirate'){S.unb=1;unbP();S.player.cls='raider'}startWith(S);feed(`Welcome aboard, ${cs}, ${selFac==='pirate'?'captain of the Unbound':'pilot of the '+FAC(selFac).name}. Your vault holds a few plates and conduit: check Construction → Upgrades for your first upgrade.`,'info');feed('Launch with E. Steer with the mouse, thrust with W. In a mining ship, R targets a rock, F fires a charge onto a fault point and '+kb('det')+' detonates; fly into the chunks to scoop them.','info');save()});
 $('bContinue').addEventListener('click',()=>{auInit();auApply();const s=loadSave();if(s){FEED.length=0;startWith(s);feed('Welcome back, pilot.','info')}});
 
 //@src 15_multiplayer_dev.js
@@ -6735,7 +6755,7 @@ function mpRun(){const P=S.player;P.name=MP.name||P.name;P.pid=MP.pid;if(P.docke
   if(NET.host){hostSave();for(const c of Object.values(MP.cl))if(c.hello&&!c.ready)hJoin(c)}}
 function mpLaunch(fac,cls){
   if(NET.host){if(S&&S.pilots){newPilot(MP.pid,MP.name,fac,cls,legPack(MP.name))}else{newGame(fac,cls,MP.name);if(fac==='pirate'){S.unb=1;unbP();S.player.cls='raider'}S.gid=rid(10);S.pilots={};S.pilots[MP.pid]=S.player;S.player.pid=MP.pid;S.player.name=MP.name}
-    S.player=S.pilots[MP.pid];mpRun();feed(`You are hosting “${MP.code}”. Friends who enter the same galaxy code join you.`,'info');flash(`Hosting “${MP.code}”. Friends join by typing the same galaxy code.`);feed('Launch with E. Steer with the mouse, thrust with W. In a mining ship, R targets a rock, F fires a charge onto a fault point and 3 detonates; fly into the chunks to scoop them.','info')}
+    S.player=S.pilots[MP.pid];mpRun();feed(`You are hosting “${MP.code}”. Friends who enter the same galaxy code join you.`,'info');flash(`Hosting “${MP.code}”. Friends join by typing the same galaxy code.`);feed('Launch with E. Steer with the mouse, thrust with W. In a mining ship, R targets a rock, F fires a charge onto a fault point and '+kb('det')+' detonates; fly into the chunks to scoop them.','info')}
   else if(NET.cl&&MP.host){send(MP.host,{t:'newpilot',fac,cls,leg:legPack(MP.name)});mpStatus('Joining…')}}
 function newPilot(pid,name,fac,cls,leg){const L0=ledger();
   const P={pid,name,faction:fac,cls,hullInv:{},bay:{drone:CLASSES[cls].drones||0},tiers:{engine:1,power:1,shield:1,weapon:1,armor:1,drill:1,cargo:1,payload:1},cargo:{},vault:{plate:6,wire:6},rack:rackCapC(cls,1),magV:1,swarm:(CLASSES[cls]&&CLASSES[cls].swarm)||0,wpn:'kinetic',credits:1800,sector:FAC_HOME(fac),docked:'station',x:0,y:0,z:0,vx:0,vy:0,vz:0,q:[0,0,0,1],hull:0,shield:0,energy:0,fa:true,kills:0,tune:{}};

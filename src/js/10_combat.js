@@ -105,7 +105,7 @@ function wptsIn(sec){const o=[];for(const w of(sec&&sec.wrecks)||[])for(const p 
 function mineFind(sec,id){return sec.ast.find(a=>a.id===id)||wptsIn(sec).find(p=>p.id===id)||null}
 function wreckOf(sec,p){return((sec&&sec.wrecks)||[]).find(w=>w.pts.includes(p))||null}
 // ============================================================ blast mining (pilots): scan a rock, fire charges at its fault points from up to 300 m, back off
-// and detonate (3) or cancel (4), then fly into the chunks that come loose to scoop them (or hold F by one). Each charge blows off one chunk of its fault-point
+// and detonate (5) or cancel (6), then fly into the chunks that come loose to scoop them (or hold F by one). Each charge blows off one chunk of its fault-point
 // section (up to the launcher's size: 7, 9 or 14 units) and releases 90% of it on point, 50% near, 25% off, so a full hold takes
 // several charges and placement, not time on the rock, sets a miner's pay. Wreck sections crack at their joint, and a reactor core needs every charge on point or it all blows.
 // Nothing is made or lost: unreleased ore, and nuggets left when a cloud thins out, go to the system's debris pool.
@@ -185,7 +185,7 @@ function blCoreBlow(s,w,pt){const at={x:pt.x,y:pt.y,z:pt.z};if(!MUTE){fxBoom(at,
 // the detonate key: warns once when you are inside the blast, then a second press within 3 s goes ahead
 function blDetReq(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]).filter(c=>c.o===o);if(!mine.length){blSay(P,'No charges set. Fire them with F first.');return}
   let lim=BL.blastR,near=1e9;for(const c of mine){const T=blTgt(s,c);if(!T)continue;if(T.wpt&&T.k==='core')lim=BL.coreR;near=Math.min(near,d3(e,T))}
-  if(near<lim&&!(P.blArm&&W.t-P.blArm<3)){P.blArm=W.t;blSay(P,`Inside blast radius: move ${lim} m clear (${Math.round(near)} m). Press 3 again to detonate anyway.`,true);return}
+  if(near<lim&&!(P.blArm&&W.t-P.blArm<3)){P.blArm=W.t;blSay(P,`Inside blast radius: move ${lim} m clear (${Math.round(near)} m). Press ${kb('det')} again to detonate anyway.`,true);return}
   P.blArm=0;blDetonate(P,e)}
 function blCancel(P){const s=S.sectors[W.sid],o=blKey(P),n=(s.charges||[]).filter(c=>c.o===o).length;if(!n){blSay(P,'No charges set.');return}
   s.charges=s.charges.filter(c=>c.o!==o);P.blN=Math.min(blCap(P),(P.blN||0)+n);blSay(P,`${n} charge${n>1?'s':''} cancelled and back in the magazine.`)}

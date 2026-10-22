@@ -125,6 +125,7 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .mini i{position:absolute;inset:0 auto 0 0}
 #hPrompt{left:50%;transform:translateX(-50%);bottom:calc(330px + env(safe-area-inset-bottom,0px));text-align:center;font-size:14px;letter-spacing:.04em;max-width:min(560px,calc(100% - 32px))}
 #hPrompt span{display:inline-block;background:rgba(5,7,13,.75);border:1px solid var(--line-hi);padding:6px 12px}
+#hKeysNow{left:50%;transform:translateX(-50%);bottom:calc(298px + env(safe-area-inset-bottom,0px));display:flex;gap:12px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--dim);letter-spacing:.03em;max-width:min(640px,calc(100% - 32px))}#hKeysNow:empty{display:none}#hKeysNow kbd{color:var(--ivory);margin-right:4px}#hud.ckscope #hKeysNow{bottom:calc(min(34vh,300px) - 32px + env(safe-area-inset-bottom,0px))}@media (max-width:760px){#hKeysNow{display:none}}
 #hPrompt span.alert{border-color:var(--danger);color:var(--danger)}
 @media(min-width:700px){#hud.ckm #hBL>div{display:none}}
 #hud.ckscope #hPrompt{bottom:calc(min(34vh,300px) + env(safe-area-inset-bottom,0px))}
@@ -354,6 +355,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
     <div class="hud" id="contacts" aria-label="Contacts"></div>
     <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Command</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Under attack here · O targets the attacker</div><div class="cops" id="cOps"></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
     <div class="hud" id="hPrompt"></div>
+    <div class="hud" id="hKeysNow" aria-label="Keys you can use now"></div>
     <div class="hud" id="feed" aria-live="polite"></div>
     <div id="touch" hidden>
       <button type="button" data-t="thrust">Thrust</button><button type="button" data-t="fire">Fire</button>
@@ -503,44 +505,9 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       <div class="c-body help">
         <div class="helpgrid">
           <div>
-            <div class="h3">Flight</div>
-            <div class="keys">
-              <kbd>Mouse</kbd><span>Steer. The further the pointer sits from the centre ring, the harder you turn</span>
-              <kbd>Arrows</kbd><span>Pitch and yaw without the mouse</span>
-              <kbd>W / S</kbd><span>Thrust / brake (reverse thrust with assist off)</span>
-              <kbd>A / D</kbd><span>Roll</span>
-              <kbd>Shift</kbd><span>Afterburner: a kick of speed on press, then higher top speed while held (drains energy)</span>
-              <kbd>X</kbd><span>Flight assist. On: sideways slip bleeds off slowly so turns slide. Off: pure Newtonian drift</span>
-              <kbd>Space · Click</kbd><span>Fire the selected gun</span>
-              <kbd>1 / 2</kbd><span>Select kinetic cannons / lasers</span>
-              <kbd>F · Right-click</kbd><span>Mining laser on targeted or nearest rock</span>
-              <kbd>T</kbd><span>Target nearest hostile</span>
-              <kbd>Y</kbd><span>Assist: target whoever is attacking a friendly</span>
-              <kbd>I</kbd><span>Comms. First press: Command (1 escort me, 2 guard me, 3 request a depot or shipyard, 4 distress call). Each press after steps to the next friendly ship nearby, with what it can do: a wing guards, escorts, forms up on you or attacks your target; a freighter takes you on as its escort; a carrier clears you to land (resupply) or launches its fighters on your target. Firing closes the menu</span>
-              <kbd>U</kbd><span>Distress call: nearby friendlies cover you and your faction sends a wing from the closest station (90 s recharge)</span>
-              <kbd>O</kbd><span>Join the top friendly operation (course + autopilot)</span>
-              <kbd>Q</kbd><span>Cycle through hostiles, nearest first</span>
-              <kbd>G</kbd><span>Target the ship closest to your nose</span>
-              <kbd>Hold Z</kbd><span>Track: auto-turn onto the target's lead marker</span>
-              <kbd>Click</kbd><span>Target a ship, or a row in the Contacts list</span>
-              <kbd>R</kbd><span>Target nearest asteroid</span>
-              <kbd>Tab</kbd><span>Cycle all targets, including jumpgates</span>
-              <kbd>C · Middle-click</kbd><span>Launch a missile once locked (×1.8 damage once the target's shields are down)</span>
-              <kbd>3</kbd><span>Heavy Fighter / Bomber / Heavy Bomber / Advanced Scout only — Swarm Pod: eight micro-missiles at your target and ships near it, no lock needed (reloads on a cooldown)</span>
-              <kbd>B</kbd><span>Flares: spoof missiles tracking you (30 energy, 5 s recharge)</span>
-              <kbd>E</kbd><span>Dock / launch</span>
-              <kbd>V</kbd><span>Chase or cockpit camera</span>
-              <kbd>`</kbd><span>Show or hide the on-screen touch buttons</span>
-              <kbd>Hold</kbd><span>A full hold makes any ship heavier. Haulers, miners and constructors at full load turn, accelerate and brake at about half rate and slide wide through turns</span>
-              <kbd>P</kbd><span>Orders: sign on to the order picked in the orders card (your faction's campaign move; its recon, beacon, interdiction, sabotage and screening orders; counter-attacks, capital hunts and Brood purges; its strikes and convoys) and set a course to it. <kbd>Shift</kbd>+<kbd>P</kbd> picks the next order, or click one</span>
-              <kbd>I</kbd><span>then 3 (on the Command page): call a faction constructor to build a depot here (area must be mostly clear when you call)</span>
-              <kbd>J</kbd><span>Autopilot to your target (gate, station, rock) or the next jump on your course</span>
-              <kbd>L</kbd><span>Auto-level on/off (rolls you back level with the sector)</span>
-              <kbd>Wheel</kbd><span>Chase camera distance</span>
-              <kbd>F11</kbd><span>Full screen on/off (or the Full button at the top right)</span>
-              <kbd>M</kbd><span>Galaxy map and economy ledger</span>
-              <kbd>N</kbd><span>Sound: all on → music off → muted</span>
-            </div>
+            <div class="h3">Controls</div>
+            <p class="note" style="margin:0 0 6px">Press Change beside an action, then the key you want. A key already in use swaps over. Saved on this device.</p>
+            <div id="keyList"></div>
             <div class="h3" style="margin-top:18px">Instruments</div>
             <p>The amber ring ahead of you is where your guns point. Put it on the target's diamond lead marker to hit a moving ship. The green circle shows which way you are actually drifting. The radar is a disc around your ship: blips sit on stalks above or below the disc to show height.</p>
             <p><b>Missiles.</b> Target a hostile and keep it inside the dashed lock ring around your gun reticle. A diamond closes in on the target; when it turns red and reads LOCKED, press C. Missiles home on the target but turn slower than ships, so hard turns and flares can beat them. Red arrows on the ring around the centre point to hostiles off-screen; a blinking warning means someone is locking you or a missile is inbound.</p>
