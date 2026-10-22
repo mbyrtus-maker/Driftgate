@@ -360,23 +360,33 @@ The Brood's version is a living carrier, the **Hive Ship**: a swollen, living ve
 - **Leash:** drones stay within 1.5 km of the ship they guard, as now, so they can't be pulled away and left behind.
 - **Pilot drones:** a pilot's own guard drones follow the same rules.
 
-## Station menus: a simpler layout (proposal)
-**What's confusing today:** four groups with a second row of sub-tabs (Economy: Market, Trade, Orders · Construction: Fabricate, Upgrades, Refits, Station works, Outpost · Hangar: Shipyard, Storage, Ship Bay · Missions). Several pairs sound alike: Market and Trade, Orders and Missions, Shipyard and Ship Bay, Fabricate and Upgrades. And your ship is split across three groups.
+## Station menus: five task tabs (built)
+**What was confusing:** four groups with a second row of sub-tabs (16 tabs in all), several pairs that sounded alike (Market
+and Trade, Orders and Missions, Shipyard and Ship Bay), and the ship split across three groups. Docking always opened the
+Market.
 
-**Proposal: five task tabs on one row, no sub-tabs.** Each tab is named for what you came to do:
+**Now: five tabs on one row, keys 1–5** (`DOCK_TOP`). A number always means the same tab; a tab with nothing at this dock is
+hidden. A tab with several views shows them as a second row; each tab remembers its last view.
 
-| Tab | What it holds (today's tabs) |
-|---|---|
-| **Trade** | Market and Trade merged: one list of goods with Sell and Buy beside each, your hold and vault counts, and the best price nearby. |
-| **Jobs** | Orders, Missions, supply drives and the campaign move in one list, sorted by pay. Filter chips: Haul · Mine · Fight · Scout. Shows what you can deliver right now. |
-| **My ship** | Your current ship at the top (repair, upgrades, refits, loadout), then your other ships (Ship Bay), then hulls for sale (Shipyard). |
-| **Vault** | Storage: hold and this station's vault side by side, plus where else you have goods stored. |
-| **Station** | Fabricate, station works (with the hangar), outpost controls and the capital programme: everything about the station itself. |
+| Key | Tab | Views (internal ids) |
+|---|---|---|
+| 1 | **Overview** | `home`: what you can do now. Sell your hold (one button, hold only, never the vault), deliver to a contract you can fill, fit an upgrade you have parts for, repair. Then jobs (campaign move, best contracts, operations), the war (systems held by each side) and where your goods are. |
+| 2 | **Trade** | Market (hold and vault columns, Store and Load on each row; Claim Beacon for credits), Best runs, Vault. At Scrapheart: Fence, Black market. |
+| 3 | **Jobs** | Contracts and supply drives, then the campaign and missions, on one page. At Scrapheart: Marks, Wanted. |
+| 4 | **Ship** | Systems (upgrades, variants, specialists), Refits (freeports), Hangar (ship bay), Shipyard. |
+| 5 | **Station** | Fabricate, Station works, Outpost controls. At Scrapheart: the haven's works. |
 
-- **Keys 1–5** switch tabs, and each kind of dock remembers your last tab.
-- **Dots on tabs** mark something you can act on now: a job you can deliver, an affordable upgrade, a full vault.
-- **First visit:** a one-line hint under the tabs ("Jobs: paid work for your faction. Trade: sell what you mined.").
-- Tabs that don't apply are hidden, not greyed out. For example, an outpost shows Trade, Jobs, Vault and Station.
+- **Docking lands on Overview** (`openDock(tab)`; the Lair opens on its stash).
+- **Dots** (`dockDots`): Trade when something in your hold sells here; Jobs when a contract can be delivered now; Ship when
+  an upgrade can be fitted now.
+- **Displayed prices are paid prices.** A station's local price levels are set up before the screen draws (`mkOf`), so the
+  first visit no longer lists a lower sell price than the sale pays.
+- **Claim Beacons for credits** (`CLAIM_PRICE` 450 cr): sold at the player's own faction's stations and depots, paid to its
+  treasury, delivered to the vault like any purchase. Fabricating one still works. A beacon weighs 32 t, so carrying one
+  takes a hold that big (a Light Hauler or bigger).
+- Every in-game text names the new tabs (Jobs, Trade → Market, Ship → Systems, Station → Fabricate and so on).
+- Design mock-ups: the "Driftgate dock menu proposal" canvas. Still to come from it: a single sorted job list with role
+  filters and a detail panel, and the market's best-runs side panel.
 
 ---
 
@@ -1436,4 +1446,7 @@ Fifteen lessons were too long for a first session, and most players want one job
   one before it in the full order.
 - **First-time tips.** Lessons a course skips are still met in play: the first time a pilot enters Bloom space or is jammed,
   a one-off tip explains it (`firstTip`, kept in `driftgate.tips`). Not shown during training.
+- **Claim practice (Combat course).** "Fighting for territory" has the cadet fabricate a Claim Beacon from parts training
+  puts in the vault, load it into the hold, and claim a practice outpost (`trPost`: unclaimed, kept out of `S.outposts`
+  so the war never sees it, removed after the step) by sitting in its ring.
 - Checked by flying every course end to end in a browser (full, combat, mining, hauling, scouting).

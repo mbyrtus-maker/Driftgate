@@ -112,7 +112,7 @@ function haulWhat(t){const ks=Object.keys(t.load||{}).filter(k=>t.load[k]>0);ret
 // risk on entering a system off-screen: hostile capitals, a hostile station, Brood space, and a little anywhere outside home
 function haulRisk(t,sid,raw){if(WORLDS[sid]&&!raw)return 0;let r=0;if(frigatesIn(sid).some(o=>hostile(t.side,o.side)))r+=LOGI.risk.cap;const Rs=S.stations[sid];if(Rs&&hostile(t.side,Rs.owner)&&Rs.owner!=='neutral')r+=LOGI.risk.station;
   if(sideNorm(sectorOwner(sid))==='brood')r+=LOGI.risk.brood;if(!territory(t.side).has(sid))r+=LOGI.risk.out;return r}
-// ---- convoy escort contract. A pilot signs on to a friendly convoy from the Missions tab. Each jump the convoy makes with
+// ---- convoy escort contract. A pilot signs on to a friendly convoy from the Jobs tab. Each jump the convoy makes with
 // its escort in the system it leaves or the one it enters counts; the escort's presence scares off most interception out of
 // sight, but raiders may ambush the convoy while the escort is with it. If the escort was there for enough of the trip
 // when the convoy docks, the faction pays.

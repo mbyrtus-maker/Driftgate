@@ -48,6 +48,8 @@ keyListRender();
 addEventListener('pointermove',e=>{if(e.pointerType==='mouse')touchLast=false},{passive:true});
 addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefault();toggleFull();return}
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
+  // docked: 1–5 pick the station screen's tabs
+  if(S&&S.player&&S.player.docked&&!$('dock').hidden&&/^Digit[1-5]$/.test(e.code)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){e.preventDefault();dockTop(+e.code.slice(5)-1);return}
   const c=keyOf(e.code);if(running)auInit();if(!c)return;
   if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();devCredits();return}
   if(c==='Enter'&&running&&NET.on&&!S.player.docked){e.preventDefault();openChat();return}
@@ -175,7 +177,7 @@ function cmWing(k,T,tg){const pl=W.player,mem=k==='launch'?(T.pickets||[]).filte
   if(!mem.length){feed(k==='launch'?`${T.tok?T.tok.name:shipLabel(T)}: no fighters out to send.`:`${shipLabel(T)}: no one free to take that order.`,'warn');return 0}
   const use=mem.slice(0,k==='launch'?6:4),opid=CTX||NET.me||null;use.forEach((e,i)=>{e.order=k==='form'?{kind:'escort',tgt:pl,until:W.t+ORDER_TIME,slot:i,by:true,pid:opid}:{kind:'attack',tgt:tg,until:W.t+90,slot:i,by:false,pid:opid};e.ai.tgt=k==='form'?null:tg;e.ai.t=0});
   feed(`${k==='launch'?(T.tok?T.tok.name:shipLabel(T))+': '+use.length+' fighters':shipLabel(use[0])+(use.length>1?` and ${use.length-1} more`:'')}: copy, ${k==='form'?'forming up on you':'attacking '+shipLabel(tg)}.`,'good');return use.length}
-// sign on as a convoy's escort from the cockpit, the same contract as Missions → Convoy escort
+// sign on as a convoy's escort from the cockpit, the same contract as Jobs → Convoy escort
 function cvTake(t){const P=S.player;if(!t||t.side!==P.faction||t.esc||cvLeft(t)<1){feed('That convoy no longer needs an escort.','warn');return false}const k=P.pid||'me';for(const x of S.traders||[])if(x.esc&&x.esc.k===k)x.esc=null;const E=cvSign(t,k,P.name);
   feed(`✓ Escort contract: the convoy is bound for ${DEF[t.to].name}. Stay with it for ${E.need} jump${E.need>1?'s':''}; Command pays when it docks.`,'good');return true}
 // who answers: the closest friendly combat ships of your faction (not frigates, drones or civilians), up to four, within 3.5 km of the ship to protect
@@ -190,7 +192,7 @@ function issueOrder(k,T){const fac=S.player.faction,me=T===W.player||T.rp===S.pl
 function lackText(cost,src){const m=[];for(const k in cost){const h=(src&&src[k])||0;if(h<cost[k]){const n=cost[k]-h;m.push(`${n} ${ITEMS[k].name}${n>1&&!/s$/.test(ITEMS[k].name)?'s':''}`)}}return m.join(', ')}
 function requestBuild(){if(!W||!W.player)return;if(S.unb){lairBuild();return}if(truceAt(W.sid)){feed('Command: nothing can be built in a truce zone. Burn the Bloom out of this system first.','warn');return}const f=S.player.faction,sid=W.sid,F=FACTIONS[f].short,st=S.econ.stock[f],p=W.player;
   if(sid===FAC_HOME(f)){
-    if(S.yards[f]){feed(`${F} command: ${DEF[sid].name} already has a capital shipyard. Commission a carrier or escorts from Hangar → Shipyard at the station.`,'info');return}
+    if(S.yards[f]){feed(`${F} command: ${DEF[sid].name} already has a capital shipyard. Commission a carrier or escorts from Ship → Shipyard at the station.`,'info');return}
     const yb=S.events.find(e=>e.type==='yardbuild'&&e.att===f);if(yb){feed(`${F} command: the shipyard is already under construction, about ${Math.max(1,Math.ceil((yb.until-S.T)/60))} min to go.`,'info');return}
     if(!haveIn(yardCost(f),[st])){feed(`${F} command: we can't build a shipyard yet. Our stores are short ${lackText(yardCost(f),st)}. Selling those at the station fills the stores.`,'warn');return}
     const force={};takeFrom(yardCost(f),[st]);inv.addAll(force,yardCost(f));S.events.push({id:S.nextId++,type:'yardbuild',att:f,sector:sid,force,until:S.T+YARD_TIME,stage:'building'});
@@ -219,7 +221,7 @@ function cReqTick(){if(NET.cl||!S.cReq)return;for(const f in S.cReq){const q=S.c
     if(cls.length<CR_ESC_MIN){inv.addAll(st,force);continue}
     const from=nearestOwnStation(f,q.sid),hops=from?HOP[from][q.sid]||0:2,eta=S.T+30+CR_HOP*hops;
     const ev={id:S.nextId++,type:'build',att:f,sector:q.sid,eta,stage:'inbound',force,n:cls.length,tier,cls,site:q.site,prog:0,from,hops,T0:S.T};S.events.push(ev);announce(ev);delete S.cReq[f];
-    facFeed(f,`${F} command: constructor away from ${from?stN(from):'the rear'} with ${cls.length} escorts. ${hops} jump${hops===1?'':'s'} to ${nm}, ETA ${fmtT(eta-S.T)}. Track it under Missions or in comms.`,'good')}}
+    facFeed(f,`${F} command: constructor away from ${from?stN(from):'the rear'} with ${cls.length} escorts. ${hops} jump${hops===1?'':'s'} to ${nm}, ETA ${fmtT(eta-S.T)}. Track it under Jobs or in comms.`,'good')}}
 function feedTo(pid,msg,k){const o=CTX;CTX=pid||null;try{feed(msg,k)}finally{CTX=o}}
 function threatTo(T,e,R){let best=null,bd=1e9;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e||!hostile(e.side,o.side))continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;
     const dT=d3(o,T);if(dT>R)continue;const sc=dT*(o.ai&&o.ai.tgt===T?.4:1)*(isBmb(o.cls)?.6:1);if(sc<bd){bd=sc;best=o}}return best}
