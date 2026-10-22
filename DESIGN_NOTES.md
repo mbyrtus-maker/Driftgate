@@ -1310,5 +1310,5 @@ Selling the AI Unbound's whole stockpile to the Freeports collapsed the Brood (1
 
 **Comms in pages.** I opens Command first (escort me, guard me, request a depot or shipyard, distress), then steps through the friendly ships nearby, each with what it can do: a wing guards, escorts, forms up on you or attacks your target; a freighter takes you on as its escort; a carrier clears you to land (resupply) or launches its fighters on your target; a ship under fire offers "target its attacker". Firing closes the menu. The HUD panel that was also called Comms is now Command.
 
-**AI miners blast.** Faction and Unbound miners set two or three charges on a rock's fault points, back off, detonate, and scoop the chunk, instead of holding a laser on it. Ore still comes at their drilling rate (it builds up while the cycle runs and leaves with the chunk), so their output is unchanged. Brood Grazers still graze.
+**AI miners blast.** Faction and Unbound miners set two or three charges on a rock's fault points, back off, detonate, and scoop the chunk, instead of holding a laser on it. Ore still comes at their drilling rate (it builds up while the cycle runs and leaves with the chunk), so their output is unchanged. Brood Grazers still graze. Crew pilots see the cycle too: the host's snapshot of each system carries every blasting miner's charges and chunk.
 

@@ -6878,7 +6878,9 @@ function netTick(dt){if(NET.cl){clientTick(dt);return}if(!NET.host||!running||!S
       const gbs=W.ents.filter(e=>e.type==='ship'&&e.alive&&hasTur(e.cls));if(W===LW&&W.player&&hasTur(W.player.cls)&&!S.player.docked&&!gbs.includes(W.player))gbs.push(W.player);
       const gt=gbs.map(e=>{const T=turretOf(e);return[e.isPlayer?'p_'+NET.me:e.id,Math.round(T.yaw*100),Math.round(T.pitch*100),T.gunner==='local'?(S.player.name||MP.name):T.gunner?((S.pilots[T.gunner]||{}).name||'pilot'):'AI']});
       const base={t:'sn',sid,T:Math.round(S.T*10)/10,m:ms,ev,gt,st:SE?[Math.round(SE.shield),SE.offline?1:0,SE.turrets.map(t=>[Math.round(t.aim.x*100),Math.round(t.aim.y*100),Math.round(t.aim.z*100)])]:0,
-        op:o?[Math.round(o.shield),Math.round(o.hull),Math.round(o.cap.p*100)/100,o.cap.side||0,o.breached?1:0,o.owner||0,Math.round(OE.aim.x*100),Math.round(OE.aim.y*100),Math.round(OE.aim.z*100)]:0,sc:B?[r1(B.x),r1(B.y),r1(B.z),B.owner,Math.round(B.prog*100)/100]:0,wk:(W.works||[]).map(w=>[w.id,Math.round(wkHp(w))]),de:W.decoys.map(d=>[r1(d.x),r1(d.y),r1(d.z),Math.round(d.life*10)/10])};
+        op:o?[Math.round(o.shield),Math.round(o.hull),Math.round(o.cap.p*100)/100,o.cap.side||0,o.breached?1:0,o.owner||0,Math.round(OE.aim.x*100),Math.round(OE.aim.y*100),Math.round(OE.aim.z*100)]:0,sc:B?[r1(B.x),r1(B.y),r1(B.z),B.owner,Math.round(B.prog*100)/100]:0,wk:(W.works||[]).map(w=>[w.id,Math.round(wkHp(w))]),de:W.decoys.map(d=>[r1(d.x),r1(d.y),r1(d.z),Math.round(d.life*10)/10]),
+        nb:W.ents.filter(e=>e.npc&&e.alive&&e.ai&&e.ai.bl&&e.ai.bl.pts&&e.ai.bl.pts.length).map(e=>[e.id,e.ai.bl.st,e.ai.bl.pts.map(q=>[r1(q.x),r1(q.y),r1(q.z)])]),
+        nc:(W.npcCh||[]).filter(c=>c.e&&c.e.alive).map(c=>[c.id,c.e.id,c.k,c.cr,r1(c.x),r1(c.y),r1(c.z),Math.round(c.vx),Math.round(c.vy),Math.round(c.vz)])};
       for(const c of by[sid]){const me='p_'+c.pid,e=MP.rp[c.pid],P=S.pilots[c.pid];const rows=[];for(const s of ships){const id=s.isPlayer?'p_'+NET.me:s.id;if(id===me)continue;const full=!c.known.has(id)||(c.fullT||0)<=0;rows.push(shipRow(s,full));c.known.add(id)}
         if((c.fullT=(c.fullT||0)-1)<0)c.fullT=30;
         send(c.L,{...base,e:rows,ps:e?[Math.round(e.hull*10)/10,Math.round(e.shield*10)/10]:[P.hull,P.shield]},true)}})}}
@@ -6965,6 +6967,7 @@ function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.p
     const fl=r[o+12];e.jamOff=fl&512?now+1:0;e.stealth=!!(fl&256);e.masked=e.stealth||!!e.landed;e.maskR=e.stealth?STEALTH_R:0;e.thrusting=!!(fl&1);e.boosting=!!(fl&2);e.tuned=!!(fl&4);if(fl&8){e.shHitT=now;e.shHitA=.5}if(fl&16)e.lastHit=now;e.gjc=!!(fl&32);e.ord=fl&64?'guarding':fl&128?'escorting':null;
     const mi=r[o+13];e.mining=mi?ast.find(a=>a.id===mi)||null:null}
   relinkFrigs();
+  npcBlSnap(w,m);
   {const own='p_'+MP.pid;for(const g of m.gt||[]){const e=g[0]===own?w.player:w.pup[g[0]];if(!e)continue;e.tur=e.tur||{yaw:Math.PI,pitch:.1};if(!(W.gunseat&&W.gunseat.id===g[0])){e.tur.yaw=g[1]/100;e.tur.pitch=g[2]/100}e.tur.gname=g[3]}}
   for(const id in w.pup)if(!seen.has(id)){const e=w.pup[id];e.alive=false;const i=w.ents.indexOf(e);if(i>=0)w.ents.splice(i,1);delete w.pup[id];if(w.tgt&&w.tgt.ref===e)w.tgt=null}
   for(const id in w.pup){const e=w.pup[id];if(e.momId){const M=e.momId==='p_'+MP.pid?w.player:w.pup[e.momId];e.mom=M||null;if(M&&e.role==='drone'){M.drones=M.drones||[];if(!M.drones.includes(e))M.drones.push(e)}}}
@@ -6989,8 +6992,21 @@ function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.p
     if(sh<p.shield-.5){p.lastHit=now;if(sh>0){w.shHit=.35;SFX.shield();p.shHitT=now;p.shHitA=.6}}
     if(p.shield>0&&sh<=0){p.shBreakT=now;p.shDown=true;flash('Shields down! Hold Shift to boost away.',true);SFX.shieldDown()}
     p.hull=h;p.shield=sh}}
+// the AI miners' blast cycle as the host sends it: a shot for each new charge, the blast when a chunk appears, the chunk drifting in
+function npcBlSnap(w,m){const seen=new Set();
+  for(const[id,st,pts]of m.nb||[]){const e=w.pup[id];if(!e)continue;seen.add(id);const B=e.ai.bl||(e.ai.bl={st,pts:[]}),Q=pts.map(p=>({x:p[0],y:p[1],z:p[2]}));
+    if(st==='set'||st==='clear')for(const q of Q.slice(B.pts.length))(w.npcBl=w.npcBl||[]).push({x:e.x,y:e.y,z:e.z,tx:q.x,ty:q.y,tz:q.z,t:0,T:Math.max(.2,d3(e,q)/BL.spd)});
+    B.st=st;B.pts=Q}
+  for(const id in w.pup){const e=w.pup[id];if(e.ai&&e.ai.bl&&!seen.has(id))e.ai.bl=null}
+  const old=new Map((w.npcCh||[]).map(c=>[c.id,c])),out=[];
+  for(const r of m.nc||[]){const e=w.pup[r[1]];if(!e)continue;let c=old.get(r[0]);
+    if(!c){c={id:r[0],e,k:r[2],cr:r[3],x:r[4],y:r[5],z:r[6],until:1e12};const B=e.ai.bl;
+      inW(w,()=>{for(const q of(B&&B.pts.length?B.pts:[c]))fxBoom(q,40,'#ffd9a0');if(!MUTE&&w.player&&d3(e,w.player)<3000)SFX.crack()})}
+    else{const k=.5;c.x+=(r[4]-c.x)*k;c.y+=(r[5]-c.y)*k;c.z+=(r[6]-c.z)*k}
+    c.e=e;c.vx=r[7];c.vy=r[8];c.vz=r[9];out.push(c)}
+  w.npcCh=out}
 // between snapshots: glide every remote ship along its velocity and ease it onto the host's position
-function clientWorld(dt){const w=W,p=w.player;
+function clientWorld(dt){const w=W,p=w.player;npcBlWorld(dt);
   if(p&&p.alive&&!S.player.docked&&!w.dead&&!w.docking)physics(p,dt);
   for(const id in w.pup||{}){const e=w.pup[id];const age=w.t-(e.snapAt||w.t),tx=e.tx+e.vx*age,ty=e.ty+e.vy*age,tz=e.tz+e.vz*age,k=Math.min(1,9*dt);
     e.x+=e.vx*dt;e.y+=e.vy*dt;e.z+=e.vz*dt;e.x+=(tx-e.x)*k;e.y+=(ty-e.y)*k;e.z+=(tz-e.z)*k;if(e.tq)qSlerp(e.q,e.tq,Math.min(1,12*dt))}
