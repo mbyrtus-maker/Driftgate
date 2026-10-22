@@ -189,7 +189,12 @@ function tieLead(){const w=tieWinner();return w?[w,tieScore(w)[0]]:null}
 function deadlineTick(){if(S.won||NET.cl)return false;S.dl=S.dl||{};const left=TIE_T-S.T;
   for(const[m,k]of[[1800,'30'],[600,'10']])if(left<=m&&!S.dl[k]){S.dl[k]=1;const L=tieLead();allFeed(`⏱ ${m/60} minutes to the two-hour deadline. If no one completes the 7-system hold, the side with the most systems wins: ${L?(L[0]==='brood'?'the Brood':sideName(L[0]))+' leads with '+L[1]:'no one leads'}.`,'warn')}
   if(left<=0){const w=tieWinner();if(w){galaxyWon(w,'tie');return true}}return false}
-function victoryTick(){if(deadlineTick())return;const n=controlCounts(),need=VIC_NEED;let lead=null;for(const k in n)if(n[k]>=need&&(!lead||n[k]>n[lead]))lead=k;
+// the Brood is the galaxy's outside threat: every pilot hears it climb toward the 7 systems it needs (once per rise past 5,
+// 6 and 7; falling back re-arms the warning)
+function broodWatch(n){const b=n.brood||0,w=S.broodWarn||0;if(b<w){S.broodWarn=b;return}if(b<5||b<=w)return;S.broodWarn=b;if(STRAT_SIM())return;
+  const msg=b>=VIC_NEED?`⚠ The Brood holds ${b} systems. If it keeps ${VIC_NEED} for ${Math.round(WIN_TIME/60)} minutes, the galaxy is lost.`:`⚠ The Brood has spread to ${b} systems: ${VIC_NEED-b} more and it starts the clock on the galaxy. Kill its Seeders and burn its nodes.`;
+  allFeed(msg,'bad');if(running&&!NET.cl){flash(msg,true);try{SFX.accord()}catch(e){}}}
+function victoryTick(){if(deadlineTick())return;const n=controlCounts(),need=VIC_NEED;broodWatch(n);let lead=null;for(const k in n)if(n[k]>=need&&(!lead||n[k]>n[lead]))lead=k;
   // two sides over the line at once: the side already holding keeps its clock unless the other clearly has more
   if(lead&&S.victory&&S.victory.side!==lead&&(n[S.victory.side]||0)>=need&&(n[S.victory.side]||0)>=n[lead])lead=S.victory.side;
   if(!lead){if(S.victory)feed(`${sideName(S.victory.side)} has lost its grip on the galaxy.`,'news');S.victory=null;return}
