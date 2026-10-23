@@ -1504,3 +1504,9 @@ Fifteen lessons were too long for a first session, and most players want one job
 - Effect in a 2.5-hour merchant run: no faction sold Aurorite back to a freeport (1 run before); freeport-to-faction runs
   continue. Most Aurorite runs are a faction moving it between its own stations (about 100 in that run), which this does
   not change.
+
+## Fighter roles (Oct 2026)
+- **Light:** the greatest risk and reward. Average pilots lose in it; an ace in one beats average Medium and Heavy pilots (about 70%). No positional damage bonus: its edge is speed, agility and a small profile.
+- **Medium:** takes a few hits and out-fights Lights; the average pilot does well in it. Hull 120, shields 1.08.
+- **Heavy:** hits hard and takes a beating, slow to turn. Wins most fights between average pilots; an ace in one rarely loses. Gun 1.32, hull 130.
+- Checked with AI duels at Mk I (aim skill only), 50 fights each: average Medium beats average Light 30–19; average Heavy beats Medium 33–17 and Light 35–15; ace Light beats average Medium 34–15 and Heavy 36–13; ace Heavy beats average Medium 42–8 and Light 47–3. War check after: 33/31/28, Brood 8%.
