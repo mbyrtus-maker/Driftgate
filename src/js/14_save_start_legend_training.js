@@ -178,7 +178,7 @@ const TRAIN=[
   {x:'Autopilot will fly you through the gate. Press <kbd>'+kb('autopilot')+'</kbd> again to take the stick back. To jump by hand, point your nose straight through a gate ring and hold steady for 5 seconds.',ok:()=>!apOn},
   {x:'Click <b>Sound</b> at the top right to open the sound panel: switches and volume sliders for effects and music. Music follows the space you’re in (each faction, freeports, Brood space, open space), and battle music cuts in when shields, yours or your target’s, start taking fire. <kbd>'+kb('sound')+'</kbd> cycles all on → muted → effects only.',ok:()=>!$('sndPop').hidden},
   {x:'Close the panel (click anywhere else, or <kbd>Esc</kbd>).',ok:()=>$('sndPop').hidden}]},
- {t:'Weapons',setup:trDrones,steps:[
+ {t:'Weapons',setup:()=>{if(!rackCapC(S.player.cls,1))trHull('interceptor','Light Fighter');trDrones()},steps:[
   {x:'Three harmless Unbound target drones are ahead of you. Press <kbd>'+kb('tgtH')+'</kbd> to target the nearest hostile (<kbd>'+kb('cycleH')+'</kbd> cycles).',ok:()=>W.tgt&&W.tgt.kind==='ship'&&W.tgt.ref.train},
   {x:'Shoot one down. <kbd>'+kb('fire')+'</kbd> or click fires; <kbd>1</kbd> kinetic cannons, <kbd>2</kbd> lasers. Aim at the lead marker, or hold <kbd>'+kb('track')+'</kbd> to track it. Break shields first: hulls die fast after. Damage earns a share of the bounty, so you don’t need the kill shot.',ok:()=>trDroneEnts().length<3},
   {x:'Missiles: keep a target near your nose until the lock completes, then press <kbd>'+kb('msl')+'</kbd>. Missiles hit 1.8× harder once shields are down and reload on a cooldown.',setup:()=>{if(!trDroneEnts().length)trDrones()},ok:()=>W.missiles.some(m=>m.src===W.player)},

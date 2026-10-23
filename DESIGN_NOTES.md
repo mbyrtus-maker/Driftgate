@@ -1510,3 +1510,6 @@ Fifteen lessons were too long for a first session, and most players want one job
 - **Medium:** takes a few hits and out-fights Lights; the average pilot does well in it. Hull 120, shields 1.08.
 - **Heavy:** hits hard and takes a beating, slow to turn. Wins most fights between average pilots; an ace in one rarely loses. Gun 1.32, hull 130.
 - Checked with AI duels at Mk I (aim skill only), 50 fights each: average Medium beats average Light 30–19; average Heavy beats Medium 33–17 and Light 35–15; ace Light beats average Medium 34–15 and Heavy 36–13; ace Heavy beats average Medium 42–8 and Light 47–3. War check after: 33/31/28, Brood 8%.
+- **Miners and haulers** fight back but lose to fighters: no missiles, guns about 40% weaker (Light/Medium/Heavy Miner .48/.57/.54, Haulers .42/.45/.42), and guard drones harass rather than kill (gun .12, hull 12, shields .2). Average pilots, AI duels, 40 each: civilian hulls win 2–30% against fighters (Heavy Miner ~28%, Heavy Hauler 5–15%).
+- **Bombers** lose most dogfights but not all, and beat miners and haulers: Bomber gun 1.1, hull 205; Heavy Bomber gun 1.3, hull 210. Bomber vs Light/Medium/Heavy Fighter 48/32/22%, Heavy Bomber 60/30/32%; against miners and haulers 65–100%. War check after: 33/32/28, Brood 6%.
+
