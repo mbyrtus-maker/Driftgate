@@ -567,18 +567,21 @@ function drawOverlay(){
   {const bl=Math.sin(W.t*9)>0;for(const b of W.npcBl||[]){const k=b.t/b.T,L=proj(b.x+(b.tx-b.x)*k,b.y+(b.ty-b.y)*k,b.z+(b.tz-b.z)*k);if(L.behind||L.d>4000)continue;c.fillStyle='#ffd27a';c.beginPath();c.arc(L.x,L.y,2.2,0,TAU);c.fill()}
     if(bl)for(const m of W.ents){const B=m.ai&&m.ai.bl;if(!B||!(B.st==='set'||B.st==='clear'))continue;for(const q of B.pts){const L=proj(q.x,q.y,q.z);if(L.behind||L.d>4000)continue;c.fillStyle='#f0b24a';c.beginPath();c.arc(L.x,L.y,3,0,TAU);c.fill()}}}
   if(W.ftgt&&W.ftgt!==W.player){const T=W.ftgt,P=proj(T.x,T.y,T.z);if(!P.behind&&P.x>0&&P.y>0&&P.x<VW&&P.y<VH){const r=Math.max(12,projR(P.d,T.st.radius*1.25))+10;c.strokeStyle='#7ad9a7';c.lineWidth=1.5;c.setLineDash([4,4]);c.beginPath();c.arc(P.x,P.y,r,0,Math.PI*2);c.stroke();c.setLineDash([]);c.textAlign='center';c.fillStyle='#7ad9a7';c.fillText('FRIENDLY · '+ftgtName(T),P.x,P.y+r+14)}}
+  // a mining hull aiming at a rock or wreck section sees only the charge reticle (blDraw): no gun sight, target brackets or
+  // velocity marker to mistake for where the charge lands
+  const blAim=blHull(S.player.cls)&&W.tgt&&(W.tgt.kind==='ast'||W.tgt.kind==='wpt')&&validTgt(W.tgt);
   if(W.tgt&&validTgt(W.tgt)){const T=W.tgt.ref,P=proj(T.x,T.y,T.z),col=W.tgt.kind==='ship'?(hostile('player',T.side)?'#ff5d4f':'#7ad9a7'):'#f0b24a';
-    if(!P.behind&&P.x>0&&P.y>0&&P.x<VW&&P.y<VH){const r=Math.max(12,projR(P.d,tRad(W.tgt)))+6;c.strokeStyle=col;c.lineWidth=2;for(const[dx,dy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){c.beginPath();c.moveTo(P.x+dx*r,P.y+dy*r-dy*9);c.lineTo(P.x+dx*r,P.y+dy*r);c.lineTo(P.x+dx*r-dx*9,P.y+dy*r);c.stroke()}
+    if(!blAim&&!P.behind&&P.x>0&&P.y>0&&P.x<VW&&P.y<VH){const r=Math.max(12,projR(P.d,tRad(W.tgt)))+6;c.strokeStyle=col;c.lineWidth=2;for(const[dx,dy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){c.beginPath();c.moveTo(P.x+dx*r,P.y+dy*r-dy*9);c.lineTo(P.x+dx*r,P.y+dy*r);c.lineTo(P.x+dx*r-dx*9,P.y+dy*r);c.stroke()}
       c.textAlign='left';c.fillStyle=col;c.fillText(fmt(Math.round(d3(T,p)))+' m',P.x+r+6,P.y-r+8)}
     if(W.tgt.kind==='ship'&&hostile('player',T.side)&&S.player.wpn!=='laser'){const lp=leadPoint(p,T,p.st.shotSpd||SHOT_SPD),L=proj(lp.x,lp.y,lp.z);if(!L.behind){c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();c.moveTo(L.x,L.y-8);c.lineTo(L.x+8,L.y);c.lineTo(L.x,L.y+8);c.lineTo(L.x-8,L.y);c.closePath();c.stroke()}}}
   {const las=S.player.wpn==='laser',LRy=las?laserRay(p,LASER_RANGE):null,onH=!!(LRy&&LRy.hit&&(LRy.hit.kind==='ship'||LRy.hit.kind==='outpost'));
     qRot(p.q,0,0,1,_f);const A=proj(p.x+_f.x*900,p.y+_f.y*900,p.z+_f.z*900);
-    if(!A.behind){const col=las?(onH?'#ff5d4f':'rgba(165,222,255,.95)'):'rgba(240,178,74,.9)';c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();
+    if(!A.behind&&!blAim){const col=las?(onH?'#ff5d4f':'rgba(165,222,255,.95)'):'rgba(240,178,74,.9)';c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();
       if(las){c.moveTo(A.x,A.y-10);c.lineTo(A.x+10,A.y);c.lineTo(A.x,A.y+10);c.lineTo(A.x-10,A.y);c.closePath()}else c.arc(A.x,A.y,9,0,TAU);c.stroke();
       c.beginPath();c.moveTo(A.x-17,A.y);c.lineTo(A.x-12,A.y);c.moveTo(A.x+12,A.y);c.lineTo(A.x+17,A.y);c.moveTo(A.x,A.y-17);c.lineTo(A.x,A.y-12);c.stroke();
       if(onH){c.fillStyle=col;c.beginPath();c.arc(A.x,A.y,3,0,TAU);c.fill()}
       if(las&&W.tgt&&lockable(W.tgt)&&d3(W.tgt.ref,p)>LASER_RANGE){c.textAlign='center';c.fillStyle='rgba(165,222,255,.85)';c.fillText(`LASER RANGE ${LASER_RANGE} M`,A.x,A.y+30)}}}
-  const sp=hyp(p.vx,p.vy,p.vz);if(sp>30){const Vv=proj(p.x+p.vx/sp*900,p.y+p.vy/sp*900,p.z+p.vz/sp*900);if(!Vv.behind){c.strokeStyle='rgba(122,217,167,.75)';c.beginPath();c.arc(Vv.x,Vv.y,5,0,TAU);c.moveTo(Vv.x+5,Vv.y);c.lineTo(Vv.x+11,Vv.y);c.moveTo(Vv.x-5,Vv.y);c.lineTo(Vv.x-11,Vv.y);c.moveTo(Vv.x,Vv.y-5);c.lineTo(Vv.x,Vv.y-11);c.stroke()}}
+  const sp=hyp(p.vx,p.vy,p.vz);if(sp>30&&!blAim){const Vv=proj(p.x+p.vx/sp*900,p.y+p.vy/sp*900,p.z+p.vz/sp*900);if(!Vv.behind){c.strokeStyle='rgba(122,217,167,.75)';c.beginPath();c.arc(Vv.x,Vv.y,5,0,TAU);c.moveTo(Vv.x+5,Vv.y);c.lineTo(Vv.x+11,Vv.y);c.moveTo(Vv.x-5,Vv.y);c.lineTo(Vv.x-11,Vv.y);c.moveTo(Vv.x,Vv.y-5);c.lineTo(Vv.x,Vv.y-11);c.stroke()}}
   // missile lock ring and lock box
   {qRot(p.q,0,0,1,_f);const RA=proj(p.x+_f.x*900,p.y+_f.y*900,p.z+_f.z*900),ax=RA.x,ay=RA.y,ab=RA.behind,LR=W.lock,Rl=Math.tan(LOCK_CONE)/Math.tan(cam.fov*Math.PI/360)*VH/2;
     if(lockable(W.tgt)&&S.player.rack>0&&!ab){c.setLineDash([4,6]);c.strokeStyle=LR.locked?'rgba(255,93,79,.9)':'rgba(240,178,74,.55)';c.lineWidth=1.2;c.beginPath();c.arc(ax,ay,Rl,0,TAU);c.stroke();c.setLineDash([])}
