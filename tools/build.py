@@ -5,6 +5,15 @@ from srcfiles import *
 names=[l.strip() for l in open(ORDER) if l.strip()]
 parts=[(n,open(os.path.join(SRC,n),encoding='utf-8',newline='').read().split('\n')) for n in names]
 text=join_parts(parts)
+# two function declarations with one name: the later silently replaces the earlier everywhere (the game is one script).
+# Refuse to build or pass the check until one is renamed.
+import re,collections
+_seen=collections.defaultdict(list)
+for n,lines in parts:
+  if n.endswith('.js'):
+    for m in re.finditer(r'(?:^|[;{}\s])function\s+([A-Za-z_$][\w$]*)\s*\(','\n'.join(lines)):_seen[m.group(1)].append(n)
+_dup={k:v for k,v in _seen.items() if len(v)>1}
+if _dup:print('duplicate function names (rename one):',_dup);sys.exit(2)
 cur=open(INDEX,encoding='utf-8',newline='').read() if os.path.exists(INDEX) else ''
 if '--check' in sys.argv:
   if text==cur:print('src/ and index.html match');sys.exit(0)

@@ -185,9 +185,9 @@ function traderArrive(t){if(t.kind==='haul'){haulArrive(t);return}const B=S.stat
 // unloads into the vault where you ordered it. The fee goes to the faction treasury.
 const SHIP_T=120,SHIP_BASE=60,SHIP_PER=2;   // tonnes per shipment, flat cr, cr per tonne per jump
 const shipFee=(m,j)=>Math.round(SHIP_BASE+SHIP_PER*m*Math.max(1,j));
-function shipLoad(inv0){const out={};let m=0;for(const k of Object.keys(inv0).filter(k=>inv0[k]>0).sort((a,b)=>baseValue(b)/mass(b)-baseValue(a)/mass(a))){const n=Math.min(inv0[k],Math.floor((SHIP_T-m)/mass(k)));if(n>0){out[k]=n;m+=n*mass(k)}}return out}
+function shipPick(inv0){const out={};let m=0;for(const k of Object.keys(inv0).filter(k=>inv0[k]>0).sort((a,b)=>baseValue(b)/mass(b)-baseValue(a)/mass(a))){const n=Math.min(inv0[k],Math.floor((SHIP_T-m)/mass(k)));if(n>0){out[k]=n;m+=n*mass(k)}}return out}
 function shipQuote(P,k){const to=vaultKey(P),src=P.vaults&&P.vaults[k],sid=vaultSid(k);if(!to||!src||!sid||k===to||!FAC_IDS.includes(P.faction)||S.unb)return null;if(!vaultOpen(k,P))return{why:vaultWhy(k,P)};
-  const load=shipLoad(src),m=invMass(load);if(!m)return null;const j=HOP[sid][P.sector]||0;return{load,m,j,fee:shipFee(m,j),all:m>=invMass(src)}}
+  const load=shipPick(src),m=invMass(load);if(!m)return null;const j=HOP[sid][P.sector]||0;return{load,m,j,fee:shipFee(m,j),all:m>=invMass(src)}}
 function shipOrder(P,k){const q=shipQuote(P,k);if(!q||q.why)return q&&q.why?`Can't ship from there: ${q.why}.`:'Nothing to ship.';if(P.credits<q.fee)return`Shipping costs ${fmt(q.fee)} cr.`;
   const src=P.vaults[k];for(const i in q.load)inv.take(src,i,q.load[i]);if(!invMass(src))delete P.vaults[k];transfer('player',P.faction,q.fee);
   const t=haulSend(P.faction,vaultSid(k),P.sector,q.load,'ship:'+S.nextId,`${P.name||'a pilot'}'s goods`,null);if(!t){inv.addAll(src,q.load);return'No route.'}t.own={k:pkey(),to:vaultKey(P),from:k};

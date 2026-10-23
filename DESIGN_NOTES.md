@@ -1469,3 +1469,17 @@ Fifteen lessons were too long for a first session, and most players want one job
 - **No ore or debris tonnage.** Players never see how much ore is in a system's rocks or drifting debris; they find out
   by flying there. (Wreck lines keep their timer, not their mass.)
 - **The map key is folded** into a KEY button in the corner; click to open it.
+
+## What each hull is for (built)
+- **Tags on hull cards** (`hullTags`, from each hull's own stats so they stay true when a hull changes). Faction
+  shipyard: fighters "Fights · [Swarm pods] · Claim Beacon"; bombers "Torpedoes break stations and capitals · Swarm pods ·
+  Claim Beacon"; scouts "Flips beacons · Plants limpets · Finds lairs · [Swarm pods]"; miners "Blast mining · Salvages
+  wrecks · N drones"; haulers "Hauls N t · Calls convoys · N drones". Unbound hulls at the Black Market: "Jams" (Corsair:
+  "Strongest jammer") · "Hooks cargo" · Raider "Scout radar · spots landed ships" · Plunderer "Jamming torpedoes stop
+  capitals" · hold size. The constructor isn't flown, so it has none.
+- **Jobs offer the fix** (`hullFix`): a job your hull can't do gets a button for the cheapest way in: fly a suitable ship
+  from your Hangar; store an upgraded ship and take a free starter ("Store this ship, take a Lark · free"); switch here
+  (a bought hull is traded in, and the button says so); or set course to the nearest core shipyard. The market's Claim
+  Beacon row offers the same for non-combat hulls.
+- **Build guard:** `tools/build.py` refuses to build when two function declarations share a name (the later one silently
+  replaces the earlier: that broke Hangar storing for one push, via a second `shipLoad`).
