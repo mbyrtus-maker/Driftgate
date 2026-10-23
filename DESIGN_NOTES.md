@@ -1455,3 +1455,14 @@ Fifteen lessons were too long for a first session, and most players want one job
   (training swaps a scout for a Light Fighter, since scouts can't carry one), and claim a practice outpost (`trPost`:
   unclaimed, kept out of `S.outposts` so the war never sees it, removed after the step) by sitting in its ring.
 - Checked by flying every course end to end in a browser (full, combat, mining, hauling, scouting).
+
+## Galaxy map: the sector panel (built)
+- **Leads with what a pilot needs:** who holds the system, any strike or build under way there (as far as your side can
+  see), your jobs there (contracts, beacon bounties, faction orders, convoy raids), and prices.
+- **Prices are your faction's last scan** (`P.pintel`): live where your faction holds the beacon, a faction scout or
+  scout-flying squadmate is, one of its freighters or traders is passing, or you are; elsewhere the last reading and its
+  age ("scan 10:00 old"), or "no scan yet". With goods aboard it shows what your hold sells for there; otherwise the
+  three items it pays best for.
+- **No ore or debris tonnage.** Players never see how much ore is in a system's rocks or drifting debris; they find out
+  by flying there. (Wreck lines keep their timer, not their mass.)
+- **The map key is folded** into a KEY button in the corner; click to open it.

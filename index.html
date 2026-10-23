@@ -1614,7 +1614,9 @@ function mkTick(){if(NET.cl)return;const L=mkStations();if(L.length<2)return;
   for(const P of allPilots())intelTick(P)}
 // price intel: live where you are, where your faction holds the beacon, where a friendly scout is (and next door when you fly a scout)
 function intelSectors(P){const s=new Set([P.sector]);for(const id in S.beacons||{})if(S.beacons[id].owner===P.faction)s.add(id);
-  for(const t of S.scouts||[])if(t.side===P.faction)s.add(t.sector);if(isScoutCls(P.cls)||P.cls==='wraith')for(const n of NEIGH[P.sector]||[])s.add(n);
+  for(const t of S.scouts||[])if(t.side===P.faction)s.add(t.sector);
+  for(const t of S.traders||[])if(t.side===P.faction)s.add(t.sector);   // your faction's freighters and traders read the markets they pass
+  for(const Q of allPilots())if(Q!==P&&Q.faction===P.faction&&isScoutCls(Q.cls))s.add(Q.sector);if(isScoutCls(P.cls)||P.cls==='wraith')for(const n of NEIGH[P.sector]||[])s.add(n);
   if(S.outposts.hollow&&(S.outposts.hollow.owner===P.faction))for(const d of SECTOR_DEFS)s.add(d.id);return s}
 function intelTick(P){const first=!P.pintel;P.pintel=P.pintel||{};const live=intelSectors(P);if(first)for(const R of mkStations())if(R.owner===P.faction)live.add(R.sid);for(const R of mkStations()){if(!live.has(R.sid))continue;if(hostile(P.faction,R.owner)&&R.owner!=='neutral')continue;mkOf(R);
   const st=mkStock(R),b={},sl={},n={};for(const k of TRADE_ITEMS){const pr=stPrice(R,k);b[k]=Math.ceil(pr*(1+mFee(P.cls)));sl[k]=Math.max(1,Math.floor(pr*(1-mFee(P.cls))));n[k]=st[k]||0}P.pintel[R.sid]={T:first&&R.sid!==P.sector?S.T-600:S.T,b,s:sl,n}}}
@@ -6442,10 +6444,13 @@ function drawMap(){
       if(lab){c.font='600 10px "Saira Semi Condensed",sans-serif';c.textAlign='left';c.fillStyle=cc;c.fillText(lab,ex,y-r+4);ex+=c.measureText(lab).width+6}}}
   campMapDraw(c,w,h,t);
   c.font='500 11px "Saira Semi Condensed",sans-serif';c.textAlign='right';let ly=h-14;const lx=w-14;
+  mapKeyBox={x:w-70,y:h-30,w:60,h:22};if(!mapKey){c.strokeStyle='rgba(236,228,207,.35)';c.lineWidth=1;c.strokeRect(w-70,h-30,60,22);c.fillStyle='#b8bfcf';c.textAlign='center';c.fillText('KEY ▸',w-40,h-15);return}
+  c.fillStyle='rgba(11,16,32,.88)';c.fillRect(w-380,h-196,374,190);c.fillStyle='#b8bfcf';c.textAlign='right';c.fillText('KEY ▾',lx,ly);ly-=18;
   for(const[l,col]of[['Brood',FACTIONS.brood.col],['Unbound','#d8cd98'],['You','#f0b24a'],...FAC_IDS.map(f=>[FACTIONS[f].short,FACTIONS[f].col]).reverse()]){c.fillStyle=col;c.fillRect(lx-8,ly-8,8,8);c.fillStyle='#8c91a5';c.fillText(l,lx-14,ly);ly-=16}
   c.fillStyle='#5a647c';c.fillText('◆ Beacon: team colour · hollow unclaimed · amber ring yours',lx,ly);ly-=16;c.fillText('F Forge · R Relay · Y Salvage Yard · ■ built depot · ▣ your vault',lx,ly);ly-=16;c.fillText('Dashed ring: sensors cover it · dimmed: no coverage',lx,ly);
 }
-mcv.addEventListener('click',e=>{const r=mcv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=34;for(const d of SECTOR_DEFS){const[sx,sy]=mapXY(d,r.width,r.height),dd=hyp(sx-x,sy-y);if(dd<bd){bd=dd;best=d.id}}if(best){mapSel=best;drawMap();renderMapSide()}});
+let mapKey=false,mapKeyBox=null;
+mcv.addEventListener('click',e=>{const r=mcv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(mapKeyBox&&x>=r.width-75&&y>=r.height-(mapKey?200:34)&&x<=r.width&&y<=r.height){mapKey=!mapKey;drawMap();return}let best=null,bd=34;for(const d of SECTOR_DEFS){const[sx,sy]=mapXY(d,r.width,r.height),dd=hyp(sx-x,sy-y);if(dd<bd){bd=dd;best=d.id}}if(best){mapSel=best;drawMap();renderMapSide()}});
 function fmtT(t){const m=Math.floor(t/60),s=Math.floor(t%60);return`${m}:${String(s).padStart(2,'0')}`}
 // the Brood's road to a win, at a glance: one cell per system it holds, against the 7 it must hold for WIN_TIME
 function broodMeter(b){const col=b>=6?'var(--danger)':b>=5?'var(--amber)':sideCol('brood');let cells='';for(let i=0;i<VIC_NEED;i++)cells+=`<i style="display:inline-block;width:14px;height:8px;margin-right:3px;background:${i<b?col:'rgba(255,255,255,.1)'}"></i>`;
@@ -6461,17 +6466,27 @@ function keysNow(){const P=S.player,p=W&&W.player;if(!p||P.docked||W.bridge||W.g
   if(!T)k.push([kb('tgtH'),'nearest hostile'],[kb('cycle'),'cycle targets']);
   return k.slice(0,6)}
 function keysNowRender(){const el=$('hKeysNow');if(!el)return;const h=keysNow().map(([key,t])=>`<span><kbd>${esc(key)}</kbd>${esc(t)}</span>`).join('');if(el.innerHTML!==h)el.innerHTML=h}
+// the map's sector panel leads with what matters to a pilot: trouble there, your jobs there, and prices as of your last scan
+// (no live prices you haven't scanned, and never how much ore is in the rocks)
+function mapSectorNow(sid){const P=S.player,f=P.faction;let h='';
+  {const ev=(S.events||[]).find(e=>e.sector===sid&&(e.type==='offensive'||e.type==='build')&&e.stage!=='done'&&(e.att===f||friendSide(evOwner(e))||evKnown(e)));
+    if(ev)h+=`<span>Trouble</span><b style="color:#ff7a6b">${ev.att==='brood'?'Brood':esc(sideName(ev.att))} ${ev.type==='build'?'building':'strike'} · ${ev.stage==='engaged'?'fighting now':'inbound'}</b>`}
+  {const J=[];if(FACTIONS[f]&&!S.unb){for(const k of S.contracts||[])if((k.st===sid&&(k.blk?k.fac===f:true))||(!k.st&&k.fac===f&&S.stations[sid]&&S.stations[sid].owner===f&&false))J.push(`${k.n} ${ITEMS[k.item].name}`);
+      for(const x of (S.bcnMis&&S.bcnMis[f]||[]))if(x.sid===sid&&S.T<x.until)J.push('beacon bounty');{const C=myCamp();for(const o of (C?sideOf(C):[]))if(o.stage==='active'&&o.sector===sid)J.push(o.title)}
+      for(const t of S.traders||[])if(t.kind==='haul'&&t.sector===sid&&hostile(f,t.side)&&t.side!=='pirate'&&covered(sid))J.push('convoy raid')}
+    if(J.length)h+=`<span>Your jobs here</span><b>${esc(J.slice(0,3).join(' · '))}${J.length>3?` · +${J.length-3}`:''}</b>`}
+  {const R=S.stations[sid],I=R&&P.pintel&&P.pintel[sid];if(R&&R.kind!=='hive'){if(!I)h+=`<span>Prices</span><b style="opacity:.7">no scan yet</b>`;else{const age=S.T-(I.T||0),own=Object.keys(P.cargo).filter(k=>(P.cargo[k]||0)>0&&I.s[k]),best=Object.keys(I.s).filter(k=>ITEMS[k]&&baseValue(k)>0).sort((a,b)=>I.s[b]/baseValue(b)-I.s[a]/baseValue(a)).slice(0,3),L=own.length?own.sort((a,b)=>I.s[b]*P.cargo[b]-I.s[a]*P.cargo[a]).slice(0,3):best;
+      h+=`<span>${own.length?'Your hold sells':'Pays best for'}</span><b>${L.map(k=>`${esc(ITEMS[k].name)} ${fmt(I.s[k])}`).join(' · ')} cr<span style="opacity:.6"> · ${age<60?'live':'scan '+fmtT(age)+' old'}</span></b>`}}}
+  return h}
 function renderMapSide(){
   const d=DEF[mapSel],s=S.sectors[mapSel],oid=OUT_BY_SECTOR[mapSel],o=oid&&S.outposts[oid];
-  const fields={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};for(const a of s.ast)invVec(a.ore,fields);
-  let h=`<div><div class="h3" style="color:${sideCol(sectorOwner(mapSel))}">${esc(d.name)}</div><div class="kv"><span>Control</span><b>${sectorOwner(mapSel)?sideName(sectorOwner(mapSel)):'Unclaimed'} · ${d.kind}</b>`;
+  let h=`<div><div class="h3" style="color:${sideCol(sectorOwner(mapSel))}">${esc(d.name)}</div><div class="kv"><span>Held by</span><b style="color:${sideCol(sectorOwner(mapSel))}">${sectorOwner(mapSel)?sideName(sectorOwner(mapSel)):'Unclaimed'} · ${d.kind}</b>`+mapSectorNow(mapSel);
   {const Rs=S.stations[mapSel];h+=Rs?`<span>${esc(Rs.name)}</span><b>${Rs.kind==='hive'?'hive':Rs.kind} · hull ${Math.round(Rs.hull/Rs.hMax*100)}%</b>`:`<span>Station</span><b>${d.kind==='hive'?'—':'none · a Constructor can build here'}</b>`}
   if(o)h+=`<span>${esc(o.name)}</span><b>Level ${o.level}${o.breached?' · breached':''}</b><span>Role</span><b>${o.type}</b>`;
   {const B=S.beacons&&S.beacons[mapSel];if(B)h+=`<span>Beacon</span><b style="color:${B.owner?sideCol(B.owner):'inherit'}">${B.owner?FACTIONS[B.owner].short+(B.T?' · held '+fmtT(S.T-B.T):'')+(bcnState(B)==='locked'?' · secured '+fmtT(bcnLeft(B)):' · fading, neutral in '+fmtT(bcnLeft(B))):'unclaimed'}${B.by&&isMe(B.by)?' · yours, '+BCN_RES+' cr/min':''}</b>`}
-  for(const e of RAWS)h+=`<span>${ITEMS[e].name} in fields</span><b>${fmt(fields[e])} t</b>`;
   {const V=vaultList(S.player).filter(v=>v.sid===mapSel);for(const v of V)h+=`<span>Your vault${V.length>1?' · '+esc(vaultName(v.k)):''}</span><b>${fmt(v.m)} t · ${fmt(v.val)} cr${v.open?'':' · '+esc(vaultWhy(v.k,S.player))}</b>`}
-  for(const w of s.wrecks||[]){let m=0;for(const p of w.pts)m+=vecMass(p.ore);h+=`<span>✕ Wreck</span><b style="color:#ffb066">${esc(w.name)} · ${fmt(Math.round(m))} t · breaks up in ${fmtT(Math.max(0,w.until-S.T))}</b>`}
-  h+=`<span>Drifting debris</span><b>${fmt(s.debris.fe+s.debris.cu+s.debris.ir+s.debris.xc)} t</b><span>Salvage crates</span><b>${s.crates.length}</b><span>Gates to</span><b>${NEIGH[mapSel].map(n=>DEF[n].name).join(', ')}</b></div>`;
+  for(const w of s.wrecks||[]){let m=0;h+=`<span>✕ Wreck</span><b style="color:#ffb066">${esc(w.name)} · breaks up in ${fmtT(Math.max(0,w.until-S.T))}</b>`}
+  h+=`<span>Salvage crates</span><b>${s.crates.length}</b><span>Gates to</span><b>${NEIGH[mapSel].map(n=>DEF[n].name).join(', ')}</b></div>`;
   if(o)h+=`<p class="note" style="margin:8px 0 0">${TYPE_TEXT[o.type]}</p>`;h+=`</div>`;
   h+=`<div><div class="h3">Powers</div><div class="tblw"><table class="t"><thead><tr><th></th><th class="r">Treasury</th><th class="r">Stores</th><th class="r">Outposts</th></tr></thead><tbody>`;
   for(const f of[...FAC_IDS,'pirate','brood']){const n=Object.values(S.outposts).filter(x=>x.owner===f).length;h+=`<tr><td style="color:${sideCol(f)}">${sideName(f)}</td><td class="r num">${fmt(S.econ.treasury[f])}</td><td class="r num">${fmt(invMass(S.econ.stock[f])+invMass(S.econ.fleet[f]||{}))} t</td><td class="r num">${n}</td></tr>`}
