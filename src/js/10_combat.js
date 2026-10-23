@@ -116,12 +116,12 @@ function blHull(cls){return BL_HULL[cls]||null}
 function blTier(P){return(P&&P.tiers&&P.tiers.drill)||1}
 function blCap(P){const h=P&&blHull(P.cls);return h?Math.max(1,h.n+blTier(P)-1+(vF(P,'blChg')||0)):0}                       // a Blast Rig Mk level adds a charge
 function blColl(P){const h=P&&blHull(P.cls);return h?h.coll*(1+.2*(blTier(P)-1)):0}
-function blWin(P,a){const rare=a&&a.ore&&(a.ore.au||a.ore.nu),b=vF(P,'blWin')||5;return(rare?b-2:b)+((P&&(P.lvl||0)>=3)?2:0)}
+function blWin(P,a){const rare=a&&!a.wpt&&a.ore&&(a.ore.au||a.ore.nu),b=(vF(P,'blWin')||5)+(a&&a.wpt?2:0);return(rare?b-2:b)+((P&&(P.lvl||0)>=3)?2:0)}
 function blRange(P){return Math.max(legMineR(P),vF(P,'blRange')||0)}
 function blKey(P){return(P&&P.pid)||'me'}
 function blRng(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^t>>>15,1|t);r^=r+Math.imul(r^r>>>7,61|r);return((r^r>>>14)>>>0)/4294967296}}
 // a rock's fault points: fixed by its seed (and a new set each time it is partly cracked), spread over its surface
-function blPts(a){if(a.wpt){const w=wreckOf(S.sectors[W.sid],a),R=WPT_R*.9;let dx=0,dy=1,dz=0;if(w){dx=w.x-a.x;dy=w.y-a.y;dz=w.z-a.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l}return[{x:a.x+dx*R,y:a.y+dy*R,z:a.z+dz*R}]}
+function blPts(a){if(a.wpt){const w=wreckOf(S.sectors[W.sid],a),R=WPT_R*.9;let dx=0,dy=1,dz=0;if(w){dx=a.x-w.x;dy=a.y-w.y;dz=a.z-w.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l}return[{x:a.x+dx*R,y:a.y+dy*R,z:a.z+dz*R}]}
   const tot=oreTotal(a),n=tot<=50?2:tot<=90?3:4,key=n+':'+(a.fpv||0)+':'+Math.round(a.x);if(a._fpk===key&&a._fp)return a._fp;
   const r=blRng((a.seed||a.id||1)+(a.fpv||0)*7919),R=astR(a),out=[],rot=r()*TAU,tilt=r()*2-1;
   for(let i=0;i<n;i++){const y=1-(i+.5)*2/n*(.8+.2*r()),rr=Math.sqrt(Math.max(0,1-y*y)),th=rot+i*2.39996;let x=Math.cos(th)*rr,z=Math.sin(th)*rr,yy=y*.9+tilt*.1;const l=hyp(x,yy,z)||1;out.push({x:a.x+x/l*R,y:a.y+yy/l*R,z:a.z+z/l*R})}
@@ -163,7 +163,7 @@ function blDetonate(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]
   for(const id in by){const cs=by[id],T=blTgt(s,cs[0]);if(!T)continue;const at={x:T.x,y:T.y,z:T.z},R0=astR(T);
     if(T.wpt){const w=wreckOf(s,T);if(T.k==='core'&&cs.some(c=>c.q!=='on')){blCoreBlow(s,w,T);continue}
       const best=Math.max(...cs.map(c=>blRate(c.q,P))),f=best*Math.max(0,1-.1*(cs.length-1)),rel={};for(const k in T.ore){const r=Math.round(T.ore[k]*f);if(r>0)rel[k]=r;const d=T.ore[k]-r;if(d>0)toDebris(s,{[k]:d})}
-      T.ore={};T.last=0;{const w=wreckOf(s,T);let nx=w?T.x-w.x:rnd(-1,1),ny=w?T.y-w.y:rnd(-1,1),nz=w?T.z-w.z:rnd(-1,1);const nl=hyp(nx,ny,nz)||1,sp=rnd(5,8);got+=blCloud(s,at,rel,R0,cs.length-1,o,{x:nx/nl*sp,y:ny/nl*sp,z:nz/nl*sp})}}
+      T.ore={};T.last=0;{const w=wreckOf(s,T);let nx=w?T.x-w.x:rnd(-1,1),ny=w?T.y-w.y:rnd(-1,1),nz=w?T.z-w.z:rnd(-1,1);const nl=hyp(nx,ny,nz)||1,sp=rnd(5,8);got+=blCloud(s,at,rel,R0,cs.length-1,o,{x:nx/nl*sp,y:ny/nl*sp,z:nz/nl*sp},1)}}
     else{const n=blPts(T).length,secQ={};let extra=0;for(const c of cs){const r=blRate(c.q,P);if(c.pi in secQ){extra++;secQ[c.pi]=Math.max(secQ[c.pi],r)}else secQ[c.pi]=r}
       const nc=Object.keys(secQ).length,f=Object.values(secQ).reduce((a,b)=>a+b,0)/nc*Math.max(0,1-.1*extra),rel={},hk=blHull(P.cls),tot0=oreTotal(T),fr=Math.min(nc/n,hk&&hk.k?hk.k*nc/Math.max(1,tot0):1);
       for(const k of Object.keys(T.ore)){const cK=Math.min(T.ore[k],Math.round(T.ore[k]*fr)),r=Math.round(cK*f);T.ore[k]-=cK;if(T.ore[k]<=0)delete T.ore[k];if(r>0)rel[k]=r;if(cK-r>0)toDebris(s,{[k]:cK-r})}
@@ -173,8 +173,8 @@ function blDetonate(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]
         got+=blCloud(s,{x:x+nx*(cr+4),y:y+ny*(cr+4),z:z+nz*(cr+4)},parts[i],R0,extra,o,{x:nx*sp+rnd(-1,1),y:ny*sp+rnd(-1,1),z:nz*sp+rnd(-1,1)})})}}
     if(!MUTE){fxBoom(at,R0*1.6,'#ffd9a0');SFX.crack&&SFX.crack()}
     for(const x of W.ents.slice())if(x.type==='ship'&&x.alive){const d=d3(x,at);if(d<BL.blastR)damageShip(x,BL.chgDmg*cs.length*(1-d/BL.blastR)+5,e.side,at,'blast')}}
-  blSay(P,got?`Blast! ${got} t of ore knocked loose. Fly into the chunks to scoop them.`:'Blast! Nothing came loose.')}
-function blCloud(s,at,ore,R0,extra,o,v){const t=oreTotal({ore});if(!t)return 0;s.clouds=s.clouds||[];const cr=chunkR(t);s.clouds.push({id:S.nextId++,chunk:1,cr,x:Math.round(at.x),y:Math.round(at.y),z:Math.round(at.z),vx:v?v.x:0,vy:v?v.y:0,vz:v?v.z:0,ore,r:cr+25,r0:cr+25,until:S.T+Math.max(30,BL.cloudLife-10*extra),o});return t}
+  blSay(P,got?`Blast! ${got} t ${Object.keys(by).some(id=>(mine.find(c=>String(c.a)===id)||{}).wp)?'of salvage':'of ore'} knocked loose. Fly into the chunks to scoop them.`:'Blast! Nothing came loose.')}
+function blCloud(s,at,ore,R0,extra,o,v,scrap){const t=oreTotal({ore});if(!t)return 0;s.clouds=s.clouds||[];const cr=chunkR(t);s.clouds.push({id:S.nextId++,chunk:1,scrap:scrap?1:undefined,cr,x:Math.round(at.x),y:Math.round(at.y),z:Math.round(at.z),vx:v?v.x:0,vy:v?v.y:0,vz:v?v.z:0,ore,r:cr+25,r0:cr+25,until:S.T+Math.max(30,BL.cloudLife-10*extra),o});return t}
 function chunkR(t){return Math.round((4+Math.sqrt(Math.max(1,t))*2.4)*10)/10}
 // share a released lot between sections by their release rates, to the unit
 function oreSplit(ore,w){const W=w.reduce((a,b)=>a+b,0)||1,out=w.map(()=>({}));for(const k in ore){const n=ore[k],sh=w.map(x=>n*x/W),fl=sh.map(Math.floor);let left=n-fl.reduce((a,b)=>a+b,0);const ord=sh.map((x,i)=>[x-fl[i],i]).sort((a,b)=>b[0]-a[0]);for(const[,i]of ord){if(left<=0)break;fl[i]++;left--}fl.forEach((m,i)=>{if(m>0)out[i][k]=m})}return out}
@@ -230,7 +230,7 @@ function blDraw(c){const p=W.player,P=S.player,s=S.sectors[W.sid];if(!p||!blHull
   for(const cl of s.clouds||[]){const L=proj(cl.x,cl.y,cl.z);if(L.behind)continue;const rr=Math.max(8,projR(L.d,cl.chunk?cl.cr+6:cl.r));c.strokeStyle='rgba(122,217,167,.85)';
     if(cl.chunk){const k=Math.max(4,rr*.35);c.beginPath();for(const[sx,sy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){c.moveTo(L.x+sx*rr,L.y+sy*(rr-k));c.lineTo(L.x+sx*rr,L.y+sy*rr);c.lineTo(L.x+sx*(rr-k),L.y+sy*rr)}c.stroke()}
     else{c.setLineDash([3,5]);c.beginPath();c.arc(L.x,L.y,rr,0,TAU);c.stroke();c.setLineDash([])}
-    c.fillStyle='#7ad9a7';c.fillText(`${cl.chunk?'ORE CHUNK':'ORE CLOUD'} ${oreTotal(cl)} T · ${Math.max(0,Math.ceil(cl.until-S.T))} S`,L.x,L.y-rr-6)}
+    c.fillStyle='#7ad9a7';c.fillText(`${cl.scrap?'SALVAGE':cl.chunk?'ORE CHUNK':'ORE CLOUD'} ${oreTotal(cl)} T · ${Math.max(0,Math.ceil(cl.until-S.T))} S`,L.x,L.y-rr-6)}
   const mine=(s.charges||[]).filter(ch=>ch.o===blKey(P));let warn='';if(mine.length){let lim=BL.blastR,near=1e9;for(const ch of mine){const TT=blTgt(s,ch);if(!TT)continue;if(TT.wpt&&TT.k==='core')lim=BL.coreR;near=Math.min(near,d3(p,TT))}if(near<lim)warn=`INSIDE BLAST RADIUS: MOVE ${lim} M CLEAR · ${Math.round(near)} M`}
   c.textAlign='center';c.font='700 13px "Saira Semi Condensed",sans-serif';c.fillStyle='#f0b24a';
   c.fillText(`CHARGES ${P.blN||0}/${blCap(P)}${P.blT>0?` · RELOAD ${Math.ceil(P.blT)} S`:''}${mine.length?` · ${mine.length} SET (3 DETONATE · 4 CANCEL)`:''}`,VW/2,VH-232);
@@ -532,7 +532,7 @@ function npcThink(e,dt){
         const d=steer(e,D.x,D.y,D.z,dt,true);faceTo(e,D,dt);
         if(d<110){if(D.type==='outpost')inv.addAll(D.o.stock,e.cargo);else{inv.addAll((D.rec&&D.rec.owner===e.side&&storeOf(D.rec))||S.econ.stock[e.side]||S.econ.stock.pirate,e.cargo);if(D.rec){mkOf(D.rec);for(const k in e.cargo)D.rec.mk[k]=(D.rec.mk[k]||0)+e.cargo[k]*.5}}e.cargo={};despawn(e)}
         break}
-      let a=ai.ast;if(a&&a.wpt&&oreTotal(a)<=0)a=null;if(!a||!(a.wpt||s.ast.includes(a))){let bd=1e9;a=null;const wp=wptsIn(s);if(wp.length&&(e.side==='brood'||Math.random()<.5)){for(const x of wp){const d=d3(x,e);if(d<bd){bd=d;a=x}}}else for(const x of s.ast){if(x.comet)continue;const d=d3(x,e)+rnd(400);if(d<bd){bd=d;a=x}}ai.ast=a;if(!a){ai.state='return';break}}
+      let a=ai.ast;if(a&&a.wpt&&oreTotal(a)<=0)a=null;if(!a||!(a.wpt||s.ast.includes(a))){let bd=1e9;a=null;const wp=wptsIn(s).filter(x=>!x.train);if(wp.length&&(e.side==='brood'||Math.random()<.5)){for(const x of wp){const d=d3(x,e);if(d<bd){bd=d;a=x}}}else for(const x of s.ast){if(x.comet)continue;const d=d3(x,e)+rnd(400);if(d<bd){bd=d;a=x}}ai.ast=a;if(!a){ai.state='return';break}}
       const d=d3(a,e),r=astR(a);
       if(e.side!=='brood'&&blHull(e.cls)){npcBlast(e,a,dt,s);break}
       if(d>r+150){steer(e,a.x,a.y,a.z,dt,true);faceTo(e,a,dt)}

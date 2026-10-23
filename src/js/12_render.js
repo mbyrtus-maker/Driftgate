@@ -475,7 +475,9 @@ function draw3D(){
     if(!(opModel(o)==='rockbase'&&mdlHas('rockbase'))){qLook(OE.aim.x,OE.aim.y,OE.aim.z,0,1,0,_qs);mModel(MM,OE.x,OE.y+40,OE.z,_qs,1,1,1);drawMesh(GEN.turret,MM)}}
   for(const a of sec.ast){const R=astR(a);if(!inView(a.x,a.y,a.z,R))continue;const sd=a.seed||a.id;qAxis(((sd>>3)%7-3)/4,((sd>>6)%5-2)/2.5,1,(sd%628)/100+t*(((sd>>9)%7)-3)*.03,_qs);qNorm(_qs);mModel(MM,a.x,a.y,a.z,_qs,R,R*(.85+(sd%13)/40),R);drawMesh(astMesh(sd%8,a.comet?'comet':mainOre(a)||'fe'),MM)}
   for(const c of W.npcCh||[]){if(!inView(c.x,c.y,c.z,c.cr))continue;qAxis(((c.id>>2)%5-2)/2,1,((c.id>>4)%3-1)/2,t*.6+c.id,_qs);qNorm(_qs);mModel(MM,c.x,c.y,c.z,_qs,c.cr,c.cr*.8,c.cr*.9);drawMesh(astMesh(c.id%8,c.k),MM)}
-  for(const c of sec.clouds||[]){if(!c.chunk||!inView(c.x,c.y,c.z,c.cr))continue;qAxis(((c.id>>2)%5-2)/2,1,((c.id>>4)%3-1)/2,t*.6+c.id,_qs);qNorm(_qs);mModel(MM,c.x,c.y,c.z,_qs,c.cr,c.cr*.8,c.cr*.9);drawMesh(astMesh(c.id%8,mainOre(c)||'fe'),MM)}
+  for(const c of sec.clouds||[]){if(!c.chunk||!inView(c.x,c.y,c.z,c.cr))continue;qAxis(((c.id>>2)%5-2)/2,1,((c.id>>4)%3-1)/2,t*.6+c.id,_qs);qNorm(_qs);
+    if(c.scrap){const k=c.cr*.75;mModel(MM,c.x,c.y,c.z,_qs,k*1.3,k*.55,k);drawMesh(GEN.crate,MM,[.36,.33,.31]);drawMesh(GEN.crateL,MM,[.5,.42,.32],[.22,.14,.06])}   // a torn-off hull section
+    else{mModel(MM,c.x,c.y,c.z,_qs,c.cr,c.cr*.8,c.cr*.9);drawMesh(astMesh(c.id%8,mainOre(c)||'fe'),MM)}}
   {const B=S.beacons&&S.beacons[W.sid];if(B&&inView(B.x,B.y,B.z,90)){const F=W.bcnF,fl=F&&F.side&&F.t>0,col=B.owner?rgb(sideCol(B.owner)):[.78,.78,.72],k=fl?F.t/BCN_T:0,rc=fl?mixC(col,rgb(sideCol(F.side)),.5+.5*Math.sin(t*12)):col;
     mModel(MM,B.x,B.y,B.z,Q_ID,1.25,1.25,1.25);drawMesh(GEN.bcn,MM);drawMesh(GEN.bcnL,MM,col);qAxis(.12,1,.05,t*(.7+k*6),_qs);qNorm(_qs);mModel(MM,B.x,B.y+25,B.z,_qs,1.25,1.25,1.25);drawMesh(GEN.bcnRing,MM,rc)}}
   for(const w of sec.wrecks||[]){const life=Math.max(0,w.until-S.T),fade=Math.min(1,life/20);if(inView(w.x,w.y,w.z,w.R*1.2)){const m=shipMesh(w.mf,w.cls),k=w.R*(.96+.04*fade);mModel(MM,w.x,w.y,w.z-(1-fade)*40,w.q,k,k,k);drawMesh(m.hull,MM,[.3,.27,.26],ZERO3,fade);if(m.rim)drawMesh(m.rim,MM,[.22,.2,.2],ZERO3,fade)}
