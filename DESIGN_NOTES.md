@@ -383,8 +383,9 @@ hidden. A tab with several views shows them as a second row; each tab remembers 
   first visit no longer lists a lower sell price than the sale pays.
 - **Claim Beacons for credits** (`CLAIM_PRICE` 450 cr): sold at the player's own faction's stations and depots, paid to its
   treasury, delivered to the vault like any purchase. Fabricating one still works (2 Alloy Plate, 2 Conduit).
-- **A beacon weighs 12 t**, so every fighter (Light Fighter 14 t) can carry one. **Scouts can't**, whatever their hold:
-  loading one into a Scout or Advanced Scout is refused, and a scout in an outpost's ring doesn't claim it.
+- **A beacon weighs 12 t**, so every fighter (Light Fighter 14 t) can carry one. **Only combat hulls use them**
+  (`beaconCls`: fighters and bombers). Scouts, miners, haulers and the constructor can't, whatever their hold: loading one is
+  refused, and they don't claim an outpost by sitting in its ring.
 - **Shipping from a vault elsewhere** (`shipOrder`): docked where you have a vault, Trade → Vault and the Overview's goods
   card offer **Ship here** on each of your other vaults at a friendly station or outpost. Your faction sends a real supply
   freighter (`haulSend`, `t.own`) carrying up to 120 t (most valuable per tonne first), for 60 cr + 2 cr per tonne per jump
@@ -1454,7 +1455,7 @@ Fifteen lessons were too long for a first session, and most players want one job
 - **First-time tips.** Lessons a course skips are still met in play: the first time a pilot enters Bloom space or is jammed,
   a one-off tip explains it (`firstTip`, kept in `driftgate.tips`). Not shown during training.
 - **Claim practice (Combat course).** "Fighting for territory" has the cadet buy a Claim Beacon at the station, load it
-  (training swaps a scout for a Light Fighter, since scouts can't carry one), and claim a practice outpost (`trPost`:
+  (training swaps any non-combat hull for a Light Fighter), and claim a practice outpost (`trPost`:
   unclaimed, kept out of `S.outposts` so the war never sees it, removed after the step) by sitting in its ring.
 - Checked by flying every course end to end in a browser (full, combat, mining, hauling, scouting).
 

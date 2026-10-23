@@ -110,6 +110,9 @@ function bcnState(B){if(!B||!B.owner)return'open';const a=S.T-bcnSec(B);return a
 function bcnLeft(B){const a=S.T-bcnSec(B);return Math.max(0,a<BCN_LOCK?BCN_LOCK-a:BCN_LOCK+BCN_FADE-a)}
 function bcnCan(B,side){const st=bcnState(B);return side===B.owner?st==='fading':st!=='locked'}   // can this side make progress on it right now?
 function isScoutCls(cls){return cls==='scout'||cls==='scout2'}
+// Claim Beacons are for combat hulls: fighters and bombers carry and claim with one; scouts, miners, haulers and the
+// constructor can't
+function beaconCls(cls){return!!CLASSES[cls]&&!isScoutCls(cls)&&!blHull(cls)&&!isHaulCls(cls)&&cls!=='constructor'}
 function beaconPos(sid){const gs=GATES[sid]||[];let p,k=0;do{p=randPos(1500*SPACE,2350*SPACE);p.y=Math.round(p.y*.5)}while(k++<40&&gs.some(g=>d3(g,p)<800*SPREAD));return p}
 // every system has a beacon: it scans the system for its holder and feeds them that system's market prices
 function bcnAllowed(d){return true}
