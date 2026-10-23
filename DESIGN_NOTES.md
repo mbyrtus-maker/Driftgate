@@ -1483,3 +1483,11 @@ Fifteen lessons were too long for a first session, and most players want one job
   Beacon row offers the same for non-combat hulls.
 - **Build guard:** `tools/build.py` refuses to build when two function declarations share a name (the later one silently
   replaces the earlier: that broke Hangar storing for one push, via a second `shipLoad`).
+
+## HUD contacts list: short rows (built)
+- **Names:** hull name only (`ctName`); the marker's colour shows the side, and hovering or targeting gives the full name.
+  Pilots and aces show their callsign, capital ships their name, stations and outposts their name.
+- **Status tags:** short, with the full word on hover: esc, grd, atk, eng, conv (escorted convoy), scr, scout, bld, flee,
+  hit (a friendly under fire). Threats stay full words in red: ON YOU, hitting ally. Structures: ally, hostile, free,
+  open, breach.
+- **Drones** read "+2" beside the name; **distances** past 1 km read "3.7 km".
