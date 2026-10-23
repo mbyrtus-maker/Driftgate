@@ -23,6 +23,8 @@ Set `DG_GAME` to test another file, and `DG_OUT` for where screenshots go (defau
 | mining_sight.py | only the charge reticle on a mining hull aimed at a rock (screenshots) |
 | stores.py | depots and freeports trade from their own stores, treasuries shared, ledger balances, old saves migrate |
 | haul_rates.py | trade bots per hauler hull for an hour of game time: cr/hour against the pay ladder (slow, run by hand) |
+| dock_sweep.py | renders every dock tab at every station and outpost (and a Lair) for each faction and the Unbound, clicks the buttons on one of each kind; prints any exception (slow, ~20 min) |
+| soak.py | a bot pilot fights, jumps, docks, lands, mines and fires missiles for N sim minutes in eight hull/faction setups; prints frame errors: `python3 tools/tests/soak.py 15` |
 | training.py | flies a training course end to end; `TRK=full\|combat\|mining\|hauling\|scouting` |
 | mp_loopback.py | two pages joined over a faked link: `python3 tools/tests/mp_loopback.py index.html shot.png` |
 

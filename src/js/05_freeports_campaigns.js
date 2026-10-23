@@ -135,7 +135,7 @@ function wkAbstractHit(sid,by,chance){if(WORLDS[sid]||Math.random()>chance)retur
   const w=L[Math.floor(Math.random()*L.length)],hp=wkHp(w)-rnd(700,1300);wkSet(w,Math.max(0,hp));if(hp<=0)wkDestroy(w,by)}
 // razing a station takes everything around it down too
 function wkRaze(sid){const s=S.sectors[sid];{const R=S.stations[sid];if(R&&R.hg){for(const h of R.hg)toDebris(s,h.load);R.hg=[]}}for(const key in S.yards||{}){const Y=S.yards[key];if(Y.sector!==sid)continue;toDebris(s,Y.fort);delete S.yards[key]}
-  for(const ev of S.events)if((ev.type==='frigbuild'||ev.type==='yardbuild')&&ev.stage==='building'&&ev.sector===sid){toDebris(s,ev.force);ev.force={};ev.stage='done'}}
+  for(const ev of S.events)if((ev.type==='frigbuild'||ev.type==='yardbuild'||ev.type==='escbuild')&&ev.stage==='building'&&ev.sector===sid){toDebris(s,ev.force);ev.force={};ev.stage='done'}}
 // crews patch structures left alone for a minute and a half
 function wkRepair(){for(const id in S.stations){const R=S.stations[id];if(!R.wk||S.T-(R.wkHit||-1e9)<90)continue;const d=devOf(R);
     for(const k in R.wk){const m=WK_HP[k]*Math.max(1,d[k]||0);R.wk[k]+=m*.05;if(R.wk[k]>=m||!(d[k]>0))delete R.wk[k]}}
@@ -281,7 +281,7 @@ function blkHunt(){if(NET.cl||!W)return;const L=[];if(W===LW&&W.player&&W.player
 function blkHuntOne(P,p,pid){const f=P.faction,T=territory(f);if(T.has(W.sid))return;const hk=W.sid;P.blkT=P.blkT||{};if(P.blkT[hk]&&S.T-P.blkT[hk]<180)return;
   const k=S.contracts.find(c=>c.blk&&c.fac===f&&(c.st===W.sid||NEIGH[c.st].includes(W.sid))&&((P.cargo||{})[c.item]||0)>=Math.min(c.n,5));if(!k)return;
   P.blkT[hk]=S.T;const foe=k.foe&&hostile(f,k.foe)?k.foe:blkFoe(f,k.st);if(!foe)return;let n=0;
-  for(let i=0;i<(k.st===W.sid?3:2);i++){const e=spawnNPC('patrol',foe);if(!e)break;const o=rdir();e.x=p.x+o.x*1800;e.y=p.y+o.y*400;e.z=p.z+o.z*1800;e.ai.tgt=p;e.hunt=1;n++}
+  for(let i=0;i<(k.st===W.sid?3:2);i++){const e=spawnNPC('patrol',foe);if(!e)break;const o=rdir();e.x=p.x+o.x*1800;e.y=p.y+o.y*400;e.z=p.z+o.z*1800;e.ai.tgt=p;e.hunt=1;e.ai.hunt=p;e.ai.huntUntil=W.t+180;n++}
   if(n)keyFeed(pid||pkey(),`⚠ Blockade: a ${foe==='brood'?'Brood':FACTIONS[foe].short} interdiction wing (${n}) is hunting your cargo for ${S.stations[k.st].name}.`,'bad')}
 const FP_REBUILD={plate:40,wire:30,coil:10};
 function fpRebuild(){const D=S.fpDown||{},st=fpStores();if(!st.length)return;for(const sid in D){if(S.stations[sid]){delete D[sid];continue}if(S.T-D[sid]<1200||!haveIn(FP_REBUILD,st)||frigatesIn(sid).some(t=>t.side==='brood'))continue;
@@ -370,7 +370,7 @@ function capProgHtml(R){const f=R.owner;if(!FACTIONS[f]||f==='brood'||FAC_HOME(f
   let h=`<div class="h3" style="margin-top:18px">${esc(FACTIONS[f].short)} capital programme</div><p class="note" style="margin:0 0 8px">The carrier is assembled here from the ${esc(FACTIONS[f].short)} warehouse, which ore convoys from every depot feed; a build starts only once the full kit is in stock, and the kit is taken at the start. ${n} of 1 carrier in service.</p>`;
   if(!Y)h+=`<p class="note">${yb?`Capital shipyard under construction: ${Math.round(wkProg({evId:yb.id})*100)}%.`:'No capital shipyard yet. It needs: '+(C=>Object.keys(C).map(i=>chip(i,C[i],st[i]||0)))(yardCost(f)).join(' ')}</p>`;
   else if(fb)h+=`<p class="note">Carrier in the slip: ${Math.round(wkSlipProg(fb)*100)}% (kit already drawn from stock).</p>`;
-  else if(n>=cap)h+=`<p class="note">Fleet at strength; no carrier building.</p>`;
+  else if(n>=1)h+=`<p class="note">Fleet at strength; no carrier building.</p>`;
   else h+=`<p class="note" style="margin:0">Next carrier needs: ${(C=>Object.keys(C).map(i=>chip(i,C[i],st[i]||0)))(carCostF(f)).join(' ')}</p>`;
   return h}
 

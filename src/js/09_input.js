@@ -94,7 +94,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyL'){S.player.level=S.player.level===false;flash(S.player.level===false?'Auto-level off: full six-axis freedom.':'Auto-level on: the ship rolls back level with the sector plane.');return}
   if(c==='KeyX'){S.player.fa=!S.player.fa;feed(`Flight assist ${S.player.fa?'on':'off'}.`)}
 });
-addEventListener('keyup',e=>{{const k=keyOf(e.code);if(k)keys[k]=false}if(e.code==='KeyE'&&NET.cl&&MP.hookOn){MP.hookOn=0;netSend({t:'hook',on:0})}});
+addEventListener('keyup',e=>{{const k=keyOf(e.code);if(k)keys[k]=false}if(keyOf(e.code)==='KeyE'&&NET.cl&&MP.hookOn){MP.hookOn=0;netSend({t:'hook',on:0})}});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false});
 const glc=$('gl');
 glc.addEventListener('mousemove',e=>{if(lookLocked()&&!(W&&(W.bridge||W.gunseat))){freeLook();return}if(lookLocked()&&W){const k=.0024;if(W.bridge&&!W.bridge.panel){W.bridge.yaw-=e.movementX*k;W.bridge.pitch=clamp(W.bridge.pitch-e.movementY*k,-1.2,1.2);return}if(W.gunseat){W.gunseat.yaw=wrapA(W.gunseat.yaw-e.movementX*k);W.gunseat.pitch=clamp(W.gunseat.pitch-e.movementY*k,GT_MINP,GT_MAXP);return}}mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});

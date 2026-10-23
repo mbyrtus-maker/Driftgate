@@ -59,8 +59,7 @@ function chatterRun(){if(!auOK()||!AU.on.sfx||!voice(3))return;const c=AU.ctx;le
 // console beeps and the computer room tone each play once every 2 to 4 minutes; the low crew chatter every 30 to 60 s
 function bridgeAmb(dt,F){if(W.beepT===undefined)W.beepT=20+Math.random()*40;W.beepT-=dt;if(W.beepT<=0){SFX.cbeep();W.beepT=120+Math.random()*120}
   if(W.humT===undefined)W.humT=60+Math.random()*60;W.humT-=dt;if(W.humT<=0){if(AU.on.sfx)smp('bridgeHum',.07,1,0,.03);W.humT=120+Math.random()*120}
-  W.ambT=(W.ambT===undefined?10:W.ambT)-dt;if(W.ambT<=0){SFX.chatter();W.ambT=30+Math.random()*30}{
-  const T=F.tok;if(NET.cl&&T&&T.spin){const B=W.bridge;if(B)B.spinRef=B.spinRef}}}
+  W.ambT=(W.ambT===undefined?10:W.ambT)-dt;if(W.ambT<=0){SFX.chatter();W.ambT=30+Math.random()*30}}
 // jump-drive countdown: a low drum that quickens and swells from spin-up to the jump
 // the jump-drive whir is only for your own frigates: the one you're aboard, or one of yours close by (AI frigates spin up often and would drone on)
 function drumTick(e,p,dt){if(MUTE)return;const aboard=W&&W.bridge&&W.bridge.f===e;if(!aboard&&!(e.tok&&fMine(e.tok)))return;const v=aboard?1:vAt(e);if(v<.15)return;if(!AU.whirIn||v>AU.whirIn.v)AU.whirIn={p,v}}
