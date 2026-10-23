@@ -541,7 +541,16 @@ function lairWorld(dt){const L=lairHere();if(!L)return;const p=W.player;
   if(L.hull<=0){const s=S.sectors[W.sid];s.crates.push({id:S.nextId++,x:L.x,y:L.y,z:L.z,inv:L.stash,until:S.T+600});toDebris(s,L.fort||{});L.stash={};L.fort={};S.lairs=S.lairs.filter(x=>x!==L);fxBoom(L,260,'#ffcf5a');feed(`✕ Your Lair in ${DEF[W.sid].name} was destroyed. Its stash is drifting as salvage.`,'bad')}}
 function lairDraw(){const L=W&&lairHere();if(!L||!inView(L.x,L.y,L.z,120))return;qAxis(.2,1,.1,.6,_xq);qNorm(_xq);mModel(MM,L.x,L.y,L.z,_xq,90,70,84);drawMesh(astMesh(3,'fe'),MM);sprite(L.x,L.y+70,L.z,18+4*Math.sin(W.t*3),[.85,.8,.55],.7)}
 function lairNear(){const L=W&&lairHere(),p=W&&W.player;return L&&p&&d3(L,p)<260&&L.pid===(curPid()||'me')?L:null}
-function lairDock(L){const P=S.player,p=W.player;SFX.lair();if(NET.cl){P.docked='lair';P.lairId=L.id;p.vx=p.vy=p.vz=0;netSend({t:'dock',d:'lair',id:L.id});openDock('storage');return}P.docked='lair';P.lairId=L.id;p.vx=p.vy=p.vz=0;p.hull=p.st.hull;p.shield=p.st.sCap;openDock('storage');feed('Docked at your Lair: repaired. The stash holds 200 t.','good')}
+// docking at a Lair: the ship lines up on the rock's mouth and slides inside it (out of sight, as at any dock) before the
+// dock opens; undocking puts it back out at the mouth. Other pilots see it fly in and vanish.
+const LAIR_IN=1.8,LAIR_R=105;
+function lairEnter(L){const p=W.player;if(!p||W.lairIn)return;apOn=false;W.lairIn={L,t:0,ox:p.x,oy:p.y,oz:p.z};flash('Slipping into your Lair…')}
+function lairInUpdate(dt){const D=W.lairIn,p=W.player,L=D.L;if(W.dead||!p.alive||L.hull<=0||!(S.lairs||[]).includes(L)){W.lairIn=null;return}D.t+=dt;
+  let dx=D.ox-L.x,dy=(D.oy-L.y)*.3,dz=D.oz-L.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;const m=LAIR_R+p.st.radius*1.25+30,sm=k=>k*k*(3-2*k);
+  const ax=L.x+dx*m,ay=L.y+dy*m,az=L.z+dz*m;let x,y,z;if(D.t<1){const k=sm(D.t);x=D.ox+(ax-D.ox)*k;y=D.oy+(ay-D.oy)*k;z=D.oz+(az-D.oz)*k}else{const k=sm(Math.min(1,(D.t-1)/(LAIR_IN-1)));x=ax+(L.x-ax)*k;y=ay+(L.y-ay)*k;z=az+(L.z-az)*k}
+  p.x=x;p.y=y;p.z=z;p.vx=p.vy=p.vz=0;p.thrusting=D.t>1;p.boosting=false;p.mining=null;faceTo(p,{x:L.x,y:L.y,z:L.z},dt*2);
+  if(D.t>=LAIR_IN){W.lairIn=null;lairDock(L)}}
+function lairDock(L){const P=S.player,p=W.player;SFX.lair();if(p.stealth){p.stealth=false;p.masked=false;p.maskR=0}if(p.landed)p.landed=null;recallPlayerDrones();W.tgt=null;p.x=L.x;p.y=L.y;p.z=L.z;if(NET.cl){P.docked='lair';P.lairId=L.id;p.vx=p.vy=p.vz=0;netSend({t:'dock',d:'lair',id:L.id});openDock('storage');return}P.docked='lair';P.lairId=L.id;p.vx=p.vy=p.vz=0;p.hull=p.st.hull;p.shield=p.st.sCap;openDock('storage');feed('Docked at your Lair: repaired. The stash holds 200 t.','good')}
 function tunedK(e,kind){const t=e.st&&e.st.tuned;if(!t||(kind!=='kinetic'&&kind!=='laser'))return 1;return kind===t?1/1.3:1.2}
 // a destroyed ship's fitted variants: each one either spills into the crate whole, or breaks up into the system's debris
 function vrLose(P,crate,s){const vr=vrOf(P.tune);for(const sl in vr){const id='v_'+vr[sl];if(!ITEMS[id])continue;if(Math.random()<.5)inv.add(crate,id,1);else toDebris(s,{[id]:1})}if(P.tune)P.tune.vr={}}
