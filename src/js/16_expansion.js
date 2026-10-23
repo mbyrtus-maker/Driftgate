@@ -304,7 +304,7 @@ function lurkRocks(){const s=S.sectors[W.sid],R=S.stations[W.sid];return s.ast.f
 function lurkPlan(g,initial){const R=lurkRocks();if(!R.length)return;const a0=pick(R),near=R.slice().sort((a,b)=>d3(a,a0)-d3(b,a0)).slice(0,4);g.lurk=1;
   g.members.forEach((m,i)=>{const a=near[i%near.length];if(initial)lurkLand(m,a);else m.ai.lurkGo={aid:a.id,T:W.t}})}
 function lurkLand(e,a){let dx=e.x-a.x,dy=e.y-a.y,dz=e.z-a.z,l=hyp(dx,dy,dz);if(l<1){const r=rdir(1);dx=r.x;dy=r.y;dz=r.z;l=1}e.lurk={aid:a.id,nx:dx/l,ny:dy/l,nz:dz/l,until:W.t+rnd(160,260),ck:0};delete e.ai.lurkGo;
-  e.stealth=true;e.masked=true;e.maskR=MASK_NEAR;e.shield=0;e.vx=e.vy=e.vz=0;e.boosting=false;const r=astR(a)+e.st.radius;e.x=a.x+e.lurk.nx*r;e.y=a.y+e.lurk.ny*r;e.z=a.z+e.lurk.nz*r}
+  e.stealth=true;e.masked=true;e.maskR=MASK_NEAR;e.shield=0;e.vx=e.vy=e.vz=0;e.boosting=false;Object.assign(e.lurk,astLandInit(e,a));astLandPlace(e,a,e.lurk)}
 function lurkPrey(e){let best=null,bs=1e9;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e||!hostile(e.side,o.side)||o.role==='frigate'||o.role==='drone'||o.role==='picket')continue;if(o.isPlayer&&(S.player.docked||W.dead))continue;if(mHid(o,e))continue;
   const d=d3(o,e),soft=o.isPlayer||o.rp||['hauler','miner','trader','builder','scout'].includes(o.role);if(d>(soft?LURK_TRIG:400))continue;const sc=d*(soft?.6:1);if(sc<bs){bs=sc;best=o}}return best}
 function lurkSpring(g,prey,leave){const L=g&&g.members?g.members:[];let n=0;for(const m of L){if(!m.alive||!(m.lurk||m.ai.lurkGo))continue;const Lk=m.lurk;delete m.lurk;delete m.ai.lurkGo;m.stealth=false;m.masked=false;m.maskR=0;m.boot=W.t+2.5;if(Lk){m.vx=Lk.nx*30;m.vy=Lk.ny*30;m.vz=Lk.nz*30}n++;
@@ -314,7 +314,7 @@ function lurkSpring(g,prey,leave){const L=g&&g.members?g.members:[];let n=0;for(
   else if(W===LW&&W.player&&d3(prey,W.player)<4500)feed(`⚠ ${n} Unbound fighters burst off the rocks to jump ${prey.role==='hauler'||prey.role==='trader'?'a freighter':prey.role==='miner'?'a miner':'a ship'} nearby.`,'warn')}
 function lurkThink(e,dt){const s=S.sectors[W.sid];
   if(e.lurk){const a=s.ast.find(x=>x.id===e.lurk.aid);if(!a||!e.stealth){lurkSpring(e.grp||{members:[e]},e.lastHitBy?W.ents.find(o=>o.type==='ship'&&o.alive&&o.side===e.lastHitBy&&d3(o,e)<2500)||null:null);if(!a&&e.lurk)delete e.lurk;return false}
-    const r=astR(a)+e.st.radius;e.x=a.x+e.lurk.nx*r;e.y=a.y+e.lurk.ny*r;e.z=a.z+e.lurk.nz*r;e.vx=e.vy=e.vz=0;e.thrusting=e.boosting=false;e.ai.tgt=null;
+    if(!e.lurk.qr)Object.assign(e.lurk,astLandInit(e,a));astLandPlace(e,a,e.lurk);e.vx=e.vy=e.vz=0;e.thrusting=e.boosting=false;e.ai.tgt=null;
     if((e.lurk.ck-=dt)<=0){e.lurk.ck=.4;const prey=lurkPrey(e);if(prey){lurkSpring(e.grp||{members:[e]},prey);return false}if(W.t>e.lurk.until){lurkSpring(e.grp||{members:[e]},null,true);return false}}return true}
   if(e.ai.lurkGo){const G=e.ai.lurkGo,a=s.ast.find(x=>x.id===G.aid);if(!a||W.t-G.T>70){delete e.ai.lurkGo;return false}
     if(W.t-e.lastHit<3||lurkPrey(e)){lurkSpring(e.grp||{members:[e]},lurkPrey(e));return false}

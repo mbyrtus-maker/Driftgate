@@ -301,10 +301,45 @@ function stMissiles(SE,dt){const R=SE.rec;if(!R||SE.offline)return;const d=devOf
 // while energy surges back, and shields start recharging from empty once the boot is done.
 const LAND_SPD=70,LAND_REACH=120,BOOT_T=4,MASK_NEAR=320;
 function mHid(o,from){return!!o&&((!!o.masked&&(!from||d3(o,from)>(o.maskR||MASK_NEAR)))||blCov(o,from))}
+// the rock's real shape: the same pose and mesh the renderer draws (astMesh), so a landed ship sits on the surface and turns
+// with the rock instead of hovering on its bounding sphere
+function astPose(a,t,o){const sd=a.seed||a.id;qAxis(((sd>>3)%7-3)/4,((sd>>6)%5-2)/2.5,1,(sd%628)/100+t*(((sd>>9)%7)-3)*.03,o);return qNorm(o)}
+function astScaleY(a){const sd=a.seed||a.id;return .85+(sd%13)/40}
+const AST_SHAPE={};
+function astShape(v){if(AST_SHAPE[v])return AST_SHAPE[v];const R=mulberry(v*977+13),t=(1+Math.sqrt(5))/2;let V=[[-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0],[0,-1,t],[0,1,t],[0,-1,-t],[0,1,-t],[t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1]].map(p=>{const l=hyp(...p);return p.map(c=>c/l)});
+  const F=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
+  const mid=new Map(),M=(a,b)=>{const k=a<b?a+'_'+b:b+'_'+a;if(mid.has(k))return mid.get(k);const p=V[a].map((c,i)=>(c+V[b][i])/2),l=hyp(...p);V.push(p.map(c=>c/l));mid.set(k,V.length-1);return V.length-1};
+  const F2=[];for(const[a,b,c]of F){const ab=M(a,b),bc=M(b,c),ca=M(c,a);F2.push([a,ab,ca],[b,bc,ab],[c,ca,bc],[ab,bc,ca])}
+  V=V.map(p=>{const s=.72+R()*.42;return[p[0]*s,p[1]*s*.85,p[2]*s]});return AST_SHAPE[v]={V,F:F2}}
+// where a ray from the rock's centre along d (rock frame, unit) leaves its surface: the point and the outward face normal, rock frame
+function astSurf(a,d){const sh=astShape((a.seed||a.id)%8),R=astR(a),sy=astScaleY(a),P=sh.V.map(v=>[v[0]*R,v[1]*R*sy,v[2]*R]);let best=null;
+  for(const[i,j,k]of sh.F){const A=P[i],B=P[j],C=P[k],e1=[B[0]-A[0],B[1]-A[1],B[2]-A[2]],e2=[C[0]-A[0],C[1]-A[1],C[2]-A[2]],
+      pv=[d[1]*e2[2]-d[2]*e2[1],d[2]*e2[0]-d[0]*e2[2],d[0]*e2[1]-d[1]*e2[0]],det=e1[0]*pv[0]+e1[1]*pv[1]+e1[2]*pv[2];if(Math.abs(det)<1e-9)continue;
+    const iv=1/det,tv=[-A[0],-A[1],-A[2]],u=(tv[0]*pv[0]+tv[1]*pv[1]+tv[2]*pv[2])*iv;if(u<-1e-6||u>1+1e-6)continue;
+    const qv=[tv[1]*e1[2]-tv[2]*e1[1],tv[2]*e1[0]-tv[0]*e1[2],tv[0]*e1[1]-tv[1]*e1[0]],w=(d[0]*qv[0]+d[1]*qv[1]+d[2]*qv[2])*iv;if(w<-1e-6||u+w>1+1e-6)continue;
+    const r=(e2[0]*qv[0]+e2[1]*qv[1]+e2[2]*qv[2])*iv;if(r<=0||(best&&r>=best.r))continue;
+    let n=[e1[1]*e2[2]-e1[2]*e2[1],e1[2]*e2[0]-e1[0]*e2[2],e1[0]*e2[1]-e1[1]*e2[0]];const nl=hyp(n[0],n[1],n[2])||1;n=n.map(c=>c/nl);if(n[0]*d[0]+n[1]*d[1]+n[2]*d[2]<0)n=n.map(c=>-c);best={r,n}}
+  if(!best)return{p:[d[0]*R,d[1]*R,d[2]*R],n:d};return{p:[d[0]*best.r,d[1]*best.r,d[2]*best.r],n:best.n}}
+// how far a ship's hull reaches below its centre (from its model), so it rests on its belly
+const BELLY={};
+function shipBelly(e){const k=(e.fac||e.side)+':'+e.cls;if(BELLY[k]!=null)return BELLY[k]*e.st.radius*1.25;let lo=.3;
+  try{const m=shipMesh(e.side==='pirate'?'pirate':e.fac,e.cls),d=m&&m.hull&&m.hull.data;if(d&&d.length){let mn=0;for(let i=1;i<d.length;i+=10)if(d[i]<mn)mn=d[i];if(mn<0)lo=-mn}}catch(err){}
+  BELLY[k]=lo;return lo*e.st.radius*1.25}
+const _lq=q0(),_lq2=q0(),_lq3=q0();
+// put a ship down on a rock: L holds the touchdown direction and the ship's attitude in the rock's frame
+function astLandInit(e,a){const qa=astPose(a,W.t,_lq),ci={x:-qa.x,y:-qa.y,z:-qa.z,w:qa.w},v=qRot(ci,e.x-a.x,e.y-a.y,e.z-a.z,{x:0,y:0,z:0}),l=hyp(v.x,v.y,v.z)||1,d=[v.x/l,v.y/l,v.z/l],h=astSurf(a,d);
+  // in the rock frame: stand the ship on the face, nose kept as close to where it pointed as the slope allows
+  const n=h.n,f0=qRot(ci,...(()=>{qRot(e.q,0,0,1,_f);return[_f.x,_f.y,_f.z]})(),{x:0,y:0,z:0});let fd=f0.x*n[0]+f0.y*n[1]+f0.z*n[2],Z={x:f0.x-n[0]*fd,y:f0.y-n[1]*fd,z:f0.z-n[2]*fd},zl=hyp(Z.x,Z.y,Z.z);
+  if(zl<.05){Z=Math.abs(n[1])<.9?{x:-n[2],y:0,z:n[0]}:{x:1,y:0,z:0};zl=hyp(Z.x,Z.y,Z.z)}Z.x/=zl;Z.y/=zl;Z.z/=zl;const Y={x:n[0],y:n[1],z:n[2]},X={x:Y.y*Z.z-Y.z*Z.y,y:Y.z*Z.x-Y.x*Z.z,z:Y.x*Z.y-Y.y*Z.x};
+  return{d,qr:qFromBasis(X,Y,Z,q0()),yaw:0,pit:0}}
+// every frame while landed: follow the rock's spin, sit on the surface, and look around within a small arc
+function astLandPlace(e,a,L){const qa=astPose(a,W.t,_lq),h=astSurf(a,L.d),bl=shipBelly(e)+1.5;qRot(qa,h.p[0],h.p[1],h.p[2],_bv1);const px=_bv1.x,py=_bv1.y,pz=_bv1.z;qRot(qa,h.n[0],h.n[1],h.n[2],_bv1);
+  L.nx=_bv1.x;L.ny=_bv1.y;L.nz=_bv1.z;e.x=a.x+px+L.nx*bl;e.y=a.y+py+L.ny*bl;e.z=a.z+pz+L.nz*bl;
+  qMul(qa,L.qr,_lq2);qMul(_lq2,qAxis(0,1,0,L.yaw||0,_lq3),_lq2);qMul(_lq2,qAxis(1,0,0,L.pit||0,_lq3),e.q);qNorm(e.q)}
 function landCandidate(){const p=W&&W.player;if(!p||S.player.docked||W.dead||p.landed||W.docking||W.bridge)return null;let b=null,bd=1e9;
   for(const a of S.sectors[W.sid].ast){if(a.comet)continue;const d=d3(a,p)-astR(a)-p.st.radius;if(d<LAND_REACH&&d<bd){bd=d;b=a}}return b?{a:b,d:Math.max(0,bd)}:null}
 function landOn(a){const p=W.player;if(hyp(p.vx,p.vy,p.vz)>LAND_SPD){flash(`Too fast to land. Slow below ${LAND_SPD} m/s.`,true);return false}
-  const dx=p.x-a.x,dy=p.y-a.y,dz=p.z-a.z,l=hyp(dx,dy,dz)||1;p.landed={aid:a.id,nx:dx/l,ny:dy/l,nz:dz/l,t:W.t};p.vx=p.vy=p.vz=0;p.wx=p.wy=p.wz=0;apOn=false;p.mining=null;p.thrusting=p.boosting=false;
+  const dx=p.x-a.x,dy=p.y-a.y,dz=p.z-a.z,l=hyp(dx,dy,dz)||1;p.landed={aid:a.id,nx:dx/l,ny:dy/l,nz:dz/l,t:W.t,...astLandInit(p,a)};astLandPlace(p,a,p.landed);p.vx=p.vy=p.vz=0;p.wx=p.wy=p.wz=0;apOn=false;p.mining=null;p.thrusting=p.boosting=false;
   p.masked=true;p.shield=0;p.boot=0;unTargetPlayer(p);for(const m of W.missiles)if(m.tgt===p)m.tgt=null;if(W.lock){W.lock.p=0;W.lock.locked=false}
   if(NET.cl)netSend({t:'land',on:1});SFX.clunk();flash(`Landed. Systems down: you are off enemy sensors beyond ${MASK_NEAR} m. Radar stays live. E to lift off.`);return true}
 function liftOff(){const p=W&&W.player;if(!p||!p.landed)return;const L=p.landed;p.landed=null;p.masked=false;p.boot=W.t+BOOT_T;p.vx=L.nx*30;p.vy=L.ny*30;p.vz=L.nz*30;
@@ -318,9 +353,10 @@ function stealthOn(){const p=W&&W.player,P=S.player;if(!p||P.cls!=='wraith'||P.d
 function stealthOff(hit){const p=W&&W.player;if(!p||!p.stealth)return;p.stealth=false;p.masked=false;p.maskR=0;p.boot=W.t+BOOT_T;if(NET.cl)netSend({t:'stealth',on:0});SFX.boost();
   flash(hit?`Hit! Stealth broken. Systems rebooting: weapons in ${BOOT_T} s, shields charge from empty after that.`:`Powering up. Weapons in ${BOOT_T} s, shields charge from empty after that.`,!!hit)}
 function landedTick(dt){const p=W.player,L=p.landed,a=S.sectors[W.sid].ast.find(x=>x.id===L.aid);if(!a){liftOff();flash('The rock broke up under you.',true);return}
-  const r=astR(a)+p.st.radius;p.x=a.x+L.nx*r;p.y=a.y+L.ny*r;p.z=a.z+L.nz*r;p.vx=p.vy=p.vz=0;p.shield=0;p.thrusting=p.boosting=false;p.mining=null;
-  // look around while sat on the rock: the stick turns the ship in place
-  const si=steerInput();if(Math.abs(si.yaw)>.02)qMul(p.q,qAxis(0,1,0,si.yaw*p.st.turn*.5*dt,_qa),p.q);if(Math.abs(si.pitch)>.02)qMul(p.q,qAxis(1,0,0,si.pitch*p.st.turn*.5*dt,_qa),p.q);qNorm(p.q)}
+  p.vx=p.vy=p.vz=0;p.shield=0;p.thrusting=p.boosting=false;p.mining=null;
+  // look around while sat on the rock: the stick turns the ship on its belly, and tips the nose a little up or down
+  if(!L.qr)Object.assign(L,astLandInit(p,a));const si=steerInput();if(Math.abs(si.yaw)>.02)L.yaw+=si.yaw*p.st.turn*.5*dt;if(Math.abs(si.pitch)>.02)L.pit=clamp(L.pit+si.pitch*p.st.turn*.5*dt,-.3,.45);
+  astLandPlace(p,a,L)}
 function stHostile(SE,e){return hostile(SE.fac,e.side)}
 // ---- dock tabs: station works (build modules at your depots, see any station's), freeport refits
 function worksHtml(c,P,srcs,R){const d=devOf(R),mine=R.owner==='player';let h=`<p class="note" style="margin:0 0 12px">${esc(R.name)} · modules ${devUsed(R)} of ${devCap(R)} (life support houses the crew for more). Every module stands beside the station as its own structure: torpedoes and capital guns can destroy it, and a destroyed module loses all its levels (its materials fall as debris). Crews repair damage when the fighting stops. Life support burns ${(((R.kind==='hive'?1:Math.max(1,d.life))*(LS_RATE[R.kind]||1)*(1+.12*devUsed(R)))*6).toFixed(0)} t of ore a minute${starving(R)?' · <b style="color:var(--danger)">short of ore: production and missiles offline</b>':''}.${mine?' Builds draw from the depot store first, then your vault.':''}</p>`;

@@ -304,7 +304,8 @@ function physics(e,dt){if(e.inJump)return;
   jamDrain(e,dt);if(e.spores&&e.spores.length&&e.side!=='brood'){e.spores=e.spores.filter(t=>t>W.t);if(e.spores.length&&e.hull>1)e.hull=Math.max(1,e.hull-.5*e.spores.length*dt)}
   if(e.side==='brood'&&W.t-e.lastHit>3&&e.hull<e.st.hull&&!(e.noRegen>W.t))e.hull=Math.min(e.st.hull,e.hull+e.st.hull*.025*dt);
   const s=S.sectors[W.sid],R=e.st.radius;
-  for(const a of s.ast){const ar=astR(a),dx=e.x-a.x,dy=e.y-a.y,dz=e.z-a.z,d=hyp(dx,dy,dz);if(d<ar+R&&d>0){const nx=dx/d,ny=dy/d,nz=dz/d,vn=e.vx*nx+e.vy*ny+e.vz*nz;e.x=a.x+nx*(ar+R);e.y=a.y+ny*(ar+R);e.z=a.z+nz*(ar+R);if(vn<0){e.vx-=1.5*vn*nx;e.vy-=1.5*vn*ny;e.vz-=1.5*vn*nz;if(-vn>160)damageShip(e,(-vn-160)*.06,null)}}}
+  for(const a of s.ast){if((e.landed&&e.landed.aid===a.id)||(e.lurk&&e.lurk.aid===a.id))continue;   // a ship set down on this rock sits on its real surface (astLandPlace)
+    const ar=astR(a),dx=e.x-a.x,dy=e.y-a.y,dz=e.z-a.z,d=hyp(dx,dy,dz);if(d<ar+R&&d>0){const nx=dx/d,ny=dy/d,nz=dz/d,vn=e.vx*nx+e.vy*ny+e.vz*nz;e.x=a.x+nx*(ar+R);e.y=a.y+ny*(ar+R);e.z=a.z+nz*(ar+R);if(vn<0){e.vx-=1.5*vn*nx;e.vy-=1.5*vn*ny;e.vz-=1.5*vn*nz;if(-vn>160)damageShip(e,(-vn-160)*.06,null)}}}
   for(const E of[W.stationEnt,W.outpostEnt]){if(!E)continue;const dx=e.x-E.x,dy=e.y-E.y,dz=e.z-E.z,d=hyp(dx,dy,dz),rr=E.type==='station'?55:72;if(d<rr+R&&d>0){e.x=E.x+dx/d*(rr+R);e.y=E.y+dy/d*(rr+R);e.z=E.z+dz/d*(rr+R);const vn=(e.vx*dx+e.vy*dy+e.vz*dz)/d;if(vn<0){e.vx-=1.3*vn*dx/d;e.vy-=1.3*vn*dy/d;e.vz-=1.3*vn*dz/d}}}
   if(W.works&&W.works.length)wkCollide(e,R);
 }
