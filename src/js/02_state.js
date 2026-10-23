@@ -350,7 +350,7 @@ function migrate(st){S=st;mkCapMigrate();for(const ev of S.events||[])if(ev.type
   if(!S.stations){S.stations={};for(const d of SECTOR_DEFS)if(d.home)makeStation(d.id,d.home,d.kind==='core'?'core':'depot',{x:0,y:0,z:0},d.kind==='core'?{}:{...DEPOT_COST});ch=true}
   if(!S.stations.bl){makeStation('bl','brood','hive',{x:0,y:0,z:0},{});ch=true}
   if(!S.econ.stock.brood){broodInit();ch=true}
-  if(!S.econ.stock.neutral){neutralInit();S.ledger0.credits+=S.econ.treasury.neutral||0;ch=true}if(!S.drift)S.drift={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};
+  if(!S.econ.stock.neutral){neutralInit();S.ledger0.credits+=S.econ.treasury.neutral||0;ch=true}fpStockMigrate();if(!S.drift)S.drift={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};
   for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;
   for(const id in S.sectors){const sc=S.sectors[id];if(sc.debris.au===undefined)sc.debris.au=0}for(const id in S.outposts){const o=S.outposts[id];if(o.fort.au===undefined)o.fort.au=0}
   if(!S.richer){S.richer=1;for(const d of SECTOR_DEFS){if(d.kind==='hive')continue;const sc=S.sectors[d.id];for(let i=0;i<10;i++){const k=wpick(d.ores);sc.ast.push({id:S.nextId++,...newAstPos(sc),ore:{[k==='au'||k==='nu'?'ir':k]:ri(40,100)},seed:ri(1,1e9)})}}ch=true}

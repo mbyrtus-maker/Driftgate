@@ -1528,7 +1528,7 @@ function migrate(st){S=st;mkCapMigrate();for(const ev of S.events||[])if(ev.type
   if(!S.stations){S.stations={};for(const d of SECTOR_DEFS)if(d.home)makeStation(d.id,d.home,d.kind==='core'?'core':'depot',{x:0,y:0,z:0},d.kind==='core'?{}:{...DEPOT_COST});ch=true}
   if(!S.stations.bl){makeStation('bl','brood','hive',{x:0,y:0,z:0},{});ch=true}
   if(!S.econ.stock.brood){broodInit();ch=true}
-  if(!S.econ.stock.neutral){neutralInit();S.ledger0.credits+=S.econ.treasury.neutral||0;ch=true}if(!S.drift)S.drift={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};
+  if(!S.econ.stock.neutral){neutralInit();S.ledger0.credits+=S.econ.treasury.neutral||0;ch=true}fpStockMigrate();if(!S.drift)S.drift={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};
   for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;
   for(const id in S.sectors){const sc=S.sectors[id];if(sc.debris.au===undefined)sc.debris.au=0}for(const id in S.outposts){const o=S.outposts[id];if(o.fort.au===undefined)o.fort.au=0}
   if(!S.richer){S.richer=1;for(const d of SECTOR_DEFS){if(d.kind==='hive')continue;const sc=S.sectors[d.id];for(let i=0;i<10;i++){const k=wpick(d.ores);sc.ast.push({id:S.nextId++,...newAstPos(sc),ore:{[k==='au'||k==='nu'?'ir':k]:ri(40,100)},seed:ri(1,1e9)})}}ch=true}
@@ -1581,45 +1581,58 @@ function hasIntel(){const h=S.outposts.hollow.owner;return h==='player'||h===S.p
 function holderIn(st,path){const p=path.split(':');if(p[0]==='stock')return st.econ.stock[p[1]];if(p[0]==='out')return st.outposts[p[1]].stock;if(p[0]==='frig'){const t=(st.frigates||[]).find(x=>String(x.id)===p[1]);return t?t.load:(st.econ.stock[p[2]]||st.player.vault)}if(p[0]==='pbay'){const R=p[1]&&st.pilots&&st.pilots[p[1]]||st.player;return R.bay=R.bay||{}}if(p[0]==='scout'){const t=(st.scouts||[]).find(x=>String(x.id)===p[1]);return t?t.load:st.econ.stock[p[2]]}if(p[0]==='trader'){const t=(st.traders||[]).find(x=>String(x.id)===p[1]);return t?t.load:st.econ.stock[p[2]]}if(p[0]==='ev'){const ev=st.events.find(v=>String(v.id)===p[1]);return ev&&ev.force?ev.force:st.econ.stock[p[2]]}return st.econ.stock.pirate}
 const holder=path=>holderIn(S,path);
 function stockTarget(id){return RAWS.includes(id)?300:id==='plate'||id==='wire'?90:id==='coil'?40:id==='seal'?6:16}
-function price(stock,id){const s=stock[id]||0,t=stockTarget(id);return Math.max(1,baseValue(id)*clamp(Math.pow((t+10)/(s+10),.45),.5,2.8))}
+// a small store (sc<1) is priced against its own smaller target, but with market depth (MK_SC.depth): a unit moves its price
+// about as much as a unit moves the warehouse's, so local demand (R.mk) shapes prices as much as the stock on the shelf does
+function price(stock,id,sc){sc=sc||1;const s=stock[id]||0,t0=stockTarget(id),t=t0*sc,D=10+(1-sc)*t0*MK_SC.depth;return Math.max(1,baseValue(id)*clamp(Math.pow((t+D)/(s+D),.45),.5,2.8))}
 const buyPrice=(st,id)=>Math.ceil(price(st,id)*1.06),sellPrice=(st,id)=>Math.max(1,Math.floor(price(st,id)*.94));
-// ---- local markets and trade. Every faction station and freeport keeps its own local supply level per good (R.mk: + means
-// oversupplied, cheap; - means short, dear). Goods still move through the faction's stock and credits through its treasury,
-// so the economy stays zero-sum; the local level only shapes the price. Each station produces some goods and consumes
+// ---- local markets and trade. Every market sells from its own shelves: a faction's core station from the faction warehouse,
+// each depot from its own store, each freeport from its own store. Credits are shared: a faction's treasury pays and is paid at
+// all its stations, the Compact's at all three freeports. A small store's price swings faster (mkSc: its stock targets are a
+// fraction of the warehouse's). On top of the stock, every station keeps a local supply level per good (R.mk: + means
+// oversupplied, cheap; - means short, dear). Each station produces some goods and consumes
 // others, so its level drifts back toward a natural surplus or shortage after trading. AI merchants work the widest gaps.
 const TRADE_ITEMS=['fe','cu','ir','xc','au','nu','plate','wire','coil','lattice','drone','seal'];
 function locT(id){return Math.max(6,stockTarget(id)/4)}
 function mkStations(){const out=[];for(const id in S.stations){const R=S.stations[id];if(R.kind==='hive'||!(FAC_IDS.includes(R.owner)||R.owner==='neutral'))continue;out.push(R)}return out}
-function mkStock(R){return S.econ.stock[R.owner]||{}}
+function mkStock(R){return(R&&storeOf(R))||{}}
+function isFreeF(R){return!!R&&R.kind==='free'&&R.owner==='neutral'}
+const MK_SC={depot:.25,free:1/3,depth:1};function mkSc(R){return isDepotF(R)?MK_SC.depot:isFreeF(R)?MK_SC.free:1}
+// the freeports' own stores, and the nearest live freeport to a system (optionally one whose store passes a test)
+function fpStores(){return FREEPORTS.map(F=>S.stations[F.sid]).filter(isFreeF).map(dStore)}
+function fpNear(sid,ok){let A=null,bd=1e9;for(const F of FREEPORTS){const R=S.stations[F.sid];if(!isFreeF(R)||(ok&&!ok(dStore(R))))continue;const d=HOP[R.sid][sid]||0;if(d<bd){bd=d;A=R}}return A}
+// a goods pile split as evenly as it goes across the live freeports (setup, and moving old saves off the shared Compact pool)
+function fpSplit(o){const L=fpStores();if(!L.length)return false;for(const k in o){const n=o[k]||0;if(n<=0)continue;const q=Math.floor(n/L.length);let r=n-q*L.length;for(const st of L){const m=q+(r>0?1:0);if(r>0)r--;if(m>0)inv.add(st,k,m)}}return true}
+// how far a station's local level settles from neutral (eq, in units of locT) and how fast it drifts back each tick (rate)
+const MK_DEM={eq:1,rate:.07};
 // what a station makes (+) and uses up (-)
 function mkProfile(R){const p={},d=DEF[R.sid],ores=Object.keys(d.ores||{});
   if(R.kind==='core'){for(const k of['plate','wire','coil','missile'])p[k]=1;for(const k of['fe','cu','ir','xc','au','nu'])p[k]=-1;p.lattice=-.5}
   else if(R.kind==='free'){for(const k of['lattice','coil','missile','torpedo','drone','plate'])p[k]=-1;for(const k of ores)p[k]=.6;p.swarm=-.6}
   else{for(const k of ores)p[k]=1;for(const k of['plate','wire','missile','drone'])p[k]=-1;p.coil=-.5;if(d.kind==='deep')p.au=1}
   return p}
-function mkOf(R){if(!R.mk){R.mk={};const p=mkProfile(R);for(const k of TRADE_ITEMS)R.mk[k]=Math.round(((p[k]||0)*.9+(Math.random()-.5)*.3)*locT(k)*10)/10}return R.mk}
+function mkOf(R){if(!R.mk){R.mk={};const p=mkProfile(R);for(const k of TRADE_ITEMS)R.mk[k]=Math.round(((p[k]||0)*MK_DEM.eq+(Math.random()-.5)*.3)*locT(k)*10)/10}return R.mk}
 function locF(R,id){if(!R||!R.mk)return 1;const L=R.mk[id]||0;return clamp(Math.exp(-L/(locT(id)*2)),.55,1.9)}
 // Aurorite is war material: faction stations pay a premium for it over any freeport, so merchants carry it to the
 // factions instead of shuttling it between freeports (and a pilot sells it to a faction for more)
 const AU_FAC=1.35;const mkK=(R,id)=>id==='au'&&R&&R.owner!=='neutral'?AU_FAC:1;
-function stPrice(R,id){return price(R?mkStock(R):{},id)*locF(R,id)*mkK(R,id)}
+function stPrice(R,id){return price(R?mkStock(R):{},id,mkSc(R))*locF(R,id)*mkK(R,id)}
 // market prices at the dock you're in (outposts have no local level)
 function mR(c){return c&&c.kind==='station'?S.stations[S.player.sector]:null}
 // market fee on a pilot's trades: 6%, less in the bigger haulers (a freight licence). A big hold soon moves the price against
 // itself; the bigger haulers pay a thinner fee and move the local price less per unit (HAUL_MK), so trade runs come to about
 // 15k an hour in a Light Hauler, 20k in a Medium and 25k in a Heavy, Mk I.
 const HAUL_FEE={courier:.035,freighter:.02,bulker:.01};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;const HAUL_MK={freighter:.6,bulker:.26};const pMk=()=>HAUL_MK[S.player.cls]||1;
-function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id)*locF(R,id)*mkK(R,id)*(1+mFee(S.player.cls)))}
-function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id)*locF(R,id)*mkK(R,id)*(1-mFee(S.player.cls))))}
+function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id,mkSc(R))*locF(R,id)*mkK(R,id)*(1+mFee(S.player.cls)))}
+function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id,mkSc(R))*locF(R,id)*mkK(R,id)*(1-mFee(S.player.cls))))}
 // how many units a market takes (dir +1, a sale) or gives (dir -1, a purchase) at the quoted price: as many as it can absorb before
 // its price would move past the buy/sell spread, so a big dump sells in lots and buying it straight back never pays
-function lotCap(c,k,dir,maxN){if(maxN<=1)return maxN;const R=mR(c);if(R)mkOf(R);const st=c.market,s0=st[k],m0=R?R.mk[k]||0:0,p0=price(st,k)*locF(R,k);
-  const at=n=>{st[k]=(s0||0)+dir*n;if(R)R.mk[k]=m0+dir*n*pMk();const p=price(st,k)*locF(R,k);if(s0===undefined)delete st[k];else st[k]=s0;if(R)R.mk[k]=m0;return p};
+function lotCap(c,k,dir,maxN){if(maxN<=1)return maxN;const R=mR(c);if(R)mkOf(R);const st=c.market,sc=mkSc(R),s0=st[k],m0=R?R.mk[k]||0:0,p0=price(st,k,sc)*locF(R,k);
+  const at=n=>{st[k]=(s0||0)+dir*n;if(R)R.mk[k]=m0+dir*n*pMk();const p=price(st,k,sc)*locF(R,k);if(s0===undefined)delete st[k];else st[k]=s0;if(R)R.mk[k]=m0;return p};
   const ok=n=>dir>0?at(n)>=p0*.89:at(n)<=p0*1.12;let lo=1,hi=maxN;if(ok(hi))return hi;while(hi-lo>1){const m=(lo+hi)>>1;if(ok(m))lo=m;else hi=m}return lo}
 function demandOf(R,id){const f=locF(R,id);return f>=1.22?'high':f<=.82?'low':''}
 // every strategic tick: stations drift back toward their own surplus or shortage, and AI merchants buy low and sell high
 function mkTick(){if(NET.cl)return;const L=mkStations();if(L.length<2)return;
-  for(const R of L){const m=mkOf(R),p=mkProfile(R);for(const k of TRADE_ITEMS){const t=locT(k),eq=(p[k]||0)*.9*t;m[k]+=(eq-m[k])*.035+(Math.random()-.5)*t*.05}}
+  for(const R of L){const m=mkOf(R),p=mkProfile(R);for(const k of TRADE_ITEMS){const t=locT(k),eq=(p[k]||0)*MK_DEM.eq*t;m[k]+=(eq-m[k])*MK_DEM.rate+(Math.random()-.5)*t*.05}}
   tradersTick();
   for(const P of allPilots())intelTick(P)}
 // price intel: live where you are, where your faction holds the beacon, where a friendly scout is (and next door when you fly a scout)
@@ -1635,7 +1648,12 @@ function intelAge(e){if(!e)return'no data';const a=S.T-e.T;return a<15?'live':a<
 // dear, and only changes that market when it arrives. On the way it's a real freighter in any system someone is in, so it can
 // be escorted, raced or shot down (its cargo spills as salvage and the price gap stays open). Merchants trade at their own
 // faction's stations and at the freeports; money moves between treasuries, goods between stocks, so it all stays zero-sum.
-const TRADER_MAX=3,TRADER_HOP=45,TRADER_SPREAD=1.3;
+const TRADER_MAX=3,TRADER_HOP=45;
+// merchants trade between a faction's stations and the freeports only: between its own stations the faction's supply convoys
+// move ore home and parts out (own:0; a number would let merchants take own-station gaps that wide). They need a wide gap
+// (spread): left to work every narrow one, merchants sold the warehouses thin, the factions fell behind on capitals and the
+// Brood won twice as often; the narrower gaps are the pilots' trade.
+const TR_AI={own:0,spread:3};
 function trPath(a,b){const out=[a];let cur=a;for(let k=0;k<20&&cur!==b;k++){let nx=null,bh=1e9;for(const n of NEIGH[cur]){const h=HOP[b][n];if(h<bh){bh=h;nx=n}}if(!nx)break;out.push(nx);cur=nx}return out}
 // ---- logistics. A faction's core station is its warehouse (the faction stockpile). Each of its depots keeps a store of its
 // own: what the depot mines goes there, its life support, works, hangar and (with a production module) its fabricators work
@@ -1645,7 +1663,7 @@ function trPath(a,b){const out=[a];let cur=a;for(let k=0;k<20&&cur!==b;k++){let 
 const LOGI={depotCap:260,shipRaw:120,haulMax:80,risk:{cap:.10,station:.06,brood:.05,out:.03}};
 function isDepotF(R){return!!R&&R.kind==='depot'&&FAC_IDS.includes(R.owner)}
 function dStore(R){return R.store||(R.store={})}
-function storeOf(R){return isDepotF(R)?dStore(R):R.owner==='player'?R.stock:S.econ.stock[R.owner]}
+function storeOf(R){return isDepotF(R)||isFreeF(R)?dStore(R):R.owner==='player'?R.stock:S.econ.stock[R.owner]}
 function haulBusy(key){return(S.traders||[]).some(t=>t.kind==='haul'&&t.key===key)}
 function rawMass(o){let m=0;for(const k of RAWS)m+=o[k]||0;return m}
 function haulSend(f,fromSid,toSid,load,key,why,car){const path=trPath(fromSid,toSid),mainK=Object.keys(load).sort((a,b)=>load[b]-load[a])[0];if(!mainK)return null;
@@ -1691,10 +1709,10 @@ function trCanUse(f,R){return R&&R.kind!=='hive'&&(R.owner===f||R.owner==='neutr
 // ---- Compact Seals: a power that needs Seals for its next capital step (shipyard, carrier, escorts) buys them at the nearest
 // freeport with stock, from its treasury, and a merchant carries them home like any other cargo (it can be raided on the way)
 function sealNeed(f){let n=0;if(!S.yards[f]&&!S.events.some(e=>e.type==='yardbuild'&&e.att===f))n+=CAP_SEAL.yard;if(facCar(f).length<1&&!S.events.some(e=>e.type==='frigbuild'&&e.att===f))n+=CAP_SEAL.carrier;if(facEsc(f).length<(ESC_CAP[f]||0))n+=CAP_SEAL.escort;return n}
-function sealRun(f){const st=S.econ.stock[f],fp=S.econ.stock.neutral;if(!sealed(f)||!st||!fp||!(fp.seal>0))return;
+function sealRun(f){const st=S.econ.stock[f];if(!sealed(f)||!st)return;
   const enroute=S.traders.filter(t=>t.side===f&&t.item==='seal').reduce((a,t)=>a+(t.n||0),0),short=sealNeed(f)-(st.seal||0)-enroute;if(short<=0)return;
   const home=S.stations[FAC_HOME(f)];if(!home||!trCanUse(f,home))return;
-  let A=null,bd=1e9;for(const F of FREEPORTS){const R=S.stations[F.sid];if(!R||R.owner!=='neutral')continue;const d=HOP[R.sid][home.sid]||0;if(d<bd){bd=d;A=R}}if(!A)return;
+  const A=fpNear(home.sid,s=>s.seal>0);if(!A)return;const fp=dStore(A);
   const pr=Math.ceil(stPrice(A,'seal')*1.06),n=Math.min(short,fp.seal,Math.floor((S.econ.treasury[f]||0)/pr));if(n<1)return;
   const got=inv.take(fp,'seal',n);if(!got)return;transfer(f,'neutral',pr*got);mkOf(A).seal=(A.mk.seal||0)-got;
   const t={id:S.nextId++,side:f,item:'seal',n:got,from:A.sid,to:home.sid,path:trPath(A.sid,home.sid),leg:0,sector:A.sid,next:S.T+TRADER_HOP*.6,load:{seal:got},cls:'freighter',T0:S.T};S.traders.push(t);
@@ -1702,7 +1720,7 @@ function sealRun(f){const st=S.econ.stock[f],fp=S.econ.stock.neutral;if(!sealed(
 function tradersTick(){if(NET.cl)return;S.traders=S.traders||[];for(const f of FAC_IDS)if(Math.random()<.25)sealRun(f);
   // dispatch: each faction looks for its best open gap and sends a merchant if it has a free one
   for(const f of FAC_IDS){if(S.traders.filter(t=>t.side===f&&t.kind!=='haul').length>=TRADER_MAX||Math.random()<.5)continue;const L=mkStations().filter(R=>trCanUse(f,R));if(L.length<2)continue;
-    let best=null;for(const k of TRADE_ITEMS){const m=mass(k);for(const A of L){if(FP_ONLY.has(k)&&A.owner!=='neutral')continue;const sa=mkStock(A)[k]||0;if(sa<4)continue;const pa=stPrice(A,k);for(const B of L){if(A===B)continue;const pb=stPrice(B,k);if(pb<pa*TRADER_SPREAD)continue;
+    let best=null;for(const k of TRADE_ITEMS){const m=mass(k);for(const A of L){if(FP_ONLY.has(k)&&A.owner!=='neutral')continue;const sa=mkStock(A)[k]||0;if(sa<4)continue;const pa=stPrice(A,k);for(const B of L){if(A===B)continue;const pb=stPrice(B,k);const own=A.owner===f&&B.owner===f;if(own&&!TR_AI.own)continue;if(pb<pa*(own?TR_AI.own:TR_AI.spread))continue;
       if(S.traders.some(t=>t.item===k&&t.to===B.sid))continue;if(k==='au'&&A.owner==='neutral'&&B.owner==='neutral')continue;const n=Math.min(Math.floor(sa*.5),Math.floor(90*BAL.aiEff/m),Math.ceil(locT(k)*.9));if(n<3)continue;const gain=(pb-pa)*n/(1+(HOP[A.sid][B.sid]||0));if(!best||gain>best.gain)best={k,A,B,n,pa,gain}}}}
     if(!best)continue;const{k,A,B,n}=best,cost=Math.ceil(best.pa*1.06)*n,fund=S.econ.treasury[f]||0;if(A.owner==='neutral'&&fund<cost)continue;
     const src=mkStock(A);const got=inv.take(src,k,n);if(!got)continue;if(A.owner==='neutral')transfer(f,'neutral',Math.ceil(best.pa*1.06)*got);mkOf(A)[k]-=got;
@@ -1784,7 +1802,7 @@ function strategicTick(){
   for(const d of SECTOR_DEFS){
     const s=S.sectors[d.id],here=!!WORLDS[d.id];
     {const R=S.stations[d.id];if(R){const cn=R.owner!=='player'&&!here&&S.T>150&&FACTIONS[R.owner]&&capNeed(R.owner),n=here&&R.owner!=='player'?0:Math.round((here?2:R.kind==='core'?5:R.kind==='hive'?BAL.brHive:R.owner==='player'?3:4)*(cn?2.2:1)*(BAL.ext[R.owner]||1)*(R.owner==='player'||R.owner==='brood'?1:BAL.aiEff))+devOf(R).store;
-      if(R.owner==='player'){if(invMass(R.stock)<400+300*devOf(R).store)inv.addAll(R.stock,extract(s,n))}else if(n>0&&isDepotF(R)){const ds=dStore(R);if(invMass(ds)<LOGI.depotCap+120*devOf(R).store){const got=extract(s,n,false,{});inv.addAll(ds,got);if(R.mk)for(const k in got)R.mk[k]=(R.mk[k]||0)+got[k]*.3}}else if(n>0){const st=S.econ.stock[R.owner];const full=(st.fe||0)+(st.cu||0)>=(R.owner==='brood'?1000:500)+250*devOf(R).store,nuW=(st.nu||0)<120&&d.ores&&d.ores.nu;if(!full||nuW){const got=extract(s,n,(st.xc||0)>=30,{ir:(st.ir||0)>400,xc:(st.xc||0)>300,fe:full,cu:full});inv.addAll(st,got);if(R.mk)for(const k in got)R.mk[k]=(R.mk[k]||0)+got[k]*.3}}
+      if(R.owner==='player'){if(invMass(R.stock)<400+300*devOf(R).store)inv.addAll(R.stock,extract(s,n))}else if(n>0&&isDepotF(R)){const ds=dStore(R);if(invMass(ds)<LOGI.depotCap+120*devOf(R).store){const got=extract(s,n,false,{});inv.addAll(ds,got);if(R.mk)for(const k in got)R.mk[k]=(R.mk[k]||0)+got[k]*.3}}else if(n>0){const st=storeOf(R)||{},sc=mkSc(R);const full=(st.fe||0)+(st.cu||0)>=((R.owner==='brood'?1000:500)+250*devOf(R).store)*sc,nuW=(st.nu||0)<120*sc&&d.ores&&d.ores.nu;if(!full||nuW){const got=extract(s,n,(st.xc||0)>=30*sc,{ir:(st.ir||0)>400*sc,xc:(st.xc||0)>300*sc,fe:full,cu:full});inv.addAll(st,got);if(R.mk)for(const k in got)R.mk[k]=(R.mk[k]||0)+got[k]*.3}}
       if(!here&&!underCapSiege(d.id,R.owner)){R.shield=R.sMax;R.hull=Math.min(R.hMax,R.hull+R.hMax*.05)}}}
     const oid=OUT_BY_SECTOR[d.id];
     if(oid){const o=S.outposts[oid];if(o.owner){
@@ -1824,7 +1842,7 @@ function factionIndustry(f){
   // Trade Charter: Halcyon hires Freeport prospectors to work the rocks in its own systems when its ore runs short.
   // The ore comes out of those fields and the wages go to the Compact, so nothing is created.
   if(f==='halcyon'&&Math.random()<BAL.halProsp&&S.T>120&&(st.fe||0)+(st.cu||0)<300&&(S.econ.treasury[f]||0)>30000){const terr=[...territory(f)].filter(id=>S.sectors[id]&&S.sectors[id].ast.length);if(terr.length){const sc=S.sectors[pick(terr)],got=extract(sc,8,true,{ir:1,xc:1,au:1,nu:1});let cost=0;for(const k in got)cost+=Math.ceil(baseValue(k)*.9)*got[k];if(cost){transfer(f,'neutral',cost);inv.addAll(st,got)}}}
-  {const N=S.econ.stock.neutral,hal=f==='halcyon'&&Math.random()<BAL.halImp;/* halImp: share of ticks the Trade Charter discount applies */if(N&&f!=='brood'&&S.T>120)for(const k of hal?['plate','wire','fe','cu','nu']:['fe','cu','nu']){const proc=k==='plate'||k==='wire',low=k==='nu'?(need?48:16):proc?30:60;if((st[k]||0)>=low)continue;const avail=(N[k]||0)-(k==='nu'?10:proc?20:80);if(avail<=0)continue;
+  {const FPS=fpStores(),hal=f==='halcyon'&&Math.random()<BAL.halImp;/* halImp: share of ticks the Trade Charter discount applies */if(FPS.length&&f!=='brood'&&S.T>120)for(const k of hal?['plate','wire','fe','cu','nu']:['fe','cu','nu']){const proc=k==='plate'||k==='wire',low=k==='nu'?(need?48:16):proc?30:60;if((st[k]||0)>=low)continue;const N=FPS.reduce((a,x)=>(x[k]||0)>(a[k]||0)?x:a,FPS[0]),avail=(N[k]||0)-(k==='nu'?4:proc?7:27);if(avail<=0)continue;
     const n=Math.min(avail,k==='nu'?(hal?8:4):hal?16:8),pr=Math.ceil(baseValue(k)*(k==='nu'?(hal?1.2:1.6):hal?.85:1.1)),cost=pr*n;if((S.econ.treasury[f]||0)<cost+20000)continue;inv.take(N,k,n);inv.add(st,k,n);transfer(f,'neutral',cost)}}
   craftDown(st,'plate',{fe:80},400);craftDown(st,'wire',{cu:80},400);craftAbstract(st,'coil',2,need?30:60);   // keep 80 ore each: below 60 the faction starts importing
   if(forgesOwned(f)>0||f==='brood'){craftAbstract(st,'lattice',1,16);if(S.T>200)craftAbstract(st,'core',1,4)}
@@ -2200,8 +2218,13 @@ function isFreeport(sid){return!!(S.stations[sid]&&S.stations[sid].owner==='neut
 function fpOf(sid){return FREEPORTS.find(f=>f.sid===sid)}
 function refitsOf(P){return(P.tune&&P.tune.rf)||{}}
 function applyRefits(B,U){const R=U&&typeof U==='object'&&U.rf;if(!R)return B;if(R.hold)B.cargo=Math.round(B.cargo*1.4);if(R.drive){B.maxSpd*=1.12;B.thrust*=1.12}if(R.cap){B.eCap*=1.3;B.eRegen*=1.25}if(R.plate){B.hull*=1.2;B.dr=(B.dr||0)+.04}if(R.aegis)B.sCap*=1.25;return B}
-function neutralInit(){S.econ.stock.neutral={fe:300,cu:300,ir:120,xc:30,nu:60,plate:60,wire:60,coil:20,lattice:4,missile:12};S.econ.fleet.neutral={};S.econ.treasury.neutral=150000;S.ai.neutral={dev:S.T+rnd(120,240)};
-  for(const F of FREEPORTS){if(S.stations[F.sid])continue;const R=makeStation(F.sid,'neutral','free',{x:0,y:0,z:0},{});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R)}}
+// the Compact: one treasury, three freeports each with its own store (S.econ.stock.neutral stays as an empty pool)
+const FP_SEED={fe:300,cu:300,ir:120,xc:30,nu:60,plate:60,wire:60,coil:20,lattice:4,missile:12};
+function neutralInit(){S.econ.stock.neutral={};S.econ.fleet.neutral={};S.econ.treasury.neutral=150000;S.ai.neutral={dev:S.T+rnd(120,240)};S.fpStock=1;
+  for(const F of FREEPORTS){if(S.stations[F.sid])continue;const R=makeStation(F.sid,'neutral','free',{x:0,y:0,z:0},{});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R)}
+  if(!fpSplit(FP_SEED))inv.addAll(S.econ.stock.neutral,FP_SEED)}
+// older saves: the shared Compact pool moves onto the freeports' shelves
+function fpStockMigrate(){if(S.fpStock)return;const N=S.econ.stock.neutral;if(!N)return;S.fpStock=1;const o={...N};if(fpSplit(o))for(const k of Object.keys(N))delete N[k]}
 // ---- station works: modules any station can build, paid in goods that stay in the structure (and fall as debris if it's razed)
 const DEV={
   life:[{plate:12,wire:12,coil:4},{plate:20,wire:20,coil:8,lattice:1}],
@@ -2357,7 +2380,7 @@ const HGR_CLS=[['interceptor'],['striker'],['heavy','heavy','bomber'],['gunboat'
 const HGR_NAME={interceptor:'Light Fighter',striker:'Medium Fighter',heavy:'Heavy Fighter',bomber:'Bomber',gunboat:'Heavy Bomber'};
 function hgLvl(R){return R&&R.kind==='depot'?(devOf(R).hangar||0):0}
 function hgCap(R){return 2*hgLvl(R)}
-function hgSrcs(R){return R.owner==='player'?[R.stock]:isDepotF(R)?[dStore(R)]:[S.econ.stock[R.owner]].filter(Boolean)}
+function hgSrcs(R){return[storeOf(R)].filter(Boolean)}
 function hgPick(L){const top=HGR_CLS[L-1];if(L===1||Math.random()<.55)return pick(top);return pick(HGR_CLS[Math.floor(Math.random()*(L-1))])}
 function hgTick(){for(const id in S.stations){const R=S.stations[id],L=hgLvl(R);if(!L||!wkOk(R)||R.owner==='neutral')continue;R.hg=R.hg||[];
     const out=WORLDS[id]?WORLDS[id].ents.filter(e=>e.hgSid===id&&e.alive).length:0;if(R.hg.length+out>=hgCap(R)||starving(R))continue;if(R.hgT===undefined)R.hgT=S.T+rnd(30,60);if(S.T<R.hgT)continue;R.hgT=S.T+rnd(60,100);
@@ -2412,7 +2435,7 @@ function devTick(){const T=S.T;for(const f of[...FAC_IDS,'neutral']){const A=S.a
 const LS_RATE={core:.8,free:.7,depot:.5,hive:.6};
 function lifeTick(){S.drift=S.drift||{fe:0,cu:0,ir:0,xc:0,au:0,nu:0};const D=S.drift;
   for(const id in S.stations){const R=S.stations[id],d=devOf(R),need=(R.kind==='hive'?1:Math.max(1,d.life))*(LS_RATE[R.kind]||1)*(1+.12*devUsed(R));R.ls=(R.ls||0)+need;
-    const src=R.owner==='player'?R.stock:isDepotF(R)?dStore(R):S.econ.stock[R.owner];if(!src)continue;let short=false;
+    const src=storeOf(R);if(!src)continue;let short=false;
     while(R.ls>=1){const cyc=(R.lsN=(R.lsN||0)+1)%4,k=cyc===3?'ir':cyc%2?'cu':'fe',k2=k==='fe'?'cu':'fe';const got=inv.take(src,k,1)?k:inv.take(src,k2,1)?k2:null;if(!got){short=true;break}D[got]++;R.ls--}
     if(short){if(!R.starve||S.T-R.starve>120){if(R.owner==='player'||(R.owner===S.player.faction&&Math.random()<.2))feed(`${R.name} is short of ore for life support: its production and missile battery are offline until it's restocked.`,'warn')}R.starve=S.T;R.ls=Math.min(R.ls,3)}else R.starve=0}
   driftSeed()}
@@ -2424,9 +2447,9 @@ function driftSeed(){const D=S.drift;let tot=0;for(const e of RAWS)tot+=D[e];if(
     if(covered(d.id)&&S.T-(S.driftSaid||-999)>240){S.driftSaid=S.T;feed(`Survey: fresh drift rock has settled into ${d.name} (${m} t of ${ITEMS[k].name}).`,'info')}}}
 // ---- freeport requests: lucrative supply contracts, delivered only at that freeport
 function allFeed(msg,kind){if(NET.cl)return;feed(msg,kind);if(NET.host)for(const pid in S.pilots||{})if(pid!==NET.me)feedTo(pid,msg,kind)}
-function fpContracts(){const st=S.econ.stock.neutral;if(!st)return;for(const F of FREEPORTS){const R=S.stations[F.sid];if(!R||R.owner!=='neutral')continue;
+function fpContracts(){for(const F of FREEPORTS){const R=S.stations[F.sid];if(!isFreeF(R))continue;const st=dStore(R);
     if(S.contracts.filter(c=>c.st===F.sid).length>=2||Math.random()<.5)continue;
-    const want={plate:[40,3],wire:[40,3],coil:[16,2],ir:[80,2],xc:[30,1.6],lattice:[6,1],fe:[150,1.2],cu:[150,1.2]},c=[];for(const k in want)if((st[k]||0)<want[k][0]&&!S.contracts.some(x=>x.st===F.sid&&x.item===k))c.push([k,want[k][1]]);if(!c.length)continue;
+    const want={plate:[14,3],wire:[14,3],coil:[6,2],ir:[28,2],xc:[10,1.6],lattice:[2,1],fe:[50,1.2],cu:[50,1.2]},c=[];for(const k in want)if((st[k]||0)<want[k][0]&&!S.contracts.some(x=>x.st===F.sid&&x.item===k))c.push([k,want[k][1]]);if(!c.length)continue;
     const item=wpickArr(c),js=jobSize(item,item==='fe'||item==='cu'||item==='ir'?ri(24,48):item==='plate'||item==='wire'?ri(10,20):item==='lattice'?ri(2,4):ri(5,10)),n=js.n,reward=Math.ceil(baseValue(item)*n*rnd(2.6,3.4)/10)*10;
     S.contracts.push({id:S.nextId++,fac:'neutral',st:F.sid,item,n,n0:n,reward,until:S.T+rnd(600,900)*js.t});
     allFeed(`📦 Freeport request · ${R.name} (${DEF[F.sid].name}, out in the void): ${n} ${ITEMS[item].name} for ${fmt(reward)} cr. Deliver there in person.`,'info')}}
@@ -2455,15 +2478,15 @@ function blkHuntOne(P,p,pid){const f=P.faction,T=territory(f);if(T.has(W.sid))re
   for(let i=0;i<(k.st===W.sid?3:2);i++){const e=spawnNPC('patrol',foe);if(!e)break;const o=rdir();e.x=p.x+o.x*1800;e.y=p.y+o.y*400;e.z=p.z+o.z*1800;e.ai.tgt=p;e.hunt=1;n++}
   if(n)keyFeed(pid||pkey(),`⚠ Blockade: a ${foe==='brood'?'Brood':FACTIONS[foe].short} interdiction wing (${n}) is hunting your cargo for ${S.stations[k.st].name}.`,'bad')}
 const FP_REBUILD={plate:40,wire:30,coil:10};
-function fpRebuild(){const D=S.fpDown||{},st=S.econ.stock.neutral;if(!st)return;for(const sid in D){if(S.stations[sid]){delete D[sid];continue}if(S.T-D[sid]<1200||!haveIn(FP_REBUILD,[st])||frigatesIn(sid).some(t=>t.side==='brood'))continue;
-    takeFrom(FP_REBUILD,[st]);const R=makeStation(sid,'neutral','free',{x:0,y:0,z:0},{...FP_REBUILD});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R);R.hull=R.hMax*.5;delete D[sid];
+function fpRebuild(){const D=S.fpDown||{},st=fpStores();if(!st.length)return;for(const sid in D){if(S.stations[sid]){delete D[sid];continue}if(S.T-D[sid]<1200||!haveIn(FP_REBUILD,st)||frigatesIn(sid).some(t=>t.side==='brood'))continue;
+    takeFrom(FP_REBUILD,st);const R=makeStation(sid,'neutral','free',{x:0,y:0,z:0},{...FP_REBUILD});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R);R.hull=R.hMax*.5;delete D[sid];
     if(WORLDS[sid])inW(WORLDS[sid],()=>{if(!W.stationEnt)addStationEnt(R)});allFeed(`The Freeport Compact has rebuilt ${R.name} in ${DEF[sid].name}. It's open for trade again.`,'good')}}
-function neutralIndustry(){fpRebuild();const st=S.econ.stock.neutral;if(!st)return;craftDown(st,'plate',{fe:40},400);craftDown(st,'wire',{cu:40},400);craftAbstract(st,'coil',1,20);craftAbstract(st,'missile',1,16);craftAbstract(st,'matrix',1,FP_MAKE.matrix);craftAbstract(st,'seal',1,FP_MAKE.seal)}
-const FP_MAKE={matrix:16,seal:12};   // how many of each the Compact keeps in stock across its freeports
+function neutralIndustry(){fpRebuild();for(const st of fpStores()){craftDown(st,'plate',{fe:50},140);craftDown(st,'wire',{cu:50},140);craftAbstract(st,'coil',1,7);craftAbstract(st,'missile',1,6);craftAbstract(st,'matrix',1,FP_MAKE.matrix);craftAbstract(st,'seal',1,FP_MAKE.seal)}}
+const FP_MAKE={matrix:6,seal:4};   // how many of each a freeport's works keep on its own shelf
 // station missile battery (defence level 2+): one missile at a time at the nearest hostile, drawn from the owner's stores
 function stMissiles(SE,dt){const R=SE.rec;if(!R||SE.offline)return;const d=devOf(R);if(d.def<2||starving(R))return;SE.mcd=(SE.mcd||rnd(2,5))-dt;if(SE.mcd>0)return;SE.mcd=Math.max(3.5,8-d.def*1.5);
   let t=null,bd=1600;for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!stHostile(SE,e))continue;const dd=d3(e,SE);if(dd<bd){bd=dd;t=e}}if(!t||NET.cl)return;
-  const src=R.owner==='player'?R.stock:S.econ.stock[R.owner];if(!src||!inv.take(src,'missile',1))return;
+  const src=storeOf(R);if(!src||!inv.take(src,'missile',1))return;
   const sh={x:SE.x,y:SE.y+40,z:SE.z,vx:0,vy:0,vz:0,q:qLook(t.x-SE.x,t.y-SE.y-40,t.z-SE.z,0,1,0,q0()),st:{radius:70},side:SE.fac==='neutral'?'neutral':SE.fac};launchMissile(sh,t,3,'missile')}
 
 // ---- landing on an asteroid: hug a rock and vanish from enemy sensors. While landed everything but your own radar is powered
@@ -4788,7 +4811,7 @@ function npcThink(e,dt){
         const D=SE&&SE.fac===e.side?SE:OE&&OE.o.owner===e.side?OE:null;
         if(!D){e.role='leave';break}
         const d=steer(e,D.x,D.y,D.z,dt,true);faceTo(e,D,dt);
-        if(d<110){if(D.type==='outpost')inv.addAll(D.o.stock,e.cargo);else{inv.addAll(S.econ.stock[e.side],e.cargo);if(D.rec){mkOf(D.rec);for(const k in e.cargo)D.rec.mk[k]=(D.rec.mk[k]||0)+e.cargo[k]*.5}}e.cargo={};despawn(e)}
+        if(d<110){if(D.type==='outpost')inv.addAll(D.o.stock,e.cargo);else{inv.addAll((D.rec&&D.rec.owner===e.side&&storeOf(D.rec))||S.econ.stock[e.side]||S.econ.stock.pirate,e.cargo);if(D.rec){mkOf(D.rec);for(const k in e.cargo)D.rec.mk[k]=(D.rec.mk[k]||0)+e.cargo[k]*.5}}e.cargo={};despawn(e)}
         break}
       let a=ai.ast;if(a&&a.wpt&&oreTotal(a)<=0)a=null;if(!a||!(a.wpt||s.ast.includes(a))){let bd=1e9;a=null;const wp=wptsIn(s);if(wp.length&&(e.side==='brood'||Math.random()<.5)){for(const x of wp){const d=d3(x,e);if(d<bd){bd=d;a=x}}}else for(const x of s.ast){if(x.comet)continue;const d=d3(x,e)+rnd(400);if(d<bd){bd=d;a=x}}ai.ast=a;if(!a){ai.state='return';break}}
       const d=d3(a,e),r=astR(a);
@@ -6142,8 +6165,8 @@ function dockCtx(){
   if(P.docked==='station'){const R=S.stations[P.sector],f=R.owner;if(f==='pirate')return{kind:'station',name:R.name,sub:`The Unbound · pirate haven · ${d.name}`,owner:'pirate',market:null,wallet:'pirate',fee:false,forge:false,fab:false,storage:P.vault,storageName:'Vault',hulls:false,contracts:false,fortify:false,works:false,haven:true};
     const dv=devOf(R),pm=!starving(R)&&dv.prod;
     if(f==='player')return{kind:'station',name:R.name,sub:`Your depot · ${d.name} · hull ${Math.round(R.hull/R.hMax*100)}%`,owner:'player',market:null,wallet:null,fee:false,forge:false,fab:pm>=1,storage:R.stock,storageName:'Depot store',hulls:pm>=2,contracts:false,fortify:false,works:true};
-    if(f==='neutral')return{kind:'station',name:R.name,sub:`Freeport Compact · neutral station · ${d.name}`,owner:'neutral',market:S.econ.stock.neutral,wallet:'neutral',fee:true,forge:false,fab:pm>=1,storage:P.vault,storageName:'Vault',hulls:pm>=2,contracts:true,fortify:false,works:true,refit:true};
-    return{kind:'station',name:R.name,sub:`${FACTIONS[f].name} ${R.kind==='core'?'station':'depot'} · ${d.name}`,owner:f,market:S.econ.stock[f],wallet:f,fee:true,forge:false,fab:R.kind==='core'&&d.home===f||pm>=1,storage:P.vault,storageName:'Vault',hulls:R.kind==='core'||pm>=2,contracts:true,fortify:false,works:true}}
+    if(f==='neutral')return{kind:'station',name:R.name,sub:`Freeport Compact · neutral station · ${d.name}`,owner:'neutral',market:mkStock(R),wallet:'neutral',fee:true,forge:false,fab:pm>=1,storage:P.vault,storageName:'Vault',hulls:pm>=2,contracts:true,fortify:false,works:true,refit:true};
+    return{kind:'station',name:R.name,sub:`${FACTIONS[f].name} ${R.kind==='core'?'station':'depot'} · ${d.name}`,owner:f,market:mkStock(R),wallet:f,fee:true,forge:false,fab:R.kind==='core'&&d.home===f||pm>=1,storage:P.vault,storageName:'Vault',hulls:R.kind==='core'||pm>=2,contracts:true,fortify:false,works:true}}
   const o=S.outposts[P.docked]||{name:'Lost outpost',owner:'neutral',type:'mine',stock:{}},mine=o.owner==='player';
   return{kind:'outpost',o,name:o.name,sub:`${mine?'Your outpost':(FACTIONS[o.owner]||{short:'Abandoned'}).short+' outpost'} · ${TYPE_TEXT[o.type]||''}`,owner:o.owner,market:mine?null:o.stock,wallet:mine?null:o.owner,fee:!mine,forge:o.type==='forge',storage:mine?o.stock:P.vault,storageName:mine?'Outpost store':'Vault',hulls:false,contracts:!mine,fortify:mine};
 }
@@ -6392,11 +6415,11 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
     inv.addAll(c.storage,P.cargo);P.cargo={};const r=shipRec(P);P.ships.push(r);shipLoad(P,{cls:to,tiers:baseTiers(),tune:{},bay:{},rack:rackCapC(to,1),swarm:CLASSES[to].swarm||0});droneTopUp(P,c.storage,c.wallet);refreshPlayerStats();p.hull=p.st.hull;
     dockErr=`✓ ${FAC(P.faction).hulls[r.cls]} stored in the Hangar with its upgrades (${P.ships.length}/${BAY_MAX}). You're in a fresh ${FAC(P.faction).hulls[to]}; your hold went to the vault.`}
   else if(act==='bfly'){const i=+arg,r=(P.ships||[])[i];if(!r||c.storage!==P.vault)return;const room=shipStats(P.faction,r.cls,r.tiers,r.tune).cargo;if(invMass(P.cargo)>room){inv.addAll(c.storage,P.cargo);P.cargo={}}
-    const cur=shipRec(P),bare=START_HULLS.includes(cur.cls)&&shipBare(cur);if(bare){inv.addAll(S.econ.stock[c.wallet]||c.storage,baseKit());inv.addAll(c.storage,cur.bay||{});P.ships.splice(i,1)}else P.ships[i]=cur;
+    const cur=shipRec(P),bare=START_HULLS.includes(cur.cls)&&shipBare(cur);if(bare){inv.addAll(c.market||c.storage,baseKit());inv.addAll(c.storage,cur.bay||{});P.ships.splice(i,1)}else P.ships[i]=cur;
     shipLoad(P,r);refreshPlayerStats();p.hull=p.st.hull;dockErr=`✓ You're flying your ${FAC(P.faction).hulls[r.cls]}.${bare?'':` Your ${FAC(P.faction).hulls[cur.cls]} took its place in the bay.`}`}
   else if(act==='bupg'){const[i,sl]=String(arg).split(':'),r=(P.ships||[])[+i];if(!r||!SLOT[sl]||c.storage!==P.vault)return;const t=r.tiers[sl]||1;if(t>=MK_TOP)return;const rc=upgRecipe(sl,t+1),fee=c.fee?Math.ceil(invValue(rc)*.08):0;
     if(P.credits<fee)dockErr='Not enough credits.';else if(takeFrom(rc,srcs)){if(fee)transfer('player',c.wallet,fee);r.tiers[sl]=t+1;dockErr=`✓ ${FAC(P.faction).hulls[r.cls]}: ${SLOT[sl].name} now Mk ${ROMAN[t+1]}.`}else dockErr='Missing parts.'}
-  else if(act==='bsell'){const i=+arg,r=(P.ships||[])[i];if(!r||c.storage!==P.vault)return;shipStrip(r,c.storage);inv.addAll(c.storage,r.bay||{});inv.addAll(c.storage,r.hullInv||{});inv.addAll(S.econ.stock[c.wallet]||c.storage,baseKit());
+  else if(act==='bsell'){const i=+arg,r=(P.ships||[])[i];if(!r||c.storage!==P.vault)return;shipStrip(r,c.storage);inv.addAll(c.storage,r.bay||{});inv.addAll(c.storage,r.hullInv||{});inv.addAll(c.market||c.storage,baseKit());
     const ti=START_HULLS.includes(r.cls)?0:Math.floor(hullPrice(r.cls)*TRADE_IN),got=ti&&c.wallet?transfer(c.wallet,'player',ti):0;P.ships.splice(i,1);dockErr=`✓ ${FAC(P.faction).hulls[r.cls]} sold${got?` for ${fmt(got)} cr`:''}. Its upgrades and drones went into your vault.`}
   else if(act==='hull'&&CLASSES[arg]&&(YARD_IDS.includes(arg)||(arg==='wraith'&&(P.lvl||0)>=10))){const own=hullOwned(P,arg),price=own?0:hullPrice(arg);if(P.cls===arg)return;if(!own&&DOCKS_ONLY.includes(arg)&&!atDocks(P)){dockErr='Heavy Bombers are sold only at orbital docks: a constructed capital shipyard, where carriers and escorts are commissioned.';return}if(P.credits<price){dockErr=`The ${FAC(P.faction).hulls[arg]} costs ${fmt(price)} cr.`;return}{const room=shipStats(P.faction,arg,P.tiers,P.tune).cargo;if(invMass(P.cargo)>room)dockErr='Store some cargo first; the new hold is smaller.';else{inv.addAll(c.storage,P.hullInv||{});P.hullInv={};const wasBare=shipBare(P);shipStrip(P,c.storage);const ti=START_HULLS.includes(P.cls)?0:Math.floor(hullPrice(P.cls)*TRADE_IN),got=ti?transfer(c.wallet||P.faction,'player',ti):0;if(price)transfer('player',c.wallet||P.faction,price);{const nc=CLASSES[arg].drones||0;P.bay=P.bay||{};if((P.bay.drone||0)>nc){inv.add(c.storage,'drone',P.bay.drone-nc);P.bay.drone=nc}}P.rack=rackCapC(arg,P.tiers.weapon);P.mslT=0;P.swarm=CLASSES[arg].swarm||0;P.swT=0;P.cls=arg;hullsOwned(P);const dg=droneTopUp(P,c.storage,c.wallet),dcap=CLASSES[arg].drones||0;refreshPlayerStats();p.hull=p.st.hull;dockErr=`✓ ${price?`Bought for ${fmt(price)} cr. `:''}You now fly the ${FAC(P.faction).hulls[arg]}.${dcap?` Drone bay ${P.bay.drone}/${dcap}${(P.bay.drone||0)<dcap?' (the station is out of drones: buy more on the Market)':''}.`:''}${got?` Your old hull was traded in for ${fmt(got)} cr.`:''}${wasBare?'':' Its upgrades came off as parts into your '+c.storageName.toLowerCase()+' (put a ship in the Hangar to keep it whole).'}${price?' If it is destroyed you relaunch in a starter hull.':''}`}}}
   else if(act==='mv'&&arg.startsWith('beacon:out')&&!beaconCls(P.cls)){dockErr='Claim Beacons fly in combat hulls only: switch to a fighter or bomber to carry one (starter Light Fighters are free at core stations).'}
@@ -6411,7 +6434,7 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
     if(k&&k.st&&k.st!==P.sector){dockErr=`Deliver this one in person at ${S.stations[k.st]?S.stations[k.st].name:DEF[k.st].name}.`}
     else if(k&&k.st&&d<mn){dockErr=`You need at least ${mn} ${nm} that weren't bought here.`}
     else if(k&&!k.st&&d<mn){const b=boughtOf(P,k.item);dockErr=`You need at least ${mn} ${nm}. Contracts take goods you mined, salvaged or made${b?`: ${b} ${nm} you bought on a market can't fill it`:''}.`}
-    else if(k&&takeFrom({[k.item]:d},srcs)){const share=Math.round(k.reward*d/k.n),fr=d/k.n0;k.reward-=share;k.n-=d;inv.add(S.econ.stock[k.fac],k.item,d);
+    else if(k&&takeFrom({[k.item]:d},srcs)){const share=Math.round(k.reward*d/k.n),fr=d/k.n0;k.reward-=share;k.n-=d;inv.add((S.stations[k.st]&&storeOf(S.stations[k.st]))||S.econ.stock[k.fac],k.item,d);
       if(k.blk){const R2=S.stations[k.st];if(R2&&R2.hMax)R2.hull=Math.min(R2.hMax,(R2.hull||0)+R2.hMax*.1*fr);feed(`⚠ Blockade run: ${R2?R2.name:'the station'} ${k.n>0?'takes your load':'is resupplied'}.`,'good')}
       const got=transfer(k.fac,'player',Math.round(share*((P.lvl||0)>=2?1.1:1)));legBonus(pkey(),k.fac,'an Order',fr);weAdd(k.fac,WE.order*fr);const done=k.n<=0;if(done)S.contracts.splice(S.contracts.indexOf(k),1);
       dockErr=done?`✓ Contract complete${d<k.n0?` (you brought the last ${d} of ${k.n0})`:''}. +${fmt(got)} cr.`:`✓ Delivered ${d} ${nm}: +${fmt(got)} cr. ${k.n} more still wanted.`;feed(done?`Contract delivered: +${fmt(got)} cr.`:`Part delivery: ${d} ${nm}, +${fmt(got)} cr (${k.n} still wanted).`,'good')}}
@@ -7727,10 +7750,10 @@ function pirCaps(){return(S.frigates||[]).filter(t=>t.side==='pirate')}
 function pirCost(k){return k==='carrier'?CARRIER_COST:ESCORT_COST}
 // fencing: the Unbound sell surplus loot to the Freeport Compact and buy what they can't mine (credits and goods both move,
 // nothing is created). The Wrack has no copper and no Vantium, so those come through the fence.
-function pirFence(want){const st=S.econ.stock.pirate,N=S.econ.stock.neutral;if(!st||!N)return;
+function pirFence(want){const st=S.econ.stock.pirate,fpA=fpNear('wr'),N=fpA&&dStore(fpA);if(!st||!N)return;
   for(const[k,keep]of[['xc',40],['ir',140],['fe',260],['nu',Math.max(30,(want.nu||0)+20)],['cu',Math.max(80,(want.cu||0)+40)]]){const n=Math.min(8,(st[k]||0)-keep);if(n<=0)continue;const pr=Math.floor(baseValue(k)*.8),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m)}}
-  {const F=S.econ.fenced||{};for(const k of Object.keys(F)){if(MUNITIONS.has(k)||!ITEMS[k]){delete F[k];continue}const n=Math.min(20,F[k],(st[k]||0)-((want[k]||0)+5));if(n<=0)continue;const pr=Math.max(1,Math.floor(price(N,k)*.9)),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m);F[k]-=m;if(F[k]<=0)delete F[k]}}}
-  for(const k of['cu','nu','wire']){const need=(want[k]||0)-(st[k]||0);if(need<=0)continue;const n=Math.min(k==='nu'?3:k==='wire'?6:10,need,(N[k]||0)-(k==='nu'?12:k==='wire'?20:25));if(n<=0)continue;const pr=Math.ceil(baseValue(k)*(k==='wire'?1.4:1.5)),cost=pr*n;if((S.econ.treasury.pirate||0)<cost+1500)continue;inv.take(N,k,n);inv.add(st,k,n);transfer('pirate','neutral',cost)}}
+  {const F=S.econ.fenced||{};for(const k of Object.keys(F)){if(MUNITIONS.has(k)||!ITEMS[k]){delete F[k];continue}const n=Math.min(20,F[k],(st[k]||0)-((want[k]||0)+5));if(n<=0)continue;const pr=Math.max(1,Math.floor(price(N,k,MK_SC.free)*.9)),pay=transfer('neutral','pirate',pr*n);const m=Math.floor(pay/pr);if(m>0){inv.take(st,k,m);inv.add(N,k,m);F[k]-=m;if(F[k]<=0)delete F[k]}}}
+  for(const k of['cu','nu','wire']){const need=(want[k]||0)-(st[k]||0);if(need<=0)continue;const n=Math.min(k==='nu'?3:k==='wire'?6:10,need,(N[k]||0)-(k==='nu'?4:k==='wire'?7:8));if(n<=0)continue;const pr=Math.ceil(baseValue(k)*(k==='wire'?1.4:1.5)),cost=pr*n;if((S.econ.treasury.pirate||0)<cost+1500)continue;inv.take(N,k,n);inv.add(st,k,n);transfer('pirate','neutral',cost)}}
 function pirTick(){if(NET.cl||!S||S.training)return;pirSetup();const st=S.econ.stock.pirate,T=S.T,H=S.stations.wr,caps=pirCaps(),bld=S.events.filter(e=>e.type==='pirbuild'&&e.stage!=='done');
   const nE=caps.filter(isEsc).length+bld.filter(e=>e.cls==='escort').length,nC=caps.filter(isCar).length+bld.filter(e=>e.cls==='carrier').length;
   const wantE=(T>=PIR_E1?1:0)+(T>=PIR_E2?1:0),wantC=T>=PIR_C?1:0,next=nC<wantC?'carrier':nE<wantE?'escort':null,pre=!next&&T>=PIR_C-600&&nC<1?'carrier':null;

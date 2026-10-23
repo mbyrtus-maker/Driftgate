@@ -42,45 +42,58 @@ function hasIntel(){const h=S.outposts.hollow.owner;return h==='player'||h===S.p
 function holderIn(st,path){const p=path.split(':');if(p[0]==='stock')return st.econ.stock[p[1]];if(p[0]==='out')return st.outposts[p[1]].stock;if(p[0]==='frig'){const t=(st.frigates||[]).find(x=>String(x.id)===p[1]);return t?t.load:(st.econ.stock[p[2]]||st.player.vault)}if(p[0]==='pbay'){const R=p[1]&&st.pilots&&st.pilots[p[1]]||st.player;return R.bay=R.bay||{}}if(p[0]==='scout'){const t=(st.scouts||[]).find(x=>String(x.id)===p[1]);return t?t.load:st.econ.stock[p[2]]}if(p[0]==='trader'){const t=(st.traders||[]).find(x=>String(x.id)===p[1]);return t?t.load:st.econ.stock[p[2]]}if(p[0]==='ev'){const ev=st.events.find(v=>String(v.id)===p[1]);return ev&&ev.force?ev.force:st.econ.stock[p[2]]}return st.econ.stock.pirate}
 const holder=path=>holderIn(S,path);
 function stockTarget(id){return RAWS.includes(id)?300:id==='plate'||id==='wire'?90:id==='coil'?40:id==='seal'?6:16}
-function price(stock,id){const s=stock[id]||0,t=stockTarget(id);return Math.max(1,baseValue(id)*clamp(Math.pow((t+10)/(s+10),.45),.5,2.8))}
+// a small store (sc<1) is priced against its own smaller target, but with market depth (MK_SC.depth): a unit moves its price
+// about as much as a unit moves the warehouse's, so local demand (R.mk) shapes prices as much as the stock on the shelf does
+function price(stock,id,sc){sc=sc||1;const s=stock[id]||0,t0=stockTarget(id),t=t0*sc,D=10+(1-sc)*t0*MK_SC.depth;return Math.max(1,baseValue(id)*clamp(Math.pow((t+D)/(s+D),.45),.5,2.8))}
 const buyPrice=(st,id)=>Math.ceil(price(st,id)*1.06),sellPrice=(st,id)=>Math.max(1,Math.floor(price(st,id)*.94));
-// ---- local markets and trade. Every faction station and freeport keeps its own local supply level per good (R.mk: + means
-// oversupplied, cheap; - means short, dear). Goods still move through the faction's stock and credits through its treasury,
-// so the economy stays zero-sum; the local level only shapes the price. Each station produces some goods and consumes
+// ---- local markets and trade. Every market sells from its own shelves: a faction's core station from the faction warehouse,
+// each depot from its own store, each freeport from its own store. Credits are shared: a faction's treasury pays and is paid at
+// all its stations, the Compact's at all three freeports. A small store's price swings faster (mkSc: its stock targets are a
+// fraction of the warehouse's). On top of the stock, every station keeps a local supply level per good (R.mk: + means
+// oversupplied, cheap; - means short, dear). Each station produces some goods and consumes
 // others, so its level drifts back toward a natural surplus or shortage after trading. AI merchants work the widest gaps.
 const TRADE_ITEMS=['fe','cu','ir','xc','au','nu','plate','wire','coil','lattice','drone','seal'];
 function locT(id){return Math.max(6,stockTarget(id)/4)}
 function mkStations(){const out=[];for(const id in S.stations){const R=S.stations[id];if(R.kind==='hive'||!(FAC_IDS.includes(R.owner)||R.owner==='neutral'))continue;out.push(R)}return out}
-function mkStock(R){return S.econ.stock[R.owner]||{}}
+function mkStock(R){return(R&&storeOf(R))||{}}
+function isFreeF(R){return!!R&&R.kind==='free'&&R.owner==='neutral'}
+const MK_SC={depot:.25,free:1/3,depth:1};function mkSc(R){return isDepotF(R)?MK_SC.depot:isFreeF(R)?MK_SC.free:1}
+// the freeports' own stores, and the nearest live freeport to a system (optionally one whose store passes a test)
+function fpStores(){return FREEPORTS.map(F=>S.stations[F.sid]).filter(isFreeF).map(dStore)}
+function fpNear(sid,ok){let A=null,bd=1e9;for(const F of FREEPORTS){const R=S.stations[F.sid];if(!isFreeF(R)||(ok&&!ok(dStore(R))))continue;const d=HOP[R.sid][sid]||0;if(d<bd){bd=d;A=R}}return A}
+// a goods pile split as evenly as it goes across the live freeports (setup, and moving old saves off the shared Compact pool)
+function fpSplit(o){const L=fpStores();if(!L.length)return false;for(const k in o){const n=o[k]||0;if(n<=0)continue;const q=Math.floor(n/L.length);let r=n-q*L.length;for(const st of L){const m=q+(r>0?1:0);if(r>0)r--;if(m>0)inv.add(st,k,m)}}return true}
+// how far a station's local level settles from neutral (eq, in units of locT) and how fast it drifts back each tick (rate)
+const MK_DEM={eq:1,rate:.07};
 // what a station makes (+) and uses up (-)
 function mkProfile(R){const p={},d=DEF[R.sid],ores=Object.keys(d.ores||{});
   if(R.kind==='core'){for(const k of['plate','wire','coil','missile'])p[k]=1;for(const k of['fe','cu','ir','xc','au','nu'])p[k]=-1;p.lattice=-.5}
   else if(R.kind==='free'){for(const k of['lattice','coil','missile','torpedo','drone','plate'])p[k]=-1;for(const k of ores)p[k]=.6;p.swarm=-.6}
   else{for(const k of ores)p[k]=1;for(const k of['plate','wire','missile','drone'])p[k]=-1;p.coil=-.5;if(d.kind==='deep')p.au=1}
   return p}
-function mkOf(R){if(!R.mk){R.mk={};const p=mkProfile(R);for(const k of TRADE_ITEMS)R.mk[k]=Math.round(((p[k]||0)*.9+(Math.random()-.5)*.3)*locT(k)*10)/10}return R.mk}
+function mkOf(R){if(!R.mk){R.mk={};const p=mkProfile(R);for(const k of TRADE_ITEMS)R.mk[k]=Math.round(((p[k]||0)*MK_DEM.eq+(Math.random()-.5)*.3)*locT(k)*10)/10}return R.mk}
 function locF(R,id){if(!R||!R.mk)return 1;const L=R.mk[id]||0;return clamp(Math.exp(-L/(locT(id)*2)),.55,1.9)}
 // Aurorite is war material: faction stations pay a premium for it over any freeport, so merchants carry it to the
 // factions instead of shuttling it between freeports (and a pilot sells it to a faction for more)
 const AU_FAC=1.35;const mkK=(R,id)=>id==='au'&&R&&R.owner!=='neutral'?AU_FAC:1;
-function stPrice(R,id){return price(R?mkStock(R):{},id)*locF(R,id)*mkK(R,id)}
+function stPrice(R,id){return price(R?mkStock(R):{},id,mkSc(R))*locF(R,id)*mkK(R,id)}
 // market prices at the dock you're in (outposts have no local level)
 function mR(c){return c&&c.kind==='station'?S.stations[S.player.sector]:null}
 // market fee on a pilot's trades: 6%, less in the bigger haulers (a freight licence). A big hold soon moves the price against
 // itself; the bigger haulers pay a thinner fee and move the local price less per unit (HAUL_MK), so trade runs come to about
 // 15k an hour in a Light Hauler, 20k in a Medium and 25k in a Heavy, Mk I.
 const HAUL_FEE={courier:.035,freighter:.02,bulker:.01};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;const HAUL_MK={freighter:.6,bulker:.26};const pMk=()=>HAUL_MK[S.player.cls]||1;
-function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id)*locF(R,id)*mkK(R,id)*(1+mFee(S.player.cls)))}
-function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id)*locF(R,id)*mkK(R,id)*(1-mFee(S.player.cls))))}
+function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id,mkSc(R))*locF(R,id)*mkK(R,id)*(1+mFee(S.player.cls)))}
+function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id,mkSc(R))*locF(R,id)*mkK(R,id)*(1-mFee(S.player.cls))))}
 // how many units a market takes (dir +1, a sale) or gives (dir -1, a purchase) at the quoted price: as many as it can absorb before
 // its price would move past the buy/sell spread, so a big dump sells in lots and buying it straight back never pays
-function lotCap(c,k,dir,maxN){if(maxN<=1)return maxN;const R=mR(c);if(R)mkOf(R);const st=c.market,s0=st[k],m0=R?R.mk[k]||0:0,p0=price(st,k)*locF(R,k);
-  const at=n=>{st[k]=(s0||0)+dir*n;if(R)R.mk[k]=m0+dir*n*pMk();const p=price(st,k)*locF(R,k);if(s0===undefined)delete st[k];else st[k]=s0;if(R)R.mk[k]=m0;return p};
+function lotCap(c,k,dir,maxN){if(maxN<=1)return maxN;const R=mR(c);if(R)mkOf(R);const st=c.market,sc=mkSc(R),s0=st[k],m0=R?R.mk[k]||0:0,p0=price(st,k,sc)*locF(R,k);
+  const at=n=>{st[k]=(s0||0)+dir*n;if(R)R.mk[k]=m0+dir*n*pMk();const p=price(st,k,sc)*locF(R,k);if(s0===undefined)delete st[k];else st[k]=s0;if(R)R.mk[k]=m0;return p};
   const ok=n=>dir>0?at(n)>=p0*.89:at(n)<=p0*1.12;let lo=1,hi=maxN;if(ok(hi))return hi;while(hi-lo>1){const m=(lo+hi)>>1;if(ok(m))lo=m;else hi=m}return lo}
 function demandOf(R,id){const f=locF(R,id);return f>=1.22?'high':f<=.82?'low':''}
 // every strategic tick: stations drift back toward their own surplus or shortage, and AI merchants buy low and sell high
 function mkTick(){if(NET.cl)return;const L=mkStations();if(L.length<2)return;
-  for(const R of L){const m=mkOf(R),p=mkProfile(R);for(const k of TRADE_ITEMS){const t=locT(k),eq=(p[k]||0)*.9*t;m[k]+=(eq-m[k])*.035+(Math.random()-.5)*t*.05}}
+  for(const R of L){const m=mkOf(R),p=mkProfile(R);for(const k of TRADE_ITEMS){const t=locT(k),eq=(p[k]||0)*MK_DEM.eq*t;m[k]+=(eq-m[k])*MK_DEM.rate+(Math.random()-.5)*t*.05}}
   tradersTick();
   for(const P of allPilots())intelTick(P)}
 // price intel: live where you are, where your faction holds the beacon, where a friendly scout is (and next door when you fly a scout)
@@ -96,7 +109,12 @@ function intelAge(e){if(!e)return'no data';const a=S.T-e.T;return a<15?'live':a<
 // dear, and only changes that market when it arrives. On the way it's a real freighter in any system someone is in, so it can
 // be escorted, raced or shot down (its cargo spills as salvage and the price gap stays open). Merchants trade at their own
 // faction's stations and at the freeports; money moves between treasuries, goods between stocks, so it all stays zero-sum.
-const TRADER_MAX=3,TRADER_HOP=45,TRADER_SPREAD=1.3;
+const TRADER_MAX=3,TRADER_HOP=45;
+// merchants trade between a faction's stations and the freeports only: between its own stations the faction's supply convoys
+// move ore home and parts out (own:0; a number would let merchants take own-station gaps that wide). They need a wide gap
+// (spread): left to work every narrow one, merchants sold the warehouses thin, the factions fell behind on capitals and the
+// Brood won twice as often; the narrower gaps are the pilots' trade.
+const TR_AI={own:0,spread:3};
 function trPath(a,b){const out=[a];let cur=a;for(let k=0;k<20&&cur!==b;k++){let nx=null,bh=1e9;for(const n of NEIGH[cur]){const h=HOP[b][n];if(h<bh){bh=h;nx=n}}if(!nx)break;out.push(nx);cur=nx}return out}
 // ---- logistics. A faction's core station is its warehouse (the faction stockpile). Each of its depots keeps a store of its
 // own: what the depot mines goes there, its life support, works, hangar and (with a production module) its fabricators work
@@ -106,7 +124,7 @@ function trPath(a,b){const out=[a];let cur=a;for(let k=0;k<20&&cur!==b;k++){let 
 const LOGI={depotCap:260,shipRaw:120,haulMax:80,risk:{cap:.10,station:.06,brood:.05,out:.03}};
 function isDepotF(R){return!!R&&R.kind==='depot'&&FAC_IDS.includes(R.owner)}
 function dStore(R){return R.store||(R.store={})}
-function storeOf(R){return isDepotF(R)?dStore(R):R.owner==='player'?R.stock:S.econ.stock[R.owner]}
+function storeOf(R){return isDepotF(R)||isFreeF(R)?dStore(R):R.owner==='player'?R.stock:S.econ.stock[R.owner]}
 function haulBusy(key){return(S.traders||[]).some(t=>t.kind==='haul'&&t.key===key)}
 function rawMass(o){let m=0;for(const k of RAWS)m+=o[k]||0;return m}
 function haulSend(f,fromSid,toSid,load,key,why,car){const path=trPath(fromSid,toSid),mainK=Object.keys(load).sort((a,b)=>load[b]-load[a])[0];if(!mainK)return null;
@@ -152,10 +170,10 @@ function trCanUse(f,R){return R&&R.kind!=='hive'&&(R.owner===f||R.owner==='neutr
 // ---- Compact Seals: a power that needs Seals for its next capital step (shipyard, carrier, escorts) buys them at the nearest
 // freeport with stock, from its treasury, and a merchant carries them home like any other cargo (it can be raided on the way)
 function sealNeed(f){let n=0;if(!S.yards[f]&&!S.events.some(e=>e.type==='yardbuild'&&e.att===f))n+=CAP_SEAL.yard;if(facCar(f).length<1&&!S.events.some(e=>e.type==='frigbuild'&&e.att===f))n+=CAP_SEAL.carrier;if(facEsc(f).length<(ESC_CAP[f]||0))n+=CAP_SEAL.escort;return n}
-function sealRun(f){const st=S.econ.stock[f],fp=S.econ.stock.neutral;if(!sealed(f)||!st||!fp||!(fp.seal>0))return;
+function sealRun(f){const st=S.econ.stock[f];if(!sealed(f)||!st)return;
   const enroute=S.traders.filter(t=>t.side===f&&t.item==='seal').reduce((a,t)=>a+(t.n||0),0),short=sealNeed(f)-(st.seal||0)-enroute;if(short<=0)return;
   const home=S.stations[FAC_HOME(f)];if(!home||!trCanUse(f,home))return;
-  let A=null,bd=1e9;for(const F of FREEPORTS){const R=S.stations[F.sid];if(!R||R.owner!=='neutral')continue;const d=HOP[R.sid][home.sid]||0;if(d<bd){bd=d;A=R}}if(!A)return;
+  const A=fpNear(home.sid,s=>s.seal>0);if(!A)return;const fp=dStore(A);
   const pr=Math.ceil(stPrice(A,'seal')*1.06),n=Math.min(short,fp.seal,Math.floor((S.econ.treasury[f]||0)/pr));if(n<1)return;
   const got=inv.take(fp,'seal',n);if(!got)return;transfer(f,'neutral',pr*got);mkOf(A).seal=(A.mk.seal||0)-got;
   const t={id:S.nextId++,side:f,item:'seal',n:got,from:A.sid,to:home.sid,path:trPath(A.sid,home.sid),leg:0,sector:A.sid,next:S.T+TRADER_HOP*.6,load:{seal:got},cls:'freighter',T0:S.T};S.traders.push(t);
@@ -163,7 +181,7 @@ function sealRun(f){const st=S.econ.stock[f],fp=S.econ.stock.neutral;if(!sealed(
 function tradersTick(){if(NET.cl)return;S.traders=S.traders||[];for(const f of FAC_IDS)if(Math.random()<.25)sealRun(f);
   // dispatch: each faction looks for its best open gap and sends a merchant if it has a free one
   for(const f of FAC_IDS){if(S.traders.filter(t=>t.side===f&&t.kind!=='haul').length>=TRADER_MAX||Math.random()<.5)continue;const L=mkStations().filter(R=>trCanUse(f,R));if(L.length<2)continue;
-    let best=null;for(const k of TRADE_ITEMS){const m=mass(k);for(const A of L){if(FP_ONLY.has(k)&&A.owner!=='neutral')continue;const sa=mkStock(A)[k]||0;if(sa<4)continue;const pa=stPrice(A,k);for(const B of L){if(A===B)continue;const pb=stPrice(B,k);if(pb<pa*TRADER_SPREAD)continue;
+    let best=null;for(const k of TRADE_ITEMS){const m=mass(k);for(const A of L){if(FP_ONLY.has(k)&&A.owner!=='neutral')continue;const sa=mkStock(A)[k]||0;if(sa<4)continue;const pa=stPrice(A,k);for(const B of L){if(A===B)continue;const pb=stPrice(B,k);const own=A.owner===f&&B.owner===f;if(own&&!TR_AI.own)continue;if(pb<pa*(own?TR_AI.own:TR_AI.spread))continue;
       if(S.traders.some(t=>t.item===k&&t.to===B.sid))continue;if(k==='au'&&A.owner==='neutral'&&B.owner==='neutral')continue;const n=Math.min(Math.floor(sa*.5),Math.floor(90*BAL.aiEff/m),Math.ceil(locT(k)*.9));if(n<3)continue;const gain=(pb-pa)*n/(1+(HOP[A.sid][B.sid]||0));if(!best||gain>best.gain)best={k,A,B,n,pa,gain}}}}
     if(!best)continue;const{k,A,B,n}=best,cost=Math.ceil(best.pa*1.06)*n,fund=S.econ.treasury[f]||0;if(A.owner==='neutral'&&fund<cost)continue;
     const src=mkStock(A);const got=inv.take(src,k,n);if(!got)continue;if(A.owner==='neutral')transfer(f,'neutral',Math.ceil(best.pa*1.06)*got);mkOf(A)[k]-=got;

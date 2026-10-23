@@ -21,6 +21,8 @@ Set `DG_GAME` to test another file, and `DG_OUT` for where screenshots go (defau
 | limpet.py | limpet plant, damage bonus, turrets ignore it, fighters shoot it off, drones go dark when jammed |
 | map.py | sector panel without ore tonnage, scanned prices, the map key |
 | mining_sight.py | only the charge reticle on a mining hull aimed at a rock (screenshots) |
+| stores.py | depots and freeports trade from their own stores, treasuries shared, ledger balances, old saves migrate |
+| haul_rates.py | trade bots per hauler hull for an hour of game time: cr/hour against the pay ladder (slow, run by hand) |
 | training.py | flies a training course end to end; `TRK=full\|combat\|mining\|hauling\|scouting` |
 | mp_loopback.py | two pages joined over a faked link: `python3 tools/tests/mp_loopback.py index.html shot.png` |
 

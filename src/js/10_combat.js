@@ -530,7 +530,7 @@ function npcThink(e,dt){
         const D=SE&&SE.fac===e.side?SE:OE&&OE.o.owner===e.side?OE:null;
         if(!D){e.role='leave';break}
         const d=steer(e,D.x,D.y,D.z,dt,true);faceTo(e,D,dt);
-        if(d<110){if(D.type==='outpost')inv.addAll(D.o.stock,e.cargo);else{inv.addAll(S.econ.stock[e.side],e.cargo);if(D.rec){mkOf(D.rec);for(const k in e.cargo)D.rec.mk[k]=(D.rec.mk[k]||0)+e.cargo[k]*.5}}e.cargo={};despawn(e)}
+        if(d<110){if(D.type==='outpost')inv.addAll(D.o.stock,e.cargo);else{inv.addAll((D.rec&&D.rec.owner===e.side&&storeOf(D.rec))||S.econ.stock[e.side]||S.econ.stock.pirate,e.cargo);if(D.rec){mkOf(D.rec);for(const k in e.cargo)D.rec.mk[k]=(D.rec.mk[k]||0)+e.cargo[k]*.5}}e.cargo={};despawn(e)}
         break}
       let a=ai.ast;if(a&&a.wpt&&oreTotal(a)<=0)a=null;if(!a||!(a.wpt||s.ast.includes(a))){let bd=1e9;a=null;const wp=wptsIn(s);if(wp.length&&(e.side==='brood'||Math.random()<.5)){for(const x of wp){const d=d3(x,e);if(d<bd){bd=d;a=x}}}else for(const x of s.ast){if(x.comet)continue;const d=d3(x,e)+rnd(400);if(d<bd){bd=d;a=x}}ai.ast=a;if(!a){ai.state='return';break}}
       const d=d3(a,e),r=astR(a);

@@ -24,8 +24,13 @@ function isFreeport(sid){return!!(S.stations[sid]&&S.stations[sid].owner==='neut
 function fpOf(sid){return FREEPORTS.find(f=>f.sid===sid)}
 function refitsOf(P){return(P.tune&&P.tune.rf)||{}}
 function applyRefits(B,U){const R=U&&typeof U==='object'&&U.rf;if(!R)return B;if(R.hold)B.cargo=Math.round(B.cargo*1.4);if(R.drive){B.maxSpd*=1.12;B.thrust*=1.12}if(R.cap){B.eCap*=1.3;B.eRegen*=1.25}if(R.plate){B.hull*=1.2;B.dr=(B.dr||0)+.04}if(R.aegis)B.sCap*=1.25;return B}
-function neutralInit(){S.econ.stock.neutral={fe:300,cu:300,ir:120,xc:30,nu:60,plate:60,wire:60,coil:20,lattice:4,missile:12};S.econ.fleet.neutral={};S.econ.treasury.neutral=150000;S.ai.neutral={dev:S.T+rnd(120,240)};
-  for(const F of FREEPORTS){if(S.stations[F.sid])continue;const R=makeStation(F.sid,'neutral','free',{x:0,y:0,z:0},{});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R)}}
+// the Compact: one treasury, three freeports each with its own store (S.econ.stock.neutral stays as an empty pool)
+const FP_SEED={fe:300,cu:300,ir:120,xc:30,nu:60,plate:60,wire:60,coil:20,lattice:4,missile:12};
+function neutralInit(){S.econ.stock.neutral={};S.econ.fleet.neutral={};S.econ.treasury.neutral=150000;S.ai.neutral={dev:S.T+rnd(120,240)};S.fpStock=1;
+  for(const F of FREEPORTS){if(S.stations[F.sid])continue;const R=makeStation(F.sid,'neutral','free',{x:0,y:0,z:0},{});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R)}
+  if(!fpSplit(FP_SEED))inv.addAll(S.econ.stock.neutral,FP_SEED)}
+// older saves: the shared Compact pool moves onto the freeports' shelves
+function fpStockMigrate(){if(S.fpStock)return;const N=S.econ.stock.neutral;if(!N)return;S.fpStock=1;const o={...N};if(fpSplit(o))for(const k of Object.keys(N))delete N[k]}
 // ---- station works: modules any station can build, paid in goods that stay in the structure (and fall as debris if it's razed)
 const DEV={
   life:[{plate:12,wire:12,coil:4},{plate:20,wire:20,coil:8,lattice:1}],
@@ -181,7 +186,7 @@ const HGR_CLS=[['interceptor'],['striker'],['heavy','heavy','bomber'],['gunboat'
 const HGR_NAME={interceptor:'Light Fighter',striker:'Medium Fighter',heavy:'Heavy Fighter',bomber:'Bomber',gunboat:'Heavy Bomber'};
 function hgLvl(R){return R&&R.kind==='depot'?(devOf(R).hangar||0):0}
 function hgCap(R){return 2*hgLvl(R)}
-function hgSrcs(R){return R.owner==='player'?[R.stock]:isDepotF(R)?[dStore(R)]:[S.econ.stock[R.owner]].filter(Boolean)}
+function hgSrcs(R){return[storeOf(R)].filter(Boolean)}
 function hgPick(L){const top=HGR_CLS[L-1];if(L===1||Math.random()<.55)return pick(top);return pick(HGR_CLS[Math.floor(Math.random()*(L-1))])}
 function hgTick(){for(const id in S.stations){const R=S.stations[id],L=hgLvl(R);if(!L||!wkOk(R)||R.owner==='neutral')continue;R.hg=R.hg||[];
     const out=WORLDS[id]?WORLDS[id].ents.filter(e=>e.hgSid===id&&e.alive).length:0;if(R.hg.length+out>=hgCap(R)||starving(R))continue;if(R.hgT===undefined)R.hgT=S.T+rnd(30,60);if(S.T<R.hgT)continue;R.hgT=S.T+rnd(60,100);
@@ -236,7 +241,7 @@ function devTick(){const T=S.T;for(const f of[...FAC_IDS,'neutral']){const A=S.a
 const LS_RATE={core:.8,free:.7,depot:.5,hive:.6};
 function lifeTick(){S.drift=S.drift||{fe:0,cu:0,ir:0,xc:0,au:0,nu:0};const D=S.drift;
   for(const id in S.stations){const R=S.stations[id],d=devOf(R),need=(R.kind==='hive'?1:Math.max(1,d.life))*(LS_RATE[R.kind]||1)*(1+.12*devUsed(R));R.ls=(R.ls||0)+need;
-    const src=R.owner==='player'?R.stock:isDepotF(R)?dStore(R):S.econ.stock[R.owner];if(!src)continue;let short=false;
+    const src=storeOf(R);if(!src)continue;let short=false;
     while(R.ls>=1){const cyc=(R.lsN=(R.lsN||0)+1)%4,k=cyc===3?'ir':cyc%2?'cu':'fe',k2=k==='fe'?'cu':'fe';const got=inv.take(src,k,1)?k:inv.take(src,k2,1)?k2:null;if(!got){short=true;break}D[got]++;R.ls--}
     if(short){if(!R.starve||S.T-R.starve>120){if(R.owner==='player'||(R.owner===S.player.faction&&Math.random()<.2))feed(`${R.name} is short of ore for life support: its production and missile battery are offline until it's restocked.`,'warn')}R.starve=S.T;R.ls=Math.min(R.ls,3)}else R.starve=0}
   driftSeed()}
@@ -248,9 +253,9 @@ function driftSeed(){const D=S.drift;let tot=0;for(const e of RAWS)tot+=D[e];if(
     if(covered(d.id)&&S.T-(S.driftSaid||-999)>240){S.driftSaid=S.T;feed(`Survey: fresh drift rock has settled into ${d.name} (${m} t of ${ITEMS[k].name}).`,'info')}}}
 // ---- freeport requests: lucrative supply contracts, delivered only at that freeport
 function allFeed(msg,kind){if(NET.cl)return;feed(msg,kind);if(NET.host)for(const pid in S.pilots||{})if(pid!==NET.me)feedTo(pid,msg,kind)}
-function fpContracts(){const st=S.econ.stock.neutral;if(!st)return;for(const F of FREEPORTS){const R=S.stations[F.sid];if(!R||R.owner!=='neutral')continue;
+function fpContracts(){for(const F of FREEPORTS){const R=S.stations[F.sid];if(!isFreeF(R))continue;const st=dStore(R);
     if(S.contracts.filter(c=>c.st===F.sid).length>=2||Math.random()<.5)continue;
-    const want={plate:[40,3],wire:[40,3],coil:[16,2],ir:[80,2],xc:[30,1.6],lattice:[6,1],fe:[150,1.2],cu:[150,1.2]},c=[];for(const k in want)if((st[k]||0)<want[k][0]&&!S.contracts.some(x=>x.st===F.sid&&x.item===k))c.push([k,want[k][1]]);if(!c.length)continue;
+    const want={plate:[14,3],wire:[14,3],coil:[6,2],ir:[28,2],xc:[10,1.6],lattice:[2,1],fe:[50,1.2],cu:[50,1.2]},c=[];for(const k in want)if((st[k]||0)<want[k][0]&&!S.contracts.some(x=>x.st===F.sid&&x.item===k))c.push([k,want[k][1]]);if(!c.length)continue;
     const item=wpickArr(c),js=jobSize(item,item==='fe'||item==='cu'||item==='ir'?ri(24,48):item==='plate'||item==='wire'?ri(10,20):item==='lattice'?ri(2,4):ri(5,10)),n=js.n,reward=Math.ceil(baseValue(item)*n*rnd(2.6,3.4)/10)*10;
     S.contracts.push({id:S.nextId++,fac:'neutral',st:F.sid,item,n,n0:n,reward,until:S.T+rnd(600,900)*js.t});
     allFeed(`📦 Freeport request · ${R.name} (${DEF[F.sid].name}, out in the void): ${n} ${ITEMS[item].name} for ${fmt(reward)} cr. Deliver there in person.`,'info')}}
@@ -279,15 +284,15 @@ function blkHuntOne(P,p,pid){const f=P.faction,T=territory(f);if(T.has(W.sid))re
   for(let i=0;i<(k.st===W.sid?3:2);i++){const e=spawnNPC('patrol',foe);if(!e)break;const o=rdir();e.x=p.x+o.x*1800;e.y=p.y+o.y*400;e.z=p.z+o.z*1800;e.ai.tgt=p;e.hunt=1;n++}
   if(n)keyFeed(pid||pkey(),`⚠ Blockade: a ${foe==='brood'?'Brood':FACTIONS[foe].short} interdiction wing (${n}) is hunting your cargo for ${S.stations[k.st].name}.`,'bad')}
 const FP_REBUILD={plate:40,wire:30,coil:10};
-function fpRebuild(){const D=S.fpDown||{},st=S.econ.stock.neutral;if(!st)return;for(const sid in D){if(S.stations[sid]){delete D[sid];continue}if(S.T-D[sid]<1200||!haveIn(FP_REBUILD,[st])||frigatesIn(sid).some(t=>t.side==='brood'))continue;
-    takeFrom(FP_REBUILD,[st]);const R=makeStation(sid,'neutral','free',{x:0,y:0,z:0},{...FP_REBUILD});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R);R.hull=R.hMax*.5;delete D[sid];
+function fpRebuild(){const D=S.fpDown||{},st=fpStores();if(!st.length)return;for(const sid in D){if(S.stations[sid]){delete D[sid];continue}if(S.T-D[sid]<1200||!haveIn(FP_REBUILD,st)||frigatesIn(sid).some(t=>t.side==='brood'))continue;
+    takeFrom(FP_REBUILD,st);const R=makeStation(sid,'neutral','free',{x:0,y:0,z:0},{...FP_REBUILD});R.dev={life:0,def:0,store:0,prod:0,armor:0};applyDev(R);R.hull=R.hMax*.5;delete D[sid];
     if(WORLDS[sid])inW(WORLDS[sid],()=>{if(!W.stationEnt)addStationEnt(R)});allFeed(`The Freeport Compact has rebuilt ${R.name} in ${DEF[sid].name}. It's open for trade again.`,'good')}}
-function neutralIndustry(){fpRebuild();const st=S.econ.stock.neutral;if(!st)return;craftDown(st,'plate',{fe:40},400);craftDown(st,'wire',{cu:40},400);craftAbstract(st,'coil',1,20);craftAbstract(st,'missile',1,16);craftAbstract(st,'matrix',1,FP_MAKE.matrix);craftAbstract(st,'seal',1,FP_MAKE.seal)}
-const FP_MAKE={matrix:16,seal:12};   // how many of each the Compact keeps in stock across its freeports
+function neutralIndustry(){fpRebuild();for(const st of fpStores()){craftDown(st,'plate',{fe:50},140);craftDown(st,'wire',{cu:50},140);craftAbstract(st,'coil',1,7);craftAbstract(st,'missile',1,6);craftAbstract(st,'matrix',1,FP_MAKE.matrix);craftAbstract(st,'seal',1,FP_MAKE.seal)}}
+const FP_MAKE={matrix:6,seal:4};   // how many of each a freeport's works keep on its own shelf
 // station missile battery (defence level 2+): one missile at a time at the nearest hostile, drawn from the owner's stores
 function stMissiles(SE,dt){const R=SE.rec;if(!R||SE.offline)return;const d=devOf(R);if(d.def<2||starving(R))return;SE.mcd=(SE.mcd||rnd(2,5))-dt;if(SE.mcd>0)return;SE.mcd=Math.max(3.5,8-d.def*1.5);
   let t=null,bd=1600;for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!stHostile(SE,e))continue;const dd=d3(e,SE);if(dd<bd){bd=dd;t=e}}if(!t||NET.cl)return;
-  const src=R.owner==='player'?R.stock:S.econ.stock[R.owner];if(!src||!inv.take(src,'missile',1))return;
+  const src=storeOf(R);if(!src||!inv.take(src,'missile',1))return;
   const sh={x:SE.x,y:SE.y+40,z:SE.z,vx:0,vy:0,vz:0,q:qLook(t.x-SE.x,t.y-SE.y-40,t.z-SE.z,0,1,0,q0()),st:{radius:70},side:SE.fac==='neutral'?'neutral':SE.fac};launchMissile(sh,t,3,'missile')}
 
 // ---- landing on an asteroid: hug a rock and vanish from enemy sensors. While landed everything but your own radar is powered
