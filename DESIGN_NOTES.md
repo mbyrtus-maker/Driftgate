@@ -1491,3 +1491,12 @@ Fifteen lessons were too long for a first session, and most players want one job
   hit (a friendly under fire). Threats stay full words in red: ON YOU, hitting ally. Structures: ally, hostile, free,
   open, breach.
 - **Drones** read "+2" beside the name; **distances** past 1 km read "3.7 km".
+
+## Aurorite goes to the factions (built)
+- Faction stations pay **1.35×** for Aurorite (`AU_FAC`, in `stPrice`, `mBuy`, `mSell`), so they always outbid the
+  freeports: in a test galaxy 432 cr at a faction core station against 195 at a freeport. Pilots get the same premium
+  selling to a faction.
+- AI merchants never run Aurorite from one freeport to another.
+- Effect in a 2.5-hour merchant run: no faction sold Aurorite back to a freeport (1 run before); freeport-to-faction runs
+  continue. Most Aurorite runs are a faction moving it between its own stations (about 100 in that run), which this does
+  not change.

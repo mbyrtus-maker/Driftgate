@@ -60,15 +60,18 @@ function mkProfile(R){const p={},d=DEF[R.sid],ores=Object.keys(d.ores||{});
   return p}
 function mkOf(R){if(!R.mk){R.mk={};const p=mkProfile(R);for(const k of TRADE_ITEMS)R.mk[k]=Math.round(((p[k]||0)*.9+(Math.random()-.5)*.3)*locT(k)*10)/10}return R.mk}
 function locF(R,id){if(!R||!R.mk)return 1;const L=R.mk[id]||0;return clamp(Math.exp(-L/(locT(id)*2)),.55,1.9)}
-function stPrice(R,id){return price(R?mkStock(R):{},id)*locF(R,id)}
+// Aurorite is war material: faction stations pay a premium for it over any freeport, so merchants carry it to the
+// factions instead of shuttling it between freeports (and a pilot sells it to a faction for more)
+const AU_FAC=1.35;const mkK=(R,id)=>id==='au'&&R&&R.owner!=='neutral'?AU_FAC:1;
+function stPrice(R,id){return price(R?mkStock(R):{},id)*locF(R,id)*mkK(R,id)}
 // market prices at the dock you're in (outposts have no local level)
 function mR(c){return c&&c.kind==='station'?S.stations[S.player.sector]:null}
 // market fee on a pilot's trades: 6%, less in the bigger haulers (a freight licence). A big hold soon moves the price against
 // itself; the bigger haulers pay a thinner fee and move the local price less per unit (HAUL_MK), so trade runs come to about
 // 15k an hour in a Light Hauler, 20k in a Medium and 25k in a Heavy, Mk I.
 const HAUL_FEE={courier:.035,freighter:.02,bulker:.01};const mFee=cls=>HAUL_FEE[cls]!=null?HAUL_FEE[cls]:.06;const HAUL_MK={freighter:.6,bulker:.26};const pMk=()=>HAUL_MK[S.player.cls]||1;
-function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id)*locF(R,id)*(1+mFee(S.player.cls)))}
-function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id)*locF(R,id)*(1-mFee(S.player.cls))))}
+function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id)*locF(R,id)*mkK(R,id)*(1+mFee(S.player.cls)))}
+function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id)*locF(R,id)*mkK(R,id)*(1-mFee(S.player.cls))))}
 // how many units a market takes (dir +1, a sale) or gives (dir -1, a purchase) at the quoted price: as many as it can absorb before
 // its price would move past the buy/sell spread, so a big dump sells in lots and buying it straight back never pays
 function lotCap(c,k,dir,maxN){if(maxN<=1)return maxN;const R=mR(c);if(R)mkOf(R);const st=c.market,s0=st[k],m0=R?R.mk[k]||0:0,p0=price(st,k)*locF(R,k);
@@ -161,7 +164,7 @@ function tradersTick(){if(NET.cl)return;S.traders=S.traders||[];for(const f of F
   // dispatch: each faction looks for its best open gap and sends a merchant if it has a free one
   for(const f of FAC_IDS){if(S.traders.filter(t=>t.side===f&&t.kind!=='haul').length>=TRADER_MAX||Math.random()<.5)continue;const L=mkStations().filter(R=>trCanUse(f,R));if(L.length<2)continue;
     let best=null;for(const k of TRADE_ITEMS){const m=mass(k);for(const A of L){if(FP_ONLY.has(k)&&A.owner!=='neutral')continue;const sa=mkStock(A)[k]||0;if(sa<4)continue;const pa=stPrice(A,k);for(const B of L){if(A===B)continue;const pb=stPrice(B,k);if(pb<pa*TRADER_SPREAD)continue;
-      if(S.traders.some(t=>t.item===k&&t.to===B.sid))continue;const n=Math.min(Math.floor(sa*.5),Math.floor(90*BAL.aiEff/m),Math.ceil(locT(k)*.9));if(n<3)continue;const gain=(pb-pa)*n/(1+(HOP[A.sid][B.sid]||0));if(!best||gain>best.gain)best={k,A,B,n,pa,gain}}}}
+      if(S.traders.some(t=>t.item===k&&t.to===B.sid))continue;if(k==='au'&&A.owner==='neutral'&&B.owner==='neutral')continue;const n=Math.min(Math.floor(sa*.5),Math.floor(90*BAL.aiEff/m),Math.ceil(locT(k)*.9));if(n<3)continue;const gain=(pb-pa)*n/(1+(HOP[A.sid][B.sid]||0));if(!best||gain>best.gain)best={k,A,B,n,pa,gain}}}}
     if(!best)continue;const{k,A,B,n}=best,cost=Math.ceil(best.pa*1.06)*n,fund=S.econ.treasury[f]||0;if(A.owner==='neutral'&&fund<cost)continue;
     const src=mkStock(A);const got=inv.take(src,k,n);if(!got)continue;if(A.owner==='neutral')transfer(f,'neutral',Math.ceil(best.pa*1.06)*got);mkOf(A)[k]-=got;
     const path=trPath(A.sid,B.sid);const t={id:S.nextId++,side:f,item:k,n:got,from:A.sid,to:B.sid,path,leg:0,sector:A.sid,next:S.T+TRADER_HOP*.6,load:{[k]:got},cls:got*mass(k)>60?'bulker':'freighter',T0:S.T};S.traders.push(t);
