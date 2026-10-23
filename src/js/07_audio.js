@@ -65,6 +65,8 @@ function bridgeAmb(dt,F){if(W.beepT===undefined)W.beepT=20+Math.random()*40;W.be
 // the jump-drive whir is only for your own frigates: the one you're aboard, or one of yours close by (AI frigates spin up often and would drone on)
 function drumTick(e,p,dt){if(MUTE)return;const aboard=W&&W.bridge&&W.bridge.f===e;if(!aboard&&!(e.tok&&fMine(e.tok)))return;const v=aboard?1:vAt(e);if(v<.15)return;if(!AU.whirIn||v>AU.whirIn.v)AU.whirIn={p,v}}
 function vAt(p){if(!W||!p)return 1;const d=hyp(p.x-cam.x,p.y-cam.y,p.z-cam.z);return 1/(1+Math.pow(d/450,1.5))}
+// the same falloff measured from the pilot's own ship (the camera when there is none): blast mining is heard by how far you are from it
+function vPil(p){const q=W&&W.player&&W.player.alive?W.player:null;if(!q)return vAt(p);if(!p)return 1;const d=hyp(p.x-q.x,p.y-q.y,p.z-q.z);return 1/(1+Math.pow(d/450,1.5))}
 // every sound sits about five semitones lower than its source: clips play slower, synth tones above ~100 Hz are scaled down
 const PITCH=.75;function pl(f){return f>100?f*PITCH:f}
 function voice(dur){if(AU.voices>26)return false;AU.voices++;setTimeout(()=>AU.voices--,dur*1000+60);return true}
@@ -145,7 +147,7 @@ const SFX0={
   dockClank(i){if(!smp('clk1',.26,.7+.05*(i%2),0,.03)){thump(250+20*(i%2),180,.06,.05,'square');thump(78,42,.16,.1);rumble(500,.06,.05,1.6)}},
   dockSeal(){lowRumble(.7,95,45,.1);if(smp('clk2',.42,.62)){setTimeout(()=>hiss(1.1,.035),140);setTimeout(()=>sealTone(),550)}else{thump(54,22,.85,.32);rumble(200,.75,.26,.8,55);setTimeout(()=>hiss(1.2,.09),160);setTimeout(()=>{thump(784,780,.1,.05,'sine');setTimeout(()=>thump(1046,1042,.16,.05,'sine'),110)},700)}},
   dockAbort(){if(!smp('err',.4,1,0,0)){thump(330,160,.25,.07,'triangle');setTimeout(()=>thump(220,110,.3,.07,'triangle'),180)}},
-  crack(){if(smp('exB',.8,.8)){smp('sub1',.8,1);thump(150,40,.5,.15)}else{thump(150,40,.5,.24);rumble(900,.35,.22,1,180);setTimeout(()=>rumble(400,.6,.16,.8,90),90)}},
+  crack(v){v=v==null?1:v;if(v<.02)return;if(smp('exB',.8*v,.8)){smp('sub1',.8*v,1);thump(150,40,.5,.15*v)}else{thump(150,40,.5,.24*v);rumble(900,.35,.22*v,1,180);setTimeout(()=>rumble(400,.6,.16*v,.8,90),90)}},
   hatch(){smp('doorO',.4,.9)},
   rcs(){smp(['rcs1','rcs2'],.22,.8,0,.08)},
   dockScan(){scanPass()},

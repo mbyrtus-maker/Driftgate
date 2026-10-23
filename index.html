@@ -3259,6 +3259,8 @@ function bridgeAmb(dt,F){if(W.beepT===undefined)W.beepT=20+Math.random()*40;W.be
 // the jump-drive whir is only for your own frigates: the one you're aboard, or one of yours close by (AI frigates spin up often and would drone on)
 function drumTick(e,p,dt){if(MUTE)return;const aboard=W&&W.bridge&&W.bridge.f===e;if(!aboard&&!(e.tok&&fMine(e.tok)))return;const v=aboard?1:vAt(e);if(v<.15)return;if(!AU.whirIn||v>AU.whirIn.v)AU.whirIn={p,v}}
 function vAt(p){if(!W||!p)return 1;const d=hyp(p.x-cam.x,p.y-cam.y,p.z-cam.z);return 1/(1+Math.pow(d/450,1.5))}
+// the same falloff measured from the pilot's own ship (the camera when there is none): blast mining is heard by how far you are from it
+function vPil(p){const q=W&&W.player&&W.player.alive?W.player:null;if(!q)return vAt(p);if(!p)return 1;const d=hyp(p.x-q.x,p.y-q.y,p.z-q.z);return 1/(1+Math.pow(d/450,1.5))}
 // every sound sits about five semitones lower than its source: clips play slower, synth tones above ~100 Hz are scaled down
 const PITCH=.75;function pl(f){return f>100?f*PITCH:f}
 function voice(dur){if(AU.voices>26)return false;AU.voices++;setTimeout(()=>AU.voices--,dur*1000+60);return true}
@@ -3339,7 +3341,7 @@ const SFX0={
   dockClank(i){if(!smp('clk1',.26,.7+.05*(i%2),0,.03)){thump(250+20*(i%2),180,.06,.05,'square');thump(78,42,.16,.1);rumble(500,.06,.05,1.6)}},
   dockSeal(){lowRumble(.7,95,45,.1);if(smp('clk2',.42,.62)){setTimeout(()=>hiss(1.1,.035),140);setTimeout(()=>sealTone(),550)}else{thump(54,22,.85,.32);rumble(200,.75,.26,.8,55);setTimeout(()=>hiss(1.2,.09),160);setTimeout(()=>{thump(784,780,.1,.05,'sine');setTimeout(()=>thump(1046,1042,.16,.05,'sine'),110)},700)}},
   dockAbort(){if(!smp('err',.4,1,0,0)){thump(330,160,.25,.07,'triangle');setTimeout(()=>thump(220,110,.3,.07,'triangle'),180)}},
-  crack(){if(smp('exB',.8,.8)){smp('sub1',.8,1);thump(150,40,.5,.15)}else{thump(150,40,.5,.24);rumble(900,.35,.22,1,180);setTimeout(()=>rumble(400,.6,.16,.8,90),90)}},
+  crack(v){v=v==null?1:v;if(v<.02)return;if(smp('exB',.8*v,.8)){smp('sub1',.8*v,1);thump(150,40,.5,.15*v)}else{thump(150,40,.5,.24*v);rumble(900,.35,.22*v,1,180);setTimeout(()=>rumble(400,.6,.16*v,.8,90),90)}},
   hatch(){smp('doorO',.4,.9)},
   rcs(){smp(['rcs1','rcs2'],.22,.8,0,.08)},
   dockScan(){scanPass()},
@@ -4452,7 +4454,7 @@ function blDetonate(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]
       {const ks=Object.keys(secQ),parts=oreSplit(rel,ks.map(k=>secQ[k]));ks.forEach((pi,i)=>{const mine=cs.filter(c=>String(c.pi)===pi);let x=0,y=0,z=0;for(const c of mine){x+=c.x;y+=c.y;z+=c.z}x/=mine.length;y/=mine.length;z/=mine.length;
         let nx=x-at.x,ny=y-at.y,nz=z-at.z;const nl=hyp(nx,ny,nz)||1;nx/=nl;ny/=nl;nz/=nl;const t=oreTotal({ore:parts[i]}),cr=chunkR(t),sp=rnd(6,10);
         got+=blCloud(s,{x:x+nx*(cr+4),y:y+ny*(cr+4),z:z+nz*(cr+4)},parts[i],R0,extra,o,{x:nx*sp+rnd(-1,1),y:ny*sp+rnd(-1,1),z:nz*sp+rnd(-1,1)})})}}
-    if(!MUTE){fxBoom(at,R0*1.6,'#ffd9a0');SFX.crack&&SFX.crack()}
+    if(!MUTE){fxBoom(at,R0*1.6,'#ffd9a0');SFX.crack&&SFX.crack(vPil(at))}
     for(const x of W.ents.slice())if(x.type==='ship'&&x.alive){const d=d3(x,at);if(d<BL.blastR)damageShip(x,BL.chgDmg*cs.length*(1-d/BL.blastR)+5,e.side,at,'blast')}}
   blSay(P,got?`Blast! ${got} t ${Object.keys(by).some(id=>(mine.find(c=>String(c.a)===id)||{}).wp)?'of salvage':'of ore'} knocked loose. Fly into the chunks to scoop them.`:'Blast! Nothing came loose.')}
 function blCloud(s,at,ore,R0,extra,o,v,scrap){const t=oreTotal({ore});if(!t)return 0;s.clouds=s.clouds||[];const cr=chunkR(t);s.clouds.push({id:S.nextId++,chunk:1,scrap:scrap?1:undefined,cr,x:Math.round(at.x),y:Math.round(at.y),z:Math.round(at.z),vx:v?v.x:0,vy:v?v.y:0,vz:v?v.z:0,ore,r:cr+25,r0:cr+25,until:S.T+Math.max(30,BL.cloudLife-10*extra),o});return t}
@@ -4832,7 +4834,7 @@ function npcBlast(e,a,dt,s){const ai=e.ai,r=astR(a);let B=ai.bl;if(!B||B.a!==a.i
     steer(e,o.x,o.y,o.z,dt,true,.7);if(d3(e,q)<320||B.t>7){brake(e,dt);if(faceTo(e,q,dt)<.15&&(B.cd||0)<=W.t){B.cd=W.t+.8;B.fired++;(W.npcBl=W.npcBl||[]).push({x:e.x,y:e.y,z:e.z,tx:q.x,ty:q.y,tz:q.z,t:0,T:Math.max(.2,d3(e,q)/BL.spd)});B.pts.push({x:q.x,y:q.y,z:q.z});if(B.fired>=B.n){B.st='clear';B.t=0}}}else faceTo(e,o,dt);return}
   if(B.st==='clear'){const dx=e.x-a.x,dy=e.y-a.y,dz=e.z-a.z,l=hyp(dx,dy,dz)||1;steer(e,a.x+dx/l*(r+330),a.y+dy/l*(r+330),a.z+dz/l*(r+330),dt,true,.8);faceTo(e,a,dt);if(l>r+280||B.t>6){B.st='det';B.t=0}return}
   if(B.st==='det'){const got={},room=e.st.cargo-invMass(e.cargo);let m=0;while(e.mineAcc>=1){const k=mainOre(a);if(!k||m+mass(k)>room)break;e.mineAcc-=1;a.ore[k]--;if(!a.ore[k])delete a.ore[k];got[k]=(got[k]||0)+1;m+=mass(k)}
-    inv.addAll(e.cargo,got);const gone=oreTotal(a)<=0;for(const q of B.pts)fxBoom(q,Math.min(90,r*.9),'#ffd9a0');if(!MUTE&&W.player&&d3(e,W.player)<3000)SFX.crack();
+    inv.addAll(e.cargo,got);const gone=oreTotal(a)<=0;for(const q of B.pts)fxBoom(q,Math.min(90,r*.9),'#ffd9a0');if(!MUTE&&W.player&&d3(e,W.player)<3000)SFX.crack(vPil(e));
     const t=oreTotal({ore:got});if(t>0){const q=B.pts[0]||a,nx=q.x-a.x,ny=q.y-a.y,nz=q.z-a.z,nl=hyp(nx,ny,nz)||1,sp=rnd(6,10);(W.npcCh=W.npcCh||[]).push({id:S.nextId++,e,k:mainOre({ore:got})||'fe',cr:chunkR(t),x:q.x+nx/nl*8,y:q.y+ny/nl*8,z:q.z+nz/nl*8,vx:nx/nl*sp,vy:ny/nl*sp,vz:nz/nl*sp,until:W.t+14})}
     if(gone){removeAst(s,a);ai.ast=null}B.st='scoop';B.t=0;return}
   if(B.st==='scoop'){const c=(W.npcCh||[]).find(x=>x.e===e);if(!c||B.t>14){if(c)W.npcCh=W.npcCh.filter(x=>x!==c);ai.bl=null;return}const d=steer(e,c.x,c.y,c.z,dt,true,.6);faceTo(e,c,dt);
@@ -7355,7 +7357,7 @@ function npcBlSnap(w,m){const seen=new Set();
   const old=new Map((w.npcCh||[]).map(c=>[c.id,c])),out=[];
   for(const r of m.nc||[]){const e=w.pup[r[1]];if(!e)continue;let c=old.get(r[0]);
     if(!c){c={id:r[0],e,k:r[2],cr:r[3],x:r[4],y:r[5],z:r[6],until:1e12};const B=e.ai.bl;
-      inW(w,()=>{for(const q of(B&&B.pts.length?B.pts:[c]))fxBoom(q,40,'#ffd9a0');if(!MUTE&&w.player&&d3(e,w.player)<3000)SFX.crack()})}
+      inW(w,()=>{for(const q of(B&&B.pts.length?B.pts:[c]))fxBoom(q,40,'#ffd9a0');if(!MUTE&&w.player&&d3(e,w.player)<3000)SFX.crack(vPil(e))})}
     else{const k=.5;c.x+=(r[4]-c.x)*k;c.y+=(r[5]-c.y)*k;c.z+=(r[6]-c.z)*k}
     c.e=e;c.vx=r[7];c.vy=r[8];c.vz=r[9];out.push(c)}
   w.npcCh=out}

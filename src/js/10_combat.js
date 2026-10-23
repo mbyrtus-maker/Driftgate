@@ -171,7 +171,7 @@ function blDetonate(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]
       {const ks=Object.keys(secQ),parts=oreSplit(rel,ks.map(k=>secQ[k]));ks.forEach((pi,i)=>{const mine=cs.filter(c=>String(c.pi)===pi);let x=0,y=0,z=0;for(const c of mine){x+=c.x;y+=c.y;z+=c.z}x/=mine.length;y/=mine.length;z/=mine.length;
         let nx=x-at.x,ny=y-at.y,nz=z-at.z;const nl=hyp(nx,ny,nz)||1;nx/=nl;ny/=nl;nz/=nl;const t=oreTotal({ore:parts[i]}),cr=chunkR(t),sp=rnd(6,10);
         got+=blCloud(s,{x:x+nx*(cr+4),y:y+ny*(cr+4),z:z+nz*(cr+4)},parts[i],R0,extra,o,{x:nx*sp+rnd(-1,1),y:ny*sp+rnd(-1,1),z:nz*sp+rnd(-1,1)})})}}
-    if(!MUTE){fxBoom(at,R0*1.6,'#ffd9a0');SFX.crack&&SFX.crack()}
+    if(!MUTE){fxBoom(at,R0*1.6,'#ffd9a0');SFX.crack&&SFX.crack(vPil(at))}
     for(const x of W.ents.slice())if(x.type==='ship'&&x.alive){const d=d3(x,at);if(d<BL.blastR)damageShip(x,BL.chgDmg*cs.length*(1-d/BL.blastR)+5,e.side,at,'blast')}}
   blSay(P,got?`Blast! ${got} t ${Object.keys(by).some(id=>(mine.find(c=>String(c.a)===id)||{}).wp)?'of salvage':'of ore'} knocked loose. Fly into the chunks to scoop them.`:'Blast! Nothing came loose.')}
 function blCloud(s,at,ore,R0,extra,o,v,scrap){const t=oreTotal({ore});if(!t)return 0;s.clouds=s.clouds||[];const cr=chunkR(t);s.clouds.push({id:S.nextId++,chunk:1,scrap:scrap?1:undefined,cr,x:Math.round(at.x),y:Math.round(at.y),z:Math.round(at.z),vx:v?v.x:0,vy:v?v.y:0,vz:v?v.z:0,ore,r:cr+25,r0:cr+25,until:S.T+Math.max(30,BL.cloudLife-10*extra),o});return t}
@@ -551,7 +551,7 @@ function npcBlast(e,a,dt,s){const ai=e.ai,r=astR(a);let B=ai.bl;if(!B||B.a!==a.i
     steer(e,o.x,o.y,o.z,dt,true,.7);if(d3(e,q)<320||B.t>7){brake(e,dt);if(faceTo(e,q,dt)<.15&&(B.cd||0)<=W.t){B.cd=W.t+.8;B.fired++;(W.npcBl=W.npcBl||[]).push({x:e.x,y:e.y,z:e.z,tx:q.x,ty:q.y,tz:q.z,t:0,T:Math.max(.2,d3(e,q)/BL.spd)});B.pts.push({x:q.x,y:q.y,z:q.z});if(B.fired>=B.n){B.st='clear';B.t=0}}}else faceTo(e,o,dt);return}
   if(B.st==='clear'){const dx=e.x-a.x,dy=e.y-a.y,dz=e.z-a.z,l=hyp(dx,dy,dz)||1;steer(e,a.x+dx/l*(r+330),a.y+dy/l*(r+330),a.z+dz/l*(r+330),dt,true,.8);faceTo(e,a,dt);if(l>r+280||B.t>6){B.st='det';B.t=0}return}
   if(B.st==='det'){const got={},room=e.st.cargo-invMass(e.cargo);let m=0;while(e.mineAcc>=1){const k=mainOre(a);if(!k||m+mass(k)>room)break;e.mineAcc-=1;a.ore[k]--;if(!a.ore[k])delete a.ore[k];got[k]=(got[k]||0)+1;m+=mass(k)}
-    inv.addAll(e.cargo,got);const gone=oreTotal(a)<=0;for(const q of B.pts)fxBoom(q,Math.min(90,r*.9),'#ffd9a0');if(!MUTE&&W.player&&d3(e,W.player)<3000)SFX.crack();
+    inv.addAll(e.cargo,got);const gone=oreTotal(a)<=0;for(const q of B.pts)fxBoom(q,Math.min(90,r*.9),'#ffd9a0');if(!MUTE&&W.player&&d3(e,W.player)<3000)SFX.crack(vPil(e));
     const t=oreTotal({ore:got});if(t>0){const q=B.pts[0]||a,nx=q.x-a.x,ny=q.y-a.y,nz=q.z-a.z,nl=hyp(nx,ny,nz)||1,sp=rnd(6,10);(W.npcCh=W.npcCh||[]).push({id:S.nextId++,e,k:mainOre({ore:got})||'fe',cr:chunkR(t),x:q.x+nx/nl*8,y:q.y+ny/nl*8,z:q.z+nz/nl*8,vx:nx/nl*sp,vy:ny/nl*sp,vz:nz/nl*sp,until:W.t+14})}
     if(gone){removeAst(s,a);ai.ast=null}B.st='scoop';B.t=0;return}
   if(B.st==='scoop'){const c=(W.npcCh||[]).find(x=>x.e===e);if(!c||B.t>14){if(c)W.npcCh=W.npcCh.filter(x=>x!==c);ai.bl=null;return}const d=steer(e,c.x,c.y,c.z,dt,true,.6);faceTo(e,c,dt);

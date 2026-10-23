@@ -453,7 +453,7 @@ function npcBlSnap(w,m){const seen=new Set();
   const old=new Map((w.npcCh||[]).map(c=>[c.id,c])),out=[];
   for(const r of m.nc||[]){const e=w.pup[r[1]];if(!e)continue;let c=old.get(r[0]);
     if(!c){c={id:r[0],e,k:r[2],cr:r[3],x:r[4],y:r[5],z:r[6],until:1e12};const B=e.ai.bl;
-      inW(w,()=>{for(const q of(B&&B.pts.length?B.pts:[c]))fxBoom(q,40,'#ffd9a0');if(!MUTE&&w.player&&d3(e,w.player)<3000)SFX.crack()})}
+      inW(w,()=>{for(const q of(B&&B.pts.length?B.pts:[c]))fxBoom(q,40,'#ffd9a0');if(!MUTE&&w.player&&d3(e,w.player)<3000)SFX.crack(vPil(e))})}
     else{const k=.5;c.x+=(r[4]-c.x)*k;c.y+=(r[5]-c.y)*k;c.z+=(r[6]-c.z)*k}
     c.e=e;c.vx=r[7];c.vy=r[8];c.vz=r[9];out.push(c)}
   w.npcCh=out}
