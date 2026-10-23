@@ -132,7 +132,7 @@ function cvAmbush(e){const t=e.tradeT;if(!t)return;const Rs=S.stations[W.sid],ow
   if(!side){const L=FAC_IDS.filter(f=>hostile(t.side,f));side=L.length?pick(L):null}
   const g=(side&&spawnWing('raider',side,3,false))||spawnWing('pirate','pirate',3,false);if(!g)return;for(const m of grpAlive(g))m.ai.tgt=e;
   if(t.esc)keyFeed(t.esc.k,`⚠ Ambush! ${g.side==='pirate'?'Unbound':sideName(g.side)} raiders are going for the convoy you're escorting.`,'bad')}
-function haulLost(t,sid,by){cvEnd(t,false,sid);const s=S.sectors[sid],inv2={},rest={};for(const k in t.load){const m=Math.floor(t.load[k]*.5+Math.random()*.6);if(m>0)inv2[k]=m;if(t.load[k]-m>0)rest[k]=t.load[k]-m}t.load={};toDebris(s,rest);if(Object.keys(inv2).length){const o=rdir(.4);s.crates.push({id:S.nextId++,x:Math.round(o.x*1600),y:Math.round(o.y*300),z:Math.round(o.z*1600),inv:inv2,until:S.T+900})}
+function haulLost(t,sid,by){cvEnd(t,false,sid);shipLostFeed(t,sid);const s=S.sectors[sid],inv2={},rest={};for(const k in t.load){const m=Math.floor(t.load[k]*.5+Math.random()*.6);if(m>0)inv2[k]=m;if(t.load[k]-m>0)rest[k]=t.load[k]-m}t.load={};toDebris(s,rest);if(Object.keys(inv2).length){const o=rdir(.4);s.crates.push({id:S.nextId++,x:Math.round(o.x*1600),y:Math.round(o.y*300),z:Math.round(o.z*1600),inv:inv2,until:S.T+900})}
   if(friendSide(t.side))feed(`⚠ A ${FACTIONS[t.side].short} supply convoy was destroyed in ${DEF[sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(covered(sid))feed(`A ${FACTIONS[t.side].short} supply convoy was destroyed in ${DEF[sid].name}; some salvage is drifting there.`,'news')}
 // the per-tick logistics: depot industry, surplus ore home, and life support from the depot's own store
 function logiTick(){for(const id in S.stations){const R=S.stations[id];if(!isDepotF(R))continue;const f=R.owner,ds=dStore(R);
@@ -178,7 +178,23 @@ function traderArrive(t){if(t.kind==='haul'){haulArrive(t);return}const B=S.stat
   if(!trCanUse(t.side,B)){inv.addAll(S.econ.stock[t.side],t.load);t.load={};return}   // market gone or turned: the goods go home
   const pr=Math.max(1,Math.floor(stPrice(B,k)*.94));inv.add(mkStock(B),k,n);if(B.owner==='neutral')transfer('neutral',t.side,pr*n);mkOf(B)[k]+=n;t.load={};
   if(t.side===S.player.faction&&covered(t.to))feed(`${FACTIONS[t.side].short} trader delivered ${n} ${ITEMS[k].name} to ${B.name}.`,'news')}
-function haulArrive(t){const f=t.side;let into=null;cvEnd(t,true);
+// ---- shipping your own goods: from a dock with your vault, pay your faction to send a freighter for the goods in one of your
+// vaults elsewhere. It flies like any supply convoy (raidable, escortable from Jobs; a lost one spills half as salvage) and
+// unloads into the vault where you ordered it. The fee goes to the faction treasury.
+const SHIP_T=120,SHIP_BASE=60,SHIP_PER=2;   // tonnes per shipment, flat cr, cr per tonne per jump
+const shipFee=(m,j)=>Math.round(SHIP_BASE+SHIP_PER*m*Math.max(1,j));
+function shipLoad(inv0){const out={};let m=0;for(const k of Object.keys(inv0).filter(k=>inv0[k]>0).sort((a,b)=>baseValue(b)/mass(b)-baseValue(a)/mass(a))){const n=Math.min(inv0[k],Math.floor((SHIP_T-m)/mass(k)));if(n>0){out[k]=n;m+=n*mass(k)}}return out}
+function shipQuote(P,k){const to=vaultKey(P),src=P.vaults&&P.vaults[k],sid=vaultSid(k);if(!to||!src||!sid||k===to||!FAC_IDS.includes(P.faction)||S.unb)return null;if(!vaultOpen(k,P))return{why:vaultWhy(k,P)};
+  const load=shipLoad(src),m=invMass(load);if(!m)return null;const j=HOP[sid][P.sector]||0;return{load,m,j,fee:shipFee(m,j),all:m>=invMass(src)}}
+function shipOrder(P,k){const q=shipQuote(P,k);if(!q||q.why)return q&&q.why?`Can't ship from there: ${q.why}.`:'Nothing to ship.';if(P.credits<q.fee)return`Shipping costs ${fmt(q.fee)} cr.`;
+  const src=P.vaults[k];for(const i in q.load)inv.take(src,i,q.load[i]);if(!invMass(src))delete P.vaults[k];transfer('player',P.faction,q.fee);
+  const t=haulSend(P.faction,vaultSid(k),P.sector,q.load,'ship:'+S.nextId,`${P.name||'a pilot'}'s goods`,null);if(!t){inv.addAll(src,q.load);return'No route.'}t.own={k:pkey(),to:vaultKey(P),from:k};
+  return`✓ A ${FACTIONS[P.faction].short} freighter is bringing ${fmt(q.m)} t from ${vaultName(k)} (${q.j} jump${q.j===1?'':'s'}) for ${fmt(q.fee)} cr.${q.all?'':' That was a full load: order again for the rest.'} It can be raided on the way; pilots can escort it from Jobs.`}
+function shipArrive(t){const o=t.own,P=isMe(o.k)?S.player:S.pilots&&S.pilots[o.k];if(!P){inv.addAll(S.econ.stock[t.side]||S.econ.stock.pirate,t.load);t.load={};return}
+  const what=haulWhat(t);if(P.vaultAt===o.to)inv.addAll(P.vault,t.load);else{P.vaults=P.vaults||{};inv.addAll(P.vaults[o.to]=P.vaults[o.to]||{},t.load)}t.load={};
+  keyFeed(o.k,`📦 Your shipment reached your vault at ${vaultName(o.to)}: ${what}.`,'good')}
+function shipLostFeed(t,sid){if(t.own)keyFeed(t.own.k,`⚠ The freighter carrying your goods from ${vaultName(t.own.from)} was destroyed in ${DEF[sid].name}. Half the cargo is drifting there as salvage.`,'bad')}
+function haulArrive(t){const f=t.side;let into=null;cvEnd(t,true);if(t.own){shipArrive(t);return}
   if(t.car){const C=S.frigates.find(x=>x.id===t.car);if(C){C.store=C.store||{};into=C.store}}
   else{const B=S.stations[t.to];if(B&&B.owner===f)into=storeOf(B)}
   if(!into)into=S.econ.stock[f]||S.econ.stock.pirate;inv.addAll(into,t.load);t.load={}}
@@ -191,7 +207,7 @@ function spawnTrader(t,arrive){const e=makeNPC('trader',t.side,t.cls,1,t.load,`t
 function traderThink(e,dt){if(e.ambT&&W.t>e.ambT&&!NET.cl){e.ambT=0;cvAmbush(e)}const D=e.ai.dest,hit=W.t-e.lastHit<5;e.boosting=hit;if(e.ai.arrived){brake(e,dt);return}
   const d=steer(e,D.x,D.y,D.z,dt,true,hit?1.15:.8);faceTo(e,D,dt);e.thrusting=true;if(d<(D.type==='gate'?260:220)){e.ai.arrived=true;if(D.type==='gate')fxWarp(e,sideCol(e.side))}}
 function traderLost(e){const id=e.home.split(':')[1],t=(S.traders||[]).find(x=>String(x.id)===id);if(!t)return;S.traders=S.traders.filter(x=>x!==t);
-  if(t.kind==='haul'){cvEnd(t,false,W.sid);if(friendSide(e.side))feed(`⚠ A ${FACTIONS[e.side].short} supply convoy was destroyed in ${DEF[W.sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} supply convoy destroyed: half its hold is drifting free.`,'good');return}
+  if(t.kind==='haul'){cvEnd(t,false,W.sid);shipLostFeed(t,W.sid);if(friendSide(e.side))feed(`⚠ A ${FACTIONS[e.side].short} supply convoy was destroyed in ${DEF[W.sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} supply convoy destroyed: half its hold is drifting free.`,'good');return}
   if(friendSide(e.side))feed(`${FACTIONS[e.side].short} trader carrying ${ITEMS[t.item].name} was destroyed in ${DEF[W.sid].name}.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} trader destroyed: its ${ITEMS[t.item].name} is drifting free.`,'good')}
 function tradersEnRoute(P){return(S.traders||[]).filter(t=>t.side===P.faction||covered(t.sector))}
 // the trade screen: best runs between stations you have prices for, and the demand board for every friendly market

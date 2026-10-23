@@ -385,6 +385,11 @@ hidden. A tab with several views shows them as a second row; each tab remembers 
   treasury, delivered to the vault like any purchase. Fabricating one still works (2 Alloy Plate, 2 Conduit).
 - **A beacon weighs 12 t**, so every fighter (Light Fighter 14 t) can carry one. **Scouts can't**, whatever their hold:
   loading one into a Scout or Advanced Scout is refused, and a scout in an outpost's ring doesn't claim it.
+- **Shipping from a vault elsewhere** (`shipOrder`): docked where you have a vault, Trade → Vault and the Overview's goods
+  card offer **Ship here** on each of your other vaults at a friendly station or outpost. Your faction sends a real supply
+  freighter (`haulSend`, `t.own`) carrying up to 120 t (most valuable per tonne first), for 60 cr + 2 cr per tonne per jump
+  to its treasury. It flies like any supply convoy: raidable (half spills as salvage, the owner is told), listed in Jobs as
+  an escort job, and it unloads into the vault where you ordered it. Shipments under way show under the vault list.
 - Every in-game text names the new tabs (Jobs, Trade → Market, Ship → Systems, Station → Fabricate and so on).
 - Design mock-ups: the "Driftgate dock menu proposal" canvas. Still to come from it: the market's best-runs side panel.
 

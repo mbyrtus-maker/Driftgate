@@ -568,7 +568,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
           </div>
           <div>
             <div class="h3">Docked</div>
-            <p><b>The station screen</b> has five tabs on keys 1–5. <b>Overview</b> opens first and shows what you can do here right now: sell your hold, deliver to a contract, fit an upgrade, repair. <b>Trade</b> buys, sells and stores goods (your hold and vault side by side), with the best trade runs nearby. <b>Jobs</b> lists contracts, supply drives, the campaign and missions. <b>Ship</b> holds your systems, refits, your hangar and the shipyard. <b>Station</b> fabricates parts and builds station works. A dot on a tab marks something there you can act on now. Claim Beacons sell for credits at your own faction's stations.</p>
+            <p><b>The station screen</b> has five tabs on keys 1–5. <b>Overview</b> opens first and shows what you can do here right now: sell your hold, deliver to a contract, fit an upgrade, repair. <b>Trade</b> buys, sells and stores goods (your hold and vault side by side), with the best trade runs nearby. <b>Jobs</b> lists contracts, supply drives, the campaign and missions. <b>Ship</b> holds your systems, refits, your hangar and the shipyard. <b>Station</b> fabricates parts and builds station works. A dot on a tab marks something there you can act on now. Claim Beacons sell for credits at your own faction's stations. Goods in a vault elsewhere can be shipped to the vault where you are docked (Trade → Vault, Ship here): a faction freighter brings them for a fee, and it can be raided on the way.</p>
             <div class="h3">The closed economy</div>
             <p><b>Nothing is created.</b> Ferrite, Cuprite, Iridium and Xenocrystal exist as a fixed total mass. Mining moves ore from rocks into holds. Fabrication combines it into plates, conduit, coils, lattices and cores. Upgrades bolt those parts permanently into your ship.</p>
             <p><b>Nothing is destroyed.</b> Wrecked ships spill half their parts as salvage; the rest becomes debris, which drifts between sectors and slowly re-forms into new asteroids. Credits work the same way: every credit you earn left a faction treasury.</p>
@@ -1664,7 +1664,7 @@ function cvAmbush(e){const t=e.tradeT;if(!t)return;const Rs=S.stations[W.sid],ow
   if(!side){const L=FAC_IDS.filter(f=>hostile(t.side,f));side=L.length?pick(L):null}
   const g=(side&&spawnWing('raider',side,3,false))||spawnWing('pirate','pirate',3,false);if(!g)return;for(const m of grpAlive(g))m.ai.tgt=e;
   if(t.esc)keyFeed(t.esc.k,`⚠ Ambush! ${g.side==='pirate'?'Unbound':sideName(g.side)} raiders are going for the convoy you're escorting.`,'bad')}
-function haulLost(t,sid,by){cvEnd(t,false,sid);const s=S.sectors[sid],inv2={},rest={};for(const k in t.load){const m=Math.floor(t.load[k]*.5+Math.random()*.6);if(m>0)inv2[k]=m;if(t.load[k]-m>0)rest[k]=t.load[k]-m}t.load={};toDebris(s,rest);if(Object.keys(inv2).length){const o=rdir(.4);s.crates.push({id:S.nextId++,x:Math.round(o.x*1600),y:Math.round(o.y*300),z:Math.round(o.z*1600),inv:inv2,until:S.T+900})}
+function haulLost(t,sid,by){cvEnd(t,false,sid);shipLostFeed(t,sid);const s=S.sectors[sid],inv2={},rest={};for(const k in t.load){const m=Math.floor(t.load[k]*.5+Math.random()*.6);if(m>0)inv2[k]=m;if(t.load[k]-m>0)rest[k]=t.load[k]-m}t.load={};toDebris(s,rest);if(Object.keys(inv2).length){const o=rdir(.4);s.crates.push({id:S.nextId++,x:Math.round(o.x*1600),y:Math.round(o.y*300),z:Math.round(o.z*1600),inv:inv2,until:S.T+900})}
   if(friendSide(t.side))feed(`⚠ A ${FACTIONS[t.side].short} supply convoy was destroyed in ${DEF[sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(covered(sid))feed(`A ${FACTIONS[t.side].short} supply convoy was destroyed in ${DEF[sid].name}; some salvage is drifting there.`,'news')}
 // the per-tick logistics: depot industry, surplus ore home, and life support from the depot's own store
 function logiTick(){for(const id in S.stations){const R=S.stations[id];if(!isDepotF(R))continue;const f=R.owner,ds=dStore(R);
@@ -1710,7 +1710,23 @@ function traderArrive(t){if(t.kind==='haul'){haulArrive(t);return}const B=S.stat
   if(!trCanUse(t.side,B)){inv.addAll(S.econ.stock[t.side],t.load);t.load={};return}   // market gone or turned: the goods go home
   const pr=Math.max(1,Math.floor(stPrice(B,k)*.94));inv.add(mkStock(B),k,n);if(B.owner==='neutral')transfer('neutral',t.side,pr*n);mkOf(B)[k]+=n;t.load={};
   if(t.side===S.player.faction&&covered(t.to))feed(`${FACTIONS[t.side].short} trader delivered ${n} ${ITEMS[k].name} to ${B.name}.`,'news')}
-function haulArrive(t){const f=t.side;let into=null;cvEnd(t,true);
+// ---- shipping your own goods: from a dock with your vault, pay your faction to send a freighter for the goods in one of your
+// vaults elsewhere. It flies like any supply convoy (raidable, escortable from Jobs; a lost one spills half as salvage) and
+// unloads into the vault where you ordered it. The fee goes to the faction treasury.
+const SHIP_T=120,SHIP_BASE=60,SHIP_PER=2;   // tonnes per shipment, flat cr, cr per tonne per jump
+const shipFee=(m,j)=>Math.round(SHIP_BASE+SHIP_PER*m*Math.max(1,j));
+function shipLoad(inv0){const out={};let m=0;for(const k of Object.keys(inv0).filter(k=>inv0[k]>0).sort((a,b)=>baseValue(b)/mass(b)-baseValue(a)/mass(a))){const n=Math.min(inv0[k],Math.floor((SHIP_T-m)/mass(k)));if(n>0){out[k]=n;m+=n*mass(k)}}return out}
+function shipQuote(P,k){const to=vaultKey(P),src=P.vaults&&P.vaults[k],sid=vaultSid(k);if(!to||!src||!sid||k===to||!FAC_IDS.includes(P.faction)||S.unb)return null;if(!vaultOpen(k,P))return{why:vaultWhy(k,P)};
+  const load=shipLoad(src),m=invMass(load);if(!m)return null;const j=HOP[sid][P.sector]||0;return{load,m,j,fee:shipFee(m,j),all:m>=invMass(src)}}
+function shipOrder(P,k){const q=shipQuote(P,k);if(!q||q.why)return q&&q.why?`Can't ship from there: ${q.why}.`:'Nothing to ship.';if(P.credits<q.fee)return`Shipping costs ${fmt(q.fee)} cr.`;
+  const src=P.vaults[k];for(const i in q.load)inv.take(src,i,q.load[i]);if(!invMass(src))delete P.vaults[k];transfer('player',P.faction,q.fee);
+  const t=haulSend(P.faction,vaultSid(k),P.sector,q.load,'ship:'+S.nextId,`${P.name||'a pilot'}'s goods`,null);if(!t){inv.addAll(src,q.load);return'No route.'}t.own={k:pkey(),to:vaultKey(P),from:k};
+  return`✓ A ${FACTIONS[P.faction].short} freighter is bringing ${fmt(q.m)} t from ${vaultName(k)} (${q.j} jump${q.j===1?'':'s'}) for ${fmt(q.fee)} cr.${q.all?'':' That was a full load: order again for the rest.'} It can be raided on the way; pilots can escort it from Jobs.`}
+function shipArrive(t){const o=t.own,P=isMe(o.k)?S.player:S.pilots&&S.pilots[o.k];if(!P){inv.addAll(S.econ.stock[t.side]||S.econ.stock.pirate,t.load);t.load={};return}
+  const what=haulWhat(t);if(P.vaultAt===o.to)inv.addAll(P.vault,t.load);else{P.vaults=P.vaults||{};inv.addAll(P.vaults[o.to]=P.vaults[o.to]||{},t.load)}t.load={};
+  keyFeed(o.k,`📦 Your shipment reached your vault at ${vaultName(o.to)}: ${what}.`,'good')}
+function shipLostFeed(t,sid){if(t.own)keyFeed(t.own.k,`⚠ The freighter carrying your goods from ${vaultName(t.own.from)} was destroyed in ${DEF[sid].name}. Half the cargo is drifting there as salvage.`,'bad')}
+function haulArrive(t){const f=t.side;let into=null;cvEnd(t,true);if(t.own){shipArrive(t);return}
   if(t.car){const C=S.frigates.find(x=>x.id===t.car);if(C){C.store=C.store||{};into=C.store}}
   else{const B=S.stations[t.to];if(B&&B.owner===f)into=storeOf(B)}
   if(!into)into=S.econ.stock[f]||S.econ.stock.pirate;inv.addAll(into,t.load);t.load={}}
@@ -1723,7 +1739,7 @@ function spawnTrader(t,arrive){const e=makeNPC('trader',t.side,t.cls,1,t.load,`t
 function traderThink(e,dt){if(e.ambT&&W.t>e.ambT&&!NET.cl){e.ambT=0;cvAmbush(e)}const D=e.ai.dest,hit=W.t-e.lastHit<5;e.boosting=hit;if(e.ai.arrived){brake(e,dt);return}
   const d=steer(e,D.x,D.y,D.z,dt,true,hit?1.15:.8);faceTo(e,D,dt);e.thrusting=true;if(d<(D.type==='gate'?260:220)){e.ai.arrived=true;if(D.type==='gate')fxWarp(e,sideCol(e.side))}}
 function traderLost(e){const id=e.home.split(':')[1],t=(S.traders||[]).find(x=>String(x.id)===id);if(!t)return;S.traders=S.traders.filter(x=>x!==t);
-  if(t.kind==='haul'){cvEnd(t,false,W.sid);if(friendSide(e.side))feed(`⚠ A ${FACTIONS[e.side].short} supply convoy was destroyed in ${DEF[W.sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} supply convoy destroyed: half its hold is drifting free.`,'good');return}
+  if(t.kind==='haul'){cvEnd(t,false,W.sid);shipLostFeed(t,W.sid);if(friendSide(e.side))feed(`⚠ A ${FACTIONS[e.side].short} supply convoy was destroyed in ${DEF[W.sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} supply convoy destroyed: half its hold is drifting free.`,'good');return}
   if(friendSide(e.side))feed(`${FACTIONS[e.side].short} trader carrying ${ITEMS[t.item].name} was destroyed in ${DEF[W.sid].name}.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} trader destroyed: its ${ITEMS[t.item].name} is drifting free.`,'good')}
 function tradersEnRoute(P){return(S.traders||[]).filter(t=>t.side===P.faction||covered(t.sector))}
 // the trade screen: best runs between stations you have prices for, and the demand board for every friendly market
@@ -6092,12 +6108,14 @@ function vaultList(P){const out=[],add=(k,inv,here)=>{const m=invMass(inv);if(!(
   return out.sort((a,b)=>(b.here-a.here)||((a.hops??99)-(b.hops??99))||(b.m-a.m))}
 function vaultChips(inv,max=6){const ks=ITEM_ORDER.filter(k=>(inv[k]||0)>0);return ks.slice(0,max).map(k=>`<span style="white-space:nowrap">${sw(k)}${inv[k]} ${esc(ITEMS[k].name)}</span>`).join(' · ')+(ks.length>max?` · +${ks.length-max} more`:'')}
 function vaultsHtml(P){const L=vaultList(P).filter(v=>!v.here);let h=`<div class="h3" style="margin-top:20px">Stored elsewhere</div>`;
-  if(!L.length)return h+`<div class="empty">Nothing stored at other stations or outposts. Goods you store here stay here.</div>`;
+  if(!L.length)return h+`<div class="empty">Nothing stored at other stations or outposts. Goods you store here stay here.</div>`+shipsOnWay();
   const tm=L.reduce((a,v)=>a+v.m,0),tv=L.reduce((a,v)=>a+v.val,0);
   h+=`<p class="note" style="margin:0 0 8px">Your goods at other stations and outposts, nearest first: ${fmt(tm)} t worth about ${fmt(tv)} cr. To use them, fly there, load them into your hold and haul them.</p>`;
   h+=`<div class="tblw"><table class="t"><thead><tr><th>Where</th><th>Contents</th><th class="r">Mass</th><th class="r">Value</th><th class="r">Jumps</th><th></th></tr></thead><tbody>`;
-  for(const v of L){const sys=v.sid&&DEF[v.sid]?DEF[v.sid].name:'';h+=`<tr><td><b>${esc(vaultName(v.k))}</b><br><span class="mass" style="margin:0">${esc(sys)}${v.open?'':` · <span style="color:var(--red,#ff7a6b)">${esc(vaultWhy(v.k,P))}: you can't dock there</span>`}</span></td><td>${vaultChips(v.inv)}</td><td class="r num">${fmt(v.m)} t</td><td class="r num">${fmt(v.val)} cr</td><td class="r num">${v.hops??'—'}</td><td class="r">${v.sid&&v.sid!==P.sector&&v.open?`<button class="btn sm" data-act="vcourse" data-arg="${v.sid}">Set course</button>`:''}</td></tr>`}
-  return h+`</tbody></table></div>`}
+  for(const v of L){const sys=v.sid&&DEF[v.sid]?DEF[v.sid].name:'';h+=`<tr><td><b>${esc(vaultName(v.k))}</b><br><span class="mass" style="margin:0">${esc(sys)}${v.open?'':` · <span style="color:var(--red,#ff7a6b)">${esc(vaultWhy(v.k,P))}: you can't dock there</span>`}</span></td><td>${vaultChips(v.inv)}</td><td class="r num">${fmt(v.m)} t</td><td class="r num">${fmt(v.val)} cr</td><td class="r num">${v.hops??'—'}</td><td class="r"><div class="act" style="justify-content:flex-end">${(q=>q&&!q.why?`<button class="btn sm pri" data-act="shipv" data-arg="${v.k}" ${P.credits>=q.fee?'':'disabled'} title="A freighter brings ${fmt(q.m)} t here (${q.j} jump${q.j===1?'':'s'}); it can be raided on the way">Ship here · ${fmt(q.fee)} cr</button>`:'')(shipQuote(P,v.k))}${v.sid&&v.sid!==P.sector&&v.open?`<button class="btn sm" data-act="vcourse" data-arg="${v.sid}">Set course</button>`:''}</div></td></tr>`}
+  h+=`</tbody></table></div>`;
+  return h+shipsOnWay()}
+function shipsOnWay(){const me=pkey(),L2=(S.traders||[]).filter(t=>t.own&&t.own.k===me);if(!L2.length)return'';return`<div class="h3" style="margin-top:14px">Shipments on the way</div>`+L2.map(t=>{const ld=t.live?'goods':haulWhat(t)||'goods',n=Math.max(0,t.path.length-1-t.leg);return`<div class="note" style="margin:0 0 4px">📦 ${esc(ld)} · from ${esc(vaultName(t.own.from))} to ${esc(vaultName(t.own.to))} · now in ${esc(DEF[t.sector].name)}, ${n?`${n} jump${n===1?'':'s'} to go`:'arriving'}</div>`}).join('')}
 function vaultElsewhere(P){const L=Object.keys(P.vaults||{}).map(k=>[k,invMass(P.vaults[k])]).filter(x=>x[1]>0);return L.length?' You also have goods stored at: '+L.map(([k,m])=>`${esc(vaultName(k))} (${m} t)`).join(' · ')+'.':''}
 function dockCtx(){
   const P=S.player,d=DEF[P.sector];vaultSync(P);
@@ -6182,7 +6200,7 @@ function homeHtml(c,P,srcs,p){const cards=[],card=(t,val,body,btns)=>`<div class
     {const C=myCamp(),m=C&&C.mv;if(m)h+=`<div class="note" style="margin:4px 0 0">Campaign move: <b>${esc(m.title||'')}</b>.</div>`}
     h+=`</div>`}
   {const V=vaultList(P),here=V.find(v=>v.here),el=V.filter(v=>!v.here);h+=`<div class="rcard" style="margin-top:12px"><div class="h3" style="margin:0">Your goods</div><div class="kv"><span>${esc(c.storageName)} here</span><b>${fmt(here?here.m:invMass(c.storage))} t</b>`;
-    for(const v of el.slice(0,3))h+=`<span>${esc(vaultName(v.k))}${v.hops!=null?` · ${v.hops} jump${v.hops===1?'':'s'}`:''}</span><b>${fmt(v.m)} t</b>`;
+    for(const v of el.slice(0,3)){const q=shipQuote(P,v.k);h+=`<span>${esc(vaultName(v.k))}${v.hops!=null?` · ${v.hops} jump${v.hops===1?'':'s'}`:''}</span><b>${fmt(v.m)} t${q&&!q.why?` <button class="btn sm" data-act="shipv" data-arg="${v.k}" ${P.credits>=q.fee?'':'disabled'}>Ship here · ${fmt(q.fee)} cr</button>`:''}</b>`}
     if(!c.lair)h+=`<span>Hangar</span><b>${shipsCount(P)} / ${BAY_MAX} ships</b>`;h+=`</div></div>`}
   return h+`</div></div>`}
 function chip(k,need,have){return`<span class="req ${have>=need?'ok':'no'}">${need} ${esc(ITEMS[k].name)} <span style="opacity:.7">(${have})</span></span>`}
@@ -6306,6 +6324,7 @@ $('dock').addEventListener('click',e=>{
 function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.cargo,c.storage];if(act==='fence'){unbFence(arg);return}if(act==='work'){unbBuildWork(arg);return}if(act==='launder'){unbLaunder();return}if(act==='unbvar'){unbBuyVar(arg);return}if(act==='callcap'){const[k,sid]=String(arg).split(':');callCap(k,sid);return}if(act==='unbhull'){unbHull(arg);return}if(act==='fixer'){unbFixer(arg);return}
   if(act==='sell'&&S.unb&&c.owner==='neutral'){const k=String(arg).split(':')[0];if((P.stolen||{})[k]&&!(P.xpdr&&!((P.xpdrOut||0)>S.T))){dockErr='Stolen goods sell at a Freeport only under false colours (K).';return}}
   if(act==='sellhold'){let n=0,cr=0;const c0=P.credits;for(const k of holdSellable(c,P)){const q=P.cargo[k]||0;if(!q)continue;dockAction('sell',k+':'+q);n++}cr=P.credits-c0;if(!dockErr||dockErr.startsWith('✓'))dockErr=cr>0?`✓ Sold your hold for ${fmt(cr)} cr.`:'Nothing in your hold sells here.';return}
+  if(act==='shipv'){dockErr=shipOrder(P,arg);return}
   if(act==='buybeacon'){if(!claimSold(c,P))return;if(P.credits<CLAIM_PRICE){dockErr='Not enough credits.';return}transfer('player',c.wallet,CLAIM_PRICE);inv.add(c.storage,'beacon',1);dockErr=`✓ Bought a Claim Beacon for ${fmt(CLAIM_PRICE)} cr. It's in your ${c.storageName.toLowerCase()}: load it into your hold (it weighs ${mass('beacon')} t) and fly it into an outpost's ring.`;return}
   if(act==='buy'&&MUNITIONS.has(arg.split(':')[0]))return;
   if(act==='buy'&&FP_ONLY.has(arg.split(':')[0])&&c.owner!=='neutral'){dockErr=`${ITEMS[arg.split(':')[0]].name} is sold only at a Freeport Compact station.`}else if(act==='buy'){const[k,n]=arg.split(':');let got=0,spent=0;const pr0=mBuy(c,k),lot=lotCap(c,k,-1,Math.min(+n,c.market[k]||0)),capped=lot<Math.min(+n,c.market[k]||0);for(let i=0;i<lot;i++){const pr=pr0;if(!(c.market[k]>0)||P.credits<pr)break;transfer('player',c.wallet,pr);inv.take(c.market,k,1);inv.add(c.storage,k,1);got++;spent+=pr}{const R=mR(c);if(R&&got){mkOf(R)[k]=(R.mk[k]||0)-got*pMk()}}if(got){P.bought=P.bought||{};P.bought[k]=(P.bought[k]||0)+got;if(c.owner==='neutral'){const F=(P.fpBought=P.fpBought||{})[P.sector]=(P.fpBought||{})[P.sector]||{};F[k]=(F[k]||0)+got}}if(got)dockErr=`✓ Bought ${got} ${ITEMS[k].name} for ${fmt(spent)} cr.${capped?' That is all it sells at that price; the next lot goes at the new price.':''}`}
