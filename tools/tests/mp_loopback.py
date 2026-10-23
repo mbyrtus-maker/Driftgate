@@ -1,4 +1,4 @@
-# usage: python3 tools/mp_loopback.py index.html shot.png  (needs Playwright with Chromium)
+# usage: python3 tools/tests/mp_loopback.py index.html shot.png  (needs Playwright with Chromium)
 # loopback multiplayer harness: two pages, links faked over Playwright, the real host/client game code on both ends
 import asyncio,json,sys
 from playwright.async_api import async_playwright

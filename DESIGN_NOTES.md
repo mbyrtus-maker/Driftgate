@@ -1409,6 +1409,8 @@ version). Each share is ±4 points.
   then commit both).
 - `tools/prepublish.sh` pulls, runs the build check and a syntax check, and refuses to go on with uncommitted changes. Run it
   before pushing or publishing the artifact.
+- **Tests** live in `tools/tests/` (see its README): `tools/tests/run.sh` runs the quick set, `run.sh full` adds every
+  training course. `tools/old/` keeps the one-off patch scripts from before the split, for history only.
 - All code still lives in one closure at run time: the files are cut points, not modules, so names stay global to the game.
 
 ## Key rebinding and the keys strip (built)

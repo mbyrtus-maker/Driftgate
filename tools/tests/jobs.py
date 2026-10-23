@@ -1,12 +1,15 @@
 # Jobs list: filters, sort, selection, deliver from the detail panel; beacon 12 t, scouts can't load one
 import asyncio,json
 from playwright.async_api import async_playwright
-D='/tmp/claude-0/-home-claude/e4eb29fe-538d-5f56-aa4d-b952797c2573/scratchpad/'
+import os,tempfile
+# the game under test: index.html at the repo root, or a file named in DG_GAME; screenshots go to DG_OUT (default: temp dir)
+GAME='file://'+os.path.abspath(os.environ.get('DG_GAME',os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','index.html')))
+D=os.path.join(os.environ.get('DG_OUT',tempfile.gettempdir()),'')
 async def main():
   async with async_playwright() as p:
     b=await p.chromium.launch(args=['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']);pg=await b.new_page(viewport={'width':1400,'height':860});errs=[]
     pg.on('pageerror',lambda e:errs.append(str(e)))
-    await pg.goto('file://'+D+'driftgate.html?name=Tester',wait_until='domcontentloaded');await pg.wait_for_function('window.__dg&&__dg.ev("MDL.ready")',timeout=60000)
+    await pg.goto(GAME+'?name=Tester',wait_until='domcontentloaded');await pg.wait_for_function('window.__dg&&__dg.ev("MDL.ready")',timeout=60000)
     await pg.evaluate("document.getElementById('mpName').value='Tester'");await pg.evaluate("document.getElementById('bLaunch').click()");await pg.wait_for_timeout(1500)
     ev=lambda c:pg.evaluate('c=>__dg.ev(c)',c)
     print(await ev("""(()=>{const P=S.player,f=P.faction;P.mined=P.mined||{};inv.addAll(P.cargo,{ir:8});
