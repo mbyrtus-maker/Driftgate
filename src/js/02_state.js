@@ -315,8 +315,10 @@ function shipBare(R){const t=R.tune||{};return SLOTS.every(sl=>(R.tiers[sl.id]||
 // strip a ship back to Mk I: every part above Mk I and the Aurora tunings go into `into` (refits can't be removed and are lost)
 function shipStrip(R,into){for(const sl of SLOTS){const t=R.tiers[sl.id]||1;if(t>1){const a=compInv(sl.id,t),b=compInv(sl.id,1);for(const k in a){const n=a[k]-(b[k]||0);if(n>0)inv.add(into,k,n)}R.tiers[sl.id]=1}
     const l=(R.tune||{})[sl.id]||0;if(l){inv.add(into,'tune',tuneItems(l));R.tune[sl.id]=0}}if(R.tune&&R.tune.rf)R.tune.rf={};if(R.tune&&R.tune.vr){inv.addAll(into,vrInv(R));R.tune.vr={}}}
-// a fresh starter frame needs its Mk I components: the station's faction supplies them (with the free hull), your vault if it can't
-function issueKit(store,fac){const k=baseKit(),srcs=[fac&&S.econ.stock[fac],fac&&S.econ.fleet[fac],store].filter(Boolean);if(!haveIn(k,srcs))return false;takeFrom(k,srcs);return true}
+// a fresh starter frame needs its Mk I components: the station you're docked at supplies them from its own store (with the free
+// hull), then its faction's warehouse, then your own faction's, then your hold and vault
+function kitSrcs(store,fac,mkt){const P=S.player,pf=FAC_IDS.includes(P.faction)&&!S.unb?P.faction:null;return[mkt,fac&&S.econ.stock[fac],fac&&S.econ.fleet[fac],pf&&S.econ.stock[pf],P.cargo,store].filter((x,i,a)=>x&&a.indexOf(x)===i)}
+function issueKit(store,fac,mkt){const k=baseKit(),srcs=kitSrcs(store,fac,mkt);if(!haveIn(k,srcs))return false;takeFrom(k,srcs);return true}
 function shipsCount(P){return(P.ships||[]).length}
 function hullOwned(P,k){return START_HULLS.includes(k)}
 function stationName(owner,kind,sid){if(owner==='player')return`${DEF[sid].name} Depot`;if(owner==='neutral')return`${DEF[sid].name.split(' ')[0]} Freeport`;const F=FACTIONS[owner];if(kind==='core'||kind==='hive')return F.station;if(DEF[sid].home===owner)return F.depot;return owner==='brood'?`Bloom Node · ${DEF[sid].name}`:`${F.short} Depot · ${DEF[sid].name}`}
