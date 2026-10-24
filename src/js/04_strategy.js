@@ -214,7 +214,7 @@ function planOffensive(f){if(FACTIONS[f]&&f!=='brood'&&campBusy(f)){S.ai[f].next
   // the Brood hunts the strong: targets held by the faction with the most systems weigh up to 1.5x, the weakest down to 0.6x
   const bcc=f==='brood'?controlCounts():null,bmx=bcc?Math.max(1,...FAC_IDS.map(k=>bcc[k]||0)):1,bstr=ow=>!bcc||!FAC_IDS.includes(sideNorm(ow))?1:.6+.9*(bcc[sideNorm(ow)]||0)/bmx;
   for(const id in S.outposts){const o=S.outposts[id];if(o.owner===f||busy.has(id))continue;let w;
-    if(f==='pirate'&&o.owner==='brood')continue;if(f==='pirate')w=id==='wrack'?6:o.owner==='player'?2.2:o.owner?1:.4;
+    if(f==='pirate'&&o.owner==='brood')continue;if(f==='pirate'){if(id!=='wrack'&&!o.owner&&!RAID.pirHold)continue;w=id==='wrack'?6:o.owner==='player'?2.2:1}
     else if(f==='brood'){if(o.owner==='pirate')continue;w=(o.owner?1.6*bstr(o.owner):2.2)*bw(o.sector)}
     else{w=!o.owner?3:o.owner==='player'?2:o.owner==='brood'?3.4:o.owner==='pirate'?(id==='wrack'?.8:2):1.4;w*=adjOf(o.sector)?1.6:.3}
     c.push([{out:id},w])}

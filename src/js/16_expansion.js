@@ -356,7 +356,7 @@ function xOverlay(){if(!W||!W.player||!S||S.player.docked||W.dead||W.bridge||W.g
 // they came by and go for the freighter. Survivors carry their loot home (the rest of the cargo spills as salvage and debris).
 // The Unbound also hit depots on the edges of faction space; with a capital out they raid deep into faction frontiers.
 const RAID={hop:35,reach:2,reachHaven:3,reachCap:2,slack:30,wait:240,cool:150,rate:{fac:.009,brood:.005,pirate:.01,cap:.03},esc:.02,max:{fac:2,brood:1,pirate:3},
-  win:{freighter:.72,bulker:.62},depWin:.6,stnCut:.55,capCut:.35,carry:60,carryDep:60,lose:.35,keep:{wire:12},keepFor:['missile','drone','swarm','tune','torpedo'],liveDep:90};
+  win:{freighter:.72,bulker:.62},depWin:.6,stnCut:.55,capCut:.35,carry:60,carryDep:60,lose:.35,outMode:'loot',depMode:'loot',disrupt:900,keep:{wire:12},keepFor:['missile','drone','swarm','tune','torpedo'],liveDep:90};
 const PIR_OK0=new Set(SECTOR_DEFS.filter(d=>!d.home&&d.kind!=='hive').map(d=>d.id));
 // the three powers keep a reserve of conduit in the warehouse that munitions and extras won't eat into, so raiders and patrols can be fitted
 {const o=craftAbstract;craftAbstract=function(st,item){if(!RAID.keepFor.includes(item)||!S||!S.econ||!FAC_IDS.some(f=>f!=='brood'&&S.econ.stock[f]===st))return o.apply(this,arguments);const kp={};for(const k in RAID.keep){kp[k]=Math.min(st[k]||0,RAID.keep[k]);st[k]=(st[k]||0)-kp[k]}
@@ -463,3 +463,20 @@ function raidLiveCheck(r){const w=WORLDS[r.sector];const al=w?w.ents.filter(e=>e
 {const o=groupsUpdate;groupsUpdate=function(){const x=o.apply(this,arguments);try{if(!NET.cl&&S&&S.raids&&S.raids.length)raidLiveFrame()}catch(e){frameErr('raid frame',e)}return x}}
 {const o=openWorld;openWorld=function(sid){const w=o.apply(this,arguments);if(!NET.cl&&S&&S.raids)inW(w,()=>{for(const r of S.raids.slice()){if(r.sector!==sid)continue;if(r.live){r.live=false;if(!r.back.length){raidWipe(r,sid,null);continue}r.ships=r.back;r.back=[]}raidSpawn(r,false)}});return w}}
 {const o=migrate;migrate=function(){const r=o.apply(this,arguments);try{S.raids=S.raids||[];for(const x of S.raids){if(x.live){x.live=false;if(x.back&&x.back.length)x.ships=x.back}x.back=[]}}catch(e){}return r}}
+// ---- the Unbound raid, they don't hold: a forge, relay or depot they break is looted and left with its owner (the Wrack
+// Salvage Yard, their own home, is the one outpost they take and keep)
+function pirLootTo(got){const st=S.econ.stock.pirate,F=S.econ.fenced=S.econ.fenced||{};inv.addAll(st,got);for(const k in got)if(!RAWS.includes(k)&&!['plate','wire','coil','missile','torpedo','drone'].includes(k))F[k]=(F[k]||0)+got[k]}
+function pirRaidOutpost(o){const got=raidGrab(o.stock,120,.5);pirLootTo(got);o.raidT=S.T;if(RAID.outMode==='lvl'&&o.level>1){const lost={};for(const e of RAWS){const m=Math.floor(o.fort[e]/o.level);o.fort[e]-=m;lost[e]=m}toDebris(S.sectors[o.sector],lost);o.level--}if(RAID.outMode==='free'){pirLootTo(o.stock);o.stock={};o.owner=null}const os=oStats(o);o.hull=Math.max(1,Math.min(o.hull||os.hMax,os.hMax*.4));o.shield=0;o.breached=0;o.cap={side:null,p:0};
+  if(W&&W.outpostEnt&&W.outpostEnt.o===o)W.outpostEnt.lastHit=W.t;
+  if(friendSide(o.owner))feed(`⚠ Unbound raiders broke ${o.name}'s defences and carried off ${invMass(got)} t of its stores. It is still ours.`,'bad');else if(covered(o.sector))feed(`Unbound raiders looted ${o.name} (${invMass(got)} t) and moved on.`,'news')}
+function pirRaidDepot(sid){const R=S.stations[sid];if(!R)return;R.raidT=S.T;const got=raidGrab(dStore(R),120,.35);pirLootTo(got);R.hull=Math.max(1,R.hMax*.25);R.shield=0;
+  if(friendSide(R.owner))feed(`⚠ Unbound raiders broke into ${R.name} and carried off ${invMass(got)} t of its stores. It is still ours.`,'bad');else if(covered(sid))feed(`Unbound raiders looted ${R.name} (${invMass(got)} t).`,'news')}
+{const o=capture;capture=function(op,side){if(side==='pirate'&&op&&op.id!=='wrack'&&!RAID.pirHold){if(op.owner)pirRaidOutpost(op);return}return o.apply(this,arguments)}}
+{const o=captureDepot;captureDepot=function(sid,side){if(side==='pirate'&&!RAID.pirHold){pirRaidDepot(sid);return}return o.apply(this,arguments)}}
+{const o=razeStation;razeStation=function(sid,by){const R=S.stations[sid];if(by==='pirate'&&R&&R.kind==='depot'&&RAID.depMode!=='raze'&&!RAID.pirHold){pirRaidDepot(sid);return}return o.apply(this,arguments)}}
+// old saves: outposts the Unbound took before this rule go back to being unclaimed (their stores go to the haven)
+{const o=migrate;migrate=function(){const r=o.apply(this,arguments);try{for(const id in S.outposts){const op=S.outposts[id];if(id==='wrack'||op.owner!=='pirate')continue;pirLootTo(op.stock);op.stock={};op.owner=null;op.cap={side:null,p:0}}}catch(e){}return r}}
+{const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{icptTick()}catch(e){frameErr('interdiction',e)}return r}}
+// a system the Unbound have just sacked doesn't count toward its owner's hold for a while (RAID.disrupt seconds)
+function pirDisrupted(sid){const oid=OUT_BY_SECTOR[sid],o=oid&&S.outposts[oid],R=S.stations[sid],T=S.T-RAID.disrupt;return!!((o&&o.raidT>T&&o.owner&&sectorOwner(sid)===o.owner)||(R&&R.raidT>T&&sectorOwner(sid)===R.owner))}
+{const o=controlCounts;controlCounts=function(){const n=o.apply(this,arguments);if(RAID.disrupt>0)for(const d of SECTOR_DEFS){if(!pirDisrupted(d.id))continue;let w=sectorOwner(d.id);if(w==='player')w=S.player.faction;if(n[w])n[w]--}return n}}

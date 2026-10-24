@@ -580,7 +580,7 @@ function sideTitle(o){const sn=DEF[o.sector]?DEF[o.sector].name:'?';
 function sideHow(o){const sn=DEF[o.sector]?DEF[o.sector].name:'?',F=FACTIONS[o.f].short;
   switch(o.kind){case'recon':return o.st||o.out?`Fly to ${sn} and hold within 2 km of ${sideTgtName(o)}: 30 s on station between you all does it.`:`Fly to ${sn} and hold in the system: 30 s on station between you all does it.`;
     case'beacon':return`Flip and hold the beacons at ${o.sids.map(x=>DEF[x].name).join(' and ')} (a Scout, within ${BCN_R} m for ${BCN_T} s). Done when ${F} holds ${o.need===1?'it':'both'}.`;
-    case'interdict':return`Destroy ${o.need} ${FACTIONS[o.vs].short} supply freighters, anywhere (Jobs → Convoy raids lists them). Each pays its raid bounty too.`;
+    case'interdict':return`Destroy ${o.need} ${FACTIONS[o.vs].short} supply freighters, anywhere. Taking it sets a course to where you can catch the nearest one (convoys move a system every 45 s), and the course follows it. Each pays its raid bounty too.`;
     case'sabotage':return`Fly to ${sn} and knock ${o.need}% off ${sideTgtName(o)}'s hull. Bombers and torpedoes do it fastest.`;
     case'screen':return`Fly to ${sn} and hold there: 90 s of pilot time in the system does it.`;
     case'counter':return`Fly to ${sn} and fight when the ${sideAdj(o.att)} strike lands. Done if ${o.tgtName} holds.`;
@@ -641,9 +641,30 @@ function sideKill(e,sh,killer){const ks=Object.keys(sh);if(!ks.length&&killer)ks
 function sideBcn(sid,side,by){if(!by||!S.plans||!S.plans[side])return;for(const o of sideOf(S.plans[side]))if(o.stage==='active'&&o.kind==='beacon'&&o.sids.includes(sid))sideHelp(o,by,10)}
 // signing on from the orders card or the Jobs tab
 function sideTake(o){const k=pkey();if(!o.acc.includes(k)){if(NET.cl){netSend({t:'plan',id:o.id});o.acc.push(k);feed(`Signed on: ${o.title}. ${sideHow(o)}`,'good')}else sideAccept(k,o);SFX.count(true)}sideCourse(o)}
+// interdiction: the first system on a freighter's route you can reach before it leaves (about 40 s a jump for you, 45 s a
+// system for it), nearest first; never its faction's core
+const ICPT_HOP=40;
+function icptPick(vs,P){let best=null;for(const t of S.traders||[]){if(t.kind!=='haul'||sideNorm(t.side)!==vs)continue;const core=FAC_HOME(t.side),left=t.path.length-1-t.leg,eta0=Math.max(0,t.next-S.T);
+    for(let i=0;i<=left;i++){const c=t.path[t.leg+i];if(c===core)continue;const j=HOP[P.sector][c],tp=j*ICPT_HOP,leave=i===0?eta0:eta0+i*TRADER_HOP;if(tp>leave-10)continue;if(!best||tp<best.tp)best={t,c,j,tp};break}}return best}
+// no freighter catchable: the system on their lanes (current routes, the order's target system) that's best to wait in
+function icptLane(o,P){const sc={},core=FAC_HOME(o.vs);for(const t of S.traders||[]){if(t.kind!=='haul'||sideNorm(t.side)!==o.vs)continue;for(const c of t.path.slice(t.leg))if(c!==core)sc[c]=(sc[c]||0)+1}
+  if(o.sector&&o.sector!==core)sc[o.sector]=(sc[o.sector]||0)+1.5;let best=null,bs=-1e9;for(const c in sc){const v=sc[c]-.35*HOP[P.sector][c];if(v>bs){bs=v;best=c}}best=best||o.sector||P.sector;return{sid:best,n:Math.floor(sc[best]||0)}}
+function icptMark(o){if(!W||!W.player)return;const t=(S.traders||[]).find(x=>x.id===o.tgt);if(!t||t.sector!==W.sid)return;const e=W.ents.find(x=>x.alive&&x.tradeT===t);if(e&&(!W.tgt||W.tgt.kind==='gate'))W.tgt={kind:'ship',ref:e}}
+// each strategic tick: keep the course on the freighter you're after, or move it to the next one you can catch
+function icptTick(){const P=S.player;if(!P||!S.plans||!S.plans[P.faction])return;const me=pkey();
+  for(const o of sideOf(S.plans[P.faction])){if(o.stage!=='active'||o.kind!=='interdict'||!o.acc.includes(me)||!o.at)continue;const t=(S.traders||[]).find(x=>x.id===o.tgt);
+    if(t&&t.sector===P.sector){icptMark(o);continue}
+    if(o.lane){if(P.sector!==o.at&&P.route!==o.at){o.at=null;continue}const I=icptPick(o.vs,P);if(I){o.lane=0;o.tgt=I.t.id;o.at=I.c;if(I.c!==P.sector){P.route=I.c;if(W&&!P.docked&&apOn){const g=routeNext();if(g)W.tgt={kind:'gate',ref:g}}}
+        const gi=I.t.path[I.t.path.indexOf(I.c,I.t.leg)-1];feed(I.c===P.sector?`⚑ Interdiction: a ${FACTIONS[o.vs].short} freighter is inbound${gi&&gi!==I.c?' through the '+DEF[gi].name+' gate':''}, about ${Math.max(0,Math.round(I.t.next-S.T+(I.t.path.indexOf(I.c,I.t.leg)-I.t.leg-1)*TRADER_HOP))} s out.`:`⚑ Interdiction: a ${FACTIONS[o.vs].short} freighter you can catch: meet it in ${DEF[I.c].name}. Course set.`,'good')}continue}
+    const ok=t&&t.path.indexOf(o.at,t.leg)>=t.leg&&HOP[P.sector][o.at]*ICPT_HOP<=Math.max(0,t.next-S.T)+(t.path.indexOf(o.at,t.leg)-t.leg)*TRADER_HOP+5;if(ok)continue;
+    if(P.route!==o.at&&P.sector!==o.at){o.at=null;continue}   // the pilot has flown off elsewhere: stop steering them
+    const I=icptPick(o.vs,P);if(!I){const L=icptLane(o,P);o.lane=1;o.tgt=null;o.at=L.sid;if(L.sid!==P.sector){P.route=L.sid;if(W&&!P.docked&&apOn){const g=routeNext();if(g)W.tgt={kind:'gate',ref:g}}}feed(`Interdiction: that freighter got away. ${L.sid===P.sector?'Wait here on their supply lane':'Course set to '+DEF[L.sid].name+', on their supply lane'}; you'll be told when one is inbound.`,'warn');continue}
+    o.tgt=I.t.id;o.at=I.c;if(I.c!==P.sector){P.route=I.c;if(W&&!P.docked&&apOn){const g=routeNext();if(g)W.tgt={kind:'gate',ref:g}}}feed(`Interdiction: new intercept in ${DEF[I.c].name} (${FACTIONS[o.vs].short} freighter now in ${DEF[I.t.sector].name}).`,'info')}}
 function sideCourse(o){const P=S.player;let to=o.sector;
-  if(o.kind==='interdict'){const t=(S.traders||[]).filter(t=>t.kind==='haul'&&sideNorm(t.side)===o.vs).sort((a,b)=>HOP[P.sector][a.sector]-HOP[P.sector][b.sector])[0];if(t)to=t.sector}
-  if(!to)return;if(to===P.sector){flash(o.kind==='interdict'?'An enemy supply freighter is in this system: find it (T or Q).':'You are in the system for this order.');return}
+  if(o.kind==='interdict'){const I=icptPick(o.vs,P);
+    if(!I){const L=icptLane(o,P);o.tgt=null;o.at=L.sid;o.lane=1;to=L.sid;if(to!==P.sector)flash(`No ${FACTIONS[o.vs].short} freighter you can catch right now. Course set to ${DEF[to].name}, on their supply lane${L.n?` (${L.n} convoy${L.n>1?'s':''} routed through it)`:''}: wait there and you'll be told when one is inbound.`);else{flash(`Wait here, on the ${FACTIONS[o.vs].short} supply lane: you'll be told when a freighter is inbound.`);return}}
+    else{o.tgt=I.t.id;o.at=I.c;o.lane=0;to=I.c;if(to!==P.sector)flash(`Intercept: a ${FACTIONS[o.vs].short} freighter (${haulWhat(I.t)}) is in ${DEF[I.t.sector].name}, bound for ${DEF[I.t.to].name}. Meet it in ${DEF[to].name}, about ${I.j} jump${I.j===1?'':'s'} away.`)}}
+  if(!to)return;if(to===P.sector){if(o.kind==='interdict'){icptMark(o);flash(`The ${FACTIONS[o.vs].short} freighter ${S.traders.find(t=>t.id===o.tgt&&t.sector===P.sector)?'is in this system: it is targeted':'comes through this system: wait for it by the gate it uses'}.`)}else flash('You are in the system for this order.');return}
   P.route=to;if(W&&!P.docked){apOn=true;const g=routeNext();if(g)W.tgt={kind:'gate',ref:g};flash(`Course set to ${DEF[to].name}. Autopilot on: steer to take back control.`)}else flash(`Course set to ${DEF[to].name}. Undock and press J to fly it.`)}
 function campRes(f,P){P.res=P.res||{};const pk=P.next,m=P.mv;if(!pk||!m||!(m.kind==='mine'||m.kind==='haul'))return;const st=S.econ.stock[f],ld=loadout('patrol',factionTier(f),'striker'),want={};
   for(const k in ld)want[k]=ld[k]*(pk.kind==='build'?2:4);if(pk.kind==='build'){for(const k in FWD_COST)want[k]=(want[k]||0)+FWD_COST[k];for(const k in CONSTR_LD)want[k]=(want[k]||0)+CONSTR_LD[k]}
