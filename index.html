@@ -8086,10 +8086,13 @@ function pirDisrupted(sid){const oid=OUT_BY_SECTOR[sid],o=oid&&S.outposts[oid],R
 // Up to two offers at a time; pay comes out of the Unbound treasury, with Infamy on top.
 const UJOB={offers:2,life:240,icpt:{cr:300,val:.08,inf:30,T:420},mine:{cr:350,inf:25,need:2,T:420,hops:3},chance:.25};
 function ujobs(){return S.ujobs||(S.ujobs=[])}
-function icptFor(t,P){const left=t.path.length-1-t.leg,eta0=Math.max(0,t.next-S.T);for(let i=0;i<=left;i++){const c=t.path[t.leg+i],j=HOP[P.sector][c],tp=j*ICPT_HOP,leave=i===0?eta0:eta0+i*TRADER_HOP;if(tp<=leave-10)return{c,j}}return null}
-function ujobMinePick(P){const L=[];for(const f of FAC_IDS){if(f==='brood')continue;const T=territory(f);for(const sid of T){const d=DEF[sid];if(d.kind==='core'||!S.sectors[sid].ast.length)continue;const h=HOP[P.sector][sid];if(h>UJOB.mine.hops||ujobs().some(j=>j.sid===sid&&j.kind==='mine'))continue;L.push({f,sid,h})}}return L.length?pick(L):null}
+// haven jobs stay out of faction space: no home systems and no system with a faction depot or station (their guns)
+function ujobOk(sid){const R=S.stations[sid];return!DEF[sid].home&&DEF[sid].kind!=='hive'&&!(R&&FAC_IDS.includes(R.owner))}
+function icptFor(t,P,ok){const left=t.path.length-1-t.leg,eta0=Math.max(0,t.next-S.T);for(let i=0;i<=left;i++){const c=t.path[t.leg+i];if(ok&&!ok(c))continue;const j=HOP[P.sector][c],tp=j*ICPT_HOP,leave=i===0?eta0:eta0+i*TRADER_HOP;if(tp<=leave-10)return{c,j}}return null}
+// faction miners out in open space: the systems where a faction holds the outpost (forge) but no depot
+function ujobMinePick(P){const L=[];for(const f of FAC_IDS){if(f==='brood')continue;for(const id in S.outposts){const o=S.outposts[id],sid=o.sector;if(o.owner!==f||DEF[sid].kind!=='contested'||!ujobOk(sid)||!S.sectors[sid].ast.length)continue;const h=HOP[P.sector][sid];if(h>UJOB.mine.hops||ujobs().some(j=>j.sid===sid&&j.kind==='mine'))continue;L.push({f,sid,h})}}return L.length?pick(L):null}
 function ujobOffer(){const P=S.player,J=ujobs();if(J.filter(j=>!j.on).length>=UJOB.offers)return;
-  if(Math.random()<.55){let best=null;for(const f of FAC_IDS){if(f==='brood')continue;for(const t of S.traders||[]){if(t.kind!=='haul'||t.side!==f||J.some(j=>j.tgt===t.id))continue;const I=icptFor(t,P);if(!I||FAC_HOME(f)===I.c)continue;const v=invValue(t.load||{});if(v<60)continue;const sc=v/(1+I.j);if(!best||sc>best.sc)best={sc,t,I,v}}}
+  if(Math.random()<.55){let best=null;for(const f of FAC_IDS){if(f==='brood')continue;for(const t of S.traders||[]){if(t.kind!=='haul'||t.side!==f||J.some(j=>j.tgt===t.id))continue;const I=icptFor(t,P,ujobOk);if(!I)continue;const v=invValue(t.load||{});if(v<60)continue;const sc=v/(1+I.j);if(!best||sc>best.sc)best={sc,t,I,v}}}
     if(best){const t=best.t,pay=Math.round((UJOB.icpt.cr+best.v*UJOB.icpt.val)/10)*10;J.push({id:S.nextId++,kind:'icpt',f:t.side,tgt:t.id,at:best.I.c,v:best.v,pay,inf:UJOB.icpt.inf,until:S.T+UJOB.life,title:`Intercept: ${FACTIONS[t.side].short} supply convoy (${haulWhat(t)})`});return}}
   const m=ujobMinePick(P);if(m)J.push({id:S.nextId++,kind:'mine',f:m.f,sid:m.sid,need:UJOB.mine.need,n:0,pay:UJOB.mine.cr,inf:UJOB.mine.inf,until:S.T+UJOB.life,title:`Disrupt ${FACTIONS[m.f].short} mining in ${DEF[m.sid].name}`})}
 function ujobEnd(j,ok,why){const J=ujobs();J.splice(J.indexOf(j),1);if(!j.on)return;
@@ -8100,7 +8103,7 @@ function ujobTick(){if(!S||!S.unb||NET.cl||S.training)return;const P=S.player,J=
   for(const j of J.slice()){if(!j.on){if(S.T>j.until||(j.kind==='icpt'&&!(S.traders||[]).some(t=>t.id===j.tgt)))J.splice(J.indexOf(j),1);continue}
     if(j.kind==='icpt'){const t=(S.traders||[]).find(x=>x.id===j.tgt);if(!t){ujobEnd(j,false,'the convoy docked or was lost to someone else');continue}if(S.T>j.until){ujobEnd(j,false,'time ran out');continue}
       if(t.sector===P.sector){const e=W&&W.ents.find(x=>x.alive&&x.tradeT===t);if(e&&(!W.tgt||W.tgt.kind==='gate')&&!j.marked){j.marked=1;W.tgt={kind:'ship',ref:e};flash(`The ${FACTIONS[j.f].short} convoy is here: targeted.`)}continue}
-      const i=t.path.indexOf(j.at,t.leg),late=i<t.leg||HOP[P.sector][j.at]*ICPT_HOP>Math.max(0,t.next-S.T)+(i-t.leg)*TRADER_HOP+5;if(!late)continue;const I=icptFor(t,P);if(!I){ujobEnd(j,false,'it got past you');continue}
+      const i=t.path.indexOf(j.at,t.leg),late=i<t.leg||HOP[P.sector][j.at]*ICPT_HOP>Math.max(0,t.next-S.T)+(i-t.leg)*TRADER_HOP+5;if(!late)continue;const I=icptFor(t,P,ujobOk);if(!I){ujobEnd(j,false,'it got past you');continue}
       if(I.c!==j.at){j.at=I.c;if(P.route&&P.route!==P.sector){P.route=I.c;if(W&&!P.docked&&apOn){const g=routeNext();if(g)W.tgt={kind:'gate',ref:g}}}feed(`Job: the convoy moved on. New intercept in ${DEF[I.c].name}.`,'info')}}
     else if(S.T>j.until)ujobEnd(j,false,'time ran out')}
   if(Math.random()<UJOB.chance)ujobOffer()}
