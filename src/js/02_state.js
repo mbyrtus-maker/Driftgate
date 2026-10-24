@@ -123,7 +123,7 @@ function oresNoNu(d){if(!d.ores.nu)return d.ores;const o={...d.ores};delete o.nu
 const STN={fdepot:{sMax:1200,hMax:2500,tur:2,dmg:11,range:1200},free:{sMax:3600,hMax:10000,tur:6,dmg:16,range:1500},core:{sMax:3200,hMax:9000,tur:6,dmg:15,range:1500},depot:{sMax:2000,hMax:4000,tur:4,dmg:12,range:1300},hive:{sMax:4200,hMax:14000,tur:6,dmg:18,range:1600}};
 // balance levers, tuned by simulation so each of the four powers (the Brood included) wins about a quarter of galaxies
 // (tuned for the 2-hour deadline and the 20-minute hold over 18 rounds of simulated galaxies)
-const BAL={carFab:14,carAsk:30,hiveRegrow:240,aiEff:.7,brBuild:1.15,brOff:1.1,brLevT:3300,brN:1,brHive:4,antiBrood:2.8,halProsp:.5,halImp:.08,brGraze:1,coal:.35,devGap:1,ext:{halcyon:.69,varkesh:1.22,ostrova:1.05}};   // ext: each faction's station mining rate
+const BAL={carFab:14,carAsk:30,hiveRegrow:240,aiEff:.7,brBuild:1.15,brOff:1.1,brLevT:3300,brN:1,brHive:4,antiBrood:2.8,halProsp:.5,halImp:.08,brGraze:1,coal:.35,devGap:1,ext:{halcyon:.69,varkesh:1.18,ostrova:1.05}};   // ext: each faction's station mining rate
 const CAP_SEAL={yard:2,carrier:3,escort:1},sealed=f=>f!=='brood'&&f!=='pirate',withSeal=(C,f,n)=>sealed(f)?{...C,seal:n}:C;
 const yardCost=f=>withSeal(YARD_COST,f,CAP_SEAL.yard),escCost=f=>withSeal(ESCORT_COST,f,CAP_SEAL.escort);
 const DEPOT_COST={frame:2},YARD_COST={frame:4,keel:4,lattice:4,plate:40},YARD_FEE=5000,YARD_TIME=180,FRIGATE_TIME=150;   // FRIGATE_TIME: a carrier's time in the slip (the 'frigbuild' event name is kept for old saves)
@@ -219,7 +219,11 @@ function wingLose(t,s){if(!t.wing||!t.wing.length)return;const c=t.wing.splice(M
 // then the survivors come back through the gate and rejoin the wing. Their kits ride with the sortie (ev.force).
 const SORTIE={transit:15,time:180,back:15};
 function sortieOf(t){return(S.events||[]).find(v=>v.type==='sortie'&&v.car===t.id&&v.stage!=='done')}
-function crPow(c){return isBmb(c)?1.6:c==='heavy'?1.2:1}
+// off-screen fighting strength per hull, from AI duels between average pilots (Oct 2026): the Heavy wins most fights, the Medium
+// beats the Light, bombers lose most dogfights. Carrier strikes on capital ships (crPow) still count bombers high for their torpedoes.
+const CLS_POW={interceptor:.85,striker:1,heavy:1.18,bomber:.92,gunboat:.9};
+function clsF(list){if(!list||!list.length)return 1;let s=0;for(const c of list)s+=CLS_POW[c]||1;return s/list.length}
+function crPow(c){return isBmb(c)?1.6:c==='heavy'?1.2:c==='interceptor'?.85:1}
 function sortieSide(ev){return sideNorm(ev.side)}
 function sortieTgtName(ev){if(ev.tgt==='st'){const Rs=S.stations[ev.to];return Rs?Rs.name:'the station'}const o=(S.frigates||[]).find(x=>'c'+x.id===ev.tgt);return o?o.name:'the target'}
 function sortieTgtLive(ev){const sd=sortieSide(ev);if(ev.tgt==='st')return hostileStationAt(ev.to,sd);const o=(S.frigates||[]).find(x=>'c'+x.id===ev.tgt);return!!o&&o.sector===ev.to&&hostile(sd,o.side)}
@@ -262,7 +266,7 @@ function sortieTick(){for(const ev of S.events){if(ev.type!=='sortie'||ev.stage=
     const broken=ev.craft.length*2<=(ev.n0||1);
     if(S.T>=ev.until||!sortieTgtLive(ev)||!t||broken){if(w&&ev.spawned)inW(w,()=>{for(const e of W.ents.slice())if(e.sortieEv===ev.id&&e.alive){fxWarp(e,sideCol(e.side));despawn(e)}});ev.spawned=0;ev.stage='back';ev.until=S.T+SORTIE.back;
       sortieFeed(ev,!sortieTgtLive(ev)?`Strike on ${DEF[ev.to].name}: target down. The craft are heading back.`:broken?`Strike on ${DEF[ev.to].name}: half the craft are lost. The rest are breaking off.`:`Strike on ${DEF[ev.to].name} is over; the craft are heading back.`,broken?'warn':'info')}}}
-function wingPower(t){let p=0;for(const c of t.wing||[])p+=isBmb(c)?1.6:c==='heavy'?1.2:1;return p}
+function wingPower(t){let p=0;for(const c of t.wing||[])p+=crPow(c);return p}
 // garrisons: assault loads needed to take a structure (never more than 3, so a full carrier or 3 ships in flight always suffice)
 function garrison(R){if(!R||R.kind!=='depot')return 99;if(R.fwd)return 1;const d=devOf(R);return Math.min(3,1+((d.def||0)>=2?1:0)+((d.hangar||0)>=2?1:0))}
 // assault loads a side can bring to a system: capitals in it, and carriers standing off next door with it as their target
@@ -322,6 +326,7 @@ function canBuildIn(sid,side){const d=DEF[sid];if(S.stations[sid]||d.kind==='hiv
 function yardHome(f){return f==='brood'?'bl':FAC_HOME(f)}   // the Brood grow their Leviathans at the Bloom
 function FAC_HOME(f){return SECTOR_DEFS.find(d=>d.home===f&&d.kind==='core').id}
 function newGame(fac,cls,pname){
+  WORLDS={};LW=null;W=null;   // worlds left open from a previous galaxy would hand their ships' cargo to the new one when closed
   S={v:2,nuV:1,T:0,nextId:1,sectors:{},outposts:{},econ:{stock:{},treasury:{},fleet:{}},events:[],contracts:[],gateDown:{},ai:{},timers:{tick:2,event:35,contract:12},tollAcc:0,
     player:{faction:fac,cls,hullInv:{},bay:{drone:CLASSES[cls].drones||0},tiers:{engine:1,power:1,shield:1,weapon:1,armor:1,drill:1,cargo:1,payload:1},cargo:{},vault:{plate:6,wire:6},rack:rackCapC(cls,1),magV:1,swarm:(CLASSES[cls]&&CLASSES[cls].swarm)||0,wpn:'kinetic',credits:1800,sector:FAC_HOME(fac),docked:'station',x:0,y:0,z:0,vx:0,vy:0,vz:0,q:[0,0,0,1],hull:0,shield:0,energy:0,fa:true,kills:0,tune:{}}};
   for(const d of SECTOR_DEFS)S.sectors[d.id]=genSector(d);

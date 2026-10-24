@@ -1,5 +1,5 @@
 # Fast balance runner: loads the game once per worker page and plays strategic-only games back to back in-page.
-# usage: python3 fastsim.py FILE GAMES [HOURS=2.2] [TUNE_JS_FILE] [WORKERS=2] [OUT.json]
+# usage: [PFAC=varkesh] python3 fastsim.py FILE GAMES [HOURS=2.2] [TUNE_JS_FILE] [WORKERS=2] [OUT.json]
 import asyncio,json,sys,time,collections
 from playwright.async_api import async_playwright
 D='/tmp/claude-0/-home-claude/e4eb29fe-538d-5f56-aa4d-b952797c2573/scratchpad/'
@@ -7,16 +7,18 @@ FILE=sys.argv[1];GAMES=int(sys.argv[2]);H=float(sys.argv[3]) if len(sys.argv)>3 
 TUNE=open(sys.argv[4]).read() if len(sys.argv)>4 and sys.argv[4] not in('','-') else ''
 WORKERS=int(sys.argv[5]) if len(sys.argv)>5 else 2;OUT=sys.argv[6] if len(sys.argv)>6 else None
 SETUP=r"""(()=>{window._fs={won:null};galaxyWon=function(s,how){_fs.won=[Math.round(S.T/60),s,how||'hold'];S.won=s};
- window._fsGame=function(maxT,keep){if(!keep){FEED.length=0;newGame('halcyon',launchCls(),'Tester');S.player.name='Tester';startWith(S)}running=false;exitSector();W=null;_fs.won=null;const peak={};
+ window._fsGame=function(maxT,keep){if(!keep){FEED.length=0;for(const k of Object.keys(WORLDS))delete WORLDS[k];W=null;newGame(__PFN__,launchCls(),'Tester');S.player.name='Tester';if(__PF__==='pirate'){S.unb=1;unbP();S.player.cls='raider'}startWith(S)}running=false;exitSector();W=null;_fs.won=null;const peak={};
   while(S.T<maxT&&!_fs.won){S.T+=10;strategicTick();updateEvents();if(S.T%600===0){const n=controlCounts();for(const k in n)peak[k]=Math.max(peak[k]||0,n[k])}}
   return JSON.stringify({won:_fs.won||[Math.round(S.T/60),'none','unfinished'],peak})};
- window._fsStart=function(keep){if(!keep){FEED.length=0;newGame('halcyon',launchCls(),'Tester');S.player.name='Tester';startWith(S)}running=false;exitSector();W=null;_fs.won=null;window._pk={};return 1};
+ window._fsStart=function(keep){if(!keep){FEED.length=0;for(const k of Object.keys(WORLDS))delete WORLDS[k];W=null;newGame(__PFN__,launchCls(),'Tester');S.player.name='Tester';if(__PF__==='pirate'){S.unb=1;unbP();S.player.cls='raider'}startWith(S)}running=false;exitSector();W=null;_fs.won=null;window._pk={};return 1};
  window._fsChunk=function(maxT,n){for(let i=0;i<n&&S.T<maxT&&!_fs.won;i++){S.T+=10;strategicTick();updateEvents()}const c=controlCounts();for(const k in c)_pk[k]=Math.max(_pk[k]||0,c[k]);return(_fs.won||S.T>=maxT)?JSON.stringify({won:_fs.won||[Math.round(S.T/60),'none','unfinished'],peak:_pk}):''};return 1})()"""
 import os
 RELOAD=os.environ.get('RELOAD')=='1'
+PF=os.environ.get('PFAC','halcyon')   # the player's side: halcyon, varkesh, ostrova or pirate (an Unbound captain)
+SETUP=SETUP.replace('__PFN__',repr('halcyon' if PF=='pirate' else PF)).replace('__PF__',repr(PF))
 async def boot(pg):
   await pg.goto('file://'+D+FILE+'?name=Tester',timeout=180000,wait_until='domcontentloaded');await pg.wait_for_function('window.__dg&&__dg.ev("MDL.ready")',timeout=60000)
-  await pg.evaluate("selFac='halcyon';document.getElementById('bLaunch').click()");await pg.wait_for_timeout(800)
+  await pg.evaluate("selFac=%s;document.getElementById('bLaunch').click()"%repr('halcyon' if PF=='pirate' else PF));await pg.wait_for_timeout(800)
   if TUNE:await pg.evaluate('c=>__dg.ev(c)',TUNE+';1')
   await pg.evaluate('c=>__dg.ev(c)',SETUP)
   if os.environ.get('CC')=='1':await pg.evaluate('c=>__dg.ev(c)',"(()=>{const st=strategicTick;strategicTick=function(){st.apply(this,arguments);controlCounts()};return 1})()")
