@@ -168,7 +168,7 @@ const FACTIONS={
 };
 FACTIONS.brood={name:'The Vael Brood',short:'Brood',col:'#9be35a',fill:'#14200c',trait:{hull:1.5,shield:.6,energy:1.1},traitText:'Hull +50% and regrows · Shields −40%',blurb:'Something grown, not built. It eats ore, and it eats stations.',
   hulls:{interceptor:'Skitter',striker:'Thresher',heavy:'Carapace',bomber:'Sporemaw',prospector:'Grazer',freighter:'Gorger',drone:'Mite',skiff:'Nibbler',frigate:'Leviathan',escort:'Prowler',picket:'Spawnling',dredger:'Devourer',courier:'Crawler',bulker:'Bloater',constructor:'Seeder',scout:'Watcher',scout2:'Stalker'},station:'Bloom Heart',depot:'Bloom Node',shot:'spore',bio:true};
-const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',shot:'scrap',hulls:{raider:'Raider',corsair:'Corsair',plunderer:'Plunderer',gunboat:'Raker',interceptor:'Dart',striker:'Cutter',heavy:'Brute',bomber:'Wrecker',prospector:'Gouger',freighter:'Scow',drone:'Junk Drone',skiff:'Scrounger',frigate:'Destroyer',picket:'Gnat',dredger:'Grinder',courier:'Smuggler',bulker:'Hulk',constructor:'Rigger',scout:'Sneak',scout2:'Ghost'}};
+const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',shot:'scrap',hulls:{raider:'Raider',corsair:'Corsair',plunderer:'Plunderer',uskiff:'Skiff',gunboat:'Raker',interceptor:'Dart',striker:'Cutter',heavy:'Brute',bomber:'Wrecker',prospector:'Gouger',freighter:'Scow',drone:'Junk Drone',skiff:'Scrounger',frigate:'Destroyer',picket:'Gnat',dredger:'Grinder',courier:'Smuggler',bulker:'Hulk',constructor:'Rigger',scout:'Sneak',scout2:'Ghost'}};
 const PLAYER_COL='#f0b24a';
 const CLASSES={
   interceptor:{name:'Light Fighter',hull:86,shield:.85,speed:1.32,turn:3.45,weapon:1.05,cargo:14,drill:0,radius:12,rack:.75,boost:1.25,agile:1.45,acc:1.38,bcost:.7,desc:'Fastest and most agile: quickest acceleration, cheap afterburner, best at shaking missiles. Light armour.'},
@@ -197,7 +197,8 @@ const CLASSES={
 {const B=(k,o)=>Object.assign({},CLASSES[k],{swarm:0,radar:false},o);
   CLASSES.raider=B('interceptor',{name:'Raider',hull:85,shield:.85,speed:1.25,turn:2.95,cargo:40,acc:(CLASSES.interceptor.acc||1)*.85,agile:(CLASSES.interceptor.agile||1)*.85,radar:true,jamK:1,desc:'Unbound light hull: the crew\'s eyes. Scout radar, 40 t hold.'});
   CLASSES.corsair=B('striker',{name:'Corsair',hull:120,shield:1,speed:1.1,turn:2.5,cargo:70,acc:(CLASSES.striker.acc||1)*.85,agile:(CLASSES.striker.agile||1)*.85,jamK:1.3,desc:'Unbound medium hull: the muscle, with the best jammers. 70 t hold.'});
-  CLASSES.plunderer=B('heavy',{name:'Plunderer',hull:180,shield:1.25,speed:.86,turn:1.55,cargo:110,acc:(CLASSES.heavy.acc||1)*.8,agile:(CLASSES.heavy.agile||1)*.8,jamK:1,desc:'Unbound heavy hull: the cargo hold. 110 t.'})}
+  CLASSES.plunderer=B('heavy',{name:'Plunderer',hull:180,shield:1.25,speed:.86,turn:1.55,cargo:110,acc:(CLASSES.heavy.acc||1)*.8,agile:(CLASSES.heavy.agile||1)*.8,jamK:1,desc:'Unbound heavy hull: the cargo hold. 110 t.'});
+  CLASSES.uskiff=B('scout',{name:'Skiff',hull:70,shield:.8,speed:1.62,cargo:35,radar:true,jamK:1.1,desc:'Unbound scout: fast, a 35 t hold, jammers and scout radar. Flips sector beacons for the Unbound outside faction home systems (hold within 250 m).'})}
 const UNB_CLS={interceptor:'raider',striker:'corsair',heavy:'plunderer',bomber:'corsair',gunboat:'plunderer'};
 const CLS_IDS=['interceptor','striker','heavy','bomber','skiff','prospector','dredger','courier','freighter','bulker','scout','scout2'],YARD_IDS=[...CLS_IDS,'gunboat'];   // constructors are AI-only: call one in through comms
 const FIGHTERS=['interceptor','striker','heavy','bomber'];
@@ -325,7 +326,7 @@ function cloudSeek(e,dt){const s=S.sectors[W.sid],ai=e.ai;if(!s.clouds||!s.cloud
   return true}
 
 // ============================================================ Unbound mode (stage 2, solo): fly for the pirates
-const UNB_HULLS=['raider','corsair','plunderer'],UNB_PRICE={raider:0,corsair:2600,plunderer:5000};
+const UNB_HULLS=['raider','uskiff','corsair','plunderer'],UNB_PRICE={raider:0,uskiff:1800,corsair:2600,plunderer:5000};
 const UNB_RANKS=[['Nuisance',0],['Cutthroat',200],['Buccaneer',600],['Dread Captain',1500],['Pirate King',3000]];
 const HEAT_BANDS=[['Cool',0],['Warm',25],['Hot',50],['Wanted',75]];
 const UNB_HEAT={mercy:2,take:4,killCiv:8,killMil:3,blown:10,cool:1/60,coolQuiet:2/60};

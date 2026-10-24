@@ -178,7 +178,7 @@ function tradersTick(){if(NET.cl)return;S.traders=S.traders||[];for(const f of F
     if(WORLDS[t.sector])inW(WORLDS[t.sector],()=>spawnTrader(t,false))}
   // travel: one jump per leg; while a trader is flying in an open system it finishes its leg there first
   for(let i=S.traders.length-1;i>=0;i--){const t=S.traders[i];
-    if(t.live){const w=WORLDS[t.sector],e=w&&w.ents.find(x=>x.alive&&x.home===`trader:${t.id}:${t.side}`);if(!e){t.live=false}else if(!e.ai.arrived){t.next=Math.max(t.next,S.T+10);continue}else{inW(w,()=>{returnHome(e);despawn(e)});t.live=false}}
+    if(t.live){const w=WORLDS[t.sector],e=w&&w.ents.find(x=>x.alive&&x.home===`trader:${t.id}:${t.side}`);if(!e){t.live=false}else if(!e.ai.arrived||inW(w,()=>gateLocked(e))){t.next=Math.max(t.next,S.T+10);continue}else{inW(w,()=>{returnHome(e);despawn(e)});t.live=false}}
     if(S.T<t.next)continue;
     if(t.kind==='haul'&&t.car){const C=S.frigates.find(x=>x.id===t.car);if(C&&C.sector!==t.to){t.to=C.sector;t.path=trPath(t.sector,t.to);t.leg=0}}
     if(t.leg>=t.path.length-1){traderArrive(t);S.traders.splice(i,1);continue}
@@ -219,7 +219,7 @@ function spawnTrader(t,arrive){const e=makeNPC('trader',t.side,t.cls,1,t.load,`t
   e.x=start.x;e.y=start.y;e.z=start.z;const dest=gout?W.ents.find(x=>x.type==='gate'&&x.to===nxt):(t.leg>=t.path.length-1?(t.car?(W.ents.find(x=>x.tok&&x.tok.id===t.car&&x.alive)||SE):SE):null);e.ai.dest=dest||{x:0,y:0,z:0};
   if(arrive&&gin)fxWarp(e,sideCol(t.side));faceInstant(e,e.ai.dest.x-e.x,e.ai.dest.y-e.y,e.ai.dest.z-e.z);e.tradeT=t;W.ents.push(e);return e}
 function traderThink(e,dt){const D=e.ai.dest,hit=W.t-e.lastHit<5;e.boosting=hit;if(e.ai.arrived){brake(e,dt);return}
-  const d=steer(e,D.x,D.y,D.z,dt,true,hit?1.15:.8);faceTo(e,D,dt);e.thrusting=true;if(d<(D.type==='gate'?260:220)){e.ai.arrived=true;if(D.type==='gate')fxWarp(e,sideCol(e.side))}}
+  const d=steer(e,D.x,D.y,D.z,dt,true,hit?1.15:.8);faceTo(e,D,dt);e.thrusting=true;if(d<(D.type==='gate'?260:220)&&!(D.type==='gate'&&gateLocked(e))){e.ai.arrived=true;if(D.type==='gate')fxWarp(e,sideCol(e.side))}}
 function traderLost(e){const id=e.home.split(':')[1],t=(S.traders||[]).find(x=>String(x.id)===id);if(!t)return;S.traders=S.traders.filter(x=>x!==t);
   if(t.kind==='haul'){cvEnd(t,false,W.sid);shipLostFeed(t,W.sid);if(friendSide(e.side))feed(`⚠ A ${FACTIONS[e.side].short} supply convoy was destroyed in ${DEF[W.sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} supply convoy destroyed: half its hold is drifting free.`,'good');return}
   if(friendSide(e.side))feed(`${FACTIONS[e.side].short} trader carrying ${ITEMS[t.item].name} was destroyed in ${DEF[W.sid].name}.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} trader destroyed: its ${ITEMS[t.item].name} is drifting free.`,'good')}

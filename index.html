@@ -763,7 +763,7 @@ const FACTIONS={
 };
 FACTIONS.brood={name:'The Vael Brood',short:'Brood',col:'#9be35a',fill:'#14200c',trait:{hull:1.5,shield:.6,energy:1.1},traitText:'Hull +50% and regrows · Shields −40%',blurb:'Something grown, not built. It eats ore, and it eats stations.',
   hulls:{interceptor:'Skitter',striker:'Thresher',heavy:'Carapace',bomber:'Sporemaw',prospector:'Grazer',freighter:'Gorger',drone:'Mite',skiff:'Nibbler',frigate:'Leviathan',escort:'Prowler',picket:'Spawnling',dredger:'Devourer',courier:'Crawler',bulker:'Bloater',constructor:'Seeder',scout:'Watcher',scout2:'Stalker'},station:'Bloom Heart',depot:'Bloom Node',shot:'spore',bio:true};
-const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',shot:'scrap',hulls:{raider:'Raider',corsair:'Corsair',plunderer:'Plunderer',gunboat:'Raker',interceptor:'Dart',striker:'Cutter',heavy:'Brute',bomber:'Wrecker',prospector:'Gouger',freighter:'Scow',drone:'Junk Drone',skiff:'Scrounger',frigate:'Destroyer',picket:'Gnat',dredger:'Grinder',courier:'Smuggler',bulker:'Hulk',constructor:'Rigger',scout:'Sneak',scout2:'Ghost'}};
+const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',shot:'scrap',hulls:{raider:'Raider',corsair:'Corsair',plunderer:'Plunderer',uskiff:'Skiff',gunboat:'Raker',interceptor:'Dart',striker:'Cutter',heavy:'Brute',bomber:'Wrecker',prospector:'Gouger',freighter:'Scow',drone:'Junk Drone',skiff:'Scrounger',frigate:'Destroyer',picket:'Gnat',dredger:'Grinder',courier:'Smuggler',bulker:'Hulk',constructor:'Rigger',scout:'Sneak',scout2:'Ghost'}};
 const PLAYER_COL='#f0b24a';
 const CLASSES={
   interceptor:{name:'Light Fighter',hull:86,shield:.85,speed:1.32,turn:3.45,weapon:1.05,cargo:14,drill:0,radius:12,rack:.75,boost:1.25,agile:1.45,acc:1.38,bcost:.7,desc:'Fastest and most agile: quickest acceleration, cheap afterburner, best at shaking missiles. Light armour.'},
@@ -792,7 +792,8 @@ const CLASSES={
 {const B=(k,o)=>Object.assign({},CLASSES[k],{swarm:0,radar:false},o);
   CLASSES.raider=B('interceptor',{name:'Raider',hull:85,shield:.85,speed:1.25,turn:2.95,cargo:40,acc:(CLASSES.interceptor.acc||1)*.85,agile:(CLASSES.interceptor.agile||1)*.85,radar:true,jamK:1,desc:'Unbound light hull: the crew\'s eyes. Scout radar, 40 t hold.'});
   CLASSES.corsair=B('striker',{name:'Corsair',hull:120,shield:1,speed:1.1,turn:2.5,cargo:70,acc:(CLASSES.striker.acc||1)*.85,agile:(CLASSES.striker.agile||1)*.85,jamK:1.3,desc:'Unbound medium hull: the muscle, with the best jammers. 70 t hold.'});
-  CLASSES.plunderer=B('heavy',{name:'Plunderer',hull:180,shield:1.25,speed:.86,turn:1.55,cargo:110,acc:(CLASSES.heavy.acc||1)*.8,agile:(CLASSES.heavy.agile||1)*.8,jamK:1,desc:'Unbound heavy hull: the cargo hold. 110 t.'})}
+  CLASSES.plunderer=B('heavy',{name:'Plunderer',hull:180,shield:1.25,speed:.86,turn:1.55,cargo:110,acc:(CLASSES.heavy.acc||1)*.8,agile:(CLASSES.heavy.agile||1)*.8,jamK:1,desc:'Unbound heavy hull: the cargo hold. 110 t.'});
+  CLASSES.uskiff=B('scout',{name:'Skiff',hull:70,shield:.8,speed:1.62,cargo:35,radar:true,jamK:1.1,desc:'Unbound scout: fast, a 35 t hold, jammers and scout radar. Flips sector beacons for the Unbound outside faction home systems (hold within 250 m).'})}
 const UNB_CLS={interceptor:'raider',striker:'corsair',heavy:'plunderer',bomber:'corsair',gunboat:'plunderer'};
 const CLS_IDS=['interceptor','striker','heavy','bomber','skiff','prospector','dredger','courier','freighter','bulker','scout','scout2'],YARD_IDS=[...CLS_IDS,'gunboat'];   // constructors are AI-only: call one in through comms
 const FIGHTERS=['interceptor','striker','heavy','bomber'];
@@ -920,7 +921,7 @@ function cloudSeek(e,dt){const s=S.sectors[W.sid],ai=e.ai;if(!s.clouds||!s.cloud
   return true}
 
 // ============================================================ Unbound mode (stage 2, solo): fly for the pirates
-const UNB_HULLS=['raider','corsair','plunderer'],UNB_PRICE={raider:0,corsair:2600,plunderer:5000};
+const UNB_HULLS=['raider','uskiff','corsair','plunderer'],UNB_PRICE={raider:0,uskiff:1800,corsair:2600,plunderer:5000};
 const UNB_RANKS=[['Nuisance',0],['Cutthroat',200],['Buccaneer',600],['Dread Captain',1500],['Pirate King',3000]];
 const HEAT_BANDS=[['Cool',0],['Warm',25],['Hot',50],['Wanted',75]];
 const UNB_HEAT={mercy:2,take:4,killCiv:8,killMil:3,blown:10,cool:1/60,coolQuiet:2/60};
@@ -1737,7 +1738,7 @@ function tradersTick(){if(NET.cl)return;S.traders=S.traders||[];for(const f of F
     if(WORLDS[t.sector])inW(WORLDS[t.sector],()=>spawnTrader(t,false))}
   // travel: one jump per leg; while a trader is flying in an open system it finishes its leg there first
   for(let i=S.traders.length-1;i>=0;i--){const t=S.traders[i];
-    if(t.live){const w=WORLDS[t.sector],e=w&&w.ents.find(x=>x.alive&&x.home===`trader:${t.id}:${t.side}`);if(!e){t.live=false}else if(!e.ai.arrived){t.next=Math.max(t.next,S.T+10);continue}else{inW(w,()=>{returnHome(e);despawn(e)});t.live=false}}
+    if(t.live){const w=WORLDS[t.sector],e=w&&w.ents.find(x=>x.alive&&x.home===`trader:${t.id}:${t.side}`);if(!e){t.live=false}else if(!e.ai.arrived||inW(w,()=>gateLocked(e))){t.next=Math.max(t.next,S.T+10);continue}else{inW(w,()=>{returnHome(e);despawn(e)});t.live=false}}
     if(S.T<t.next)continue;
     if(t.kind==='haul'&&t.car){const C=S.frigates.find(x=>x.id===t.car);if(C&&C.sector!==t.to){t.to=C.sector;t.path=trPath(t.sector,t.to);t.leg=0}}
     if(t.leg>=t.path.length-1){traderArrive(t);S.traders.splice(i,1);continue}
@@ -1778,7 +1779,7 @@ function spawnTrader(t,arrive){const e=makeNPC('trader',t.side,t.cls,1,t.load,`t
   e.x=start.x;e.y=start.y;e.z=start.z;const dest=gout?W.ents.find(x=>x.type==='gate'&&x.to===nxt):(t.leg>=t.path.length-1?(t.car?(W.ents.find(x=>x.tok&&x.tok.id===t.car&&x.alive)||SE):SE):null);e.ai.dest=dest||{x:0,y:0,z:0};
   if(arrive&&gin)fxWarp(e,sideCol(t.side));faceInstant(e,e.ai.dest.x-e.x,e.ai.dest.y-e.y,e.ai.dest.z-e.z);e.tradeT=t;W.ents.push(e);return e}
 function traderThink(e,dt){const D=e.ai.dest,hit=W.t-e.lastHit<5;e.boosting=hit;if(e.ai.arrived){brake(e,dt);return}
-  const d=steer(e,D.x,D.y,D.z,dt,true,hit?1.15:.8);faceTo(e,D,dt);e.thrusting=true;if(d<(D.type==='gate'?260:220)){e.ai.arrived=true;if(D.type==='gate')fxWarp(e,sideCol(e.side))}}
+  const d=steer(e,D.x,D.y,D.z,dt,true,hit?1.15:.8);faceTo(e,D,dt);e.thrusting=true;if(d<(D.type==='gate'?260:220)&&!(D.type==='gate'&&gateLocked(e))){e.ai.arrived=true;if(D.type==='gate')fxWarp(e,sideCol(e.side))}}
 function traderLost(e){const id=e.home.split(':')[1],t=(S.traders||[]).find(x=>String(x.id)===id);if(!t)return;S.traders=S.traders.filter(x=>x!==t);
   if(t.kind==='haul'){cvEnd(t,false,W.sid);shipLostFeed(t,W.sid);if(friendSide(e.side))feed(`⚠ A ${FACTIONS[e.side].short} supply convoy was destroyed in ${DEF[W.sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} supply convoy destroyed: half its hold is drifting free.`,'good');return}
   if(friendSide(e.side))feed(`${FACTIONS[e.side].short} trader carrying ${ITEMS[t.item].name} was destroyed in ${DEF[W.sid].name}.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} trader destroyed: its ${ITEMS[t.item].name} is drifting free.`,'good')}
@@ -2629,7 +2630,7 @@ function missionsHtml(c,P,srcs){const f=P.faction,C=myCamp(),m=C&&C.mv,strike=m&
   const L=(S.bcnMis&&S.bcnMis[f]||[]).filter(x=>S.T<x.until);h+=`<div class="h3" style="margin-top:16px">Beacon missions</div><p class="note" style="margin:0 0 8px">Command pays a bounty on top of the usual ${BCN_FLIP} cr flip bonus and ${BCN_RES} cr/min residual (for 10 minutes after your last flip or re-secure) for flipping these beacons. Fly a Scout or Advanced Scout and hold within ${BCN_R} m for ${BCN_T} s.${isScoutCls(P.cls)?'':' <b>You are not flying a scout.</b>'}</p>`;
   if(!L.length)h+=`<div class="empty">No beacon missions posted. Command posts new ones every few minutes.</div>`;
   else{h+=`<div class="tblw"><table class="t"><thead><tr><th>Beacon</th><th>Held by</th><th class="r">Jumps</th><th class="r">Bounty</th><th class="r">Time left</th><th></th></tr></thead><tbody>`;
-    for(const x of L){const B=S.beacons[x.sid],j=HOP[P.sector][x.sid]||0;h+=`<tr><td><b>${esc(DEF[x.sid].name)}</b></td><td>${B&&B.owner?`<span style="color:${sideCol(B.owner)}">${esc(FACTIONS[B.owner].short)}</span>`:'unclaimed'}</td><td class="r num">${j||'here'}</td><td class="r num" style="color:var(--ok)">+${fmt(x.reward)} cr</td><td class="r num">${Math.max(0,Math.round((x.until-S.T)/60))} min</td><td><div class="act"><button class="btn sm" data-act="croute" data-arg="${x.sid}" ${x.sid===P.sector?'disabled':''}>Set course</button></div></td></tr>`}
+    for(const x of L){const B=S.beacons[x.sid],j=HOP[P.sector][x.sid]||0;h+=`<tr><td><b>${esc(DEF[x.sid].name)}</b></td><td>${B&&B.owner?`<span style="color:${sideCol(B.owner)}">${esc(FAC(B.owner).short)}</span>`:'unclaimed'}</td><td class="r num">${j||'here'}</td><td class="r num" style="color:var(--ok)">+${fmt(x.reward)} cr</td><td class="r num">${Math.max(0,Math.round((x.until-S.T)/60))} min</td><td><div class="act"><button class="btn sm" data-act="croute" data-arg="${x.sid}" ${x.sid===P.sector?'disabled':''}>Set course</button></div></td></tr>`}
     h+=`</tbody></table></div>`}
   return h}
 function refitHtml(c,P,srcs){const F=fpOf(P.sector),rf=refitsOf(P);if(!F)return'';let h=`<p class="note" style="margin:0 0 12px">Freeport refits are fitted to the ship you're flying and stay with it (in the Hangar too). Credits only. Each freeport sells its own; none are sold anywhere else.</p><div class="tblw"><table class="t"><thead><tr><th>Refit</th><th>Cost</th><th></th></tr></thead><tbody>`;
@@ -3078,7 +3079,7 @@ function bcnSec(B){return B.sec!=null?B.sec:(B.T||0)}
 function bcnState(B){if(!B||!B.owner)return'open';const a=S.T-bcnSec(B);return a<BCN_LOCK?'locked':a<BCN_LOCK+BCN_FADE?'fading':'lapsed'}
 function bcnLeft(B){const a=S.T-bcnSec(B);return Math.max(0,a<BCN_LOCK?BCN_LOCK-a:BCN_LOCK+BCN_FADE-a)}
 function bcnCan(B,side){const st=bcnState(B);return side===B.owner?st==='fading':st!=='locked'}   // can this side make progress on it right now?
-function isScoutCls(cls){return cls==='scout'||cls==='scout2'}
+function isScoutCls(cls){return cls==='scout'||cls==='scout2'||cls==='uskiff'}
 // Claim Beacons are for combat hulls: fighters and bombers carry and claim with one; scouts, miners, haulers and the
 // constructor can't
 function beaconCls(cls){return!!CLASSES[cls]&&!isScoutCls(cls)&&!blHull(cls)&&!isHaulCls(cls)&&cls!=='constructor'}
@@ -3088,8 +3089,8 @@ function bcnAllowed(d){return true}
 function beaconInit(){S.beacons=S.beacons||{};for(const id in S.beacons)if(!bcnAllowed(DEF[id]))delete S.beacons[id];for(const d of SECTOR_DEFS){if(!bcnAllowed(d)||S.beacons[d.id])continue;const p=beaconPos(d.id);S.beacons[d.id]={x:p.x,y:p.y,z:p.z,owner:null,by:null,T:0,pay:0}}for(const id in S.beacons){const B=S.beacons[id];if(B.owner&&B.sec==null)B.sec=S.T}S.bcnV=(S.bcnV||0)+1}
 // who may flip: the side a ship flies for, if it is a scout hull and free to act
 function bcnFlipper(e){if(e.type!=='ship'||!e.alive||e.inJump||e.ghost)return null;
-  if(e.isPlayer){if(W!==LW||S.player.docked||W.dead||W.docking||W.detach||!isScoutCls(S.player.cls))return null;return{side:S.player.faction,by:pkey()}}
-  if(e.rp){const P=S.pilots&&S.pilots[e.rp];if(!P||P.docked||!isScoutCls(P.cls))return null;return{side:P.faction,by:e.rp}}
+  if(e.isPlayer){if(W!==LW||S.player.docked||W.dead||W.docking||W.detach||!isScoutCls(S.player.cls))return null;if(S.player.faction==='pirate'&&DEF[W.sid].home)return null;return{side:S.player.faction,by:pkey()}}
+  if(e.rp){const P=S.pilots&&S.pilots[e.rp];if(!P||P.docked||!isScoutCls(P.cls))return null;if(P.faction==='pirate'&&DEF[W.sid].home)return null;return{side:P.faction,by:e.rp}}
   if(e.npc&&e.role==='scout'&&FAC_IDS.includes(e.side))return{side:e.side,by:null};return null}
 // host / single player: run in every open system each frame
 function beaconWorld(dt){const B=S.beacons&&S.beacons[W.sid];if(!B)return;const F=W.bcnF||(W.bcnF={side:null,t:0,by:null,cont:false});
@@ -3100,16 +3101,16 @@ function beaconWorld(dt){const B=S.beacons&&S.beacons[W.sid];if(!B)return;const 
   if(F.t>=BCN_T){const who=F.by;F.t=0;F.side=null;F.by=null;if(side===B.owner)beaconSecure(W.sid,side,who);else beaconFlip(W.sid,side,who)}}
 function beaconFlip(sid,side,by){const B=S.beacons[sid];if(!B||B.owner===side)return;const old=B.owner,oldBy=B.by,nm=DEF[sid].name;
   B.owner=side;B.by=by||null;B.T=S.T;B.sec=S.T;B.pay=S.T;B.byT=S.T;S.bcnV=(S.bcnV||0)+1;bcnMissionPay(sid,side,by);sideBcn(sid,side,by);
-  if(oldBy&&oldBy!==by)keyFeed(oldBy,`Your beacon in ${nm} was flipped by ${by?(S.pilots&&S.pilots[by]?S.pilots[by].name:'a '+FACTIONS[side].short+' pilot'):'a '+FACTIONS[side].short+' scout'}. Its scan and your residual have stopped.`,'warn');
-  if(by){weAdd(side,WE.beacon);const got=payKey(by,side,Math.round(BCN_FLIP*(lvlOf(by)>=1?1.2:1)));keyFeed(by,`◆ Beacon in ${nm} flipped for ${FACTIONS[side].short}: +${fmt(got)} cr. It's secured for ${BCN_LOCK/60} minutes; then it fades, and a friendly scout must re-secure it within ${BCN_FADE/60} minutes or it drops to neutral. It scans ${nm} for your side and pays you ${BCN_RES} cr a minute while your side holds it, for ${BCN_RES_T/60} minutes after you last flip or re-secure it.`,'good');if(isMe(by)){SFX.count(true);flash(`Beacon flipped for ${FACTIONS[side].short}. +${fmt(got)} cr`)}}
-  else if(old&&!oldBy&&friendSide(old)&&S.player.sector===sid)facFeed(old,`◆ ${FACTIONS[side].short} scout flipped our beacon in ${nm}.`,'warn');
+  if(oldBy&&oldBy!==by)keyFeed(oldBy,`Your beacon in ${nm} was flipped by ${by?(S.pilots&&S.pilots[by]?S.pilots[by].name:'a '+FAC(side).short+' pilot'):'a '+FAC(side).short+' scout'}. Its scan and your residual have stopped.`,'warn');
+  if(by){weAdd(side,WE.beacon);const got=payKey(by,side,Math.round(BCN_FLIP*(lvlOf(by)>=1?1.2:1)));keyFeed(by,`◆ Beacon in ${nm} flipped for ${FAC(side).short}: +${fmt(got)} cr. It's secured for ${BCN_LOCK/60} minutes; then it fades, and a friendly scout must re-secure it within ${BCN_FADE/60} minutes or it drops to neutral. It scans ${nm} for your side and pays you ${BCN_RES} cr a minute while your side holds it, for ${BCN_RES_T/60} minutes after you last flip or re-secure it.`,'good');if(isMe(by)){SFX.count(true);flash(`Beacon flipped for ${FAC(side).short}. +${fmt(got)} cr`)}}
+  else if(old&&!oldBy&&friendSide(old)&&S.player.sector===sid)facFeed(old,`◆ ${FAC(side).short} scout flipped our beacon in ${nm}.`,'warn');
   if(W&&W.sid===sid&&!MUTE)fxSpark(B,sideCol(side),14);
   if(NET.host)for(const c of readyCl())send(c.L,{t:'bcn',sid,b:B,v:S.bcnV})}
 function bcnSend(sid){if(NET.host)for(const c of readyCl())send(c.L,{t:'bcn',sid,b:S.beacons[sid],v:S.bcnV})}
 // a friendly scout holds a fading beacon: secured again for BCN_LOCK s; a pilot who re-secures it takes over its residual
 function beaconSecure(sid,side,by){const B=S.beacons[sid];if(!B||B.owner!==side)return;const nm=DEF[sid].name,oldBy=B.by;B.sec=S.T;sideBcn(sid,side,by);
   if(by)B.byT=S.T;if(by&&oldBy!==by){B.by=by;B.pay=S.T;if(oldBy)keyFeed(oldBy,`◆ Your beacon in ${nm} was re-secured by ${S.pilots&&S.pilots[by]?S.pilots[by].name:'another pilot'}: its residual now pays them.`,'info')}
-  S.bcnV=(S.bcnV||0)+1;if(by){keyFeed(by,`◆ Beacon in ${nm} re-secured for ${FACTIONS[side].short}: locked for another ${BCN_LOCK/60} minutes${B.by===by?`, paying you ${BCN_RES} cr a minute`:''}.`,'good');if(isMe(by)){SFX.count(true);flash(`Beacon re-secured: ${BCN_LOCK/60} minutes`)}}
+  S.bcnV=(S.bcnV||0)+1;if(by){keyFeed(by,`◆ Beacon in ${nm} re-secured for ${FAC(side).short}: locked for another ${BCN_LOCK/60} minutes${B.by===by?`, paying you ${BCN_RES} cr a minute`:''}.`,'good');if(isMe(by)){SFX.count(true);flash(`Beacon re-secured: ${BCN_LOCK/60} minutes`)}}
   if(W&&W.sid===sid&&!MUTE)fxSpark(B,sideCol(side),8);bcnSend(sid)}
 // in a system its side holds (home space, or its station or outpost there) the local crew keeps the beacon secured; out in
 // contested and open space only a scout can
@@ -3202,10 +3203,11 @@ function beaconLocal(dt){const B=S.beacons&&S.beacons[W.sid],p=W.player;const F=
 function beaconChip(){const B=S.beacons&&S.beacons[W.sid],p=W.player;if(!B||!p||S.player.docked)return null;const d=d3(p,B);if(d>BCN_R*3)return null;const F=W.bcnF||{};
   const st=bcnState(B),left=fmtT(bcnLeft(B));
   if(B.owner===S.player.faction&&d<=BCN_R){if(st==='fading'&&isScoutCls(S.player.cls))return[`Beacon fading: re-securing ${Math.round(clamp((F.t||0)/BCN_T,0,1)*100)}% · hold within ${BCN_R} m · ${left} to neutral`,'warn'];
-    return[`Beacon held by ${FACTIONS[B.owner].short} · ${st==='locked'?'secured '+left:'fading: a scout must re-secure it within '+left}${B.by&&isMe(B.by)?' · yours, paying '+BCN_RES+' cr/min':''}`,st==='locked'?'good':'warn']}
-  if(!isScoutCls(S.player.cls))return d<=BCN_R?['Beacon: only a Scout or Advanced Scout can flip it','warn']:null;
+    return[`Beacon held by ${FAC(B.owner).short} · ${st==='locked'?'secured '+left:'fading: a scout must re-secure it within '+left}${B.by&&isMe(B.by)?' · yours, paying '+BCN_RES+' cr/min':''}`,st==='locked'?'good':'warn']}
+  if(!isScoutCls(S.player.cls))return d<=BCN_R?[S.unb?'Beacon: only a Skiff can flip it for the Unbound':'Beacon: only a Scout or Advanced Scout can flip it','warn']:null;
+  if(S.player.faction==='pirate'&&DEF[W.sid].home)return d<=BCN_R*3?['Beacon: the Unbound can\'t flip beacons in a faction\'s home systems','warn']:null;
   if(F.cont)return['Beacon contested: another team\'s scout is on it','bad'];
-  if(B.owner&&st==='locked'&&d<=BCN_R*3)return[`Beacon secured by ${FACTIONS[B.owner].short}: it can be flipped in ${left}`,'bad'];
+  if(B.owner&&st==='locked'&&d<=BCN_R*3)return[`Beacon secured by ${FAC(B.owner).short}: it can be flipped in ${left}`,'bad'];
   if(d>BCN_R)return[`Beacon ${fmt(Math.round(d-BCN_R))} m out of flip range (${BCN_R} m)`,'warn'];
   return[`Flipping beacon ${Math.round(clamp((F.t||0)/BCN_T,0,1)*100)}% · hold within ${BCN_R} m`,'warn']}
 function planBuild(f){if(FACTIONS[f]&&campBusy(f))return;const terr=territory(f),busy=new Set(S.events.filter(e=>e.type==='build').map(e=>e.sector)),c=[],pf=S.player.faction;
@@ -5614,7 +5616,7 @@ function carrierMesh(fac){const pal=mdlPal(fac),C=pal.c,LT=C[0],MD=C[1],DK=C[2],
   g.set(0,-.06,-.93).box(.5,.22,.12,DK);
   const qz=qAxis(1,0,0,Math.PI/2,q0());for(const x of[-.23,-.08,.08,.23]){g.set(x,-.06,-.99,qz).cyl(.065,.075,.06,12,DK);g.set(x,-.06,-1.025,qz).cyl(.05,.05,.01,12,FG,.9);eng.push([x,-.06,-1.03,.07])}
   L.seg([0,0,0],[0,0,0],[0,0,0]);return{hull:g.upload(),rim:L.upload(true),eng,mdl:true}}
-function shipMesh(fac,cls){if(cls==='raider')cls='interceptor';else if(cls==='corsair')cls='striker';else if(cls==='plunderer')cls='heavy';
+function shipMesh(fac,cls){if(cls==='uskiff')cls='scout';else if(cls==='raider')cls='interceptor';else if(cls==='corsair')cls='striker';else if(cls==='plunderer')cls='heavy';
   if(cls==='carrier'&&fac!=='brood'&&!mdlHas('carrier')){const k=fac+'carrier';return MESH[k]||(MESH[k]=carrierMesh(fac))}
   if(cls==='escort'&&fac!=='brood'&&!mdlHas('escort'))cls='frigate';if(cls==='wraith')cls='interceptor';
   const key=fac+cls;if(MESH[key])return MESH[key];
@@ -6154,7 +6156,7 @@ function hudUpdate(){hudFit();
   $('hChips').innerHTML=chips.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');$('hSChips').innerHTML='';{const h=P.docked||W.bridge?'':sc.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');if($('hML').innerHTML!==h)$('hML').innerHTML=h}
   {const el=$('hBcn'),B=S.beacons&&S.beacons[W.sid],on=!!B&&isScoutCls(P.cls)&&!P.docked;el.hidden=!on;if(on){const d=Math.round(d3(p,B)),F=W.bcnF||{},mine=B.owner===P.faction,col=B.owner?sideCol(B.owner):'#ece4cf',flip=F.side&&F.t>0?` · flipping ${Math.round(clamp(F.t/BCN_T,0,1)*100)}%`:'';
     const st=bcnState(B),left=fmtT(bcnLeft(B)),sts=st==='locked'?` · secured ${left}`:st==='fading'?(mine?` · <b style="color:var(--amber)">fading: re-secure within ${left}</b>`:` · fading: flip it now (${left})`):'';
-    const h=`◆ Beacon: <b style="color:${col}">${B.owner?esc(FACTIONS[B.owner].short):'unclaimed'}</b>${mine&&B.by&&isMe(B.by)?` · yours, paying ${BCN_RES} cr/min`:mine?' · your side':B.owner?(st==='locked'?'':' · flip it back'):' · flip it for your side'}${sts}${flip}${F.cont?' · <b style="color:var(--danger)">contested</b>':''} · ${d<=BCN_R?'in range':fmt(d)+' m'}`;if(el.innerHTML!==h)el.innerHTML=h}}campHud();
+    const h=`◆ Beacon: <b style="color:${col}">${B.owner?esc(FAC(B.owner).short):'unclaimed'}</b>${mine&&B.by&&isMe(B.by)?` · yours, paying ${BCN_RES} cr/min`:mine?' · your side':B.owner?(st==='locked'?'':' · flip it back'):' · flip it for your side'}${sts}${flip}${F.cont?' · <b style="color:var(--danger)">contested</b>':''} · ${d<=BCN_R?'in range':fmt(d)+' m'}`;if(el.innerHTML!==h)el.innerHTML=h}}campHud();
   $('hCr').textContent=fmt(P.credits);$('hHold').textContent=`${invMass(P.cargo)}/${p.st.cargo} t`;
   $('hShip').textContent=W.gunseat&&gsEnt()?`Gunner · ${gsEnt().pname?gsEnt().pname+'\'s ':''}${hullName(gsEnt().fac,gsEnt().cls)}`:hasTur(P.cls)&&p.tur?`${FAC(P.faction).hulls[P.cls]} · ${CLASSES[P.cls].name} · gunner: ${p.tur.gname||(p.tur.gunner&&p.tur.gunner!=='local'?(S.pilots&&S.pilots[p.tur.gunner]?S.pilots[p.tur.gunner].name:'pilot'):'AI')}`:W.bridge?`${W.bridge.f.tok.name} · ${W.bridge.f.tok.cls==='escort'?'Escort':'Carrier'} bridge`:`${FAC(P.faction).hulls[P.cls]} · ${CLASSES[P.cls].name}`;
   const bar=(id,v,m)=>{const el=$(id);el.querySelector('.fl').style.width=clamp(v/m*100,0,100)+'%';el.querySelector('.v').textContent=Math.round(v)};
@@ -6279,7 +6281,7 @@ function jobsList(c,P,srcs,hasOrders,hasMis){const f=P.faction,out=[],hop=sid=>s
       out.push({id:'ce:'+t.id,ty:'fight',title:`Escort: ${esc(t.why||'supplies')} to ${esc(DEF[t.to].name)}`,sub:mine?`escorting · ${E.hops}/${E.need} jumps`:E?`escorted by ${esc(E.name||'another pilot')}`:`${cvLeft(t)} jumps left · now in ${esc(DEF[t.sector].name)}`,hops:j,where:far(j),payN:pay,pay:`${fmt(pay)} cr`,btn:mine||E?null:['cvesc',t.id,'Escort'],
         detail:()=>`<p class="note" style="margin:0">Fly with one of our supply convoys: each jump it makes with you in the system it leaves or enters counts. Raiders sent to intercept it meet you in the open. Command pays when it docks, if you were with it for at least ${Math.round(ESC_CV.need*100)}% of the jumps left when you signed on.</p>`})}}
     for(const x of (S.bcnMis&&S.bcnMis[f]||[]).filter(x=>S.T<x.until)){const B=S.beacons[x.sid],j=hop(x.sid);
-      out.push({id:'bm:'+x.id,ty:'scout',title:`Beacon: ${esc(DEF[x.sid].name)}`,sub:`${B&&B.owner?`held by ${esc(FACTIONS[B.owner].short)}`:'unclaimed'} · ${Math.max(0,Math.round((x.until-S.T)/60))} min left`,hops:j,where:far(j),payN:x.reward,pay:`+${fmt(x.reward)} cr`,need:scout?'':'Needs a Scout or Advanced Scout (free at core shipyards)',fix:scout?null:hullFix(c,P,isScoutCls,'scout'),btn:x.sid===P.sector?null:['croute',x.sid,'Set course'],
+      out.push({id:'bm:'+x.id,ty:'scout',title:`Beacon: ${esc(DEF[x.sid].name)}`,sub:`${B&&B.owner?`held by ${esc(FAC(B.owner).short)}`:'unclaimed'} · ${Math.max(0,Math.round((x.until-S.T)/60))} min left`,hops:j,where:far(j),payN:x.reward,pay:`+${fmt(x.reward)} cr`,need:scout?'':'Needs a Scout or Advanced Scout (free at core shipyards)',fix:scout?null:hullFix(c,P,isScoutCls,'scout'),btn:x.sid===P.sector?null:['croute',x.sid,'Set course'],
         detail:()=>`<p class="note" style="margin:0">Command pays this bounty on top of the usual ${BCN_FLIP} cr flip bonus and ${BCN_RES} cr/min residual. Hold within ${BCN_R} m of the beacon for ${BCN_T} s in a scout.</p>`})}}
   return out}
 function jobsHtml(c,P,srcs,hasOrders,hasMis){const all=jobsList(c,P,srcs,hasOrders,hasMis),cnt=t=>t==='all'?all.length:all.filter(j=>j.ty===t).length;
@@ -6298,7 +6300,7 @@ function jobsHtml(c,P,srcs,hasOrders,hasMis){const all=jobsList(c,P,srcs,hasOrde
 // ---- what a hull is for, from its own stats, for the shipyard and black-market cards. Unbound hulls get their own: they
 // jam, hook and haul loot, and never claim.
 function hullTags(k){const C=CLASSES[k]||{},T=[],dr=C.drones||0;if(k==='constructor')return[];
-  if(UNB_HULLS.includes(k)){T.push(k==='corsair'?'Strongest jammer':'Jams');T.push('Hooks cargo');if(k==='raider')T.push('Scout radar · spots landed ships');if(k==='plunderer')T.push('Jamming torpedoes stop capitals');T.push(`${C.cargo} t hold`);return T}
+  if(UNB_HULLS.includes(k)){T.push(k==='corsair'?'Strongest jammer':'Jams');T.push('Hooks cargo');if(k==='raider')T.push('Scout radar · spots landed ships');if(k==='uskiff')T.push('Scout radar','Flips beacons outside faction home space');if(k==='plunderer')T.push('Jamming torpedoes stop capitals');T.push(`${C.cargo} t hold`);return T}
   if(isScoutCls(k)){T.push('Flips beacons','Plants limpets','Finds lairs');if(C.swarm)T.push('Swarm pods');return T}
   if(blHull(k)){T.push('Blast mining','Salvages wrecks');if(dr)T.push(`${dr} drone${dr>1?'s':''}`);return T}
   if(isHaulCls(k)){T.push(`Hauls ${C.cargo} t`,'Calls convoys');if(dr)T.push(`${dr} drone${dr>1?'s':''}`);return T}
@@ -6632,7 +6634,7 @@ function renderMapSide(){
   let h=`<div><div class="h3" style="color:${sideCol(sectorOwner(mapSel))}">${esc(d.name)}</div><div class="kv"><span>Held by</span><b style="color:${sideCol(sectorOwner(mapSel))}">${sectorOwner(mapSel)?sideName(sectorOwner(mapSel)):'Unclaimed'} · ${d.kind}</b>`+mapSectorNow(mapSel);
   {const Rs=S.stations[mapSel];h+=Rs?`<span>${esc(Rs.name)}</span><b>${Rs.kind==='hive'?'hive':Rs.kind} · hull ${Math.round(Rs.hull/Rs.hMax*100)}%</b>`:`<span>Station</span><b>${d.kind==='hive'?'—':'none · a Constructor can build here'}</b>`}
   if(o)h+=`<span>${esc(o.name)}</span><b>Level ${o.level}${o.breached?' · breached':''}</b><span>Role</span><b>${o.type}</b>`;
-  {const B=S.beacons&&S.beacons[mapSel];if(B)h+=`<span>Beacon</span><b style="color:${B.owner?sideCol(B.owner):'inherit'}">${B.owner?FACTIONS[B.owner].short+(B.T?' · held '+fmtT(S.T-B.T):'')+(bcnState(B)==='locked'?' · secured '+fmtT(bcnLeft(B)):' · fading, neutral in '+fmtT(bcnLeft(B))):'unclaimed'}${B.by&&isMe(B.by)?' · yours, '+BCN_RES+' cr/min':''}</b>`}
+  {const B=S.beacons&&S.beacons[mapSel];if(B)h+=`<span>Beacon</span><b style="color:${B.owner?sideCol(B.owner):'inherit'}">${B.owner?FAC(B.owner).short+(B.T?' · held '+fmtT(S.T-B.T):'')+(bcnState(B)==='locked'?' · secured '+fmtT(bcnLeft(B)):' · fading, neutral in '+fmtT(bcnLeft(B))):'unclaimed'}${B.by&&isMe(B.by)?' · yours, '+BCN_RES+' cr/min':''}</b>`}
   {const V=vaultList(S.player).filter(v=>v.sid===mapSel);for(const v of V)h+=`<span>Your vault${V.length>1?' · '+esc(vaultName(v.k)):''}</span><b>${fmt(v.m)} t · ${fmt(v.val)} cr${v.open?'':' · '+esc(vaultWhy(v.k,S.player))}</b>`}
   for(const w of s.wrecks||[]){let m=0;h+=`<span>✕ Wreck</span><b style="color:#ffb066">${esc(w.name)} · breaks up in ${fmtT(Math.max(0,w.until-S.T))}</b>`}
   h+=`<span>Salvage crates</span><b>${s.crates.length}</b><span>Gates to</span><b>${NEIGH[mapSel].map(n=>DEF[n].name).join(', ')}</b></div>`;
@@ -7806,7 +7808,7 @@ function anomPanel(T,dist){const p=W.player,sc=p&&p.anS&&p.anS.id===T.id?p.anS.t
 // ============================================================ the Unbound: an asteroid haven, a fleet that grows, ambushes from the rocks
 // Unbound wings keep to space no faction calls home. Their capitals go further: they hunt the convoy lanes and the depots on
 // the edges of faction space, frontier systems included (never a faction's core), and launch raids from wherever they are,
-// pulling back to the haven to refit when their stores run dry or they are badly hurt. Their haven is a station dug into a giant rock in The Wrack. Its slipway builds an escort around the
+// pulling back to the haven to refit when their stores run dry or they are badly hurt. Their haven is an asteroid base in The Wrack: the rock itself, hollowed out. Its slipway builds an escort around the
 // 25-minute mark, a second by 45, and a carrier after an hour, if they can mine, salvage, plunder and fence the parts.
 const PIR_E1=1500,PIR_E2=2700,PIR_C=3900,PIR_REBUILD=600,PIR_LURK=.65,LURK_TRIG=850,LURK_RADAR=1600;
 STN.haven={sMax:3000,hMax:9000,tur:6,dmg:14,range:1450};LS_RATE.haven=.6;
@@ -7897,11 +7899,43 @@ function lurkThink(e,dt){const s=S.sectors[W.sid];
 {const o=npcThink;npcThink=function(e,dt){if(e.role==='pirate'&&(e.lurk||e.ai.lurkGo)&&!NET.cl){e.ai.t-=dt;e.life+=dt;e.mining=null;if(lurkThink(e,dt))return}return o.apply(this,arguments)}}
 // a scout's long-range radar picks a landed ship out of the rock clutter at 1.6 km instead of 320 m
 {const o=seenShip;seenShip=function(e){if(e&&e.masked&&e.lurk!==undefined&&W&&W.player&&CLASSES[S.player.cls]&&CLASSES[S.player.cls].radar&&d3(e,W.player)<LURK_RADAR)return true;if(e&&e.masked&&NET.cl&&e.side==='pirate'&&W&&W.player&&CLASSES[S.player.cls]&&CLASSES[S.player.cls].radar&&d3(e,W.player)<LURK_RADAR)return true;return o.apply(this,arguments)}}
-// the haven: the Unbound station model sunk into the face of a giant asteroid
-{const o=stationMesh;stationMesh=function(fac,kind){if(kind==='haven')return o.call(this,'pirate','station');return o.apply(this,arguments)}}
+// the haven: an asteroid base. The rock itself is the station: three hangar mouths cut into its waist (the docking ports),
+// lit window rows, scrap plating bolted over the stone, domes and masts on top, and its turrets set into the surface
+const HAVEN_R=118,HAVEN_BAYS=[.35,.35+TAU/3,.35+2*TAU/3],HV_N=[[.31,.74,.6],[-.82,.23,.52],[.47,-.66,.58],[-.2,-.4,-.9],[.9,.1,-.42],[-.5,.85,-.1]];
+function havenNoise(x,y,z){let n=0;for(let i=0;i<HV_N.length;i++){const v=HV_N[i];n+=Math.sin((x*v[0]+y*v[1]+z*v[2])*(2.1+i*.9)+i*1.7)/(1+i*.45)}return n/2.6}
+function havenR(x,y,z){const l=hyp(x,y,z)||1;return HAVEN_R*(1+.24*havenNoise(x/l,y/l,z/l)+.1*Math.max(0,x/l*.6-z/l*.8))}
+function havenSurf(x,y,z){const l=hyp(x,y,z)||1,r=havenR(x,y,z);return[x/l*r,y/l*r*.84,z/l*r]}
+PORTS.haven=HAVEN_BAYS.map(a=>{const p=havenSurf(Math.cos(a),0,Math.sin(a));return[p[0]*1.08,0,p[2]*1.08]});
+function havenMesh(){if(MESH.haven)return MESH.haven;const R=mulberry(4242),fc=hexRGB(sideCol('pirate')),rock=[.34,.31,.29],dk=[.17,.16,.15],metal=[.4,.39,.37],rust=[.42,.27,.18],warm=[1,.62,.3],g=new GB();
+  // the rock: a twice-split icosahedron pushed out by the noise field
+  const t=(1+Math.sqrt(5))/2;let V=[[-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0],[0,-1,t],[0,1,t],[0,-1,-t],[0,1,-t],[t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1]].map(p=>{const l=hyp(...p);return p.map(c=>c/l)});
+  let F=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
+  for(let it=0;it<3;it++){const mid=new Map(),M=(a,b)=>{const k=a<b?a+'_'+b:b+'_'+a;if(mid.has(k))return mid.get(k);const p=V[a].map((c,i)=>(c+V[b][i])/2),l=hyp(...p);V.push(p.map(c=>c/l));mid.set(k,V.length-1);return V.length-1};
+    const F2=[];for(const[a,b,c]of F){const ab=M(a,b),bc=M(b,c),ca=M(c,a);F2.push([a,ab,ca],[b,bc,ab],[c,ca,bc],[ab,bc,ca])}F=F2}
+  const P=V.map(p=>havenSurf(p[0],p[1],p[2]));
+  for(const[a,b,c]of F){const sh=.78+R()*.38,n=havenNoise(...V[a]);g.tri(P[a],P[b],P[c],scaleC(n>.35?mixC(rock,dk,.4):rock,sh),0,[0,0,0])}
+  const at=(dx,dy,dz,out)=>{const s=havenSurf(dx,dy,dz),l=hyp(dx,dy,dz)||1,k=(hyp(...s)+out)/hyp(...s);return[s[0]*k,s[1]*k,s[2]*k]};
+  const face=(dx,dy,dz)=>qLook(dx,dy*.84,dz,Math.abs(dy)>.9?1:0,Math.abs(dy)>.9?0:1,0,q0());
+  // hangar mouths: a dark frame sunk into the waist, a glowing bay inside, guide lights either side
+  for(const a of HAVEN_BAYS){const dx=Math.cos(a),dz=Math.sin(a),q=face(dx,0,dz),c=at(dx,0,dz,-4);
+    g.set(c[0],c[1],c[2],q).box(70,40,34,dk,0,true);const c2=at(dx,0,dz,13);g.set(c2[0],c2[1],c2[2],q).box(56,26,2,warm,.95);
+    for(const sx of[-1,1])for(let k=0;k<4;k++){const ox=-dz*sx*34,oz=dx*sx*34,cl=at(dx,0,dz,14);g.set(cl[0]+ox,cl[1]-12+k*8,cl[2]+oz,q).box(4,3,3,fc,1)}
+    const lip=at(dx,0,dz,10);g.set(lip[0],lip[1]+22,lip[2],q).box(80,5,22,metal,0)}
+  // window rows and scrap plating over the stone
+  for(let i=0;i<46;i++){let d=rdirS(R,.7);if(HAVEN_BAYS.some(a=>Math.cos(a)*d.x+Math.sin(a)*d.z>.9&&Math.abs(d.y)<.3))continue;const c=at(d.x,d.y,d.z,1.5),q=face(d.x,d.y,d.z);g.set(c[0],c[1],c[2],q).box(9,3,3,R()<.15?fc:warm,.9);if(R()<.5){g.set(c[0],c[1]-6,c[2],q).box(9,3,3,warm,.85)}}
+  for(let i=0;i<16;i++){const d=rdirS(R,1),c=at(d.x,d.y,d.z,0),q=face(d.x,d.y,d.z);g.set(c[0],c[1],c[2],q).box(22+R()*20,14+R()*16,4,R()<.5?metal:rust,0,true)}
+  // domes, masts and a dish on top
+  for(let i=0;i<3;i++){const d={x:Math.cos(i*2.3)*.45,y:1,z:Math.sin(i*2.3)*.45},c=at(d.x,d.y,d.z,-6);g.set(c[0],c[1],c[2]).sphere(13+i*4,5,10,[.45,.62,.7],.3)}
+  for(let i=0;i<4;i++){const d={x:Math.cos(i*1.7+1)*.3,y:1,z:Math.sin(i*1.7+1)*.3},c=at(d.x,d.y,d.z,20);g.set(c[0],c[1],c[2]).cyl(1.4,1,44,5,metal);g.set(c[0],c[1]+23,c[2]).sphere(2.6,3,5,fc,1)}
+  const e=new GB();e.seg([0,0,0],[0,0,0],[0,0,0]);return MESH.haven={core:g.upload(),spin:e.upload(true)}}
+function rdirS(R,ymax){for(;;){const x=R()*2-1,y=(R()*2-1)*ymax,z=R()*2-1,l=hyp(x,y,z);if(l>.2&&l<=1)return{x:x/l,y:y/l,z:z/l}}}
+{const o=stationMesh;stationMesh=function(fac,kind){if(kind==='haven')return havenMesh();return o.apply(this,arguments)}}
+{const o=portName;portName=function(E){if(E&&E.type==='station'&&E.kind==='haven')return'haven';return o.apply(this,arguments)}}
+// turrets set into the rock: top, bottom and four round the shoulders between the bays
+{const o=addStationEnt;addStationEnt=function(R){const e=o.apply(this,arguments);if(R&&R.kind==='haven'){const D=[[0,1,0],[0,-1,0],...[0,1,2,3].map(i=>{const a=HAVEN_BAYS[0]+TAU/6+i*TAU/4;return[Math.cos(a),.42*(i%2?-1:1),Math.sin(a)]})];
+  e.turrets.forEach((t,i)=>{const d=D[i%D.length],s=havenSurf(d[0],d[1],d[2]),l=hyp(...s),k=(l+6)/l;t.p=[s[0]*k,s[1]*k,s[2]*k]});e.r=HAVEN_R}return e}}
 const _xq=q0(),_xq2=q0();
 function xDraw3D(t){if(!W)return;const SE=W.stationEnt;
-  if(SE&&SE.kind==='haven'){const R=SE.rec,d=(R&&R.rock&&R.rock.d)||{x:0,y:-1,z:0},k=230;if(inView(SE.x+d.x*k,SE.y+d.y*k,SE.z+d.z*k,k*1.3)){qAxis(.3,1,.2,.7,_xq);qNorm(_xq);mModel(MM,SE.x+d.x*k*1.05,SE.y+d.y*k*1.05,SE.z+d.z*k*1.05,_xq,k,k*.86,k*.94);drawMesh(astMesh(5,'xc'),MM)}}
   if(DEF[W.sid].kind==='void'&&scoutSees(S.player)){for(const A of anomsIn(W.sid)){if(!inView(A.x,A.y,A.z,60))continue;const pu=.5+.5*Math.sin(t*3+A.id);qAxis(0,1,0,t*.6+A.id,_xq2);mModel(MM,A.x,A.y,A.z,_xq2,14,14,14);drawMesh(astMesh(A.v||0,'au'),MM,ONE3,[.15+.35*pu,.7*pu+.2,.6*pu+.2])}}}
 {const o=drawWorks;drawWorks=function(t){const r=o.apply(this,arguments);try{xDraw3D(t)}catch(e){}try{if(S&&S.unb)lairDraw()}catch(e){}return r}}
 function xOverlay(){if(!W||!W.player||!S||S.player.docked||W.dead||W.bridge||W.gunseat||!scoutSees(S.player)||DEF[W.sid].kind!=='void')return;const c=octx,p=W.player;
@@ -8018,7 +8052,7 @@ function raidLiveFrame(){for(const id in W.groups){const g=W.groups[id];if(!g.ra
     if(G.gate===null&&!G.hold){if(r.state!=='home')raidHome(r);continue}
     const L=grpLead(g);if(!L)continue;
     if(G.gate){if(L.ai.tgt&&L.ai.tgt.alive&&d3(L.ai.tgt,L)<1500)continue;for(const m of al){m.ai.wp={x:G.gate.x,y:G.gate.y,z:G.gate.z};m.ai.tgt=null}
-      if(d3(L,G.gate)<330){for(const m of al){fxWarp(m,sideCol(m.side));despawn(m)}}continue}
+      if(d3(L,G.gate)<330){for(const m of al)if(!gateLocked(m)){fxWarp(m,sideCol(m.side));despawn(m)}}continue}
     const P=G.hold,dx=-P.x,dy=-P.y,dz=-P.z,l=hyp(dx,dy,dz)||1,spot={x:P.x+dx/l*G.R,y:P.y+dy/l*G.R,z:P.z+dz/l*G.R};if(!L.ai.wp||d3(L.ai.wp,spot)>260)L.ai.wp={x:spot.x+rnd(-120,120),y:spot.y+rnd(-60,60),z:spot.z+rnd(-120,120)}}}
 // strategic side of a live raid: when its ships are gone from the system, the survivors (if any) go back to the map
 function raidLiveCheck(r){const w=WORLDS[r.sector];const al=w?w.ents.filter(e=>e.alive&&e.raidR===r.id&&e.role!=='drone'):[];if(al.length)return;

@@ -305,7 +305,7 @@ function carrierMesh(fac){const pal=mdlPal(fac),C=pal.c,LT=C[0],MD=C[1],DK=C[2],
   g.set(0,-.06,-.93).box(.5,.22,.12,DK);
   const qz=qAxis(1,0,0,Math.PI/2,q0());for(const x of[-.23,-.08,.08,.23]){g.set(x,-.06,-.99,qz).cyl(.065,.075,.06,12,DK);g.set(x,-.06,-1.025,qz).cyl(.05,.05,.01,12,FG,.9);eng.push([x,-.06,-1.03,.07])}
   L.seg([0,0,0],[0,0,0],[0,0,0]);return{hull:g.upload(),rim:L.upload(true),eng,mdl:true}}
-function shipMesh(fac,cls){if(cls==='raider')cls='interceptor';else if(cls==='corsair')cls='striker';else if(cls==='plunderer')cls='heavy';
+function shipMesh(fac,cls){if(cls==='uskiff')cls='scout';else if(cls==='raider')cls='interceptor';else if(cls==='corsair')cls='striker';else if(cls==='plunderer')cls='heavy';
   if(cls==='carrier'&&fac!=='brood'&&!mdlHas('carrier')){const k=fac+'carrier';return MESH[k]||(MESH[k]=carrierMesh(fac))}
   if(cls==='escort'&&fac!=='brood'&&!mdlHas('escort'))cls='frigate';if(cls==='wraith')cls='interceptor';
   const key=fac+cls;if(MESH[key])return MESH[key];

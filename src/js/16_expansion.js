@@ -240,7 +240,7 @@ function anomPanel(T,dist){const p=W.player,sc=p&&p.anS&&p.anS.id===T.id?p.anS.t
 // ============================================================ the Unbound: an asteroid haven, a fleet that grows, ambushes from the rocks
 // Unbound wings keep to space no faction calls home. Their capitals go further: they hunt the convoy lanes and the depots on
 // the edges of faction space, frontier systems included (never a faction's core), and launch raids from wherever they are,
-// pulling back to the haven to refit when their stores run dry or they are badly hurt. Their haven is a station dug into a giant rock in The Wrack. Its slipway builds an escort around the
+// pulling back to the haven to refit when their stores run dry or they are badly hurt. Their haven is an asteroid base in The Wrack: the rock itself, hollowed out. Its slipway builds an escort around the
 // 25-minute mark, a second by 45, and a carrier after an hour, if they can mine, salvage, plunder and fence the parts.
 const PIR_E1=1500,PIR_E2=2700,PIR_C=3900,PIR_REBUILD=600,PIR_LURK=.65,LURK_TRIG=850,LURK_RADAR=1600;
 STN.haven={sMax:3000,hMax:9000,tur:6,dmg:14,range:1450};LS_RATE.haven=.6;
@@ -331,11 +331,43 @@ function lurkThink(e,dt){const s=S.sectors[W.sid];
 {const o=npcThink;npcThink=function(e,dt){if(e.role==='pirate'&&(e.lurk||e.ai.lurkGo)&&!NET.cl){e.ai.t-=dt;e.life+=dt;e.mining=null;if(lurkThink(e,dt))return}return o.apply(this,arguments)}}
 // a scout's long-range radar picks a landed ship out of the rock clutter at 1.6 km instead of 320 m
 {const o=seenShip;seenShip=function(e){if(e&&e.masked&&e.lurk!==undefined&&W&&W.player&&CLASSES[S.player.cls]&&CLASSES[S.player.cls].radar&&d3(e,W.player)<LURK_RADAR)return true;if(e&&e.masked&&NET.cl&&e.side==='pirate'&&W&&W.player&&CLASSES[S.player.cls]&&CLASSES[S.player.cls].radar&&d3(e,W.player)<LURK_RADAR)return true;return o.apply(this,arguments)}}
-// the haven: the Unbound station model sunk into the face of a giant asteroid
-{const o=stationMesh;stationMesh=function(fac,kind){if(kind==='haven')return o.call(this,'pirate','station');return o.apply(this,arguments)}}
+// the haven: an asteroid base. The rock itself is the station: three hangar mouths cut into its waist (the docking ports),
+// lit window rows, scrap plating bolted over the stone, domes and masts on top, and its turrets set into the surface
+const HAVEN_R=118,HAVEN_BAYS=[.35,.35+TAU/3,.35+2*TAU/3],HV_N=[[.31,.74,.6],[-.82,.23,.52],[.47,-.66,.58],[-.2,-.4,-.9],[.9,.1,-.42],[-.5,.85,-.1]];
+function havenNoise(x,y,z){let n=0;for(let i=0;i<HV_N.length;i++){const v=HV_N[i];n+=Math.sin((x*v[0]+y*v[1]+z*v[2])*(2.1+i*.9)+i*1.7)/(1+i*.45)}return n/2.6}
+function havenR(x,y,z){const l=hyp(x,y,z)||1;return HAVEN_R*(1+.24*havenNoise(x/l,y/l,z/l)+.1*Math.max(0,x/l*.6-z/l*.8))}
+function havenSurf(x,y,z){const l=hyp(x,y,z)||1,r=havenR(x,y,z);return[x/l*r,y/l*r*.84,z/l*r]}
+PORTS.haven=HAVEN_BAYS.map(a=>{const p=havenSurf(Math.cos(a),0,Math.sin(a));return[p[0]*1.08,0,p[2]*1.08]});
+function havenMesh(){if(MESH.haven)return MESH.haven;const R=mulberry(4242),fc=hexRGB(sideCol('pirate')),rock=[.34,.31,.29],dk=[.17,.16,.15],metal=[.4,.39,.37],rust=[.42,.27,.18],warm=[1,.62,.3],g=new GB();
+  // the rock: a twice-split icosahedron pushed out by the noise field
+  const t=(1+Math.sqrt(5))/2;let V=[[-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0],[0,-1,t],[0,1,t],[0,-1,-t],[0,1,-t],[t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1]].map(p=>{const l=hyp(...p);return p.map(c=>c/l)});
+  let F=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
+  for(let it=0;it<3;it++){const mid=new Map(),M=(a,b)=>{const k=a<b?a+'_'+b:b+'_'+a;if(mid.has(k))return mid.get(k);const p=V[a].map((c,i)=>(c+V[b][i])/2),l=hyp(...p);V.push(p.map(c=>c/l));mid.set(k,V.length-1);return V.length-1};
+    const F2=[];for(const[a,b,c]of F){const ab=M(a,b),bc=M(b,c),ca=M(c,a);F2.push([a,ab,ca],[b,bc,ab],[c,ca,bc],[ab,bc,ca])}F=F2}
+  const P=V.map(p=>havenSurf(p[0],p[1],p[2]));
+  for(const[a,b,c]of F){const sh=.78+R()*.38,n=havenNoise(...V[a]);g.tri(P[a],P[b],P[c],scaleC(n>.35?mixC(rock,dk,.4):rock,sh),0,[0,0,0])}
+  const at=(dx,dy,dz,out)=>{const s=havenSurf(dx,dy,dz),l=hyp(dx,dy,dz)||1,k=(hyp(...s)+out)/hyp(...s);return[s[0]*k,s[1]*k,s[2]*k]};
+  const face=(dx,dy,dz)=>qLook(dx,dy*.84,dz,Math.abs(dy)>.9?1:0,Math.abs(dy)>.9?0:1,0,q0());
+  // hangar mouths: a dark frame sunk into the waist, a glowing bay inside, guide lights either side
+  for(const a of HAVEN_BAYS){const dx=Math.cos(a),dz=Math.sin(a),q=face(dx,0,dz),c=at(dx,0,dz,-4);
+    g.set(c[0],c[1],c[2],q).box(70,40,34,dk,0,true);const c2=at(dx,0,dz,13);g.set(c2[0],c2[1],c2[2],q).box(56,26,2,warm,.95);
+    for(const sx of[-1,1])for(let k=0;k<4;k++){const ox=-dz*sx*34,oz=dx*sx*34,cl=at(dx,0,dz,14);g.set(cl[0]+ox,cl[1]-12+k*8,cl[2]+oz,q).box(4,3,3,fc,1)}
+    const lip=at(dx,0,dz,10);g.set(lip[0],lip[1]+22,lip[2],q).box(80,5,22,metal,0)}
+  // window rows and scrap plating over the stone
+  for(let i=0;i<46;i++){let d=rdirS(R,.7);if(HAVEN_BAYS.some(a=>Math.cos(a)*d.x+Math.sin(a)*d.z>.9&&Math.abs(d.y)<.3))continue;const c=at(d.x,d.y,d.z,1.5),q=face(d.x,d.y,d.z);g.set(c[0],c[1],c[2],q).box(9,3,3,R()<.15?fc:warm,.9);if(R()<.5){g.set(c[0],c[1]-6,c[2],q).box(9,3,3,warm,.85)}}
+  for(let i=0;i<16;i++){const d=rdirS(R,1),c=at(d.x,d.y,d.z,0),q=face(d.x,d.y,d.z);g.set(c[0],c[1],c[2],q).box(22+R()*20,14+R()*16,4,R()<.5?metal:rust,0,true)}
+  // domes, masts and a dish on top
+  for(let i=0;i<3;i++){const d={x:Math.cos(i*2.3)*.45,y:1,z:Math.sin(i*2.3)*.45},c=at(d.x,d.y,d.z,-6);g.set(c[0],c[1],c[2]).sphere(13+i*4,5,10,[.45,.62,.7],.3)}
+  for(let i=0;i<4;i++){const d={x:Math.cos(i*1.7+1)*.3,y:1,z:Math.sin(i*1.7+1)*.3},c=at(d.x,d.y,d.z,20);g.set(c[0],c[1],c[2]).cyl(1.4,1,44,5,metal);g.set(c[0],c[1]+23,c[2]).sphere(2.6,3,5,fc,1)}
+  const e=new GB();e.seg([0,0,0],[0,0,0],[0,0,0]);return MESH.haven={core:g.upload(),spin:e.upload(true)}}
+function rdirS(R,ymax){for(;;){const x=R()*2-1,y=(R()*2-1)*ymax,z=R()*2-1,l=hyp(x,y,z);if(l>.2&&l<=1)return{x:x/l,y:y/l,z:z/l}}}
+{const o=stationMesh;stationMesh=function(fac,kind){if(kind==='haven')return havenMesh();return o.apply(this,arguments)}}
+{const o=portName;portName=function(E){if(E&&E.type==='station'&&E.kind==='haven')return'haven';return o.apply(this,arguments)}}
+// turrets set into the rock: top, bottom and four round the shoulders between the bays
+{const o=addStationEnt;addStationEnt=function(R){const e=o.apply(this,arguments);if(R&&R.kind==='haven'){const D=[[0,1,0],[0,-1,0],...[0,1,2,3].map(i=>{const a=HAVEN_BAYS[0]+TAU/6+i*TAU/4;return[Math.cos(a),.42*(i%2?-1:1),Math.sin(a)]})];
+  e.turrets.forEach((t,i)=>{const d=D[i%D.length],s=havenSurf(d[0],d[1],d[2]),l=hyp(...s),k=(l+6)/l;t.p=[s[0]*k,s[1]*k,s[2]*k]});e.r=HAVEN_R}return e}}
 const _xq=q0(),_xq2=q0();
 function xDraw3D(t){if(!W)return;const SE=W.stationEnt;
-  if(SE&&SE.kind==='haven'){const R=SE.rec,d=(R&&R.rock&&R.rock.d)||{x:0,y:-1,z:0},k=230;if(inView(SE.x+d.x*k,SE.y+d.y*k,SE.z+d.z*k,k*1.3)){qAxis(.3,1,.2,.7,_xq);qNorm(_xq);mModel(MM,SE.x+d.x*k*1.05,SE.y+d.y*k*1.05,SE.z+d.z*k*1.05,_xq,k,k*.86,k*.94);drawMesh(astMesh(5,'xc'),MM)}}
   if(DEF[W.sid].kind==='void'&&scoutSees(S.player)){for(const A of anomsIn(W.sid)){if(!inView(A.x,A.y,A.z,60))continue;const pu=.5+.5*Math.sin(t*3+A.id);qAxis(0,1,0,t*.6+A.id,_xq2);mModel(MM,A.x,A.y,A.z,_xq2,14,14,14);drawMesh(astMesh(A.v||0,'au'),MM,ONE3,[.15+.35*pu,.7*pu+.2,.6*pu+.2])}}}
 {const o=drawWorks;drawWorks=function(t){const r=o.apply(this,arguments);try{xDraw3D(t)}catch(e){}try{if(S&&S.unb)lairDraw()}catch(e){}return r}}
 function xOverlay(){if(!W||!W.player||!S||S.player.docked||W.dead||W.bridge||W.gunseat||!scoutSees(S.player)||DEF[W.sid].kind!=='void')return;const c=octx,p=W.player;
@@ -452,7 +484,7 @@ function raidLiveFrame(){for(const id in W.groups){const g=W.groups[id];if(!g.ra
     if(G.gate===null&&!G.hold){if(r.state!=='home')raidHome(r);continue}
     const L=grpLead(g);if(!L)continue;
     if(G.gate){if(L.ai.tgt&&L.ai.tgt.alive&&d3(L.ai.tgt,L)<1500)continue;for(const m of al){m.ai.wp={x:G.gate.x,y:G.gate.y,z:G.gate.z};m.ai.tgt=null}
-      if(d3(L,G.gate)<330){for(const m of al){fxWarp(m,sideCol(m.side));despawn(m)}}continue}
+      if(d3(L,G.gate)<330){for(const m of al)if(!gateLocked(m)){fxWarp(m,sideCol(m.side));despawn(m)}}continue}
     const P=G.hold,dx=-P.x,dy=-P.y,dz=-P.z,l=hyp(dx,dy,dz)||1,spot={x:P.x+dx/l*G.R,y:P.y+dy/l*G.R,z:P.z+dz/l*G.R};if(!L.ai.wp||d3(L.ai.wp,spot)>260)L.ai.wp={x:spot.x+rnd(-120,120),y:spot.y+rnd(-60,60),z:spot.z+rnd(-120,120)}}}
 // strategic side of a live raid: when its ships are gone from the system, the survivors (if any) go back to the map
 function raidLiveCheck(r){const w=WORLDS[r.sector];const al=w?w.ents.filter(e=>e.alive&&e.raidR===r.id&&e.role!=='drone'):[];if(al.length)return;
