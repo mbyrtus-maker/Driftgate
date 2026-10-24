@@ -1551,3 +1551,9 @@ The order used to send you to wherever the nearest enemy freighter was when you 
 ## Small fixes (Oct 2026)
 - Shift+Tab cycles the target list backwards.
 - **Why the Unbound are locked.** Clicking the locked Unbound card used to say only "earn a Legend point", and Launch then quietly started you in the faction still selected. It now says exactly why for the callsign typed in: no callsign yet, no Legend record for it, or how much of the point it has (a lost galaxy gives ½), lists other callsigns on this device that do have a point, and warns which faction Launch will use.
+
+## Unbound haven jobs in flight (Oct 2026)
+Unbound captains had no in-flight work (P said "the Unbound take no campaign orders"). The HUD orders card now shows **Haven jobs** for them, taken with P (Shift+P cycles), at most two on at once, up to two offers posted at a time (an offer stands 4 minutes):
+- **Intercept:** a named faction supply convoy, picked where you can catch it (same intercept rule as faction interdiction: the first system on its route you reach before it leaves, never a core). The course follows the convoy; it's targeted when you're in its system. Done when you rob it (3 t or more) or kill it. Pays 300 cr + 8% of the cargo value, +30 Infamy; 7 minutes.
+- **Mining disruption:** a faction system with asteroids (not a core) within 3 jumps. Rob or kill 2 of that faction's miners there. Pays 350 cr, +25 Infamy; 7 minutes.
+Pay comes from the Unbound treasury (`transfer('pirate','player')`); Infamy goes through `infAdd`, so the home-system and trophy multipliers apply.

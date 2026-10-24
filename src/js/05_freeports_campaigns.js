@@ -693,7 +693,7 @@ function orderList(){if(S.unb||!S.player.faction||!FACTIONS[S.player.faction])re
   for(const op of friendlyOps()){if(op.kind==='local')continue;if(m&&m.evId&&op.ev&&op.ev.id===m.evId)continue;if(op.ev&&sd.some(o=>o.evId===op.ev.id))continue;out.push({t:'op',op,label:op.label})}
   for(const o of out)o.key=ordKey(o);return out.slice(0,7)}
 function ordSel(L){const i=L.findIndex(o=>o.key===ordPick);return i<0?0:i}
-function planKey(next){if(S.training)S.training.pk=1;if(S.unb){flash('The Unbound take no campaign orders. Check the Marks tab at the haven.',true);return}const L=orderList();if(!L.length){flash('No orders right now. Your faction posts its next campaign move shortly.',true);return}
+function planKey(next){if(S.training)S.training.pk=1;if(S.unb){ujobKey(next);return}const L=orderList();if(!L.length){flash('No orders right now. Your faction posts its next campaign move shortly.',true);return}
   let i=ordSel(L);if(next){if(L.length<2){flash('That is your only order right now.');ordPick=L[0].key;return}i=(i+1)%L.length;ordPick=L[i].key;flash(`Order ${i+1} of ${L.length}: ${L[i].label}. Press P to take it.`);if(!MUTE)SFX.ui&&SFX.ui();return}
   ordPick=L[i].key;if(L[i].t==='op'){joinOp(L[i].op);return}if(L[i].t==='side'){sideTake(L[i].o);return}const m=L[i].m;
   const k=pkey();if(!m.acc.includes(k)){if(NET.cl){netSend({t:'plan',id:m.id});m.acc.push(k);feed(`Signed on: ${m.title}. ${campHow(m)}`,'good')}else campAccept(k,m);SFX.count(true)}
@@ -740,7 +740,7 @@ function commsUpdate(){const P=S.player,dl=Math.max(0,(P.distT||0)-S.T),fc=W.fla
   const K=(k,l,w)=>`<div${w?' class="wait"':''}><kbd>${k}</kbd>${l}</div>`;
   $('cKeys').innerHTML=K('U',dl>0?`Distress ${Math.ceil(dl)}s`:'Distress',dl>0)+K('I','Comms menu')+K('Y','Assist friendly')+K('O','Join operation')+K('P','Take order')+K('⇧P','Next order')+K('B',fc>0?`Flares ${Math.ceil(fc)}s`:'Flares',fc>0)
     +`<div class="sub"><kbd>I</kbd> opens Command (escort me, guard me, build, distress), then steps through the ships around you; <kbd>1</kbd>–<kbd>4</kbd> pick</div>`}
-function campHud(){const el=$('hOrd');if(!el)return;if(S.unb){el.hidden=true;return}const C=myCamp(),m=C&&C.mv,f=S.player.faction,L=orderList(),si=ordSel(L),pick=L[si],multi=L.length>1;el.hidden=false;
+function campHud(){const el=$('hOrd');if(!el)return;if(S.unb){ujobHud(el);return}const C=myCamp(),m=C&&C.mv,f=S.player.faction,L=orderList(),si=ordSel(L),pick=L[si],multi=L.length>1;el.hidden=false;
   const n=controlCounts()[f]||0,k=pkey(),cs=C&&(m||C.goal);let h=`<div class="ot" style="border-color:${sideCol(f)}"><span>${esc(FACTIONS[f].short)} ${cs?'· '+esc(DOCTRINE[f].name):'orders'}</span><b>${n}/${VIC_NEED} systems</b></div>`;
   if(!m)h+=C&&C.goal?`<div class="om">Goal reached. Hold the line.</div>`:`<div class="om" style="color:var(--dim)">No campaign move right now. Command posts the next one shortly.</div>`;
   else{const on=!multi||(pick&&pick.t==='camp'),signed=m.acc.includes(k),left=m.stage==='active'&&m.until?Math.max(0,Math.round(m.until-S.T)):Math.max(0,Math.round(m.brief-S.T)),ev=m.evId&&S.events.find(e=>e.id===m.evId);
