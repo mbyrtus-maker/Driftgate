@@ -486,7 +486,7 @@ function npcThink(e,dt){
     if(ai.hunt&&W.t<ai.huntUntil&&ai.hunt.alive&&(W.ents.includes(ai.hunt)||ai.hunt===W.player)&&!((ai.hunt.isPlayer&&(S.player.docked||W.dead)||mHid(ai.hunt,e)))&&d3(ai.hunt,e)<5000&&!(ai.tgt&&d3(ai.tgt,e)<400))ai.tgt=ai.hunt;
     if(e.grp){const L=grpLead(e.grp);if(!ai.tgt){for(const m of e.grp.members)if(m!==e&&m.alive&&m.ai.tgt&&m.ai.tgt.alive&&W.ents.includes(m.ai.tgt)&&d3(m.ai.tgt,e)<2200){ai.tgt=m.ai.tgt;break}}
       if(!ai.tgt&&L&&L!==e&&L.lastHitBy&&W.t-L.lastHit<3){const att=W.ents.find(x=>x.type==='ship'&&x.alive&&x.side===L.lastHitBy&&d3(x,e)<2200);if(att)ai.tgt=att}}}
-  if(e.role==='raider'&&e.life>150&&!ai.tgt&&!e.sortieEv)e.role='leave';
+  if(e.role==='raider'&&e.life>150&&!ai.tgt&&!e.sortieEv&&!e.raidR)e.role='leave';
   if(ai.retireAt&&W.t>ai.retireAt&&!ai.tgt&&e.role==='patrol')e.role='leave';
   if(e.role==='pirate'&&e.life>220&&!ai.tgt&&DEF[W.sid].kind!=='den')e.role='leave';
   {const OEb=W.outpostEnt;

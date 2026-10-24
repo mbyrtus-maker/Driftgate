@@ -238,13 +238,14 @@ function anomPanel(T,dist){const p=W.player,sc=p&&p.anS&&p.anS.id===T.id?p.anS.t
 {const o=enterSector;enterSector=function(sid){const r=o.apply(this,arguments);try{const n=anomsIn(sid).length;if(n&&scoutSees(S.player))setTimeout(()=>{if(W&&W.sid===sid)feed(`◇ Long-range radar: ${n} unknown signal${n>1?'s':''} in ${DEF[sid].name}. Tab to target, then hold within ${ANOM_R} m to scan.`,'info')},1800)}catch(e){}return r}}
 
 // ============================================================ the Unbound: an asteroid haven, a fleet that grows, ambushes from the rocks
-// The Unbound keep to space no faction calls home: they never raid, patrol or route a capital through a faction's core or
-// frontier systems. Their haven is a station dug into a giant rock in The Wrack. Its slipway builds an escort around the
+// Unbound wings keep to space no faction calls home. Their capitals go further: they hunt the convoy lanes and the depots on
+// the edges of faction space, frontier systems included (never a faction's core), and launch raids from wherever they are,
+// pulling back to the haven to refit when their stores run dry or they are badly hurt. Their haven is a station dug into a giant rock in The Wrack. Its slipway builds an escort around the
 // 25-minute mark, a second by 45, and a carrier after an hour, if they can mine, salvage, plunder and fence the parts.
 const PIR_E1=1500,PIR_E2=2700,PIR_C=3900,PIR_REBUILD=600,PIR_LURK=.65,LURK_TRIG=850,LURK_RADAR=1600;
 STN.haven={sMax:3000,hMax:9000,tur:6,dmg:14,range:1450};LS_RATE.haven=.6;
 const PIR_ESC_NAMES=['Saucy Gull','Rum Runner','Widow\'s Grin','Bilge Rat','Cutlass Kate','Black Penny','Scurvy Dog','Gallows Bird'],PIR_CAR_NAMES=['The Drowned Crown','Queen of Scrap','Mother of Knives','Old Grog','Salt Saint'];
-const PIR_OK=new Set(SECTOR_DEFS.filter(d=>!d.home&&d.kind!=='hive').map(d=>d.id));
+const PIR_OK=new Set(SECTOR_DEFS.filter(d=>d.kind!=='core'&&d.kind!=='hive').map(d=>d.id));
 const HOPP={};for(const a of PIR_OK){const d={[a]:0},q=[a];while(q.length){const x=q.shift();for(const n of NEIGH[x])if(PIR_OK.has(n)&&d[n]===undefined){d[n]=d[x]+1;q.push(n)}}HOPP[a]=d}
 function pirSetup(){if(!S||NET.cl)return;S.yards=S.yards||{};if(!S.yards.pirate)S.yards.pirate={sector:'wr'};S.pir=S.pir||{lostT:-1e9,built:{escort:0,carrier:0}};
   if(!S.stations.wr){const p=stationSite('wr'),k=STN.haven;S.stations.wr={sid:'wr',owner:'pirate',kind:'haven',name:'Scrapheart Haven',x:p.x,y:p.y,z:p.z,sMax:k.sMax,shield:k.sMax,hMax:k.hMax,hull:k.hMax,fort:{},stock:{},built:S.T,rock:{d:rdir(1)}}}}
@@ -256,10 +257,11 @@ function tuneCapMigrate(){if(!S)return;let n=0;const L=[S.player,...Object.value
 {const o=escName;escName=function(side){if(side==='pirate'){S.escSeq=(S.escSeq||0)+1;return PIR_ESC_NAMES[S.escSeq%PIR_ESC_NAMES.length]}return o.apply(this,arguments)}}
 {const o=carName;carName=function(side){if(side==='pirate')return pick(PIR_CAR_NAMES);return o.apply(this,arguments)}}
 {const o=shipLabel;shipLabel=function(e){if(e&&e.role==='frigate'&&e.tok&&e.side==='pirate'&&!e.pname)return`Unbound ${e.tok.name}`;return o.apply(this,arguments)}}
-// no Unbound wings in faction space; elsewhere most of them go to ground on the rocks
-{const o=spawnWing;spawnWing=function(role,side,size,initial){if(side==='pirate'&&W&&DEF[W.sid]&&DEF[W.sid].home)return null;const g=o.apply(this,arguments);
+// no Unbound wings in faction space (unless an Unbound capital is there with its wing); elsewhere most go to ground on the rocks
+function pirBarred(){return W&&DEF[W.sid]&&DEF[W.sid].home&&!frigatesIn(W.sid).some(t=>t.side==='pirate')}
+{const o=spawnWing;spawnWing=function(role,side,size,initial){if(side==='pirate'&&pirBarred())return null;const g=o.apply(this,arguments);
   if(g&&side==='pirate'&&role==='pirate'&&DEF[W.sid].kind!=='den'&&Math.random()<PIR_LURK)lurkPlan(g,initial);if(g)aceMaybeLead(g,role,side);return g}}
-{const o=spawnNPC;spawnNPC=function(role,side){if(side==='pirate'&&W&&DEF[W.sid]&&DEF[W.sid].home)return null;return o.apply(this,arguments)}}
+{const o=spawnNPC;spawnNPC=function(role,side){if(side==='pirate'&&pirBarred())return null;return o.apply(this,arguments)}}
 // pirate carriers fly no assault ships (the Unbound plunder depots, they don't hold them) and take no supply convoys:
 // a carrier at the haven is restocked straight from Unbound stores, anywhere else what it asked for stays in the stores
 {const o=haulSend;haulSend=function(f,fromSid,toSid,load,key,why,car){if(f==='pirate'){const t=car&&(S.frigates||[]).find(x=>x.id===car);if(t&&t.sector==='wr'){t.store=t.store||{};inv.addAll(t.store,load)}else inv.addAll(S.econ.stock.pirate,load);return null}return o.apply(this,arguments)}}
@@ -269,9 +271,12 @@ function tuneCapMigrate(){if(!S)return;let n=0;const L=[S.player,...Object.value
 {const o=carTick;carTick=function(){const r=o.apply(this,arguments);for(const t of S.frigates||[])if(t.side==='pirate'&&t.fab&&t.fab.assault){inv.addAll(t.store=t.store||{},t.fab.kit);t.fab=null}return r}}
 {const o=frigHop;frigHop=function(t){if(t&&t.side==='pirate'&&!t.jumpTo&&t.dest&&t.dest!==t.sector&&HOPP[t.dest]){let best=null,bh=99;for(const n of NEIGH[t.sector]){if(!PIR_OK.has(n))continue;const h=HOPP[t.dest][n];if(h!==undefined&&h<bh){bh=h;best=n}}return best}return o.apply(this,arguments)}}
 {const o=frigOrders;frigOrders=function(t){if(t&&t.side==='pirate')return pirOrders(t);return o.apply(this,arguments)}}
-function pirOrders(t){const hp=t.hull/capHullMax(t);if(hp<.55||(isCar(t)&&(t.wing||[]).length<2&&t.sector!=='wr'))return'wr';let best='wr',bs=-1e9;const from=HOPP[t.sector]||HOPP.wr;
+const PIR_KIT={plate:9,wire:6};   // a capital refits at the haven when its stores can't fit one more raid
+function pirOrders(t){const hp=t.hull/capHullMax(t);if(hp<.55||(isCar(t)&&(t.wing||[]).length<2&&t.sector!=='wr'))return'wr';if(t.sector!=='wr'&&!haveIn(PIR_KIT,[t.store||{}]))return'wr';let best='wr',bs=-1e9;const from=HOPP[t.sector]||HOPP.wr;
+  const lanes=(S.traders||[]).filter(x=>x.kind==='haul'&&FAC_IDS.includes(x.side)&&x.side!=='brood').map(x=>x.path.slice(x.leg));
   for(const sid of PIR_OK){const h=from[sid];if(h===undefined||h>3)continue;let sc=-.8*h+rnd(0,1.2);const d=DEF[sid],Rs=S.stations[sid];
-    if(Rs&&FAC_IDS.includes(Rs.owner)&&Rs.kind==='depot')sc+=isCar(t)?3.5:2.2;if(d.kind==='contested'||d.kind==='hub')sc+=1.2;else if(d.kind==='deep')sc+=.8;else if(d.kind==='void')sc+=.3;
+    if(Rs&&FAC_IDS.includes(Rs.owner)&&Rs.kind==='depot')sc+=(isCar(t)?3.5:2.2)+(edgeDepot(Rs)?.8:0);if(d.home)sc-=.6;
+    {let n=0;for(const L of lanes)if(L.some(c=>c===sid||NEIGH[sid].includes(c)))n++;sc+=Math.min(2.4,.6*n)}if(d.kind==='contested'||d.kind==='hub')sc+=1.2;else if(d.kind==='deep')sc+=.8;else if(d.kind==='void')sc+=.3;
     const caps=frigatesIn(sid).filter(o=>o!==t);if(caps.some(o=>o.side==='pirate'))sc-=2.5;if(caps.some(o=>hostile('pirate',o.side)&&isCar(o)))sc-=isCar(t)?1:2.5;else if(caps.some(o=>hostile('pirate',o.side)))sc+=isCar(t)?1:.4;
     if(sid==='wr')sc+=(1-hp)*4;if(sc>bs){bs=sc;best=sid}}return best}
 function pirLost(t){if(!S.pir)return;S.pir.lostT=S.T}
@@ -294,7 +299,9 @@ function pirTick(){if(NET.cl||!S||S.training)return;pirSetup();const st=S.econ.s
     S.events.push({id:S.nextId++,type:'pirbuild',cls:next,att:'pirate',sector:'wr',force,until:T+(next==='carrier'?FRIGATE_TIME:ESCORT_TIME)*(unbWork('graving')>=1?.8:1),stage:'building'});
     allFeed(`☠ Unbound salvage crews are welding ${next==='carrier'?'a carrier':'an escort'} together in the slip at Scrapheart Haven, The Wrack.`,'warn')}
   for(const ev of S.events){if(ev.type!=='pirbuild'||ev.stage==='done'||T<ev.until)continue;ev.stage='done';const t=(ev.cls==='carrier'?makeCarrier:makeEscort)('pirate','wr',ev.force);ev.force={};
-    allFeed(`☠ The Unbound have launched the ${ev.cls} ${t.name} from Scrapheart Haven. It hunts in contested and open space; it won't enter faction home systems.`,'bad')}
+    allFeed(`☠ The Unbound have launched the ${ev.cls} ${t.name} from Scrapheart Haven. It hunts the convoy lanes and the depots on the edges of faction space, frontier systems included.`,'bad')}
+  // refit: a capital at the haven loads raid kits (two raids' worth) from Unbound stores
+  for(const t of caps){if(t.live||t.sector!=='wr')continue;const sto=t.store=t.store||{};for(const[k,n]of[['plate',26],['wire',16],['coil',3],['missile',3]]){const m=Math.min(n-(sto[k]||0),Math.max(0,(st[k]||0)-(k==='wire'?12:k==='plate'?12:0)));if(m>0)inv.add(sto,k,inv.take(st,k,m))}}
   // plunder: a pirate capital sitting on a broken faction depot carries its stores off, a little each tick
   for(const t of caps){if(t.live)continue;const R=S.stations[t.sector];if(!R||!FAC_IDS.includes(R.owner)||!isDepotF(R)||R.hull>R.hMax*.06)continue;const ds=dStore(R),got={};let m=0;
     for(const k in ds){const n=Math.min(Math.ceil(ds[k]*.12),Math.max(0,40-m));if(n>0){got[k]=inv.take(ds,k,n);m+=got[k]*mass(k)}}if(m>0){inv.addAll(st,got);if((friendSide(R.owner)||covered(t.sector))&&S.T-(t.plT||-99)>90){t.plT=S.T;feed(`☠ The Unbound ${capName(t)} ${t.name} is stripping ${R.name}'s stores.`,friendSide(R.owner)?'bad':'news')}}}}
@@ -341,3 +348,118 @@ function xOverlay(){if(!W||!W.player||!S||S.player.docked||W.dead||W.bridge||W.g
 // ---- the per-tick and per-frame hooks
 {const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{histTick();aceTick();anomTick()}catch(e){frameErr('expansion tick',e)}return r}}
 {const o=worldUpdate;worldUpdate=function(dt){const r=o.apply(this,arguments);try{if(W&&S){xOreTick();anomWorld(dt);if(W===LW)anomLocal(dt)}}catch(e){frameErr('expansion world',e)}return r}}
+// ============================================================ raids: convoys and edge depots are hit by real raider groups
+// Nothing is lost to dice. A raiding side (a hostile faction from one of its stations, the Brood, the Unbound haven, or an
+// Unbound capital out hunting) fits out a 3-ship group, paying the kit from its own stores up front, picks a system on a
+// convoy's route it can reach first and flies there jump by jump. It waits by the gate the convoy will come through. Out of
+// sight the two forces are settled by strength; in an open system the raiders are real ships that jump in through the gate
+// they came by and go for the freighter. Survivors carry their loot home (the rest of the cargo spills as salvage and debris).
+// The Unbound also hit depots on the edges of faction space; with a capital out they raid deep into faction frontiers.
+const RAID={hop:35,reach:2,reachHaven:3,reachCap:2,slack:30,wait:240,cool:150,rate:{fac:.009,brood:.005,pirate:.01,cap:.03},esc:.02,max:{fac:2,brood:1,pirate:3},
+  win:{freighter:.72,bulker:.62},depWin:.6,stnCut:.55,capCut:.35,carry:60,carryDep:60,lose:.35,keep:{wire:12},keepFor:['missile','drone','swarm','tune','torpedo'],liveDep:90};
+const PIR_OK0=new Set(SECTOR_DEFS.filter(d=>!d.home&&d.kind!=='hive').map(d=>d.id));
+// the three powers keep a reserve of conduit in the warehouse that munitions and extras won't eat into, so raiders and patrols can be fitted
+{const o=craftAbstract;craftAbstract=function(st,item){if(!RAID.keepFor.includes(item)||!S||!S.econ||!FAC_IDS.some(f=>f!=='brood'&&S.econ.stock[f]===st))return o.apply(this,arguments);const kp={};for(const k in RAID.keep){kp[k]=Math.min(st[k]||0,RAID.keep[k]);st[k]=(st[k]||0)-kp[k]}
+  try{return o.apply(this,arguments)}finally{for(const k in kp)st[k]=(st[k]||0)+kp[k]}}}
+function raidOf(id){return(S.raids||[]).find(r=>r.id===id)}
+function raidWho(side){return side==='pirate'?'Unbound':side==='brood'?'Brood':FACTIONS[side].short}
+// three raiders the stores can fit: the same picks and fallbacks as a live wing
+function raidShips(side,srcs){const pir=side==='pirate',t0=pir?pirateTier():factionTier(side),lr=pir?'pirate':'patrol',need={},ships=[];
+  const can=ld=>{const n={...need};for(const k in ld)n[k]=(n[k]||0)+ld[k];return haveIn(n,srcs)};
+  for(let i=0;i<3;i++){let cls=pickFighter(pir?'pirate':'raider'),tier=t0,ld=loadout(lr,tier,cls);if(!can(ld)){cls='interceptor';ld=loadout(lr,tier,cls)}while(!can(ld)&&tier>1){tier--;ld=loadout(lr,tier,cls)}if(!can(ld))return null;
+    for(const k in ld)need[k]=(need[k]||0)+ld[k];ships.push({cls,tier,ld})}return{ships,need}}
+// where a side can launch from: [{sid, srcs, cap, reach, deep}]
+function raidSources(side){const L=[];if(side==='pirate'){const H=S.stations.wr;if(H&&H.owner==='pirate'&&H.hull>H.hMax*.2)L.push({sid:'wr',srcs:[S.econ.stock.pirate],cap:null,reach:RAID.reachHaven,deep:false});
+    for(const t of pirCaps())if(!t.jumpTo)L.push({sid:t.sector,srcs:[t.store=t.store||{}],cap:t.id,reach:RAID.reachCap,deep:true});return L}
+  const srcs=[S.econ.fleet[side],S.econ.stock[side]].filter(Boolean);for(const id in S.stations){const R=S.stations[id];if(R.owner===side&&R.kind!=='haven')L.push({sid:id,srcs,cap:null,reach:RAID.reach,deep:true})}return L}
+// the first system on a convoy's route a raid from sid can reach before the convoy does
+function raidIntercept(src,t){const left=t.path.length-1-t.leg,eta0=Math.max(0,t.next-S.T),core=FAC_HOME(t.side);
+  for(let i=t.live?1:0;i<=left;i++){const c=t.path[t.leg+i];if(c===core||DEF[c].kind==='hive')continue;if(!src.deep&&!PIR_OK0.has(c))continue;if(src.cap&&!PIR_OK.has(c))continue;const h=HOP[src.sid][c];if(h>src.reach)continue;
+    const eta=i?eta0+(i-1)*TRADER_HOP:0;if(h*RAID.hop>eta+RAID.slack)continue;if(i===0&&h>0)continue;return{c,i,h}}return null}
+function raidTaken(t){return(S.raids||[]).some(r=>r.tgt===t.id)}
+function edgeDepot(R){if(!isDepotF(R))return false;const T=territory(R.owner);return NEIGH[R.sid].some(n=>!T.has(n))}
+// choose a target for a side (or for a raid already out, re-tasking from where it is)
+function raidPick(side,srcL,ships){let best=null;
+  for(const t of S.traders||[]){if(t.kind!=='haul'||!hostile(side,t.side)||raidTaken(t))continue;const v=invValue(t.load||{});if(v<40)continue;
+    for(const src of srcL){const I=raidIntercept(src,t);if(!I)continue;const sc=v/(1+I.h)*(t.esc?1.3:1);if(!best||sc>best.sc)best={sc,src,tgt:t.id,c:I.c,dep:null}}}
+  if(side==='pirate')for(const id in S.stations){const R=S.stations[id];if(!edgeDepot(R)||(S.raids||[]).some(r=>r.dep===id))continue;const ds=dStore(R),v=Math.min(invValue(ds),2500)*.35;if(v<60)continue;
+    for(const src of srcL){if(!src.deep&&!PIR_OK0.has(id))continue;if(src.cap&&!PIR_OK.has(id))continue;const h=HOP[src.sid][id];if(h>src.reach)continue;const sc=v/(1+h);if(!best||sc>best.sc)best={sc,src,tgt:null,c:id,dep:id}}}
+  return best}
+function raidSend(side,pk,kit){const src=pk.src,r={id:S.nextId++,side,src:src.sid,cap:src.cap,tgt:pk.tgt,dep:pk.dep,dest:pk.c,sector:src.sid,path:trPath(src.sid,pk.c),leg:0,next:S.T+RAID.hop,state:'out',ships:kit.ships,kit:{...kit.need},loot:{},back:[],T0:S.T};
+  takeFrom(kit.need,src.srcs);S.raids.push(r);
+  const t=r.tgt&&(S.traders||[]).find(x=>x.id===r.tgt);if(t&&t.esc)keyFeed(t.esc.k,`⚠ ${raidWho(side)} raiders are moving to intercept the convoy you're escorting. Expect them in ${DEF[r.dest].name}.`,'warn');
+  if(r.dep&&friendSide(S.stations[r.dep].owner))feed(`⚠ An ${raidWho(side)} raiding party has been seen heading for ${S.stations[r.dep].name}.`,'warn');
+  if(WORLDS[r.sector])inW(WORLDS[r.sector],()=>raidSpawn(r,false));else if(r.path.length===1)raidArrive(r);return r}
+function raidDispatch(){S.raids=S.raids||[];for(const side of[...FAC_IDS,'pirate']){const kind=side==='pirate'?'pirate':side==='brood'?'brood':'fac',mine=S.raids.filter(r=>r.side===side);if(mine.length>=RAID.max[kind])continue;
+    if(S.T<300)continue;const srcL=raidSources(side).filter(s=>!mine.some(r=>r.src===s.sid&&S.T-r.T0<RAID.cool));if(!srcL.length)continue;
+    // escorted convoys draw raiders more often; an Unbound capital on the hunt launches far more often than the haven
+    let p=RAID.rate[kind];if(side==='pirate'&&srcL.some(s=>s.cap))p=RAID.rate.cap;if((S.traders||[]).some(t=>t.esc&&hostile(side,t.side)&&!raidTaken(t)&&srcL.some(s=>raidIntercept(s,t))))p+=RAID.esc;if(Math.random()>=p)continue;
+    const pk=raidPick(side,srcL);if(!pk)continue;const kit=raidShips(side,pk.src.srcs);if(!kit)continue;raidSend(side,pk,kit)}}
+// off-screen fight: the raiders' odds fall where the target's own station guns or a capital cover it
+function raidOdds(r,sid,base,owner){let p=base*(1+.06*(r.ships.reduce((a,s)=>a+s.tier,0)/r.ships.length-1))*Math.min(1,r.ships.length/3);const R=S.stations[sid];if(R&&R.owner===owner)p*=RAID.stnCut;if(frigatesIn(sid).some(o=>sideNorm(o.side)===owner))p*=RAID.capCut;return clamp(p,.05,.95)}
+function raidGrab(from,room,frac){const got={};for(const k of Object.keys(from).filter(k=>from[k]>0).sort((a,b)=>baseValue(b)/mass(b)-baseValue(a)/mass(a))){const n=Math.min(Math.floor(from[k]*frac),Math.floor(room/mass(k)));if(n>0){got[k]=inv.take(from,k,n);room-=n*mass(k)}if(room<1)break}return got}
+function raidAttrition(r,sid){if(Math.random()<RAID.lose&&r.ships.length>1){const sh=r.ships.pop(),ld={};for(const k in sh.ld){const m=Math.min(sh.ld[k],r.kit[k]||0);if(m>0)ld[k]=inv.take(r.kit,k,m)}toDebris(S.sectors[sid],ld)}}
+function raidWipe(r,sid,msg){toDebris(S.sectors[sid],r.kit);toDebris(S.sectors[sid],r.loot);r.kit={};r.loot={};S.raids.splice(S.raids.indexOf(r),1);if(msg)feed(msg,'good')}
+function raidFight(r){const sid=r.sector;
+  if(r.dep){const R=S.stations[r.dep];if(!R||!isDepotF(R))return false;const win=Math.random()<raidOdds(r,sid,RAID.depWin,'')*(frigatesIn(sid).some(o=>sideNorm(o.side)===R.owner)?RAID.capCut:1);
+    if(!win){raidWipe(r,sid,friendSide(R.owner)?`✔ ${R.name}'s guns broke up an ${raidWho(r.side)} raiding party.`:null);return false}
+    inv.addAll(r.loot,raidGrab(dStore(R),RAID.carryDep,.4));R.hull=Math.max(1,R.hull-R.hMax*.04);raidAttrition(r,sid);
+    if(friendSide(R.owner))feed(`⚠ ${raidWho(r.side)} raiders hit ${R.name} and got away with part of its stores.`,'bad');else if(covered(sid))feed(`${raidWho(r.side)} raiders hit ${R.name} in ${DEF[sid].name}.`,'news');raidHome(r);return true}
+  const t=(S.traders||[]).find(x=>x.id===r.tgt);if(!t)return false;const win=Math.random()<raidOdds(r,sid,RAID.win[t.cls]||.65,t.side);
+  if(!win){raidWipe(r,sid,friendSide(t.side)?`✔ A ${FACTIONS[t.side].short} supply convoy fought off ${raidWho(r.side)} raiders in ${DEF[sid].name}.`:null);return false}
+  inv.addAll(r.loot,raidGrab(t.load,RAID.carry,.5));haulLost(t,sid,r.side);raidAttrition(r,sid);raidHome(r);return true}
+// a convoy jumps into a system: a raid waiting (or passing) there for it springs
+// (an escort a jump behind gets a moment to follow it in, so the fight happens in the open)
+function raidMeet(t,prev){if(WORLDS[t.sector])return false;if(t.esc&&pSect(t.esc.k)===prev){t.escWait=S.T+25;return false}const r=(S.raids||[]).find(x=>x.tgt===t.id&&!x.live&&x.sector===t.sector&&x.state!=='home');if(!r)return false;return raidFight(r)}
+function raidHome(r){r.state='home';r.tgt=null;r.dep=null;const C=r.cap&&(S.frigates||[]).find(x=>x.id===r.cap);let to=C?C.sector:r.src;const R=S.stations[to];if(!C&&!(R&&R.owner===r.side))to=homeOf(r.side);r.dest=to;r.path=trPath(r.sector,to);r.leg=0;r.next=Math.max(r.next,S.T+RAID.hop*.5)}
+function raidStillOn(r){if(r.dep){const R=S.stations[r.dep];return!!(R&&isDepotF(R)&&hostile(r.side,R.owner))}const t=(S.traders||[]).find(x=>x.id===r.tgt);if(!t)return false;const i=t.path.indexOf(r.dest,t.leg);return i>=t.leg}
+function raidCatch(r){const t=r.tgt&&(S.traders||[]).find(x=>x.id===r.tgt);if(t&&t.sector===r.sector&&!t.live&&!WORLDS[r.sector]&&!(t.escWait>S.T)){if(raidFight(r))S.traders.splice(S.traders.indexOf(t),1);return true}return false}
+function raidArrive(r){if(r.state==='home'){raidUnload(r);return}if(r.dep&&!WORLDS[r.sector]){raidFight(r);return}r.state='wait';r.until=S.T+RAID.wait;raidCatch(r)}
+function raidUnload(r){const C=r.cap&&(S.frigates||[]).find(x=>x.id===r.cap&&x.sector===r.sector);let into=r.side==='pirate'?(C?(C.store=C.store||{}):S.econ.stock.pirate):S.econ.stock[r.side]||S.econ.stock.pirate;inv.addAll(into,r.kit);
+  let lootTo=S.econ.stock[r.side]||S.econ.stock.pirate;if(r.side!=='pirate'){const R=S.stations[r.sector];if(R&&R.owner===r.side)lootTo=storeOf(R)||lootTo}
+  if(r.side==='pirate'){const F=S.econ.fenced=S.econ.fenced||{};for(const k in r.loot)if(!RAWS.includes(k)&&!['plate','wire','coil','missile','torpedo','drone'].includes(k))F[k]=(F[k]||0)+r.loot[k]}
+  inv.addAll(lootTo,r.loot);r.kit={};r.loot={};S.raids.splice(S.raids.indexOf(r),1)}
+function raidsTick(){if(NET.cl||!S||S.training)return;S.raids=S.raids||[];raidDispatch();
+  for(const r of S.raids.slice()){if(!S.raids.includes(r))continue;if(r.live){raidLiveCheck(r);continue}
+    if(r.state==='wait'){if(raidCatch(r))continue;if(!raidStillOn(r)||S.T>r.until){const pk=r.dep?null:raidPick(r.side,[{sid:r.sector,srcs:[],cap:r.cap,reach:r.side==='pirate'&&!r.cap?RAID.reachHaven:RAID.reach,deep:r.side!=='pirate'||!!r.cap}]);
+        if(pk&&!WORLDS[r.sector]){r.tgt=pk.tgt;r.dep=pk.dep;r.dest=pk.c;r.path=trPath(r.sector,pk.c);r.leg=0;r.state='out';r.next=S.T+RAID.hop;if(r.path.length===1)raidArrive(r)}else raidHome(r)}continue}
+    if(r.state==='out'&&!raidStillOn(r)){raidHome(r)}
+    if(S.T<r.next)continue;if(r.leg>=r.path.length-1){raidArrive(r);continue}
+    r.leg++;r.sector=r.path[r.leg];r.next=S.T+RAID.hop;if(WORLDS[r.sector]){inW(WORLDS[r.sector],()=>raidSpawn(r,true));continue}
+    if(r.leg>=r.path.length-1){raidArrive(r);continue}
+    if(r.state==='out')raidCatch(r)}}
+// ---- live raiders: real ships from the raid's kit, homed to the raid so whatever survives flies on with it
+function raidSpawn(r,arrive){if(r.live||!W)return;const side=r.side,prev=arrive?r.path[r.leg-1]:null,gin=prev&&(GATES[W.sid]||[]).find(g=>g.to===prev),g={id:'g'+(RID++),side,role:'raider',members:[],n0:0,fleeing:false,raid:r.id};
+  // already in the system when it opens: waiting by the convoy's entry gate, or just in through the gate it came by
+  let base=gin?{x:gin.x*.93,y:gin.y*.93,z:gin.z*.93}:null;if(!base){let G=r.live?null:raidGoal(r);if(G&&G.hunt){const t=(S.traders||[]).find(x=>x.id===r.tgt),i=t?t.path.indexOf(W.sid,t.leg):-1,eg=i>0&&W.ents.find(x=>x.type==='gate'&&x.to===t.path[i-1]);if(eg)G={hold:eg,R:420}}const gb=r.leg>0&&(GATES[W.sid]||[]).find(g=>g.to===r.path[r.leg-1]);
+    if(G&&G.hold){const P=G.hold,l=hyp(P.x,P.y,P.z)||1;base={x:P.x-P.x/l*G.R,y:P.y-P.y/l*G.R,z:P.z-P.z/l*G.R}}else if(gb)base={x:gb.x*.9,y:gb.y*.9,z:gb.z*.9};else base=randPos(900*SPACE,2000*SPACE)}let lead=null;
+  r.ships.forEach((sh,i)=>{const ld={};for(const k in sh.ld){const m=Math.min(sh.ld[k],r.kit[k]||0);if(m>0)ld[k]=inv.take(r.kit,k,m)}const e=makeNPC('raider',side,sh.cls,sh.tier,ld,`raid:${r.id}:${side}`);e.rsh=sh;e.raidR=r.id;
+    const o=rdir(1);e.x=base.x+(lead?o.x*70:0);e.y=base.y+(lead?o.y*70:0);e.z=base.z+(lead?o.z*70:0);if(lead)qCopy(e.q,lead.q);else faceInstant(e,-e.x,-e.y,-e.z);e.grp=g;e.slot=i;g.members.push(e);docFit(e,0);W.ents.push(e);if(e.load.drone)deployDrones(e);if(arrive&&gin)fxWarp(e,sideCol(side));if(!lead)lead=e});
+  if(!g.members.length)return;g.n0=g.members.length;W.groups[g.id]=g;r.live=true;r.back=[];r.liveT=S.T;
+  const t=r.tgt&&(S.traders||[]).find(x=>x.id===r.tgt);if(t&&t.esc&&pSect(t.esc.k)===W.sid)keyFeed(t.esc.k,`⚠ ${raidWho(side)} raiders ${arrive&&gin?'jumping in through the '+DEF[prev].name+' gate':'in the system'}: ${g.members.length} ships, going for your convoy.`,'bad');
+  else if(W===LW&&r.dep&&friendSide((S.stations[r.dep]||{}).owner))feed(`⚠ ${raidWho(side)} raiders have jumped in to hit ${S.stations[r.dep].name}.`,'bad')}
+{const o=returnHome;returnHome=function(e){if(typeof e.home==='string'&&e.home.startsWith('raid:')&&e.rsh&&e.role!=='drone'){const r=raidOf(+e.home.split(':')[1]);if(r)r.back.push(e.rsh)}return o.apply(this,arguments)}}
+// per frame in an open system: hold by the convoy's entry gate, go for the freighter when it shows, then leave by the right gate
+function raidGoal(r){const gt=to=>W.ents.find(x=>x.type==='gate'&&x.to===to);
+  if(r.state==='home'||(r.state==='out'&&r.dest!==W.sid))return{gate:gt(r.path[r.leg+1])||null};
+  if(r.dep){const SE=W.stationEnt;return SE?{hold:SE,R:900}:{gate:null}}
+  const t=(S.traders||[]).find(x=>x.id===r.tgt);if(!t)return{gate:null};const T=W.ents.find(x=>x.alive&&x.home===`trader:${t.id}:${t.side}`);if(T)return{hunt:T};
+  const i=t.path.indexOf(W.sid,t.leg);const g=i>0&&gt(t.path[i-1]);return g?{hold:g,R:420}:{gate:null}}
+function raidLiveFrame(){for(const id in W.groups){const g=W.groups[id];if(!g.raid)continue;const r=raidOf(g.raid),al=grpAlive(g);if(!r||!r.live){for(const m of al)m.role='leave';continue}if(g.fleeing)continue;
+    if(r.dep&&r.state!=='home'&&r.dest===W.sid&&W.stationEnt&&S.T-r.liveT>RAID.liveDep&&al.length>=2){const R=S.stations[r.dep];if(R&&isDepotF(R)){inv.addAll(r.loot,raidGrab(dStore(R),RAID.carryDep,.4));if(friendSide(R.owner))feed(`⚠ ${raidWho(r.side)} raiders looted ${R.name} and are pulling out.`,'bad')}raidHome(r)}
+    const G=raidGoal(r);
+    if(G.hunt){for(const m of al){m.ai.hunt=G.hunt;m.ai.huntUntil=W.t+30;if(!m.ai.tgt)m.ai.tgt=G.hunt}continue}
+    if(G.gate===null&&!G.hold){if(r.state!=='home')raidHome(r);continue}
+    const L=grpLead(g);if(!L)continue;
+    if(G.gate){if(L.ai.tgt&&L.ai.tgt.alive&&d3(L.ai.tgt,L)<1500)continue;for(const m of al){m.ai.wp={x:G.gate.x,y:G.gate.y,z:G.gate.z};m.ai.tgt=null}
+      if(d3(L,G.gate)<330){for(const m of al){fxWarp(m,sideCol(m.side));despawn(m)}}continue}
+    const P=G.hold,dx=-P.x,dy=-P.y,dz=-P.z,l=hyp(dx,dy,dz)||1,spot={x:P.x+dx/l*G.R,y:P.y+dy/l*G.R,z:P.z+dz/l*G.R};if(!L.ai.wp||d3(L.ai.wp,spot)>260)L.ai.wp={x:spot.x+rnd(-120,120),y:spot.y+rnd(-60,60),z:spot.z+rnd(-120,120)}}}
+// strategic side of a live raid: when its ships are gone from the system, the survivors (if any) go back to the map
+function raidLiveCheck(r){const w=WORLDS[r.sector];const al=w?w.ents.filter(e=>e.alive&&e.raidR===r.id&&e.role!=='drone'):[];if(al.length)return;
+  r.live=false;r.ships=r.back.slice();r.back=[];if(!r.ships.length){raidWipe(r,r.sector,null);return}if(r.ships.length<2&&r.state!=='home')raidHome(r);
+  if(r.state==='home'){if(r.leg>=r.path.length-1){raidUnload(r);return}r.leg++;r.sector=r.path[r.leg];r.next=S.T+RAID.hop;if(WORLDS[r.sector])inW(WORLDS[r.sector],()=>raidSpawn(r,true));return}
+  if(r.state==='out'&&r.dest!==r.sector){r.leg++;r.sector=r.path[r.leg];r.next=S.T+RAID.hop;if(WORLDS[r.sector])inW(WORLDS[r.sector],()=>raidSpawn(r,true));else if(r.leg>=r.path.length-1)raidArrive(r);return}
+  raidHome(r)}
+{const o=groupsUpdate;groupsUpdate=function(){const x=o.apply(this,arguments);try{if(!NET.cl&&S&&S.raids&&S.raids.length)raidLiveFrame()}catch(e){frameErr('raid frame',e)}return x}}
+{const o=openWorld;openWorld=function(sid){const w=o.apply(this,arguments);if(!NET.cl&&S&&S.raids)inW(w,()=>{for(const r of S.raids.slice()){if(r.sector!==sid)continue;if(r.live){r.live=false;if(!r.back.length){raidWipe(r,sid,null);continue}r.ships=r.back;r.back=[]}raidSpawn(r,false)}});return w}}
+{const o=migrate;migrate=function(){const r=o.apply(this,arguments);try{S.raids=S.raids||[];for(const x of S.raids){if(x.live){x.live=false;if(x.back&&x.back.length)x.ships=x.back}x.back=[]}}catch(e){}return r}}
