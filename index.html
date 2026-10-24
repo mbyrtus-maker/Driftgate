@@ -998,7 +998,9 @@ function unbGateHold(){if(!S.unb)return GATE_HOLD;const o=sideNorm(sectorOwner(W
 function unbFenceRate(){return[.7,.7,.8,.9][unbWork('den')]}
 function fenceRef(k){let t=0,n=0;for(const f of FAC_IDS){const st=S.econ.stock[f];if(st){t+=price(st,k);n++}}return n?t/n:baseValue(k)}
 function fencePr(k){return Math.max(1,Math.floor(fenceRef(k)*unbFenceRate()))}
-const STOLEN_K=4;function fencePrS(k){return Math.max(1,Math.floor(fenceRef(k)*STOLEN_K*unbFenceRate()/.7))}
+// stolen goods fence at STOLEN_K x market (scaled by the Den). Was 4 when haulers carried missiles and real drones; with them
+// weakened a Raider takes a freighter about 3x as often, so the price came down to keep Unbound pay between hauling and mining
+const STOLEN_K=1.6;function fencePrS(k){return Math.max(1,Math.floor(fenceRef(k)*STOLEN_K*unbFenceRate()/.7))}
 function unbFenceHtml(c,P,srcs){let h=`<p class="note" style="margin:0 0 12px">The Fence's Den buys anything at ${Math.round(unbFenceRate()*100)}% of market value, and stolen goods (☠) at ${Math.round(STOLEN_K*unbFenceRate()/.7*100)}%, no questions asked: goods go into Unbound stores and the credits come out of the Unbound treasury. Stolen goods (☠) sell here; at a Freeport they only sell under false colours. ${unbWork('den')>=2?'The Den launders stolen goods for a tenth of their value.':'Laundering needs the Den at level 2 (Works tab).'}</p>`;
   const items=ITEM_ORDER.filter(k=>countIn(k,[P.cargo])>0&&!MUNITIONS.has(k));if(!items.length)return h+'<p class="note">Your hold is empty. Go and take something.</p>';
   h+=`<div class="tblw"><table class="t"><thead><tr><th>Item</th><th class="r">In hold</th><th class="r">Fence pays</th><th></th></tr></thead><tbody>`;
