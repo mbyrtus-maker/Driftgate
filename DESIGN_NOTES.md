@@ -1550,3 +1550,4 @@ The order used to send you to wherever the nearest enemy freighter was when you 
 
 ## Small fixes (Oct 2026)
 - Shift+Tab cycles the target list backwards.
+- **Why the Unbound are locked.** Clicking the locked Unbound card used to say only "earn a Legend point", and Launch then quietly started you in the faction still selected. It now says exactly why for the callsign typed in: no callsign yet, no Legend record for it, or how much of the point it has (a lost galaxy gives ½), lists other callsigns on this device that do have a point, and warns which faction Launch will use.
