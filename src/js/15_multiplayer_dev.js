@@ -139,7 +139,7 @@ function mpRun(){const P=S.player;P.name=MP.name||P.name;P.pid=MP.pid;if(P.docke
   WORLDS={};LW=null;W=null;FEED.length=0;startWith(S);S.player=S.pilots[MP.pid];netRoster();
   if(NET.host){hostSave();for(const c of Object.values(MP.cl))if(c.hello&&!c.ready)hJoin(c)}}
 function mpLaunch(fac,cls){
-  if(NET.host){if(S&&S.pilots){newPilot(MP.pid,MP.name,fac,cls,legPack(MP.name))}else{newGame(fac,cls,MP.name);if(fac==='pirate'){S.unb=1;unbP();S.player.cls='raider'}S.gid=rid(10);S.pilots={};S.pilots[MP.pid]=S.player;S.player.pid=MP.pid;S.player.name=MP.name}
+  if(NET.host){if(S&&S.pilots){newPilot(MP.pid,MP.name,fac,cls,legPack(MP.name))}else{newGame(fac,cls,MP.name);if(fac==='pirate'){S.unb=1;unbP();S.player.cls=UNB_START.includes(cls)?cls:'raider'}S.gid=rid(10);S.pilots={};S.pilots[MP.pid]=S.player;S.player.pid=MP.pid;S.player.name=MP.name}
     S.player=S.pilots[MP.pid];mpRun();feed(`You are hosting “${MP.code}”. Friends who enter the same galaxy code join you.`,'info');flash(`Hosting “${MP.code}”. Friends join by typing the same galaxy code.`);feed('Launch with E. Steer with the mouse, thrust with W. In a mining ship, R targets a rock, F fires a charge onto a fault point and '+kb('det')+' detonates; fly into the chunks to scoop them.','info')}
   else if(NET.cl&&MP.host){send(MP.host,{t:'newpilot',fac,cls,leg:legPack(MP.name)});mpStatus('Joining…')}}
 function newPilot(pid,name,fac,cls,leg){const L0=ledger();
