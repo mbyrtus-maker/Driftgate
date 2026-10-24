@@ -57,7 +57,8 @@ function jamHit(e,b){e.lastHit=W.t;e.lastHitBy=b.side;if(e.shield>0){fxSpark(b,'
     if(e.isPlayer)flash('Jammer on your hull! Get your shields back up or break away.',true);else if(e.npc&&(e.role==='hauler'||e.role==='miner')&&FACTIONS[e.side])distressCall(W.sid,`a ${FACTIONS[e.side].short} ${CLASSES[e.cls].name}`,e.side,b.side)}
   if(b.src&&b.src.isPlayer||e.isPlayer)SFX.jammer();e.jam=(e.jam||0)+b.dmg*((b.src&&b.src.st&&b.src.st.jamK)||1)*(b.src&&b.src.isPlayer&&unbWork('powder')>=1?1.1:1);e.jamT=W.t;fxSpark(b,'#b7c6ff',3);
   if(e.jam>=jamCap(e)){e.jam=0;e.jamOff=W.t+jamWin(e);e.jamHard=e.jamOff+JAM.harden;e.boosting=false;e.thrusting=false;fxSpark(e,'#b7c6ff',12);
-    if(e.isPlayer){flash(`Jammed: every system offline for ${jamWin(e)} s. Pirates will hook your hold.`,true);SFX.shieldDown&&SFX.shieldDown()}}}
+    if(e.isPlayer){flash(`Jammed: every system offline for ${jamWin(e)} s. Pirates will hook your hold.`,true);SFX.shieldDown&&SFX.shieldDown()}
+    else if(b.src&&b.src.isPlayer&&W===LW){const cg=typeof hookSrc==='function'?hookSrc(e):e.cargo,has=cg&&invMass(cg)>0;flash(`☠ ${shipLabel(e)} is jammed dark for ${jamWin(e)} s. ${has?`Fly within ${typeof hookReach==='function'?hookReach(e):JAM.hookR} m and hold ${kb('act')} to hook its hold.`:'Its hold is empty: nothing to hook.'}`,true);SFX.turretJam&&SFX.turretJam()}}}
 function jamDrain(e,dt){if(!(e.jam>0)||jamDark(e))return;const d=e.st.jamDelay||JAM.drainD,r=e.st.jamRate||JAM.drainR;if(W.t-(e.jamT||0)>d)e.jam=Math.max(0,e.jam-jamCap(e)*r*dt)}
 // a pirate beside a disabled ship hooks its hold (a Sealed hold gives up half)
 function jamTake(e,t,dt){const d=d3(e,t);if(d>(t.teth&&t.teth.until>W.t&&t.teth.by===e?400:JAM.hookR)*.8){steer(e,t.x,t.y,t.z,dt,true,1);faceTo(e,t,dt);return}brake(e,dt);faceTo(e,t,dt);

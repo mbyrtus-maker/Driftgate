@@ -446,7 +446,7 @@ function unbHud(c){if(!S.unb||!W||!W.player)return;const P=unbP();c.save();c.fon
   c.fillStyle='rgba(216,205,152,.9)';c.fillText(`☠ ${UNB_RANKS[unbRank(P.inf)][0].toUpperCase()} · INFAMY ${fmt(Math.round(P.inf))}${W.player.jamMode?' · JAM MODE':''}${P.cls==='plunderer'?` · JAM TORPS ${P.jt==null?jtCap():P.jt}/${jtCap()}`:''}`,x,y);y+=15;{const L=lockOf();if(L){c.fillStyle='#ff5d4f';c.fillText(`🚨 LOCKDOWN ${fmtT(S.T-L.t0)} · ${FACTIONS[L.f].short.toUpperCase()}`,x,y);y+=15}}
   c.fillStyle=(P.xpdrOut||0)>S.T?'#ff8a7e':P.xpdr?'#7ad9a7':'rgba(236,228,207,.6)';c.fillText(`🎭 ${(P.xpdrOut||0)>S.T?'TRANSPONDER BURNED '+fmtT(P.xpdrOut-S.T):P.xpdr?'FALSE COLOURS: '+(FAC_IDS.filter(f=>unbCover(f)).map(f=>FACTIONS[f].short.toUpperCase()).join(' ')||'NONE COOL'):'FALSE COLOURS OFF (K)'}`,x,y);y+=15;
   for(const f of FAC_IDS){const v=P.heat[f],b=heatBand(v);c.fillStyle='rgba(236,228,207,.15)';c.fillRect(x,y-8,90,5);c.fillStyle=b>=3?'#ff5d4f':b>=2?'#ff9a4a':b>=1?'#f0b24a':sideCol(f);c.fillRect(x,y-8,90*v/100,5);c.fillStyle=sideCol(f);c.fillText(`${FACTIONS[f].short} ${Math.round(v)} ${HEAT_BANDS[b][0]}`,x+98,y-3);y+=13}
-  const T=hookTarget();if(T){c.textAlign='center';c.font='700 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#d8cd98';c.fillText(keys.KeyE?`HOOKING · ${Math.max(0,Math.ceil(T.jamOff-W.t))} S`:'HOLD E TO HOOK THE HOLD',VW/2,VH/2+70)}
+  const T=hookTarget();if(T){c.textAlign='center';c.font='700 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#d8cd98';c.fillText(keys.KeyE?`HOOKING · ${Math.max(0,Math.ceil(T.jamOff-W.t))} S`:`HOLD ${kb('act').toUpperCase()} TO HOOK THE HOLD`,VW/2,VH/2+70)}
   c.restore()}
 // the debrief block and the Legend point
 function unbDebrief(side){if(!S.unb)return'';return allPilots().filter(Boolean).map(P=>unbDebriefOne(side,P)).join('')}
@@ -498,7 +498,7 @@ function capJamFill(e){return e.cls==='escort'?1/3:e.cls==='carrier'?1/6:1/4}
 function jtHit(m){const T=m.tgt;fxBoom(m,90,'#b7c6ff');if(W.player&&d3(m,W.player)<4000)SFX.jtorpHit(!!(T&&T.role==='frigate'));if(!T)return;
   if(T.type==='station'){vaultHeist(T,m);return}
   if(T.type!=='ship'||!T.alive)return;if(T.role==='frigate'){if(T.shield>T.st.sCap*.05){if(m.src===W.player)flash('The torpedo splashed on its shields. Strip them first.');return}T.cjam=(T.cjam||0)+capJamFill(T);T.cjamT=W.t;
-    if(T.cjam>=1){T.cjam=0;T.jamOff=W.t+(T.cls==='escort'?20:15);T.jamHard=T.jamOff+60;fxBoom(T,T.st.radius*.6,'#b7c6ff');if(W.player&&d3(T,W.player)<6000)SFX.capDark();if(m.src===W.player)flash(`${T.tok?T.tok.name:'The capital'} is jammed dark: turrets, launches and jump drive offline for ${Math.round(T.jamOff-W.t)} s. Hook its store (E).`,true)}
+    if(T.cjam>=1){T.cjam=0;T.jamOff=W.t+(T.cls==='escort'?20:15);T.jamHard=T.jamOff+60;fxBoom(T,T.st.radius*.6,'#b7c6ff');if(W.player&&d3(T,W.player)<6000)SFX.capDark();if(m.src===W.player)flash(`${T.tok?T.tok.name:'The capital'} is jammed dark: turrets, launches and jump drive offline for ${Math.round(T.jamOff-W.t)} s. Hook its store (hold ${kb('act')}).`,true)}
     else if(m.src===W.player)flash(`Capital jam ${Math.round(T.cjam*100)}%.`);return}
   if((T.jamHard||0)>W.t||jamDark(T))return;T.jam=0;T.jamOff=W.t+jamWin(T);T.jamHard=T.jamOff+JAM.harden;T.boosting=false;fxSpark(T,'#b7c6ff',12);if(T.isPlayer)flash('Jamming torpedo: every system offline.',true)}
 function capJamDrain(e,dt){if(e.cjam>0&&W.t-(e.cjamT||0)>5)e.cjam=Math.max(0,e.cjam-.02*dt)}
