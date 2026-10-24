@@ -26,9 +26,15 @@ const SECTOR_DEFS=[
   {id:'cw',name:'Coldwater Drift',x:.07,y:.72,kind:'void',ores:{ir:3,cu:2}},
   {id:'ew',name:'Ember Wake',x:.93,y:.72,kind:'void',ores:{fe:3,ir:2}},
   {id:'sv',name:'Silent Verge',x:.69,y:.85,kind:'void',ores:{cu:3,ir:2}},
+  // more quiet space (Oct 2026): side loops off the busy lanes, and two open approaches to The Wrack
+  {id:'gw',name:'Greywater Shelf',x:.15,y:.55,kind:'void',ores:{fe:3,cu:2}},
+  {id:'rh',name:"Rook's Hollow",x:.85,y:.55,kind:'void',ores:{cu:3,ir:2}},
+  {id:'qs',name:'Quietwater Sound',x:.37,y:.72,kind:'void',ores:{ir:3,fe:2}},
+  {id:'fh',name:"Fathom's Edge",x:.63,y:.72,kind:'void',ores:{fe:3,ir:2}},
+  {id:'ll',name:'Lastlight Shoals',x:.86,y:.9,kind:'void',ores:{cu:3,fe:2}},
 ];
 const DEF={};SECTOR_DEFS.forEach(d=>DEF[d.id]=d);
-const LINKS=[['hp','hr'],['vb','vm'],['os','of'],['hr','ke'],['vm','ke'],['hr','sh'],['of','sh'],['vm','ci'],['of','ci'],['ke','ho'],['sh','ho'],['ci','ho'],['ho','wr'],['hr','ae'],['sh','ae'],['vm','gs'],['ci','gs'],['of','ld'],['sh','ld'],['ke','bl'],['hp','nv'],['nv','ke'],['vb','av'],['av','ke'],['hp','pr'],['pr','ae'],['vb','ih'],['ih','gs'],['hr','mw'],['mw','ho'],['vm','dl'],['dl','ho'],['ae','cw'],['cw','ld'],['gs','ew'],['ew','sv'],['of','sv'],['ci','sv']];
+const LINKS=[['hp','hr'],['vb','vm'],['os','of'],['hr','ke'],['vm','ke'],['hr','sh'],['of','sh'],['vm','ci'],['of','ci'],['ke','ho'],['sh','ho'],['ci','ho'],['ho','wr'],['hr','ae'],['sh','ae'],['vm','gs'],['ci','gs'],['of','ld'],['sh','ld'],['ke','bl'],['hp','nv'],['nv','ke'],['vb','av'],['av','ke'],['hp','pr'],['pr','ae'],['vb','ih'],['ih','gs'],['hr','mw'],['mw','ho'],['vm','dl'],['dl','ho'],['ae','cw'],['cw','ld'],['gs','ew'],['ew','sv'],['of','sv'],['ci','sv'],['gw','ae'],['gw','cw'],['gw','sh'],['rh','gs'],['rh','ew'],['rh','ci'],['qs','sh'],['qs','wr'],['qs','ld'],['fh','ci'],['fh','wr'],['fh','sv'],['ll','sv'],['ll','ew']];
 const NEIGH={};SECTOR_DEFS.forEach(d=>NEIGH[d.id]=[]);LINKS.forEach(([a,b])=>{NEIGH[a].push(b);NEIGH[b].push(a)});
 const SPACE=1.8;// systems are wide: gates, fields, beacons, spawn points, the edge and the radars all scale with this
 const SPREAD=1.2; // spacing rules that don't scale with SPACE (belt gaps, rock spacing, station works rings) are 20% wider too
@@ -124,7 +130,7 @@ function oresNoNu(d){if(!d.ores.nu)return d.ores;const o={...d.ores};delete o.nu
 const STN={fdepot:{sMax:1200,hMax:2500,tur:2,dmg:11,range:1200},free:{sMax:3600,hMax:10000,tur:6,dmg:16,range:1500},core:{sMax:3200,hMax:9000,tur:6,dmg:15,range:1500},depot:{sMax:2000,hMax:4000,tur:4,dmg:12,range:1300},hive:{sMax:4200,hMax:14000,tur:6,dmg:18,range:1600}};
 // balance levers, tuned by simulation so each of the four powers (the Brood included) wins about a quarter of galaxies
 // (tuned for the 2-hour deadline and the 20-minute hold over 18 rounds of simulated galaxies)
-const BAL={carFab:14,carAsk:30,hiveRegrow:240,aiEff:.7,brBuild:1.15,brOff:.9,brLevT:3300,brN:2,brHive:4,antiBrood:2.8,halProsp:.5,halImp:.08,brGraze:2.7,coal:.35,devGap:1,ext:{halcyon:.69,varkesh:1.18,ostrova:1.05}};   // ext: each faction's station mining rate
+const BAL={carFab:14,carAsk:30,hiveRegrow:240,aiEff:.7,brBuild:1.15,brOff:.9,brLevT:3300,brN:2,brHive:4,antiBrood:2.8,halProsp:.5,halImp:.08,brGraze:2.7,coal:.35,devGap:1,ext:{halcyon:.715,varkesh:1.21,ostrova:.99}};   // ext: each faction's station mining rate
 const CAP_SEAL={yard:2,carrier:3,escort:1},sealed=f=>f!=='brood'&&f!=='pirate',withSeal=(C,f,n)=>sealed(f)?{...C,seal:n}:C;
 const yardCost=f=>withSeal(YARD_COST,f,CAP_SEAL.yard),escCost=f=>withSeal(ESCORT_COST,f,CAP_SEAL.escort);
 const DEPOT_COST={frame:2},YARD_COST={frame:4,keel:4,lattice:4,plate:40},YARD_FEE=5000,YARD_TIME=180,FRIGATE_TIME=150;   // FRIGATE_TIME: a carrier's time in the slip (the 'frigbuild' event name is kept for old saves)
@@ -360,6 +366,7 @@ function migrate(st){S=st;mkCapMigrate();for(const ev of S.events||[])if(ev.type
   if(!S.econ.stock.brood){broodInit();ch=true}
   if(!S.econ.stock.neutral){neutralInit();S.ledger0.credits+=S.econ.treasury.neutral||0;ch=true}fpStockMigrate();if(!S.drift)S.drift={fe:0,cu:0,ir:0,xc:0,au:0,nu:0};
   for(const e of RAWS)if(S.ledger0.tot[e]===undefined)S.ledger0.tot[e]=0;
+  for(const d of SECTOR_DEFS)if(!S.sectors[d.id]){S.sectors[d.id]=genSector(d);ch=true}
   for(const id in S.sectors){const sc=S.sectors[id];if(sc.debris.au===undefined)sc.debris.au=0}for(const id in S.outposts){const o=S.outposts[id];if(o.fort.au===undefined)o.fort.au=0}
   if(!S.richer){S.richer=1;for(const d of SECTOR_DEFS){if(d.kind==='hive')continue;const sc=S.sectors[d.id];for(let i=0;i<10;i++){const k=wpick(d.ores);sc.ast.push({id:S.nextId++,...newAstPos(sc),ore:{[k==='au'||k==='nu'?'ir':k]:ri(40,100)},seed:ri(1,1e9)})}}ch=true}
   for(const id of DEEP){const sc=S.sectors[id];if(!sc.ast.some(a=>a.ore.au)){for(let i=0;i<8;i++)sc.ast.push({id:S.nextId++,...newAstPos(sc),ore:{au:ri(40,100)},seed:ri(1,1e9)});ch=true}}

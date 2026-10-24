@@ -1565,3 +1565,11 @@ Pay comes from the Unbound treasury (`transfer('pirate','player')`); Infamy goes
 - **Disabled ships can't jump.** A jammed-dark (or still jamming) freighter no longer slips out through a gate: it can't count as arrived at the gate while jammed, and an open-system convoy waits at the gate until its systems come back. Live raiders obey the same rule. (Pilots and AI wings already couldn't.)
 - **Unbound hulls under Ship.** At the haven the hull list (with the Unbound parts) is now Ship → Hulls, next to Upgrades, instead of Trade → Black market.
 - **Haven jobs stay out of faction space.** Intercept points and mining disruptions are never in a faction home system or a system with a faction depot or station (their guns made the jobs near impossible). Mining disruptions go to contested systems where a faction holds the forge (its miners work there); intercepts meet the convoy at the first open-space system on its route you can reach in time. In an hour-long test, every job landed in Kestrel Drift, The Shoal or Hollow Verge.
+
+## Five more quiet systems (Oct 2026)
+The galaxy grows from 24 to 29 systems. All five are void (quiet) space: thin fields, no outposts or stations, little traffic.
+- **Greywater Shelf** (gates to Ashen Expanse, Coldwater Drift, The Shoal) and **Rook's Hollow** (Glass Shallows, Ember Wake, Cinder Reach): side loops on the west and east edges.
+- **Quietwater Sound** (The Shoal, The Wrack, Lantern Deep) and **Fathom's Edge** (Cinder Reach, The Wrack, Silent Verge): two open approaches to The Wrack from the south.
+- **Lastlight Shoals** (Silent Verge, Ember Wake): a dead-end pocket in the south-east.
+- Old saves get the new systems on load (their ore is added to the ledger baseline). The win condition stays 7 systems held for 20 minutes.
+- **Rebalanced station mining for the new map** (`BAL.ext`): Halcyon 0.69 -> 0.715, Varkesh 1.18 -> 1.21, Ostrova 1.05 -> 0.99. With the old values the new map gave H27 V30 O33 B11. The Halcyon knob is very jumpy at this scale (0.705 gave 27%, 0.71 gave 24%, 0.715 gave 33%, 0.73 gave 33%), so read these shares as ±3. War check, 480 games per player side, final values: as Halcyon H32 O29 V27 B12; as Varkesh H35 V31 O27 B7; as Ostrova H32 V31 O28 B10; as an Unbound captain H33 O32 V27 B9. Average Halcyon 33, Varkesh 29, Ostrova 29, Brood 9.5.
