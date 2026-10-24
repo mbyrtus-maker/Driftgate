@@ -98,6 +98,9 @@ function playerUpdate(dt){
   qRot(p.q,0,0,1,_f);const thr=st.thrust*(boost?2.3*bm:1)*H.thr*jamThr(p);p.thrusting=fwd>0;
   const v=hyp(p.vx,p.vy,p.vz),vf=p.vx*_f.x+p.vy*_f.y+p.vz*_f.z;
   if(fwd>0){const capF=st.maxSpd*(boost?1.95*bm:1)*H.spd;if(vf<capF){const a=Math.min(thr*dt,capF-vf);p.vx+=_f.x*a;p.vy+=_f.y*a;p.vz+=_f.z*a}}
+  // drift mode at the speed cap: thrust still pushes along the nose, then speed is held where it was, so holding W swings
+  // your motion round to the nose (slower than with assist) instead of doing nothing until you burn past the cap
+  if(fwd>0&&!P.fa){const capF=st.maxSpd*(boost?1.95*bm:1)*H.spd,v0=v;if(vf>=capF*.98&&v0>1){p.vx+=_f.x*thr*dt;p.vy+=_f.y*thr*dt;p.vz+=_f.z*thr*dt;const v1=hyp(p.vx,p.vy,p.vz),lim=Math.max(v0,capF);if(v1>lim){const k=lim/v1;p.vx*=k;p.vy*=k;p.vz*=k}}}
   if(P.fa){
     // assisted: S brakes against current motion; lateral dampers bleed sideways slip slowly so turns slide
     if(fwd<0&&v>1){const a=Math.min(v,st.thrust*1.1*H.thr*dt);p.vx-=p.vx/v*a;p.vy-=p.vy/v*a;p.vz-=p.vz/v*a}
