@@ -557,3 +557,17 @@ function ujobHud(el){const L=ujList(),si=Math.max(0,L.findIndex(j=>j.id===ujPick
   if(!L.length)h+=`<div class="om" style="color:var(--dim)">Nothing on the wire. Jobs come in every few minutes.</div>`;
   L.forEach((j,i)=>{const on=i===si;h+=`<div class="oi sd${on?' sel':''}"><div class="om"><i class="otg cmb">${j.kind==='mine'?'Disrupt':'Intercept'}</i>${esc(j.title)}</div><div class="os"><span>${esc(ujStat(j))} · ${fmtT(Math.max(0,j.until-S.T))} · ${fmt(j.pay)} cr</span><span class="${j.on?'ok':'go'}">${j.on?(on?'✓ P course':'✓'):on?'P · take':''}</span></div></div>`});
   if(L.length>1)h+=`<div class="onx"><kbd>⇧P</kbd> next job · ${si+1} of ${L.length}</div>`;el.hidden=false;if(el._h!==h){el._h=h;el.innerHTML=h}}
+// ============================================================ upgrade stock at each faction's home station
+// A pilot's Mk II and Mk III parts (Alloy Plate, Conduit, Flux Coil) shouldn't vanish because the faction spent its
+// warehouse on keels and torpedoes. Each faction's main station keeps a separate upgrade stock no other project can touch,
+// refilled by a slow recharge counter (no hauling, no mining). At that station, parts missing from your hold and vault for
+// an upgrade are bought from it at base price. Its parts enter the economy when fitted; the ledger baseline counts them in.
+const UPGS={cap:{plate:24,wire:16,coil:8},every:{plate:30,wire:40,coil:75}};
+function ustockOf(R){if(R.ustock)return R.ustock;R.ustock={...UPGS.cap};if(S.ledger0){const v=invVec(R.ustock);for(const e of RAWS)S.ledger0.tot[e]=(S.ledger0.tot[e]||0)+v[e]}return R.ustock}   // a new stock starts full (and is counted into the ledger)
+function upgStockOf(c,P){const R=mR(c);if(!R||R.kind!=='core'||!FAC_IDS.includes(R.owner)||R.owner!==P.faction||S.unb)return null;return ustockOf(R)}
+function upgStockTick(){for(const id in S.stations){const R=S.stations[id];if(R.kind!=='core'||!FAC_IDS.includes(R.owner))continue;const u=ustockOf(R),made={};
+    R.uacc=R.uacc||{};for(const k in UPGS.cap){if((u[k]||0)>=UPGS.cap[k]){R.uacc[k]=0;continue}R.uacc[k]=(R.uacc[k]||0)+10;while(R.uacc[k]>=UPGS.every[k]&&(u[k]||0)<UPGS.cap[k]){R.uacc[k]-=UPGS.every[k];u[k]=(u[k]||0)+1;made[k]=(made[k]||0)+1}}
+    if(Object.keys(made).length&&S.ledger0){const v=invVec(made);for(const e of RAWS)S.ledger0.tot[e]=(S.ledger0.tot[e]||0)+v[e]}}}
+// what an upgrade still needs after the hold and vault, and what the stock charges for it
+function upgFromStock(r,srcs,u){const need={};let cost=0;for(const k in r){const lack=r[k]-countIn(k,srcs);if(lack>0){need[k]=lack;cost+=Math.ceil(baseValue(k))*lack}}const ok=!!u&&Object.keys(need).every(k=>(u[k]||0)>=need[k]);return{need,cost,ok:ok||!Object.keys(need).length}}
+{const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{if(!NET.cl)upgStockTick()}catch(e){frameErr('upgrade stock',e)}return r}}
