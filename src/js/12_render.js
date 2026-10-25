@@ -635,6 +635,8 @@ const CK_CLS={
   bulker:{w:1.6,top:.22,brow:'armored',inner:1,mull:1.3,dash:1.25,panels:['manifest','vitals','speed','cargo','drones']},
   scout:{w:.38,top:.36,brow:'bubble',inner:0,mull:0,dash:.95,panels:['intel','vitals','scope','speed','scan'],bubble:true,narrowKinds:['scope']},
   constructor:{w:1.5,top:.23,brow:'console',inner:1,mull:0,dash:1.25,panels:['vitals','speed','build','cargo'],ops:'CONSTRUCTION',lamps:true}};
+// the Advanced Scout and the Unbound hulls fly the cockpit of the frame they're built on (the Skiff gets the scout's radar scope and reports)
+CK_CLS.scout2=CK_CLS.scout;CK_CLS.uskiff=CK_CLS.scout;CK_CLS.raider=CK_CLS.interceptor;CK_CLS.corsair=CK_CLS.striker;CK_CLS.plunderer=CK_CLS.heavy;
 function drawCockpit(c,p,t){const P=S.player,F=CK_FAC[P.faction]||CK_FAC.halcyon,K=CK_CLS[P.cls]||CK_CLS.striker,fc=FAC(P.faction).col,
     ox=-(p.wy||0)*16,oy=(p.wx||0)*13,w=Math.max(12,VW*.013)*K.w,dh=Math.min(108,VH*.12)*K.dash,narrow=VW<700,shp=F.shape;
   c.save();c.translate(ox,oy);

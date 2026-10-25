@@ -1217,15 +1217,15 @@ const SECTOR_DEFS=[
   {id:'cw',name:'Coldwater Drift',x:.07,y:.72,kind:'void',ores:{ir:3,cu:2}},
   {id:'ew',name:'Ember Wake',x:.93,y:.72,kind:'void',ores:{fe:3,ir:2}},
   {id:'sv',name:'Silent Verge',x:.69,y:.85,kind:'void',ores:{cu:3,ir:2}},
-  // more quiet space (Oct 2026): side loops off the busy lanes, and two open approaches to The Wrack
-  {id:'gw',name:'Greywater Shelf',x:.15,y:.55,kind:'void',ores:{fe:3,cu:2}},
-  {id:'rh',name:"Rook's Hollow",x:.85,y:.55,kind:'void',ores:{cu:3,ir:2}},
-  {id:'qs',name:'Quietwater Sound',x:.37,y:.72,kind:'void',ores:{ir:3,fe:2}},
-  {id:'fh',name:"Fathom's Edge",x:.63,y:.72,kind:'void',ores:{fe:3,ir:2}},
+  // more quiet space (Oct 2026): side loops off the busy lanes (the map stays planar: no gate lines cross)
+  {id:'gw',name:'Greywater Shelf',x:.2,y:.7,kind:'void',ores:{fe:3,cu:2}},
+  {id:'rh',name:"Rook's Hollow",x:.8,y:.7,kind:'void',ores:{cu:3,ir:2}},
+  {id:'qs',name:'Quietwater Sound',x:.385,y:.69,kind:'void',ores:{ir:3,fe:2}},
+  {id:'fh',name:"Fathom's Edge",x:.615,y:.69,kind:'void',ores:{fe:3,ir:2}},
   {id:'ll',name:'Lastlight Shoals',x:.86,y:.9,kind:'void',ores:{cu:3,fe:2}},
 ];
 const DEF={};SECTOR_DEFS.forEach(d=>DEF[d.id]=d);
-const LINKS=[['hp','hr'],['vb','vm'],['os','of'],['hr','ke'],['vm','ke'],['hr','sh'],['of','sh'],['vm','ci'],['of','ci'],['ke','ho'],['sh','ho'],['ci','ho'],['ho','wr'],['hr','ae'],['sh','ae'],['vm','gs'],['ci','gs'],['of','ld'],['sh','ld'],['ke','bl'],['hp','nv'],['nv','ke'],['vb','av'],['av','ke'],['hp','pr'],['pr','ae'],['vb','ih'],['ih','gs'],['hr','mw'],['mw','ho'],['vm','dl'],['dl','ho'],['ae','cw'],['cw','ld'],['gs','ew'],['ew','sv'],['of','sv'],['ci','sv'],['gw','ae'],['gw','cw'],['gw','sh'],['rh','gs'],['rh','ew'],['rh','ci'],['qs','sh'],['qs','wr'],['qs','ld'],['fh','ci'],['fh','wr'],['fh','sv'],['ll','sv'],['ll','ew']];
+const LINKS=[['hp','hr'],['vb','vm'],['os','of'],['hr','ke'],['vm','ke'],['hr','sh'],['vm','ci'],['ke','ho'],['sh','ho'],['ci','ho'],['ho','wr'],['hr','ae'],['sh','ae'],['vm','gs'],['ci','gs'],['of','ld'],['sh','ld'],['ke','bl'],['hp','nv'],['nv','ke'],['vb','av'],['av','ke'],['hp','pr'],['pr','ae'],['vb','ih'],['ih','gs'],['hr','mw'],['mw','ho'],['vm','dl'],['dl','ho'],['ae','cw'],['cw','ld'],['gs','ew'],['ew','sv'],['of','sv'],['ci','sv'],['gw','ae'],['gw','cw'],['gw','sh'],['rh','gs'],['rh','ew'],['rh','ci'],['qs','sh'],['qs','of'],['qs','ld'],['fh','ci'],['fh','of'],['fh','sv'],['ll','sv'],['ll','ew']];
 const NEIGH={};SECTOR_DEFS.forEach(d=>NEIGH[d.id]=[]);LINKS.forEach(([a,b])=>{NEIGH[a].push(b);NEIGH[b].push(a)});
 const SPACE=1.8;// systems are wide: gates, fields, beacons, spawn points, the edge and the radars all scale with this
 const SPREAD=1.2; // spacing rules that don't scale with SPACE (belt gaps, rock spacing, station works rings) are 20% wider too
@@ -1322,7 +1322,7 @@ function oresNoNu(d){if(!d.ores.nu)return d.ores;const o={...d.ores};delete o.nu
 const STN={fdepot:{sMax:1200,hMax:2500,tur:2,dmg:11,range:1200},free:{sMax:3600,hMax:10000,tur:6,dmg:16,range:1500},core:{sMax:3200,hMax:9000,tur:6,dmg:15,range:1500},depot:{sMax:2000,hMax:4000,tur:4,dmg:12,range:1300},hive:{sMax:4200,hMax:14000,tur:6,dmg:18,range:1600}};
 // balance levers, tuned by simulation so each of the four powers (the Brood included) wins about a quarter of galaxies
 // (tuned for the 2-hour deadline and the 20-minute hold over 18 rounds of simulated galaxies)
-const BAL={carFab:14,carAsk:30,hiveRegrow:240,aiEff:.7,brBuild:1.15,brOff:.9,brLevT:3300,brN:2,brHive:4,antiBrood:2.8,halProsp:.5,halImp:.08,brGraze:2.7,coal:.35,devGap:1,ext:{halcyon:.715,varkesh:1.21,ostrova:.99}};   // ext: each faction's station mining rate
+const BAL={carFab:14,carAsk:30,hiveRegrow:240,aiEff:.7,brBuild:1.15,brOff:.9,brLevT:3300,brN:2,brHive:4,antiBrood:2.8,halProsp:.5,halImp:.08,brGraze:2.7,coal:.35,devGap:1,ext:{halcyon:.715,varkesh:1.21,ostrova:.93}};   // ext: each faction's station mining rate
 const CAP_SEAL={yard:2,carrier:3,escort:1},sealed=f=>f!=='brood'&&f!=='pirate',withSeal=(C,f,n)=>sealed(f)?{...C,seal:n}:C;
 const yardCost=f=>withSeal(YARD_COST,f,CAP_SEAL.yard),escCost=f=>withSeal(ESCORT_COST,f,CAP_SEAL.escort);
 const DEPOT_COST={frame:2},YARD_COST={frame:4,keel:4,lattice:4,plate:40},YARD_FEE=5000,YARD_TIME=180,FRIGATE_TIME=150;   // FRIGATE_TIME: a carrier's time in the slip (the 'frigbuild' event name is kept for old saves)
@@ -5954,6 +5954,8 @@ const CK_CLS={
   bulker:{w:1.6,top:.22,brow:'armored',inner:1,mull:1.3,dash:1.25,panels:['manifest','vitals','speed','cargo','drones']},
   scout:{w:.38,top:.36,brow:'bubble',inner:0,mull:0,dash:.95,panels:['intel','vitals','scope','speed','scan'],bubble:true,narrowKinds:['scope']},
   constructor:{w:1.5,top:.23,brow:'console',inner:1,mull:0,dash:1.25,panels:['vitals','speed','build','cargo'],ops:'CONSTRUCTION',lamps:true}};
+// the Advanced Scout and the Unbound hulls fly the cockpit of the frame they're built on (the Skiff gets the scout's radar scope and reports)
+CK_CLS.scout2=CK_CLS.scout;CK_CLS.uskiff=CK_CLS.scout;CK_CLS.raider=CK_CLS.interceptor;CK_CLS.corsair=CK_CLS.striker;CK_CLS.plunderer=CK_CLS.heavy;
 function drawCockpit(c,p,t){const P=S.player,F=CK_FAC[P.faction]||CK_FAC.halcyon,K=CK_CLS[P.cls]||CK_CLS.striker,fc=FAC(P.faction).col,
     ox=-(p.wy||0)*16,oy=(p.wx||0)*13,w=Math.max(12,VW*.013)*K.w,dh=Math.min(108,VH*.12)*K.dash,narrow=VW<700,shp=F.shape;
   c.save();c.translate(ox,oy);
