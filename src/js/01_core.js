@@ -176,8 +176,8 @@ const CLASSES={
   striker:{name:'Medium Fighter',hull:120,shield:1.08,speed:1.17,turn:2.95,weapon:1.25,cargo:24,drill:0,radius:15,rack:1,boost:1.12,agile:1.18,acc:1.2,bcost:.85,desc:'All-rounder: quick off the mark and nimble enough to out-turn heavies and bombers.'},
   heavy:{name:'Heavy Fighter',mkK:.8,swarm:2,acc:.9,hull:130,shield:.95,speed:.92,turn:1.95,weapon:1.32,cargo:30,drill:0,radius:19,rack:1,boost:.92,agile:.8,desc:'Tough gun platform with a swarm launcher. Slower to turn than the lighter fighters.'},
   bomber:{name:'Bomber',swarm:2,acc:.78,hull:205,shield:1.2,speed:.8,turn:1.5,weapon:1.25,cargo:34,drill:0,radius:22,torp:true,boost:.85,agile:.7,seats:2,turK:1.6,turOwnE:1,desc:'Torpedoes that crack stations and outposts, swarm launcher, and a rear dorsal turret (an AI gunner mans it, or a wingmate can climb in). Slow.'},
-  skiff:{name:'Light Miner',hull:90,shield:.85,speed:1.1,turn:2.5,weapon:.48,cargo:14,drill:1.1,radius:14,rack:0,boost:1.05,agile:1.05,acc:1.1,drones:2,lasers:1,desc:'1 charge launcher, 2 guard drones, small hold. Nimble enough to run.'},
-  prospector:{lasers:2,drones:3,name:'Medium Miner',hull:125,shield:1,speed:1,turn:2.2,weapon:.57,cargo:19,drill:1.5,radius:17,rack:0,boost:1,agile:.9,desc:'2 charge launchers, 3 guard drones, mid hold.'},
+  skiff:{name:'Light Miner',hull:90,shield:.85,speed:1.1,turn:2.5,weapon:.48,cargo:30,drill:1.1,radius:14,rack:0,boost:1.05,agile:1.05,acc:1.1,drones:2,lasers:1,desc:'1 charge launcher, 2 guard drones, small hold. Nimble enough to run.'},
+  prospector:{lasers:2,drones:3,name:'Medium Miner',hull:125,shield:1,speed:1,turn:2.2,weapon:.57,cargo:50,drill:1.5,radius:17,rack:0,boost:1,agile:.9,desc:'2 charge launchers, 3 guard drones, mid hold.'},
   wraith:{name:'Wraith',hull:82,shield:.89,speed:1.3,turn:3.25,weapon:1.6,cargo:0,drill:0,radius:12,rack:0,swarm:2,boost:1.2,agile:1.4,acc:1.35,bcost:.75,radar:true,desc:'Legendary Ace hull. Quad cannons and lasers, two swarm pod batteries, no hold and no blast rig. K switches stealth: hidden beyond 600 m, but no shields, guns, missile locks or afterburner while hidden.'},
   escort:{name:'Escort',hull:1300,shield:7,speed:.62,turn:.62,weapon:.9,cargo:0,drill:0,radius:70,rack:0,boost:1,agile:.55,acc:.55,desc:'Light capital ship.'},
   carrier:{name:'Carrier',hull:2500,shield:14,speed:.36,turn:.26,weapon:0,cargo:0,drill:0,radius:120,rack:0,boost:1,agile:.25,acc:.3,desc:'Fleet carrier.'},
@@ -189,7 +189,7 @@ const CLASSES={
   constructor:{name:'Constructor',acc:.75,hull:240,shield:1.25,speed:.72,turn:1.25,weapon:.55,cargo:160,drill:0,radius:26,rack:.5,boost:.85,agile:.65,desc:'Carries Depot Frames for faction depots; call one in from comms (I, then 3 on the Command page).'},
   courier:{name:'Light Hauler',hull:120,shield:.95,speed:1.05,turn:2.1,weapon:.42,cargo:60,drill:0,radius:16,rack:0,boost:1.05,agile:.95,acc:1,drones:2,desc:'60 t hold, 2 guard drones, quick for a hauler.'},
   freighter:{drones:3,name:'Medium Hauler',acc:.8,hull:170,shield:1.1,speed:.95,turn:1.7,weapon:.45,cargo:100,drill:0,radius:21,rack:0,boost:.9,agile:.75,desc:'100 t hold, 3 guard drones, 5.5% market fee. The workhorse: nearly as quick as a Light Hauler.'},
-  dredger:{name:'Heavy Miner',hull:190,shield:1.15,speed:.82,turn:1.6,weapon:.54,cargo:26,drill:2.2,radius:23,rack:0,boost:.9,agile:.75,acc:.82,drones:4,lasers:3,desc:'3 charge launchers, 4 guard drones, the deepest miner hold (still far smaller than any hauler). Slow and armoured.'},
+  dredger:{name:'Heavy Miner',hull:190,shield:1.15,speed:.82,turn:1.6,weapon:.54,cargo:80,drill:2.2,radius:23,rack:0,boost:.9,agile:.75,acc:.82,drones:4,lasers:3,desc:'3 charge launchers, 4 guard drones, the deepest miner hold. Slow and armoured.'},
   bulker:{name:'Heavy Hauler',hull:260,shield:1.25,speed:.72,turn:1.2,weapon:.42,cargo:230,drill:0,radius:28,rack:0,boost:.85,agile:.6,acc:.7,drones:4,desc:'230 t hold, 4 guard drones, 4% market fee. A fortress that crawls.'},
 };
 

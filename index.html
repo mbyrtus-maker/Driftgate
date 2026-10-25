@@ -771,8 +771,8 @@ const CLASSES={
   striker:{name:'Medium Fighter',hull:120,shield:1.08,speed:1.17,turn:2.95,weapon:1.25,cargo:24,drill:0,radius:15,rack:1,boost:1.12,agile:1.18,acc:1.2,bcost:.85,desc:'All-rounder: quick off the mark and nimble enough to out-turn heavies and bombers.'},
   heavy:{name:'Heavy Fighter',mkK:.8,swarm:2,acc:.9,hull:130,shield:.95,speed:.92,turn:1.95,weapon:1.32,cargo:30,drill:0,radius:19,rack:1,boost:.92,agile:.8,desc:'Tough gun platform with a swarm launcher. Slower to turn than the lighter fighters.'},
   bomber:{name:'Bomber',swarm:2,acc:.78,hull:205,shield:1.2,speed:.8,turn:1.5,weapon:1.25,cargo:34,drill:0,radius:22,torp:true,boost:.85,agile:.7,seats:2,turK:1.6,turOwnE:1,desc:'Torpedoes that crack stations and outposts, swarm launcher, and a rear dorsal turret (an AI gunner mans it, or a wingmate can climb in). Slow.'},
-  skiff:{name:'Light Miner',hull:90,shield:.85,speed:1.1,turn:2.5,weapon:.48,cargo:14,drill:1.1,radius:14,rack:0,boost:1.05,agile:1.05,acc:1.1,drones:2,lasers:1,desc:'1 charge launcher, 2 guard drones, small hold. Nimble enough to run.'},
-  prospector:{lasers:2,drones:3,name:'Medium Miner',hull:125,shield:1,speed:1,turn:2.2,weapon:.57,cargo:19,drill:1.5,radius:17,rack:0,boost:1,agile:.9,desc:'2 charge launchers, 3 guard drones, mid hold.'},
+  skiff:{name:'Light Miner',hull:90,shield:.85,speed:1.1,turn:2.5,weapon:.48,cargo:30,drill:1.1,radius:14,rack:0,boost:1.05,agile:1.05,acc:1.1,drones:2,lasers:1,desc:'1 charge launcher, 2 guard drones, small hold. Nimble enough to run.'},
+  prospector:{lasers:2,drones:3,name:'Medium Miner',hull:125,shield:1,speed:1,turn:2.2,weapon:.57,cargo:50,drill:1.5,radius:17,rack:0,boost:1,agile:.9,desc:'2 charge launchers, 3 guard drones, mid hold.'},
   wraith:{name:'Wraith',hull:82,shield:.89,speed:1.3,turn:3.25,weapon:1.6,cargo:0,drill:0,radius:12,rack:0,swarm:2,boost:1.2,agile:1.4,acc:1.35,bcost:.75,radar:true,desc:'Legendary Ace hull. Quad cannons and lasers, two swarm pod batteries, no hold and no blast rig. K switches stealth: hidden beyond 600 m, but no shields, guns, missile locks or afterburner while hidden.'},
   escort:{name:'Escort',hull:1300,shield:7,speed:.62,turn:.62,weapon:.9,cargo:0,drill:0,radius:70,rack:0,boost:1,agile:.55,acc:.55,desc:'Light capital ship.'},
   carrier:{name:'Carrier',hull:2500,shield:14,speed:.36,turn:.26,weapon:0,cargo:0,drill:0,radius:120,rack:0,boost:1,agile:.25,acc:.3,desc:'Fleet carrier.'},
@@ -784,7 +784,7 @@ const CLASSES={
   constructor:{name:'Constructor',acc:.75,hull:240,shield:1.25,speed:.72,turn:1.25,weapon:.55,cargo:160,drill:0,radius:26,rack:.5,boost:.85,agile:.65,desc:'Carries Depot Frames for faction depots; call one in from comms (I, then 3 on the Command page).'},
   courier:{name:'Light Hauler',hull:120,shield:.95,speed:1.05,turn:2.1,weapon:.42,cargo:60,drill:0,radius:16,rack:0,boost:1.05,agile:.95,acc:1,drones:2,desc:'60 t hold, 2 guard drones, quick for a hauler.'},
   freighter:{drones:3,name:'Medium Hauler',acc:.8,hull:170,shield:1.1,speed:.95,turn:1.7,weapon:.45,cargo:100,drill:0,radius:21,rack:0,boost:.9,agile:.75,desc:'100 t hold, 3 guard drones, 5.5% market fee. The workhorse: nearly as quick as a Light Hauler.'},
-  dredger:{name:'Heavy Miner',hull:190,shield:1.15,speed:.82,turn:1.6,weapon:.54,cargo:26,drill:2.2,radius:23,rack:0,boost:.9,agile:.75,acc:.82,drones:4,lasers:3,desc:'3 charge launchers, 4 guard drones, the deepest miner hold (still far smaller than any hauler). Slow and armoured.'},
+  dredger:{name:'Heavy Miner',hull:190,shield:1.15,speed:.82,turn:1.6,weapon:.54,cargo:80,drill:2.2,radius:23,rack:0,boost:.9,agile:.75,acc:.82,drones:4,lasers:3,desc:'3 charge launchers, 4 guard drones, the deepest miner hold. Slow and armoured.'},
   bulker:{name:'Heavy Hauler',hull:260,shield:1.25,speed:.72,turn:1.2,weapon:.42,cargo:230,drill:0,radius:28,rack:0,boost:.85,agile:.6,acc:.7,drones:4,desc:'230 t hold, 4 guard drones, 4% market fee. A fortress that crawls.'},
 };
 
@@ -1655,9 +1655,12 @@ function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id,mkSc(R))*lo
 function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id,mkSc(R))*locF(R,id)*mkK(R,id)*(1-mFee(S.player.cls))))}
 // how many units a market takes (dir +1, a sale) or gives (dir -1, a purchase) at the quoted price: as many as it can absorb before
 // its price would move past the buy/sell spread, so a big dump sells in lots and buying it straight back never pays
+// a lot: as many units as trade before the price would move past LOT_TOL (selling down to x.sell, buying up to x.buy);
+// the whole lot goes at the quoted price
+let LOT_TOL={sell:.82,buy:1.2};
 function lotCap(c,k,dir,maxN){if(maxN<=1)return maxN;const R=mR(c);if(R)mkOf(R);const st=c.market,sc=mkSc(R),s0=st[k],m0=R?R.mk[k]||0:0,p0=price(st,k,sc)*locF(R,k);
   const at=n=>{st[k]=(s0||0)+dir*n;if(R)R.mk[k]=m0+dir*n*pMk();const p=price(st,k,sc)*locF(R,k);if(s0===undefined)delete st[k];else st[k]=s0;if(R)R.mk[k]=m0;return p};
-  const ok=n=>dir>0?at(n)>=p0*.89:at(n)<=p0*1.12;let lo=1,hi=maxN;if(ok(hi))return hi;while(hi-lo>1){const m=(lo+hi)>>1;if(ok(m))lo=m;else hi=m}return lo}
+  const ok=n=>dir>0?at(n)>=p0*LOT_TOL.sell:at(n)<=p0*LOT_TOL.buy;let lo=1,hi=maxN;if(ok(hi))return hi;while(hi-lo>1){const m=(lo+hi)>>1;if(ok(m))lo=m;else hi=m}return lo}
 function demandOf(R,id){const f=locF(R,id);return f>=1.22?'high':f<=.82?'low':''}
 // every strategic tick: stations drift back toward their own surplus or shortage, and AI merchants buy low and sell high
 function mkTick(){if(NET.cl)return;const L=mkStations();if(L.length<2)return;
@@ -4470,7 +4473,7 @@ function wreckOf(sec,p){return((sec&&sec.wrecks)||[]).find(w=>w.pts.includes(p))
 // several charges and placement, not time on the rock, sets a miner's pay. Wreck sections crack at their joint, and a reactor core needs every charge on point or it all blows.
 // Nothing is made or lost: unreleased ore, and nuggets left when a cloud thins out, go to the system's debris pool.
 const BL={spd:300,near:15,blastR:120,cloudLife:90,collectR:250,coreR:600,coreDmg:520,chgDmg:22,stationR:400,scanT:20,eyeR:100};
-const BL_HULL={skiff:{n:5,reload:90,coll:6,cd:1,k:7},prospector:{n:6,reload:100,coll:9,cd:.5,k:9},dredger:{n:7,reload:110,coll:12,cd:.34,k:14}};
+const BL_HULL={skiff:{n:5,reload:90,coll:6,cd:1,k:2.5},prospector:{n:6,reload:100,coll:9,cd:.5,k:2.6},dredger:{n:7,reload:110,coll:12,cd:.34,k:3}};
 const BL_REL={on:.9,near:.5,off:.25};
 function blHull(cls){return BL_HULL[cls]||null}
 function blTier(P){return(P&&P.tiers&&P.tiers.drill)||1}

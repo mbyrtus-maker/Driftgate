@@ -87,9 +87,12 @@ function mBuy(c,id){const R=mR(c);return Math.ceil(price(c.market,id,mkSc(R))*lo
 function mSell(c,id){const R=mR(c);return Math.max(1,Math.floor(price(c.market,id,mkSc(R))*locF(R,id)*mkK(R,id)*(1-mFee(S.player.cls))))}
 // how many units a market takes (dir +1, a sale) or gives (dir -1, a purchase) at the quoted price: as many as it can absorb before
 // its price would move past the buy/sell spread, so a big dump sells in lots and buying it straight back never pays
+// a lot: as many units as trade before the price would move past LOT_TOL (selling down to x.sell, buying up to x.buy);
+// the whole lot goes at the quoted price
+let LOT_TOL={sell:.82,buy:1.2};
 function lotCap(c,k,dir,maxN){if(maxN<=1)return maxN;const R=mR(c);if(R)mkOf(R);const st=c.market,sc=mkSc(R),s0=st[k],m0=R?R.mk[k]||0:0,p0=price(st,k,sc)*locF(R,k);
   const at=n=>{st[k]=(s0||0)+dir*n;if(R)R.mk[k]=m0+dir*n*pMk();const p=price(st,k,sc)*locF(R,k);if(s0===undefined)delete st[k];else st[k]=s0;if(R)R.mk[k]=m0;return p};
-  const ok=n=>dir>0?at(n)>=p0*.89:at(n)<=p0*1.12;let lo=1,hi=maxN;if(ok(hi))return hi;while(hi-lo>1){const m=(lo+hi)>>1;if(ok(m))lo=m;else hi=m}return lo}
+  const ok=n=>dir>0?at(n)>=p0*LOT_TOL.sell:at(n)<=p0*LOT_TOL.buy;let lo=1,hi=maxN;if(ok(hi))return hi;while(hi-lo>1){const m=(lo+hi)>>1;if(ok(m))lo=m;else hi=m}return lo}
 function demandOf(R,id){const f=locF(R,id);return f>=1.22?'high':f<=.82?'low':''}
 // every strategic tick: stations drift back toward their own surplus or shortage, and AI merchants buy low and sell high
 function mkTick(){if(NET.cl)return;const L=mkStations();if(L.length<2)return;

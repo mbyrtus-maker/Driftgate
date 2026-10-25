@@ -110,7 +110,7 @@ function wreckOf(sec,p){return((sec&&sec.wrecks)||[]).find(w=>w.pts.includes(p))
 // several charges and placement, not time on the rock, sets a miner's pay. Wreck sections crack at their joint, and a reactor core needs every charge on point or it all blows.
 // Nothing is made or lost: unreleased ore, and nuggets left when a cloud thins out, go to the system's debris pool.
 const BL={spd:300,near:15,blastR:120,cloudLife:90,collectR:250,coreR:600,coreDmg:520,chgDmg:22,stationR:400,scanT:20,eyeR:100};
-const BL_HULL={skiff:{n:5,reload:90,coll:6,cd:1,k:7},prospector:{n:6,reload:100,coll:9,cd:.5,k:9},dredger:{n:7,reload:110,coll:12,cd:.34,k:14}};
+const BL_HULL={skiff:{n:5,reload:90,coll:6,cd:1,k:2.5},prospector:{n:6,reload:100,coll:9,cd:.5,k:2.6},dredger:{n:7,reload:110,coll:12,cd:.34,k:3}};
 const BL_REL={on:.9,near:.5,off:.25};
 function blHull(cls){return BL_HULL[cls]||null}
 function blTier(P){return(P&&P.tiers&&P.tiers.drill)||1}

@@ -48,6 +48,7 @@ async def main():
       ev=lambda c:pg.evaluate('c=>__dg.ev(c)',c)
       if TUNE:await ev(TUNE+';1')
       await ev("(()=>{galaxyWon=()=>{};running=false;exitSector();W=null;return 1})()")
+      await pg.evaluate('(()=>{let a=%d*7919+13;Math.random=function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}})()'%(g+1))   # reseed after the frames that ran during launch, so runs compare
       for t in (20,40,60):
         await ev(f"(()=>{{while(S.T<{t}*60){{S.T+=10;strategicTick();updateEvents()}}return 1}})()")
         r=json.loads(await ev(SNAP))
