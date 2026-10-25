@@ -50,14 +50,15 @@ function sideName(s){return s==='player'?'You':s==='neutral'?NEUTRAL.short:s==='
 // unshielded ship it fills the Jam bar (the ship's full hull, at the rate guns would deal damage); stop jamming for 1.5 s and the bar
 // drains 10% a second. A full bar disables the ship for a window, then it is hardened against jamming for 60 s. While it is dark,
 // pirates within 150 m hook its hold, most valuable cargo first. Jammers never kill.
-const JAM={drainD:1.5,drainR:.1,harden:60,hookR:150,hookRate:8};
+const JAM={drainD:1.5,drainR:.1,harden:60,hookR:150,hookRate:8,shK:.8};
 function jamCap(e){return e.st.hull*(e.st.jamBarK||1)}
 function jamFrac(e){return e&&e.jam>0?clamp(e.jam/jamCap(e),0,1):0}
 function jamDark(e){return!!e&&(e.jamOff||0)>W.t}
 // a Jam bar or a harpoon tether keeps a ship out of the gate field
 function gateLocked(e){return!!e&&(e.jam>0||jamDark(e)||!!(e.teth&&e.teth.until>W.t))}
 function jamWin(e){const c=e.cls;return c==='freighter'||c==='bulker'?12:c==='courier'||c==='skiff'||c==='prospector'||c==='dredger'?10:5}
-function jamHit(e,b){e.lastHit=W.t;e.lastHitBy=b.side;if(e.shield>0){fxSpark(b,'#8fc8ff',3);return}if(jamDark(e)||(e.jamHard||0)>W.t){fxSpark(b,'#b7c6ff',2);return}
+// jam rounds still knock shields down (at JAM.shK of the gun's damage, never into the hull); the jam bar only fills once they're gone
+function jamHit(e,b){e.lastHit=W.t;e.lastHitBy=b.side;if(e.shield>0){if(b.dmg>0&&b.src){damageShip(e,Math.min(b.dmg*JAM.shK,e.shield),b.side,b,'jam');if(e.shield>0)return}else{fxSpark(b,'#8fc8ff',3);return}}if(jamDark(e)||(e.jamHard||0)>W.t){fxSpark(b,'#b7c6ff',2);return}
   if(!(e.jam>0)){ // the bar appears: a Snap-back emitter answers once a minute, freighters call for help, a pilot is warned
     if(e.st.snapBack&&!((e.snapT||0)>W.t)){e.shield=e.st.sCap*.3;e.snapT=W.t+60;fxSpark(e,'#8fc8ff',8);if(e.isPlayer)flash('Snap-back emitter: shields back to 30%. The jam is broken.',true);return}
     if(e.isPlayer)flash('Jammer on your hull! Get your shields back up or break away.',true);else if(e.npc&&(e.role==='hauler'||e.role==='miner')&&FACTIONS[e.side])distressCall(W.sid,`a ${FACTIONS[e.side].short} ${CLASSES[e.cls].name}`,e.side,b.side)}
