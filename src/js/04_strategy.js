@@ -243,14 +243,9 @@ function loseInv(src,frac,s){const lost={};for(const k in src){const m=Math.min(
 // ---- war effort: what human pilots do for their faction. Orders, supply-drive deliveries, campaign moves, beacon flips and
 // enemy ships shot down earn the faction points; the points fade (about 20 minutes to lose two thirds) and, while they last,
 // make the faction's fleets fight harder in the battles fought out of sight: outpost assaults, station sieges, hunter groups.
-const WE={tau:1200,max:.8,scale:10,match:1,matchB:1,order:2,drive:.04,camp:4,beacon:2,bmission:3,kill:{fighter:1,heavy:1.5,builder:3,hauler:1,miner:.5,drone:.1,escort:6,frigate:12}};
-function weFac(f){f=sideNorm(f);return FAC_IDS.includes(f)||f==='brood'?f:null}
-// War effort is earned by human pilots, and one active pilot lifts their faction a lot (a casual player's effort took
-// their side from 31% to 40% of galaxies). So the sides with no human pilot get a matching share as command initiative:
-// every point a human earns for their faction gives each faction without a human (the Brood included) WE.match of a point.
-function weHumans(){const s=new Set();if(S.player&&!S.unb&&FAC_IDS.includes(S.player.faction))s.add(S.player.faction);for(const k in S.pilots||{}){const P=S.pilots[k];if(P&&FAC_IDS.includes(P.faction))s.add(P.faction)}return s}
-function weAdd(f,pts){f=weFac(f);if(!f||!(pts>0)||!S)return;S.we=S.we||{};S.we[f]=(S.we[f]||0)+pts;
-  if(WE.match>0){const H=weHumans();if(H.has(f))for(const g of[...FAC_IDS,'brood'])if(!H.has(g))S.we[g]=(S.we[g]||0)+pts*WE.match*(g==='brood'?WE.matchB:1)/H.size}}
+const WE={tau:1200,max:.8,scale:10,order:2,drive:.04,camp:4,beacon:2,bmission:3,kill:{fighter:1,heavy:1.5,builder:3,hauler:1,miner:.5,drone:.1,escort:6,frigate:12}};
+function weFac(f){f=sideNorm(f);return FAC_IDS.includes(f)?f:null}
+function weAdd(f,pts){f=weFac(f);if(!f||!(pts>0)||!S)return;S.we=S.we||{};S.we[f]=(S.we[f]||0)+pts}
 function wePts(f){const g=weFac(f);return g&&S.we?(S.we[g]||0):0}
 function weBonus(f){return WE.max*(1-Math.exp(-wePts(f)/WE.scale))}
 function weMul(f){return 1+weBonus(f)}
