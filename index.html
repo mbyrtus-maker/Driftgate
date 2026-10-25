@@ -4519,13 +4519,14 @@ function blTgt(s,c){return c.wp?wptsIn(s).find(p=>p.id===c.a):s.ast.find(a=>a.id
 function blPilot(o){if(o==='me'||isMe(o))return S.player;return(S.pilots||{})[o]||null}
 // detonate every charge this pilot has set in this system
 function blDetonate(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]).filter(c=>c.o===o);if(!mine.length){blSay(P,'No charges set. Fire them with F first.');return}
-  s.charges=s.charges.filter(c=>c.o!==o);const by={};for(const c of mine)(by[c.a]=by[c.a]||[]).push(c);let got=0;
+  s.charges=s.charges.filter(c=>c.o!==o);const by={};for(const c of mine)(by[c.a]=by[c.a]||[]).push(c);let got=0,perf=0;
   for(const id in by){const cs=by[id],T=blTgt(s,cs[0]);if(!T)continue;const at={x:T.x,y:T.y,z:T.z},R0=astR(T);
     if(T.wpt){const w=wreckOf(s,T);if(T.k==='core'&&cs.some(c=>c.q!=='on')){blCoreBlow(s,w,T);continue}
       const best=Math.max(...cs.map(c=>blRate(c.q,P))),f=best*Math.max(0,1-.1*(cs.length-1)),rel={};for(const k in T.ore){const r=Math.round(T.ore[k]*f);if(r>0)rel[k]=r;const d=T.ore[k]-r;if(d>0)toDebris(s,{[k]:d})}
       T.ore={};T.last=0;{const w=wreckOf(s,T);let nx=w?T.x-w.x:rnd(-1,1),ny=w?T.y-w.y:rnd(-1,1),nz=w?T.z-w.z:rnd(-1,1);const nl=hyp(nx,ny,nz)||1,sp=rnd(5,8);got+=blCloud(s,at,rel,R0,cs.length-1,o,{x:nx/nl*sp,y:ny/nl*sp,z:nz/nl*sp},1)}}
     else{const n=blPts(T).length,secQ={};let extra=0;for(const c of cs){const r=blRate(c.q,P);if(c.pi in secQ){extra++;secQ[c.pi]=Math.max(secQ[c.pi],r)}else secQ[c.pi]=r}
-      const nc=Object.keys(secQ).length,f=Object.values(secQ).reduce((a,b)=>a+b,0)/nc*Math.max(0,1-.1*extra),rel={},hk=blHull(P.cls),tot0=oreTotal(T),fr=Math.min(nc/n,hk&&hk.k?hk.k*nc/Math.max(1,tot0):1);
+      // a perfect blast (a charge on point on every fault point of the rock) cracks the whole rock: all of its ore comes loose
+      const nc=Object.keys(secQ).length,perfect=nc===n&&cs.every(c=>c.q==='on'),f=perfect?1:Object.values(secQ).reduce((a,b)=>a+b,0)/nc*Math.max(0,1-.1*extra),rel={},hk=blHull(P.cls),tot0=oreTotal(T),fr=perfect?1:Math.min(nc/n,hk&&hk.k?hk.k*nc/Math.max(1,tot0):1);if(perfect)perf++;
       for(const k of Object.keys(T.ore)){const cK=Math.min(T.ore[k],Math.round(T.ore[k]*fr)),r=Math.round(cK*f);T.ore[k]-=cK;if(T.ore[k]<=0)delete T.ore[k];if(r>0)rel[k]=r;if(cK-r>0)toDebris(s,{[k]:cK-r})}
       if(oreTotal(T)<=0)removeAst(s,T);else T.fpv=(T.fpv||0)+1;
       {const ks=Object.keys(secQ),parts=oreSplit(rel,ks.map(k=>secQ[k]));ks.forEach((pi,i)=>{const mine=cs.filter(c=>String(c.pi)===pi);let x=0,y=0,z=0;for(const c of mine){x+=c.x;y+=c.y;z+=c.z}x/=mine.length;y/=mine.length;z/=mine.length;
@@ -4533,7 +4534,7 @@ function blDetonate(P,e){const s=S.sectors[W.sid],o=blKey(P),mine=(s.charges||[]
         got+=blCloud(s,{x:x+nx*(cr+4),y:y+ny*(cr+4),z:z+nz*(cr+4)},parts[i],R0,extra,o,{x:nx*sp+rnd(-1,1),y:ny*sp+rnd(-1,1),z:nz*sp+rnd(-1,1)})})}}
     if(!MUTE){fxBoom(at,R0*1.6,'#ffd9a0');SFX.crack&&SFX.crack(vPil(at))}
     for(const x of W.ents.slice())if(x.type==='ship'&&x.alive){const d=d3(x,at);if(d<BL.blastR)damageShip(x,BL.chgDmg*cs.length*(1-d/BL.blastR)+5,e.side,at,'blast')}}
-  blSay(P,got?`Blast! ${got} t ${Object.keys(by).some(id=>(mine.find(c=>String(c.a)===id)||{}).wp)?'of salvage':'of ore'} knocked loose. Fly into the chunks to scoop them.`:'Blast! Nothing came loose.')}
+  blSay(P,got&&perf?`Perfect blast! The whole rock cracked open: ${got} t of ore. Fly into the chunks to scoop it all.`:got?`Blast! ${got} t ${Object.keys(by).some(id=>(mine.find(c=>String(c.a)===id)||{}).wp)?'of salvage':'of ore'} knocked loose. Fly into the chunks to scoop them.`:'Blast! Nothing came loose.')}
 function blCloud(s,at,ore,R0,extra,o,v,scrap){const t=oreTotal({ore});if(!t)return 0;s.clouds=s.clouds||[];const cr=chunkR(t);s.clouds.push({id:S.nextId++,chunk:1,scrap:scrap?1:undefined,cr,x:Math.round(at.x),y:Math.round(at.y),z:Math.round(at.z),vx:v?v.x:0,vy:v?v.y:0,vz:v?v.z:0,ore,r:cr+25,r0:cr+25,until:S.T+Math.max(30,BL.cloudLife-10*extra),o});return t}
 function chunkR(t){return Math.round((4+Math.sqrt(Math.max(1,t))*2.4)*10)/10}
 // share a released lot between sections by their release rates, to the unit
