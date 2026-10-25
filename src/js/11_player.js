@@ -312,10 +312,11 @@ function physics(e,dt){if(e.inJump)return;
   for(const E of[W.stationEnt,W.outpostEnt]){if(!E)continue;const dx=e.x-E.x,dy=e.y-E.y,dz=e.z-E.z,d=hyp(dx,dy,dz),rr=E.type==='station'?55:72;if(d<rr+R&&d>0){e.x=E.x+dx/d*(rr+R);e.y=E.y+dy/d*(rr+R);e.z=E.z+dz/d*(rr+R);const vn=(e.vx*dx+e.vy*dy+e.vz*dz)/d;if(vn<0){e.vx-=1.3*vn*dx/d;e.vy-=1.3*vn*dy/d;e.vz-=1.3*vn*dz/d}}}
   if(W.works&&W.works.length)wkCollide(e,R);
 }
-// station, outpost and capital turrets lead their target perfectly, then scatter on every axis by TUR_JIT0 m plus TUR_JIT
-// of the range. Against a Light Fighter strafing at 250 m/s: about 77% hits at 600 m, 50% at 900 m, 33% at 1,200 m
-let TUR_JIT=.0175,TUR_JIT0=7;
-function turretShot(from,t,spd,dmg,side,len,snd){if(!snd){const v=vAt(from);if(v>.08&&W.t-(W.turSnd||0)>.45){W.turSnd=W.t;SFX.turret(v*.8)}}const lp=leadPoint({x:from.x,y:from.y,z:from.z,vx:0,vy:0,vz:0},t,spd);const jd=TUR_JIT0+d3(lp,from)*TUR_JIT;let dx=lp.x-from.x+rnd(-jd,jd),dy=lp.y-from.y+rnd(-jd,jd),dz=lp.z-from.z+rnd(-jd,jd);const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
+// station, outpost and capital turrets lead their target perfectly, then scatter on every axis by a spread that grows with
+// range: A + B*d + C*d² metres (d = range), one curve for ships and one for torpedoes. Tuned against a Light Fighter
+// strafing at 250 m/s for 80/60/40% hits at 600/900/1,200 m, and an inbound torpedo for 70/50/30%.
+let TUR={ship:[19.8,-.0126,1.52e-5],torp:[6.5,.0215,0]};
+function turretShot(from,t,spd,dmg,side,len,snd){if(!snd){const v=vAt(from);if(v>.08&&W.t-(W.turSnd||0)>.45){W.turSnd=W.t;SFX.turret(v*.8)}}const lp=leadPoint({x:from.x,y:from.y,z:from.z,vx:0,vy:0,vz:0},t,spd);const dd=d3(lp,from),TK=t&&t.kind==='torpedo'?TUR.torp:TUR.ship,jd=TK[0]+TK[1]*dd+TK[2]*dd*dd;let dx=lp.x-from.x+rnd(-jd,jd),dy=lp.y-from.y+rnd(-jd,jd),dz=lp.z-from.z+rnd(-jd,jd);const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
   W.shots.push({x:from.x+dx*len,y:from.y+dy*len,z:from.z+dz*len,vx:dx*spd,vy:dy*spd,vz:dz*spd,dmg,side,src:null,ttl:1,col:sideCol(side),sty:'turret',snd});return{x:dx,y:dy,z:dz}}
 function structUpdate(dt){
   const SE=W.stationEnt;hgLive(dt);
