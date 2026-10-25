@@ -3,13 +3,13 @@
 # demand). Charges: the hull's magazine, a section per charge, an average placement mix (60% on point, 30% near, 10% off),
 # the magazine reload, and the scoop rate. Travel uses gate distances. Galaxies are simulated to 20, 40 and 60 minutes.
 # Ladder targets an hour, Mk I: Light 12k, Medium 15.6k, Heavy 20k.
-# usage: python3 tools/tests/mine_rates.py [page] [galaxies]
+# usage: python3 tools/tests/mine_rates.py [page] [galaxies]   (PERFECT=aim,p models perfect blasts instead: s per charge, on-point chance)
 import asyncio,json,sys,os,statistics as st
 from playwright.async_api import async_playwright
 HERE=os.path.dirname(os.path.abspath(__file__))
 PAGE=os.path.abspath(sys.argv[1]) if len(sys.argv)>1 else os.path.join(HERE,'..','..','index.html')
 G=int(sys.argv[2]) if len(sys.argv)>2 else 3
-SNAP=r"""(()=>{const P=S.player,f=P.faction,out={};const DOCK=40,JUMP=10,GATE=4500,XG=6500,REL=.6*.9+.3*.5+.1*.25,AIM=4,DET=10;
+SNAP=r"""(()=>{const P=S.player,f=P.faction,out={};const DOCK=40,JUMP=10,GATE=4500,XG=6500,REL=.6*.9+.3*.5+.1*.25,AIM=4,DET=10;const PERF=__PERF__;
  const ok=R=>R&&R.kind!=='hive'&&(R.owner===f||R.owner==='neutral');
  const mk=R=>({kind:'station',market:(typeof mkStock==='function'?mkStock(R):S.econ.stock[R.owner]),wallet:R.owner,owner:R.owner});
  const at=(sid,fn)=>{const o=P.sector;P.sector=sid;try{return fn()}finally{P.sector=o}};
@@ -23,12 +23,19 @@ SNAP=r"""(()=>{const P=S.player,f=P.faction,out={};const DOCK=40,JUMP=10,GATE=45
     // a hold's worth of the field's mix, by mass
     let mm=0;for(const k in ore)mm+=ore[k]/tot*mass(k);const units=mm>0?cap/mm:cap*3;const load={};for(const k in ore){const u=Math.floor(units*ore[k]/tot);if(u>0)load[k]=u}
     const loadU=Object.values(load).reduce((a,b)=>a+b,0);if(loadU<1)continue;
-    const mags=loadU/(n*y),tMag=n*AIM+DET+n*y/coll,tFill=mags*tMag+Math.max(0,Math.ceil(mags)-1)*Math.max(0,h.reload-n*y/coll);
+    let tFill;const mags=loadU/(n*y),tMag=n*AIM+DET+n*y/coll;tFill=mags*tMag+Math.max(0,Math.ceil(mags)-1)*Math.max(0,h.reload-n*y/coll);
+    if(PERF){ // perfect blasts: line up every fault point of a rock (PERF.aim s a charge), each lands on point with chance PERF.p;
+      // all on point cracks the whole rock, otherwise the blast pays like an ordinary one. Fill the hold rock by rock.
+      const rocks=s.ast.filter(a=>!a.comet&&oreTotal(a)>20).map(oreTotal);const avg=rocks.length?rocks.reduce((a,b)=>a+b,0)/rocks.length:60,np=avg<=50?2:avg<=90?3:4;
+      let room=cap,t=0,chg=n;while(room>0&&t<36000){if(chg<np){t+=h.reload;chg=n}chg-=np;const ok=Math.pow(PERF.p,np),take=Math.min(room/mm,ok*avg+(1-ok)*np*h.k*BL_REL.on);t+=np*PERF.aim+DET+take/coll;room-=take*mm}
+      tFill=t}
     const belt=(s.belts||[]).length?s.belts.reduce((a,b)=>a+Math.hypot(b.x,b.y,b.z),0)/s.belts.length:2500;
     const tr=j?2*((GATE*2+(j-1)*XG)/spd+j*JUMP):2*belt/spd;const T=tFill+tr+DOCK;
     const v=sellVal(R,load),rate=v*3600/T;if(rate>best){best=rate;bd={at:sid,field:d.id,j,load,T:Math.round(T),v}}}}
   out[cls]={rate:Math.round(best),bd}}
  return JSON.stringify(out)})()"""
+PERF=os.environ.get('PERFECT','')   # e.g. PERFECT=10,.85 : seconds to line up each charge, chance each lands on point
+SNAP=SNAP.replace('__PERF__','null' if not PERF else '{aim:%s,p:%s}'%tuple(PERF.split(',')))
 async def main():
   res={}
   async with async_playwright() as p:
