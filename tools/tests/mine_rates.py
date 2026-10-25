@@ -9,6 +9,7 @@ from playwright.async_api import async_playwright
 HERE=os.path.dirname(os.path.abspath(__file__))
 PAGE=os.path.abspath(sys.argv[1]) if len(sys.argv)>1 else os.path.join(HERE,'..','..','index.html')
 G=int(sys.argv[2]) if len(sys.argv)>2 else 3
+TUNE=sys.argv[3] if len(sys.argv)>3 else ''   # optional JS run in game scope first, e.g. "CLASSES.skiff.cargo=20"
 SNAP=r"""(()=>{const P=S.player,f=P.faction,out={};const DOCK=40,JUMP=10,GATE=4500,XG=6500,REL=.6*.9+.3*.5+.1*.25,AIM=4,DET=10;const PERF=__PERF__;
  const ok=R=>R&&R.kind!=='hive'&&(R.owner===f||R.owner==='neutral');
  const mk=R=>({kind:'station',market:(typeof mkStock==='function'?mkStock(R):S.econ.stock[R.owner]),wallet:R.owner,owner:R.owner});
@@ -45,6 +46,7 @@ async def main():
       await pg.goto('file://'+PAGE+'?name=Tester');await pg.wait_for_function('window.__dg&&__dg.ev("MDL.ready")',timeout=60000)
       await pg.evaluate("document.getElementById('bLaunch').click()");await pg.wait_for_timeout(800)
       ev=lambda c:pg.evaluate('c=>__dg.ev(c)',c)
+      if TUNE:await ev(TUNE+';1')
       await ev("(()=>{galaxyWon=()=>{};running=false;exitSector();W=null;return 1})()")
       for t in (20,40,60):
         await ev(f"(()=>{{while(S.T<{t}*60){{S.T+=10;strategicTick();updateEvents()}}return 1}})()")
