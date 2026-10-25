@@ -69,7 +69,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey(e.shiftKey);return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
-  if(commsOpen()&&/^Digit[1-4]$/.test(e.code)){commsPick(String(+e.code.slice(5)-1));return}   // menus use the number keys as printed
+  if(commsOpen()&&/^Digit[1-5]$/.test(e.code)){commsPick(String(+e.code.slice(5)-1));return}   // menus use the number keys as printed
   if(c==='KeyI'){cycleFriendly();return}
   if(c==='KeyQ')cycleHostile();
   if(c==='KeyG')targetAhead();
@@ -145,7 +145,7 @@ const CM_FIGHT=['patrol','escort','screen','strike','raider'];
 function cmTrader(T){if(T.tradeT)return T.tradeT;if(!T.pup||T.role!=='trader')return null;return(S.traders||[]).find(t=>t.live&&t.sector===W.sid&&t.side===T.side&&t.kind==='haul')||null}
 function cmRole(T){const t=cmTrader(T);if(T.role==='trader')return t&&t.kind==='haul'?`freighter → ${DEF[t.to]?DEF[t.to].name:'?'}`:'trader';if(T.role==='frigate')return T.tok?capName(T.tok):'capital ship';if(T.role==='builder')return'constructor';if(T.role==='miner')return'miner';if(T.role==='hauler')return'hauler';if(T.role==='scout')return'scout';return T.grp&&grpAlive(T.grp).length>1?'wing':'fighter'}
 function cmOpts(T){const P=S.player,p=W.player,f=P.faction,O=[];
-  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},{k:'help',l:'Distress: send help to me'});return O}
+  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},{k:'help',l:'Distress: send help to me'});{const C=!S.unb&&typeof csupCap==='function'&&csupCap();if(C)O.push(haulBusy('csup:'+C.id)?{k:'none',l:`Supply run for ${C.name}: on its way`,off:1}:{k:'csup',l:`Request a supply run for ${C.name}`})}return O}
   const nm=ftgtName(T),t=cmTrader(T),cv=T.role==='trader'&&t&&t.kind==='haul'&&t.side===f,car=T.role==='frigate'&&T.tok&&isCar(T.tok)&&T.tok.side!=='brood',hit=W.t-(T.lastHit||-99)<4&&T.lastHitBy&&hostile('player',T.lastHitBy);
   if(hit)O.push({k:'assist',l:`Help: target the ship attacking ${nm}`});
   if(cv){const me=P.pid||'me',E=t.esc,n=cvLeft(t);O.push(E&&E.k===me?{k:'none',l:`Escorting: ${E.hops} of ${E.need} jumps · paid when it docks`,off:1}:E?{k:'none',l:`Already escorted by ${E.name||'another pilot'}`,off:1}:n<1?{k:'none',l:'Last leg: no escort contract',off:1}:{k:'cvesc',l:`Escort this convoy · ${n} jump${n>1?'s':''} · ${fmt(cvPay(t,Math.ceil(n*ESC_CV.need)))} cr`},{k:'guard',l:'Guard '+nm},{k:'bound',l:'Where are you bound?'})}
@@ -164,6 +164,7 @@ function commsPick(k){if(k==='close'){closeComms();return}const o=W&&W.cmOpts&&W
 function cmDo(k,T){const P=S.player,me=T===W.player;
   if(k==='help'){if(NET.cl)netSend({t:'order',k:'help'});else pilotDistress();return}
   if(k==='build'){if(NET.cl)netSend({t:'order',k:'build'});else requestBuild();return}
+  if(k==='csup'){csupRequest();return}
   if(!me&&(!T.alive||!W.ents.includes(T)))return;
   if(k==='guard'||k==='escort'){if(NET.cl){netSend({t:'order',k,id:me?'me':T.id});return}issueOrder(k,T);return}
   if(k==='form'||k==='attack'||k==='launch'){const tg=W.tgt&&W.tgt.kind==='ship'&&W.tgt.ref;if(k!=='form'&&!(tg&&tg.alive&&hostile('player',tg.side))){flash('Target an enemy ship first (T, Q or G), then give the order.',true);return}

@@ -4193,7 +4193,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey(e.shiftKey);return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
-  if(commsOpen()&&/^Digit[1-4]$/.test(e.code)){commsPick(String(+e.code.slice(5)-1));return}   // menus use the number keys as printed
+  if(commsOpen()&&/^Digit[1-5]$/.test(e.code)){commsPick(String(+e.code.slice(5)-1));return}   // menus use the number keys as printed
   if(c==='KeyI'){cycleFriendly();return}
   if(c==='KeyQ')cycleHostile();
   if(c==='KeyG')targetAhead();
@@ -4269,7 +4269,7 @@ const CM_FIGHT=['patrol','escort','screen','strike','raider'];
 function cmTrader(T){if(T.tradeT)return T.tradeT;if(!T.pup||T.role!=='trader')return null;return(S.traders||[]).find(t=>t.live&&t.sector===W.sid&&t.side===T.side&&t.kind==='haul')||null}
 function cmRole(T){const t=cmTrader(T);if(T.role==='trader')return t&&t.kind==='haul'?`freighter → ${DEF[t.to]?DEF[t.to].name:'?'}`:'trader';if(T.role==='frigate')return T.tok?capName(T.tok):'capital ship';if(T.role==='builder')return'constructor';if(T.role==='miner')return'miner';if(T.role==='hauler')return'hauler';if(T.role==='scout')return'scout';return T.grp&&grpAlive(T.grp).length>1?'wing':'fighter'}
 function cmOpts(T){const P=S.player,p=W.player,f=P.faction,O=[];
-  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},{k:'help',l:'Distress: send help to me'});return O}
+  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},{k:'help',l:'Distress: send help to me'});{const C=!S.unb&&typeof csupCap==='function'&&csupCap();if(C)O.push(haulBusy('csup:'+C.id)?{k:'none',l:`Supply run for ${C.name}: on its way`,off:1}:{k:'csup',l:`Request a supply run for ${C.name}`})}return O}
   const nm=ftgtName(T),t=cmTrader(T),cv=T.role==='trader'&&t&&t.kind==='haul'&&t.side===f,car=T.role==='frigate'&&T.tok&&isCar(T.tok)&&T.tok.side!=='brood',hit=W.t-(T.lastHit||-99)<4&&T.lastHitBy&&hostile('player',T.lastHitBy);
   if(hit)O.push({k:'assist',l:`Help: target the ship attacking ${nm}`});
   if(cv){const me=P.pid||'me',E=t.esc,n=cvLeft(t);O.push(E&&E.k===me?{k:'none',l:`Escorting: ${E.hops} of ${E.need} jumps · paid when it docks`,off:1}:E?{k:'none',l:`Already escorted by ${E.name||'another pilot'}`,off:1}:n<1?{k:'none',l:'Last leg: no escort contract',off:1}:{k:'cvesc',l:`Escort this convoy · ${n} jump${n>1?'s':''} · ${fmt(cvPay(t,Math.ceil(n*ESC_CV.need)))} cr`},{k:'guard',l:'Guard '+nm},{k:'bound',l:'Where are you bound?'})}
@@ -4288,6 +4288,7 @@ function commsPick(k){if(k==='close'){closeComms();return}const o=W&&W.cmOpts&&W
 function cmDo(k,T){const P=S.player,me=T===W.player;
   if(k==='help'){if(NET.cl)netSend({t:'order',k:'help'});else pilotDistress();return}
   if(k==='build'){if(NET.cl)netSend({t:'order',k:'build'});else requestBuild();return}
+  if(k==='csup'){csupRequest();return}
   if(!me&&(!T.alive||!W.ents.includes(T)))return;
   if(k==='guard'||k==='escort'){if(NET.cl){netSend({t:'order',k,id:me?'me':T.id});return}issueOrder(k,T);return}
   if(k==='form'||k==='attack'||k==='launch'){const tg=W.tgt&&W.tgt.kind==='ship'&&W.tgt.ref;if(k!=='form'&&!(tg&&tg.alive&&hostile('player',tg.side))){flash('Target an enemy ship first (T, Q or G), then give the order.',true);return}
@@ -8159,6 +8160,37 @@ function upgStockTick(){for(const id in S.stations){const R=S.stations[id];if(R.
 // what an upgrade still needs after the hold and vault, and what the stock charges for it
 function upgFromStock(r,srcs,u){const need={};let cost=0;for(const k in r){const lack=r[k]-countIn(k,srcs);if(lack>0){need[k]=lack;cost+=Math.ceil(baseValue(k))*lack}}const ok=!!u&&Object.keys(need).every(k=>(u[k]||0)>=need[k]);return{need,cost,ok:ok||!Object.keys(need).length}}
 {const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{if(!NET.cl)upgStockTick()}catch(e){frameErr('upgrade stock',e)}return r}}
+// ============================================================ supply runs for a pilot's carrier (comms, Command page)
+// A pilot with a carrier of their own in the system can ask their faction for a supply run: a freighter leaves the
+// nearest friendly station or depot that has the goods, follows the capital (it is a convoy like any other: raidable,
+// escortable) and, on arrival, the plate patches the hull (CSUP.hullPer a plate; the plating stays aboard and spills if the
+// carrier is lost, so the ledger stays exact) and the kits refill empty fighter bays and assault bays. The pilot pays the faction for the goods at base price when the run is sent.
+const CSUP={hullPer:100,maxPlate:40};
+function csupCap(){if(!S||!W)return null;const me=S.frigates||[];return me.find(t=>fMine(t)&&isCar(t)&&t.hull>0&&t.side!=='brood'&&(t.sector===W.sid||(W.bridge&&W.bridge.f&&W.bridge.f.tok===t)))||null}
+function csupEnt(t){const w=WORLDS[t.sector];return w&&w.ents.find(e=>e.alive&&e.tok===t)}
+function csupHull(t){const e=t.live&&csupEnt(t);return e?e.hull:t.hull}
+function csupNeed(t){const need={},miss=capHullMax(t)-csupHull(t);if(miss>CSUP.hullPer*.5)need.plate=Math.min(CSUP.maxPlate,Math.ceil(miss/CSUP.hullPer));const bays={};
+  if(isCar(t)){const free=CAR_WING-carHave(t);for(let i=0;i<free;i++){const c=i%2?'interceptor':'striker';inv.addAll(need,carKit(c));bays[c]=(bays[c]||0)+1}}
+  const aCap=isCar(t)?CAR_ASSAULT:0,aFree=Math.max(0,aCap-(t.aload||0));for(let i=0;i<aFree;i++)inv.addAll(need,ASSAULT_LD);return{need,bays,aFree,miss:Math.max(0,Math.round(miss))}}
+function csupRequest(){const t=csupCap();if(!t){flash('You have no carrier of your own in this system.',true);return}if(NET.cl){flash('Supply runs are requested by the galaxy host for now.',true);return}
+  if(haulBusy('csup:'+t.id)){flash(`A supply run for ${t.name} is already on its way.`,true);return}
+  const P=S.player,f=P.faction,{need,bays,aFree,miss}=csupNeed(t);if(!Object.keys(need).length){flash(`${t.name} needs nothing: hull, bays and assault ships are full.`);return}
+  const cands=[...Object.values(S.stations).filter(R=>R.owner===f&&isDepotF(R)).map(R=>({R,srcs:[dStore(R)]})),{R:S.stations[FAC_HOME(f)],srcs:[S.econ.stock[f],S.econ.fleet[f]].filter(Boolean)}].filter(c=>c.R)
+    .sort((a,b)=>(HOP[a.R.sid][t.sector]||0)-(HOP[b.R.sid][t.sector]||0));
+  const src=cands.find(c=>Object.keys(need).every(k=>c.srcs.reduce((a,x)=>a+(x[k]||0),0)>=need[k]))||cands.find(c=>Object.keys(need).some(k=>c.srcs.reduce((a,x)=>a+(x[k]||0),0)>0));
+  if(!src){flash(`No ${FACTIONS[f].short} station has the plate and coil for ${t.name} right now.`,true);return}
+  const sent={};for(const k in need){const n=Math.min(need[k],src.srcs.reduce((a,x)=>a+(x[k]||0),0));if(n>0)sent[k]=n}
+  let cost=0;for(const k in sent)cost+=Math.ceil(baseValue(k))*sent[k];if(P.credits<cost){flash(`A supply run for ${t.name} costs ${fmt(cost)} cr for the goods.`,true);return}
+  takeFrom(sent,src.srcs);transfer('player',f,cost);const h=haulSend(f,src.R.sid,t.sector,sent,'csup:'+t.id,'capital supplies',t.id);if(!h){inv.addAll(src.srcs[0],sent);transfer(f,'player',cost);flash('No route for a supply run.',true);return}
+  const what=Object.keys(sent).map(k=>`${sent[k]} ${ITEMS[k].name}`).join(', '),j=HOP[src.R.sid][t.sector]||0;
+  feed(`📦 Supply run for ${t.name}: ${what} from ${src.R.name} (${j} jump${j===1?'':'s'}), ${fmt(cost)} cr. It patches ${miss?Math.min(miss,(sent.plate||0)*CSUP.hullPer)+' hull':'no hull'}${isCar(t)&&Object.keys(bays).length?' and refills empty bays':''}${aFree?' and assault bays':''} on arrival. You can escort it from Jobs.`,'good');SFX.count&&SFX.count(true)}
+// the freighter has reached the capital: patch the hull, then fill bays from the kits it brought
+function csupApply(t){const st=t.store=t.store||{},e=t.live&&csupEnt(t),H=capHullMax(t);let rep=0,b=0,a=0;
+  while((st.plate||0)>0&&(e?e.hull:t.hull)<H-CSUP.hullPer*.5){inv.add(e?e.load:t.load,'plate',inv.take(st,'plate',1));const add=Math.min(CSUP.hullPer,H-(e?e.hull:t.hull));if(e)e.hull+=add;t.hull=Math.min(H,t.hull+add);rep+=add}
+  if(isCar(t))while(carHave(t)<CAR_WING){const c=haveIn(carKit('striker'),[st])?'striker':haveIn(carKit('interceptor'),[st])?'interceptor':null;if(!c)break;const kit=carKit(c);takeFrom(kit,[st]);if(e){(e.bay=e.bay||[]).push(c);inv.addAll(e.load,kit)}else{(t.wing=t.wing||[]).push(c);inv.addAll(t.load,kit)}b++}
+  const aCap=isCar(t)?CAR_ASSAULT:0;while((t.aload||0)<aCap&&haveIn(ASSAULT_LD,[st])){takeFrom(ASSAULT_LD,[st]);inv.addAll(e?e.load:t.load,ASSAULT_LD);t.aload=(t.aload||0)+1;a++}
+  if(rep||b||a)keyFeed(t.owner||'me',`📦 Supply run delivered to ${t.name}: ${rep?Math.round(rep)+' hull patched':''}${rep&&(b||a)?', ':''}${b?b+' fighter'+(b>1?'s':'')+' in the bays':''}${b&&a?', ':''}${a?a+' assault ship'+(a>1?'s':'')+' loaded':''}.`,'good')}
+{const o=haulArrive;haulArrive=function(h){const isC=h&&typeof h.key==='string'&&h.key.startsWith('csup:');const C=isC&&(S.frigates||[]).find(x=>x.id===h.car);const r=o.apply(this,arguments);try{if(C&&C.hull>0)csupApply(C)}catch(e){frameErr('supply run',e)}return r}}
 
 //@src 17_main.js
 // ============================================================ main loop
