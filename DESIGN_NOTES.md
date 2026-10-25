@@ -1596,4 +1596,4 @@ Mining had drifted to about twice its pay targets (model: Light 21.4k, Medium 30
 - **Miner holds** set to Light 30, Medium 50, Heavy 80 t (from 14 / 19 / 26). With the larger lots too, mining rose to 19.1k / 30.9k / 45.9k.
 - **Charge yields cut** to bring it back (`BL_HULL.k`, tonnes one charge cracks loose): Light 7 -> 2.5, Medium 9 -> 2.6, Heavy 14 -> 3. Mining model: 12.7k / 15.7k / 19.4k (targets 12k / 15.6k / 20k). Filling a hold now takes several magazines.
 - The mining model now reseeds its random numbers after the launch frames, so runs with different settings compare like for like (before, runs of the same build differed by ±20%).
-- **Open issue:** with ordinary blasts this small, perfect blasts (a whole rock) dominate: at 10 s to line up each charge and 85% on point, the model gives 26.8k / 40.7k / 56.6k an hour, over twice the targets.
+- **Perfect blasts are the skilled miner's reward (decided, Oct 2026):** with ordinary blasts this small, perfect blasts (a whole rock) pay far more, and that is intended: at 10 s to line up each charge and 85% on point, the model gives 26.8k / 40.7k / 56.6k an hour, over twice the targets.
