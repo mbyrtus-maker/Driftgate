@@ -541,7 +541,7 @@ function lairWorld(dt){const L=lairHere();if(!L)return;const p=W.player;
     if((e.role==='scout'||(k&&isScoutCls(e.cls)))&&!L.seen[sd]&&d3(e,L)<LAIR.seeR){L.seen[sd]=1;keyFeed(L.pid,`⚠ A ${FACTIONS[sd].short} scout has found your Lair in ${DEF[W.sid].name}. Their ships will attack it on sight.`,'bad');
       facFeed(sd,`☠ Unbound Lair found in ${DEF[W.sid].name}.`,'info');if(k){const got=payKey(k,sd,LAIR.findPay);if(got)keyFeed(k,`☠ You found an Unbound Lair: +${fmt(got)} cr. Your side's ships will attack it on sight.`,'good')}}
     if(!e.npc||!FAC_IDS.includes(e.side))continue;
-    if(L.seen[e.side]&&d3(e,L)<2500){L.hull-=6*dt;if((L.tc=(L.tc||0)-dt)<=0){L.tc=.8;turretShot({x:L.x,y:L.y+30,z:L.z},e,1300,8,'pirate',12,'pd')}}}
+    if(L.seen[e.side]&&d3(e,L)<2500)L.hull-=6*dt}   // a Lair has no guns: hiding is its only defence
   if(L.hull<=0){const s=S.sectors[W.sid];s.crates.push({id:S.nextId++,x:L.x,y:L.y,z:L.z,inv:L.stash,until:S.T+600});toDebris(s,L.fort||{});L.stash={};L.fort={};S.lairs=S.lairs.filter(x=>x!==L);fxBoom(L,260,'#ffcf5a');feed(`✕ Your Lair in ${DEF[W.sid].name} was destroyed. Its stash is drifting as salvage.`,'bad')}}
 function lairDraw(){const L=W&&lairHere();if(!L||!inView(L.x,L.y,L.z,120))return;qAxis(.2,1,.1,.6,_xq);qNorm(_xq);mModel(MM,L.x,L.y,L.z,_xq,90,70,84);drawMesh(astMesh(3,'fe'),MM);sprite(L.x,L.y+70,L.z,18+4*Math.sin(W.t*3),[.85,.8,.55],.7)}
 function lairNear(){const L=W&&lairHere(),p=W&&W.player;return L&&p&&d3(L,p)<260&&L.pid===(curPid()||'me')?L:null}
