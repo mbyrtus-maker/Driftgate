@@ -5,7 +5,9 @@ const _f={x:0,y:0,z:0},_r={x:0,y:0,z:0},_u={x:0,y:0,z:0},_tq=q0(),_qa=q0();
 // ============================================================ gunboat turret
 const _gq1=q0(),_gq2=q0(),_gq3=q0(),GT_MAXP=1.35,GT_MINP=-.15;
 function turretOf(e){if(!e.tur)e.tur={yaw:Math.PI,pitch:.12,cool:0,mcd:0,gunner:null,ai:{t:0,tgt:null},barrel:1};if(!e.tur.ai)e.tur.ai={t:0,tgt:null};return e.tur}
-function turretMount(e){const sc=e.st.radius*1.25;qRot(e.q,0,.44*sc,-.38*sc,_u);return{x:e.x+_u.x,y:e.y+_u.y,z:e.z+_u.z,vx:e.vx,vy:e.vy,vz:e.vz}}
+// where the turret sits on each hull (model units, the ship is drawn at radius*1.25): on the spine, its base ring on the plating
+const TUR_MOUNT={bomber:[.2,-.38],gunboat:[.28,-.38]};function turMount(e){return TUR_MOUNT[e.cls]||[.3,-.38]}
+function turretMount(e){const sc=e.st.radius*1.25,m=turMount(e);qRot(e.q,0,m[0]*sc,m[1]*sc,_u);return{x:e.x+_u.x,y:e.y+_u.y,z:e.z+_u.z,vx:e.vx,vy:e.vy,vz:e.vz}}
 function turretQ(e,T,out){qMul(e.q,qAxis(0,1,0,T.yaw,_gq1),_gq2);return qMul(_gq2,qAxis(1,0,0,-T.pitch,_gq1),out)}
 function wrapA(a){if(!isFinite(a))return 0;a%=TAU;while(a>Math.PI)a-=TAU;while(a<-Math.PI)a+=TAU;return a}
 function turretBlocked(T){return T.pitch<.2&&Math.abs(wrapA(T.yaw))<.55}

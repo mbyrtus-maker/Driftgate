@@ -487,7 +487,7 @@ function draw3D(){
   if(W.bridge){const F=W.bridge.f,O=bridgeOrigin(F);mModel(MM,O.x,O.y,O.z,F.q,1,1,1);qRot(F.q,.22,1,.3,_u);const l=hyp(_u.x,_u.y,_u.z);G.uniform3f(PM.u.uL,_u.x/l,_u.y/l,_u.z/l);G.uniform3fv(PM.u.uSun,BR_SUN);G.uniform3fv(PM.u.uAmb,BR_AMB);drawMesh(bridgeMesh(F.fac),MM);useMesh()}
   for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f&&!mdlHas(e.fac==='brood'?BROOD_MDL[e.cls]:e.cls))continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=e.side==='pirate'?'pirate':e.fac,m=shipMesh(fac,e.role==='limpet'?'limpet':e.cls);
     mModel(MM,e.x,e.y,e.z,e.q,sc,sc,sc);const hurt=W.t-e.lastHit<.08;drawMesh(m.hull,MM,ONE3,hurt?[.35,.25,.15]:ZERO3);drawMesh(m.rim,MM);
-    if(hasTur(e.cls)&&!(W.gunseat&&gsEnt()===e)){const T=e.tur||{yaw:Math.PI,pitch:.1};turretQ(e,T,_gq3);qRot(e.q,0,.4*sc,-.38*sc,_u);mModel(MM,e.x+_u.x,e.y+_u.y,e.z+_u.z,_gq3,sc,sc,sc);const tm=gturretMesh(fac);drawMesh(tm.hull,MM,ONE3,ZERO3);drawMesh(tm.rim,MM)}}
+    if(hasTur(e.cls)&&!(W.gunseat&&gsEnt()===e)){const T=e.tur||{yaw:Math.PI,pitch:.1};turretQ(e,T,_gq3);{const m=turMount(e);qRot(e.q,0,m[0]*sc,m[1]*sc,_u)}mModel(MM,e.x+_u.x,e.y+_u.y,e.z+_u.z,_gq3,sc,sc,sc);const tm=gturretMesh(fac);drawMesh(tm.hull,MM,ONE3,ZERO3);drawMesh(tm.rim,MM)}}
   drawBerthed();
   G.enable(G.BLEND);G.blendFunc(G.ONE,G.ONE);G.depthMask(false);useMesh();
   // ship shield bubbles: flash on hit, burst outward when they collapse, pulse when they come back
