@@ -624,3 +624,60 @@ function csupApply(t){const st=t.store=t.store||{},e=t.live&&csupEnt(t),H=capHul
   const aCap=isCar(t)?CAR_ASSAULT:0;while((t.aload||0)<aCap&&haveIn(ASSAULT_LD,[st])){takeFrom(ASSAULT_LD,[st]);inv.addAll(e?e.load:t.load,ASSAULT_LD);t.aload=(t.aload||0)+1;a++}
   if(rep||b||a)keyFeed(t.owner||'me',`📦 Supply run delivered to ${t.name}: ${rep?Math.round(rep)+' hull patched':''}${rep&&(b||a)?', ':''}${b?b+' fighter'+(b>1?'s':'')+' in the bays':''}${b&&a?', ':''}${a?a+' assault ship'+(a>1?'s':'')+' loaded':''}.`,'good')}
 {const o=haulArrive;haulArrive=function(h){const isC=h&&typeof h.key==='string'&&h.key.startsWith('csup:');const C=isC&&(S.frigates||[]).find(x=>x.id===h.car);const r=o.apply(this,arguments);try{if(C&&C.hull>0)csupApply(C)}catch(e){frameErr('supply run',e)}return r}}
+
+// ============================================================ where the capitals are (Oct 2026)
+// Friendly capitals stand out on the galaxy map (chevrons with a pale rim, yours in amber, a red pulse in a fight, every
+// friendly course drawn), the map panel lists the faction's fleet with what each ship is doing, comms can fly you to the
+// nearest one, and every enemy capital you have seen leaves a fading "last seen" mark for CAP_SIGHT_T seconds.
+const CAP_SIGHT_T=900;
+function capFriendly(t){return!!t&&(fMine(t)||(t.side===S.player.faction&&t.side!=='brood'))}
+function capBaseSafe(t){return t.side==='pirate'?'wr':t.side==='brood'?'bl':capBase(t)}
+function capJumps(sid){const j=HOP[S.player.sector]&&HOP[S.player.sector][sid];return j?`${j} jump${j>1?'s':''}`:'here'}
+function capKind(t){return t.side==='brood'?broodCap(t):capName(t)}
+function capStatus(t){const R=S.stations[t.sector];
+  if(frigatesIn(t.sector).some(o=>o!==t&&hostile(t.side,o.side)))return{tx:'in battle',bad:1};
+  if(hostileStationAt(t.sector,t.side))return{tx:'besieging '+R.name,bad:1};
+  if(isCar(t)&&t.dest&&HOP[t.sector][t.dest]===1&&hostileStationAt(t.dest,t.side))return{tx:'striking '+S.stations[t.dest].name,bad:1};
+  if(S.T-(t.fightT||-1e9)<30)return{tx:'under attack',bad:1};
+  if(t.dest&&t.dest!==t.sector)return{tx:'under way to '+DEF[t.dest].name};
+  if(t.sector===capBaseSafe(t)&&(t.hull<capHullMax(t)*.98||(isEsc(t)&&(t.aload||0)<1)))return{tx:'refitting'};
+  return{tx:'holding'}}
+function capFightNow(t){return!!capStatus(t).bad}
+// sightings: per pilot, kept on the pilot record (a guest's own copy stays on their machine)
+let capSightT=-99;
+function capSightTick(){const P=S.player;if(!P)return;const M=P.capSeen=P.capSeen||{},pf=P.faction,live=new Set();
+  for(const t of S.frigates||[]){if(capFriendly(t))continue;live.add(String(t.id));const vis=covered(t.sector)||capTracked(t,pf);
+    if(vis)M[t.id]={sid:t.sector,T:S.T,side:t.side,kind:capKind(t),name:t.name,vis:1};else if(M[t.id])M[t.id].vis=0}
+  for(const id in M)if(!live.has(id)||S.T-M[id].T>CAP_SIGHT_T)delete M[id]}
+function capSightList(){const M=(S.player&&S.player.capSeen)||{};return Object.values(M).sort((a,b)=>(b.vis-a.vis)||(HOP[S.player.sector][a.sid]-HOP[S.player.sector][b.sid]))}
+{const o=campHud;campHud=function(){try{if(S&&S.player&&(S.T-capSightT>=2||S.T<capSightT)){capSightT=S.T;capSightTick()}}catch(e){}return o.apply(this,arguments)}}
+{const o=drawMap;drawMap=function(){try{if(S&&S.player)capSightTick()}catch(e){}return o.apply(this,arguments)}}
+// galaxy map: the markers under each system
+function capMapMarks(c,d,x,y,r,fs){const now=performance.now(),cy=y+r+30;let fx=x-r-6;
+  const fr=fs.filter(capFriendly).sort((a,b)=>(fMine(b)?1:0)-(fMine(a)?1:0)),en=fs.filter(t=>!capFriendly(t));
+  for(const t of fr.slice(0,3)){const col=fMine(t)?PLAYER_COL:sideCol(t.side);c.fillStyle=col;c.strokeStyle='#ece4cf';c.lineWidth=1.3;c.beginPath();c.moveTo(fx,cy-8);c.lineTo(fx+7,cy+5);c.lineTo(fx,cy+1);c.lineTo(fx-7,cy+5);c.closePath();c.fill();c.stroke();
+    if(capFightNow(t)){c.strokeStyle=hexA('#ff5d4f',.5+.4*Math.sin(now/180));c.lineWidth=2;c.beginPath();c.arc(fx,cy-1,11,0,TAU);c.stroke()}fx-=17}
+  if(fr.length>3){c.fillStyle='#ece4cf';c.font='700 10px "Saira Semi Condensed",sans-serif';c.textAlign='right';c.fillText('×'+fr.length,fx+7,cy+4);fx-=22}
+  for(const t of en){c.fillStyle=sideCol(t.side);c.strokeStyle='#070b16';c.lineWidth=1.5;c.beginPath();c.moveTo(fx,cy-6);c.lineTo(fx+6,cy);c.lineTo(fx,cy+6);c.lineTo(fx-6,cy);c.closePath();c.fill();c.stroke();
+    if(capPinged(t,S.player.faction)){c.strokeStyle=hexA('#ffcf5a',.55+.35*Math.sin(now/250));c.lineWidth=1.4;c.beginPath();c.arc(fx,cy,10,0,TAU);c.stroke()}fx-=13}
+  let sx=x+r+8;for(const g of capSightList()){if(g.vis||g.sid!==d.id)continue;const a=Math.max(.3,1-(S.T-g.T)/CAP_SIGHT_T*.7),col=sideCol(g.side);c.globalAlpha=a;c.strokeStyle=col;c.lineWidth=1.5;c.setLineDash([2,2]);c.beginPath();c.moveTo(sx,cy-6);c.lineTo(sx+6,cy);c.lineTo(sx,cy+6);c.lineTo(sx-6,cy);c.closePath();c.stroke();c.setLineDash([]);
+    c.fillStyle=col;c.font='600 9px "Saira Semi Condensed",sans-serif';c.textAlign='left';c.fillText(Math.max(1,Math.round((S.T-g.T)/60))+'m',sx+8,cy+3);c.globalAlpha=1;sx+=30}}
+function capMapLines(c,d,x,y,w,h){for(const t of S.frigates||[]){if(t.sector!==d.id||!t.dest||t.dest===t.sector||!capFriendly(t))continue;const[x2,y2]=mapXY(DEF[t.dest],w,h),mine=fMine(t);
+    c.strokeStyle=mine?'rgba(240,178,74,.85)':hexA(sideCol(t.side),.4);c.lineWidth=mine?2:1.2;c.setLineDash(mine?[]:[3,5]);c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke();c.setLineDash([])}}
+// galaxy map panel: the faction's fleet and the enemy capitals you know of
+function fleetHtml(){const pf=S.player.faction,L=(S.frigates||[]).filter(t=>capFriendly(t)&&!fMine(t)).sort((a,b)=>HOP[S.player.sector][a.sector]-HOP[S.player.sector][b.sector]);
+  let h=`<div id="fleetBox"><div class="h3">${S.unb?'Unbound capitals':esc(FAC(pf).short)+' capital fleet'} · ${L.length}</div>`;
+  if(!L.length)h+=`<p class="note" style="margin:0">No ${S.unb?'Unbound':esc(FAC(pf).short)} carriers or escorts are out right now.</p>`;
+  for(const t of L.slice(0,10)){const st=capStatus(t),hp=Math.round(t.hull/capHullMax(t)*100);h+=`<div class="opr ${st.bad?'defend':'assist'}" data-fsel="${t.sector}" style="cursor:pointer"><div><b>${esc(t.name)}</b> · ${esc(capKind(t))}<br><span>${esc(DEF[t.sector].name)} · ${esc(capJumps(t.sector))} · ${st.bad?`<b style="color:var(--danger)">${esc(st.tx)}</b>`:esc(st.tx)} · hull ${hp}%</span></div>${t.sector!==S.player.sector?`<button class="btn sm" type="button" data-fcourse="${t.sector}">Course</button>`:''}</div>`}
+  const SG=capSightList();if(SG.length){h+=`<div class="h3" style="margin-top:12px">Enemy capitals · last seen</div>`;for(const g of SG.slice(0,10))h+=`<div class="opr" data-fsel="${g.sid}" style="cursor:pointer"><div><b style="color:${sideCol(g.side)}">${esc(g.name)}</b> · ${esc((g.side==='brood'?'Brood':sideName(g.side))+' '+g.kind)}<br><span>${esc(DEF[g.sid].name)} · ${esc(capJumps(g.sid))} · ${g.vis?'in sight now':'seen '+fmtT(S.T-g.T)+' ago'}</span></div></div>`}
+  return h+'</div>'}
+{const o=renderMapSide;renderMapSide=function(){const r=o.apply(this,arguments);try{const el=$('mapSide');if(!el||!S||!S.player)return r;const own=[...el.querySelectorAll('.h3')].find(e=>e.textContent==='Your capital fleet');
+    if(own)own.parentElement.insertAdjacentHTML('afterend',fleetHtml());else el.insertAdjacentHTML('afterbegin',fleetHtml());
+    for(const b of el.querySelectorAll('#fleetBox [data-fsel]'))b.onclick=()=>{mapSel=b.dataset.fsel;drawMap();renderMapSide()};
+    for(const b of el.querySelectorAll('#fleetBox [data-fcourse]'))b.onclick=e=>{e.stopPropagation();const sid=b.dataset.fcourse;S.player.route=sid;feed(`Course set for ${DEF[sid].name}. Press J in flight to engage autopilot.`,'info');drawMap();renderMapSide()}}catch(e){frameErr('fleet panel',e)}return r}}
+// comms, Command page: fly to the nearest friendly capital
+function capNearest(){let best=null,bh=1e9;for(const t of S.frigates||[]){if(!capFriendly(t))continue;const h=HOP[S.player.sector][t.sector];if(h<bh){bh=h;best=t}}return best}
+{const o=cmOpts;cmOpts=function(T){const O=o.apply(this,arguments);try{if(W&&T===W.player){const t=capNearest();if(t)O.push({k:'tocap',l:`Fly to the nearest capital: ${t.name} (${capJumps(t.sector)})`})}}catch(e){}return O}}
+{const o=cmDo;cmDo=function(k,T){if(k!=='tocap')return o.apply(this,arguments);const t=capNearest();if(!t||!W){flash('No friendly capital ship is out.',true);return}
+  if(t.sector!==W.sid){S.player.route=t.sector;const g=routeNext();if(g){W.tgt={kind:'gate',ref:g};apOn=true}flash(`Course set to ${DEF[t.sector].name}, where ${t.name} is. Autopilot on: steer to take back control.`);return}
+  const e=W.ents.find(x=>x.alive&&x.tok===t);if(e){W.tgt={kind:'ship',ref:e};apOn=true;flash(`Autopilot to ${t.name}. Steer to take back control.`)}else flash(`${t.name} is in this system but not in sight yet.`)}}
