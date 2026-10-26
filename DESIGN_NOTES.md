@@ -1628,7 +1628,7 @@ It was hard to tell where your own faction's capital ships were: on the galaxy m
 
 **Capital sub-systems** (tied to the four power systems a capital already has, `fctl(t).power`: eng, shd, lance, pd, so the effects reuse those multipliers):
 - **Point-defence turrets** (six on a carrier, each its own target). A dead turret stops shooting torpedoes down (turrets hit torpedoes 70/50/30% by range, so each one lost is a big gain for the bombers). The core of the idea: fighters clear the PD, the bombers' torpedoes land.
-- **Engines.** Damaged: slower, turns slower. Disabled: can't use a jumpgate (the same rule disabled fighters have), so a capital can be pinned for the fleet to catch.
+- **Engines.** Damaged: slower, turns slower, and the jump drive spins up slower (it already scales with engine power). Disabled: no jump at all (capitals don't use gates; they spin up their own drive and jump from anywhere), so a capital can be pinned in the system for the fleet to catch; an engine knocked out mid spin-up aborts the jump.
 - **Shield generator.** Damaged: slower recharge; disabled: no recharge and a lower maximum.
 - **Main gun (escort, the lance) / launch bay (carrier).** The gun goes quiet; the carrier can't launch or recover its wing.
 
