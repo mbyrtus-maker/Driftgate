@@ -1492,7 +1492,11 @@ function sortieReport(ev,t){if(!sortieTgtLive(ev))return;const X=sortieTgtState(
   if(r.sh&&X.sh<=0){r.sh=false;sortieFeed(ev,`⚔ Strike on ${nm}: shields down. ${line()}.`,'good');r.T=S.T;return}
   if(X.R&&X.R.kind==='depot'&&ev.mode!=='raze'&&X.hull*(X.R.hMax||1)<=1.5&&!r.hb){r.hb=1;const g=garrison(X.R),n=capLoads(ev.to,sd);sortieFeed(ev,n>=g?`⚔ Strike on ${nm}: hull broken. Assault ships going in.`:`⚔ Strike on ${nm}: hull broken, but no assault ships in reach to take it (needs ${g}). It holds and will repair.`,n>=g?'good':'warn');r.T=S.T;return}
   if(S.T-r.T>=30){r.T=S.T;sortieFeed(ev,`⚔ Strike on ${nm}: ${line()}.`,'info')}}
-function wingPower(t){let p=0;for(const c of t.wing||[])p+=crPow(c);return p}
+// off-screen, a full 12-craft wing hits as hard as the old 6-craft one did (and loses craft twice as fast), so doubling the wing
+// gave pilots two strikes without doubling every AI carrier's weight in the war (it took Halcyon from 31% to 41%)
+const CAR_WING0=6,WING_K=CAR_WING0/CAR_WING;
+function wingPower(t){let p=0;for(const c of t.wing||[])p+=crPow(c);return p*WING_K}
+function wingLoseN(t,s){for(let i=0;i<Math.round(1/WING_K);i++)wingLose(t,s)}
 // garrisons: assault loads needed to take a structure (never more than 3, so a full carrier or 3 ships in flight always suffice)
 function garrison(R){if(!R||R.kind!=='depot')return 99;if(R.fwd)return 1;const d=devOf(R);return Math.min(3,1+((d.def||0)>=2?1:0)+((d.hangar||0)>=2?1:0))}
 // assault loads a side can bring to a system: capitals in it, and carriers standing off next door with it as their target
@@ -1988,11 +1992,11 @@ const force={};takeFrom(EC,[st]);inv.addAll(force,EC);S.events.push({id:S.nextId
   // abstract fighting away from the player
   for(const t of S.frigates.slice()){if(t.live||t.hull<=0)continue;const own=t.sector;let hit=0;
     for(const o of frigatesIn(own))if(o!==t&&!o.live&&hostile(t.side,o.side))hit+=isEsc(o)?rnd(150,260):isCar(o)?wingPower(o)*rnd(40,70):rnd(250,420);
-    if(isCar(t)&&hit>0&&Math.random()<.08)wingLose(t,S.sectors[own]);
+    if(isCar(t)&&hit>0&&Math.random()<.08)wingLoseN(t,S.sectors[own]);
     // a carrier strikes its target from next door (or where it sits); escorts strike where they are
     const sid=isCar(t)&&t.dest&&HOP[t.sector][t.dest]===1&&hostileStationAt(t.dest,t.side)?t.dest:own;
     const Rs=S.stations[sid];if(Rs&&hostileStationAt(sid,t.side)){if(sid===own)hit+=Rs.kind==='core'?150:Rs.kind==='hive'?200:90;distressCall(sid,Rs.name,Rs.owner,t.side);
-      if(!WORLDS[sid]){const k=isEsc(t)?.7:isCar(t)?wingPower(t)/5:1;if(isCar(t)&&Math.random()<.03)wingLose(t,S.sectors[sid]);
+      if(!WORLDS[sid]){const k=isEsc(t)?.7:isCar(t)?wingPower(t)/5:1;if(isCar(t)&&Math.random()<.03)wingLoseN(t,S.sectors[sid]);
         if(Rs.shield>0)Rs.shield=Math.max(0,Rs.shield-700*k);else{Rs.hull-=rnd(320,420)*k;wkAbstractHit(sid,t.side,.3)}
         if(Rs.hull<=0){if(Rs.kind==='depot'){if(Rs.owner!=='brood'&&t.side!=='brood'){const g=garrison(Rs),n=capLoads(sid,t.side);if(n>=g){useLoads(sid,t.side,g,Rs);captureDepot(sid,t.side)}else if(n>0||fOwn(t))Rs.hull=1;else razeStation(sid,t.side)}else razeStation(sid,t.side)}else if(Rs.kind==='free')razeStation(sid,'brood');else Rs.hull=1}}}
     if(hit){t.fightT=S.T;t.hull-=hit;if(t.hull<=0)killFrigateToken(t,'in battle')}else t.hull=Math.min(capHullMax(t),t.hull+capHullMax(t)*.03)}

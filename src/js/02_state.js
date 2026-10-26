@@ -301,7 +301,11 @@ function sortieReport(ev,t){if(!sortieTgtLive(ev))return;const X=sortieTgtState(
   if(r.sh&&X.sh<=0){r.sh=false;sortieFeed(ev,`⚔ Strike on ${nm}: shields down. ${line()}.`,'good');r.T=S.T;return}
   if(X.R&&X.R.kind==='depot'&&ev.mode!=='raze'&&X.hull*(X.R.hMax||1)<=1.5&&!r.hb){r.hb=1;const g=garrison(X.R),n=capLoads(ev.to,sd);sortieFeed(ev,n>=g?`⚔ Strike on ${nm}: hull broken. Assault ships going in.`:`⚔ Strike on ${nm}: hull broken, but no assault ships in reach to take it (needs ${g}). It holds and will repair.`,n>=g?'good':'warn');r.T=S.T;return}
   if(S.T-r.T>=30){r.T=S.T;sortieFeed(ev,`⚔ Strike on ${nm}: ${line()}.`,'info')}}
-function wingPower(t){let p=0;for(const c of t.wing||[])p+=crPow(c);return p}
+// off-screen, a full 12-craft wing hits as hard as the old 6-craft one did (and loses craft twice as fast), so doubling the wing
+// gave pilots two strikes without doubling every AI carrier's weight in the war (it took Halcyon from 31% to 41%)
+const CAR_WING0=6,WING_K=CAR_WING0/CAR_WING;
+function wingPower(t){let p=0;for(const c of t.wing||[])p+=crPow(c);return p*WING_K}
+function wingLoseN(t,s){for(let i=0;i<Math.round(1/WING_K);i++)wingLose(t,s)}
 // garrisons: assault loads needed to take a structure (never more than 3, so a full carrier or 3 ships in flight always suffice)
 function garrison(R){if(!R||R.kind!=='depot')return 99;if(R.fwd)return 1;const d=devOf(R);return Math.min(3,1+((d.def||0)>=2?1:0)+((d.hangar||0)>=2?1:0))}
 // assault loads a side can bring to a system: capitals in it, and carriers standing off next door with it as their target
