@@ -64,7 +64,7 @@ function updateEvents(){
   for(const ev of S.events){
     if(ev.type==='offensive'&&!ev.dist&&ev.stage!=='done'&&T>=ev.eta){ev.dist=1;const ow=evOwner(ev);if(ow&&ow!==ev.att)distressCall(ev.sector,evName(ev),ow,ev.att)}
     if(ev.type==='build'){buildTick(ev,T);continue}
-    if(ev.type==='yardbuild'||ev.type==='frigbuild'||ev.type==='escbuild'||ev.type==='sortie')continue;   // capitalTick / sortieTick finish these
+    if(ev.type==='yardbuild'||ev.type==='frigbuild'||ev.type==='escbuild'||ev.type==='sortie'||ev.type==='pirbuild'||ev.type==='rigger')continue;   // capitalTick / sortieTick / pirTick / riggerTick finish these
     if(ev.type==='response'){responseTick(ev);continue}
     if(ev.type!=='offensive'){if(T>ev.until)ev.stage='done';continue}
     if(ev.stage==='inbound'&&T>=ev.eta){if(ev.hold&&T<ev.hold&&!WORLDS[ev.sector])continue;const lw=liveIn(ev.sector);if(lw)inW(lw,()=>engageOffensive(ev));else resolveAbstract(ev)}
