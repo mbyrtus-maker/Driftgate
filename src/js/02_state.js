@@ -348,8 +348,8 @@ function droneTopUp(P,store,fac,pay){const cap=(CLASSES[P.cls]&&CLASSES[P.cls].d
 const BAY_MAX=3;
 function baseTiers(){const t={};for(const sl of SLOTS)t[sl.id]=1;return t}
 function baseKit(){const o={};for(const sl of SLOTS)inv.addAll(o,sl.base);return o}
-function shipRec(P){return{cls:P.cls,tiers:{...P.tiers},tune:JSON.parse(JSON.stringify(P.tune||{})),bay:{...(P.bay||{})},rack:P.rack|0,swarm:P.swarm||0,hullInv:{...(P.hullInv||{})},stored:S.T}}
-function shipLoad(P,r){P.cls=r.cls;P.tiers={...baseTiers(),...r.tiers};P.tune=JSON.parse(JSON.stringify(r.tune||{}));P.bay={...(r.bay||{})};P.rack=r.rack|0;P.swarm=r.swarm||0;P.mslT=0;P.swT=0;P.hullInv={...(r.hullInv||{})}}
+function shipRec(P){return{paid:P.hullPaid,cls:P.cls,tiers:{...P.tiers},tune:JSON.parse(JSON.stringify(P.tune||{})),bay:{...(P.bay||{})},rack:P.rack|0,swarm:P.swarm||0,hullInv:{...(P.hullInv||{})},stored:S.T}}
+function shipLoad(P,r){P.cls=r.cls;P.hullPaid=r.paid;P.tiers={...baseTiers(),...r.tiers};P.tune=JSON.parse(JSON.stringify(r.tune||{}));P.bay={...(r.bay||{})};P.rack=r.rack|0;P.swarm=r.swarm||0;P.mslT=0;P.swT=0;P.hullInv={...(r.hullInv||{})}}
 function shipBare(R){const t=R.tune||{};return SLOTS.every(sl=>(R.tiers[sl.id]||1)<=1&&!(t[sl.id]>0))&&!Object.keys(t.rf||{}).length&&!Object.keys(t.vr||{}).length}
 // strip a ship back to Mk I: every part above Mk I and the Aurora tunings go into `into` (refits can't be removed and are lost)
 function shipStrip(R,into){for(const sl of SLOTS){const t=R.tiers[sl.id]||1;if(t>1){const a=compInv(sl.id,t),b=compInv(sl.id,1);for(const k in a){const n=a[k]-(b[k]||0);if(n>0)inv.add(into,k,n)}R.tiers[sl.id]=1}

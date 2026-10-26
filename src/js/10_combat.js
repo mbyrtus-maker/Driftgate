@@ -307,7 +307,7 @@ function playerDeath(p0){apOn=false;closeComms();if(S.unb)try{takeEnd()}catch(e)
   const p=p0||W.player,P=S.player,s=S.sectors[W.sid],crate={};
   inv.addAll(crate,P.cargo);P.cargo={};P.rack=0;P.mslT=0;
   vrLose(P,crate,s);if(!shipBare(P)){shipStrip(P,crate);feed('Your ship\'s fitted upgrades were blown out into the wreck. Fly back and scoop the salvage before it drifts off (7 minutes).','bad')}
-  if(!START_HULLS.includes(P.cls)&&!(S.unb&&UNB_START.includes(P.cls))&&CLASSES[P.cls]){const lost=P.cls,to=starterFor(lost),nm=FAC(P.faction).hulls[lost];inv.addAll(crate,P.hullInv||{});P.hullInv={};
+  if(!START_HULLS.includes(P.cls)&&!(S.unb&&UNB_START.includes(P.cls))&&CLASSES[P.cls]){const lost=P.cls,to=starterFor(lost),nm=FAC(P.faction).hulls[lost];try{insLoss(P,lost)}catch(e){}inv.addAll(crate,P.hullInv||{});P.hullInv={};
     const nc=CLASSES[to].drones||0;P.bay=P.bay||{};if((P.bay.drone||0)>nc){inv.add(crate,'drone',P.bay.drone-nc);P.bay.drone=nc}
     P.cls=to;P.rack=0;P.mslT=0;P.swarm=0;P.swT=0;if(p0)p0.cls=to;
     feed(`Your ${nm} was destroyed. You relaunch in a ${FAC(P.faction).hulls[to]} ${CLASSES[to].name}; another ${nm} costs ${fmt(hullPrice(lost))} cr at a core station Shipyard.`,'bad')}

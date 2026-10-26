@@ -375,7 +375,7 @@ function ghostSync(){const p=W&&W.player;if(!p)return;const i=W.ents.indexOf(p);
 function unTargetPlayer(p){for(const e of W.ents){if(e.ai&&e.ai.tgt===p){e.ai.tgt=null;e.ai.t=0;e.ai.lock=0}if(e.ai&&e.ai.hunt===p)e.ai.hunt=null;if(e.tur&&e.tur.ai&&e.tur.ai.tgt===p)e.tur.ai.tgt=null}
   for(const m of W.missiles)if(m.tgt===p)m.tgt=null;if(W.hitDirs)W.hitDirs.length=0}
 function worldUpdate(dt){
-  W.t+=dt;W.fdt=dt;worksSync();if(S.unb)unbTick(dt);{const br=broodHeld(W.sid);if(W.wasBr&&!br){S.truceT=S.truceT||{};S.truceT[W.sid]=S.T+30;feed(`The Bloom is burned out of ${DEF[W.sid].name}. The truce holds 30 seconds more, then the race to claim it begins.`,'news')}W.wasBr=br;W.haze=br;{const tr=truceAt(W.sid);if(tr&&!W.truce&&W===LW&&W.player)SFX.truce();W.truce=tr}}const loc=W===LW&&W.player;
+  W.t+=dt;W.fdt=dt;worksSync();if(S.unb)unbTick(dt);else hireWorld();{const br=broodHeld(W.sid);if(W.wasBr&&!br){S.truceT=S.truceT||{};S.truceT[W.sid]=S.T+30;feed(`The Bloom is burned out of ${DEF[W.sid].name}. The truce holds 30 seconds more, then the race to claim it begins.`,'news')}W.wasBr=br;W.haze=br;{const tr=truceAt(W.sid);if(tr&&!W.truce&&W===LW&&W.player)SFX.truce();W.truce=tr}}const loc=W===LW&&W.player;
   if(loc){
   ghostSync();
   if(W.dead){if(W.t-W.dead>3.2){respawn();return}}

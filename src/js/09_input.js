@@ -185,7 +185,7 @@ function cvTake(t){const P=S.player;if(!t||t.side!==P.faction||t.esc||cvLeft(t)<
   feed(`✓ Escort contract: the convoy is bound for ${DEF[t.to].name}. Stay with it for ${E.need} jump${E.need>1?'s':''}; Command pays when it docks.`,'good');return true}
 // who answers: the closest friendly combat ships of your faction (not frigates, drones or civilians), up to four, within 3.5 km of the ship to protect
 function issueOrder(k,T){const fac=S.player.faction,me=T===W.player||T.rp===S.player||(T.isPlayer&&!T.rp),cand=[];
-  for(const e of W.ents){if(e.type!=='ship'||!e.alive||!e.npc||e===T||e.side!==fac)continue;if(!['patrol','escort','screen','strike','raider'].includes(e.role))continue;if(e.cvy||e.capt||(e.order&&e.order.by&&e.order.by!==(curPid()||'me')))continue;if(isBmb(e.cls)&&e.role==='strike')continue;const d=d3(e,T);if(d<3500)cand.push([e,d])}
+  for(const e of W.ents){if(e.type!=='ship'||!e.alive||!e.npc||e===T||e.side!==fac)continue;if(!['patrol','escort','screen','strike','raider'].includes(e.role))continue;if(e.cvy||e.capt||e.hire||(e.order&&e.order.by&&e.order.by!==(curPid()||'me')))continue;if(isBmb(e.cls)&&e.role==='strike')continue;const d=d3(e,T);if(d<3500)cand.push([e,d])}
   cand.sort((a,b)=>a[1]-b[1]);const pick=cand.slice(0,4).map(c=>c[0]);
   if(!pick.length){feed(`No friendly fighters within range to ${k} ${me?'you':ftgtName(T)}.`,'warn');return 0}
   const opid=CTX||NET.me||null;pick.forEach((e,i)=>{e.order={kind:k,tgt:T,until:W.t+ORDER_TIME,slot:i,by:me,pid:opid};e.ai.tgt=null;e.ai.t=0});

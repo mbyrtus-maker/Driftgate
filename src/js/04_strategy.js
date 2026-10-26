@@ -21,7 +21,7 @@ function strategicTick(){
     for(let i=s.ast.length-1;i>=0;i--){const a=s.ast[i];if(a.comet&&T>a.until){toDebris(s,a.ore);s.ast.splice(i,1);if(W&&W.tgt&&W.tgt.ref===a)W.tgt=null}}
   }
   diffuse();scoutsTick();beaconTick();bcnMissionsTick();cReqTick();mkTick();coalTick();threatTick();capitalTick();victoryTick();campTick();for(const ev of S.events)announce(ev);
-  for(const f of FAC_IDS)factionIndustry(f);factionIndustry('brood');neutralIndustry();lifeTick();devTick();hgTick();logiTick();weTick();carTick();sortieTick();wkRepair();fpContracts();blkContracts();contContracts();
+  for(const f of FAC_IDS)factionIndustry(f);try{patTick()}catch(e){frameErr('patronage',e)}factionIndustry('brood');neutralIndustry();lifeTick();devTick();hgTick();logiTick();weTick();carTick();sortieTick();wkRepair();fpContracts();blkContracts();contContracts();
   pirateIndustry();
   const h=S.outposts.hollow;
   if(h.owner){let got=0;for(const f of FAC_IDS){if(f===h.owner)continue;got+=transfer(f,h.owner,22)}if(h.owner==='player'){S.tollAcc+=got;if(S.tollAcc>=300){feed(`Hollow Relay tolls: +${fmt(S.tollAcc)} cr`,'good');S.tollAcc=0}}}
@@ -35,6 +35,137 @@ const SEAM_CAP=90,SEAM_N=3;
 function seamClear(){for(const f of FAC_IDS){const s=S.sectors[FAC_HOME(f)];if(!s)continue;for(const a of s.ast.filter(x=>x.seam)){S.drift=S.drift||{};for(const k in a.ore)S.drift[k]=(S.drift[k]||0)+a.ore[k];a.ore={};removeAst(s,a)}}}
 function facCar(f){return S.frigates.filter(x=>x.side===f&&isCar(x))}
 function capNeed(f){if(!S.yards[f])return yardCost(f);if(facCar(f).length<1)return carCostF(f);return null}
+// ---- AI imports at market prices: a faction short of ore buys at the cheapest freeport (its price after a small per-jump
+// allowance), pays that freeport's buy price (Halcyon's Trade Charter takes 20% off on its charter ticks), moves the freeport's
+// local supply level like any purchase, and the goods fly home on a supply convoy that can be raided or escorted.
+// Goods already in flight count toward stock, so a faction doesn't re-order while its freight is on the way.
+const IMP={hal:.8,floor:20000,hop:.04};
+function impEnroute(f,k){let n=0;for(const t of S.traders||[])if(t.side===f&&t.kind==='haul'&&String(t.key).startsWith('imp:'+f+':'))n+=(t.load&&t.load[k])||0;return n}
+function fpImport(f,k,n,toSid,keep,disc,floor,pfx){if(!(n>=1)||!S.stations[toSid])return 0;let best=null;
+  for(const F of FREEPORTS){const R=S.stations[F.sid];if(!isFreeF(R))continue;const fs=dStore(R),av=(fs[k]||0)-(keep||0);if(av<1)continue;mkOf(R);
+    const pr=Math.ceil(stPrice(R,k)*1.06*(disc||1)),sc=pr*(1+IMP.hop*(HOP[R.sid][toSid]||0));if(!best||sc<best.sc)best={R,fs,pr,av,sc}}
+  if(!best)return 0;const fund=(S.econ.treasury[f]||0)-(floor||0),m=Math.min(Math.floor(n),best.av,Math.floor(fund/best.pr));if(m<1)return 0;
+  const got=inv.take(best.fs,k,m);if(!got)return 0;transfer(f,'neutral',best.pr*got);best.R.mk[k]=(best.R.mk[k]||0)-got;
+  haulSend(f,best.R.sid,toSid,{[k]:got},(pfx||'imp:'+f+':')+k+':'+S.nextId,pfx?'sponsored supplies':'imports');return got}
+// ---- hull insurance (optional): 30 minutes of cover on the hull you fly, bought at a shipyard. A covered loss pays a voucher
+// for 70% of the hull's price toward another of the same class (never cash), so dying can't beat the trade-in. The premium is
+// 12% of the price (fair is about 7% at one loss every 5 hours, so cover is a credit sink on average), +50% for each bought hull
+// lost in the last 3 hours, up to 3x. A hull bought with a voucher trades in on what was actually paid.
+const INS={rate:.12,pay:.7,cover:1800,maxAhead:3600,win:10800,load:.5,max:3};
+function insurable(cls){return!!cls&&!START_HULLS.includes(cls)&&cls!=='wraith'&&!(S&&S.unb)&&hullPrice(cls)>0}
+function insQuote(P){if(!insurable(P.cls))return null;const n=(P.lossT||[]).filter(t=>S.T-t<INS.win).length,k=Math.min(INS.max,1+INS.load*n);return{n,k,prem:Math.ceil(hullPrice(P.cls)*INS.rate*k/10)*10}}
+function insLive(P){return P.policy&&P.policy.cls===P.cls&&P.policy.until>S.T?P.policy:null}
+function vchOf(P,k){return P.voucher&&P.voucher.cls===k?Math.min(hullPrice(k),P.voucher.amt):0}
+function insLoss(P,lost){P.lossT=(P.lossT||[]).filter(t=>S.T-t<INS.win);P.lossT.push(S.T);P.hullPaid=undefined;
+  if(P.policy&&P.policy.cls===lost&&P.policy.until>=S.T){const amt=Math.round(hullPrice(lost)*INS.pay);P.voucher={cls:lost,amt};
+    feed(`🛡 Your ${FAC(P.faction).hulls[lost]} was insured: a ${fmt(amt)} cr voucher toward another one is waiting at any shipyard.`,'good')}
+  P.policy=null}
+function insBuy(c){const P=S.player,q=insQuote(P);if(!q){dockErr='Starter hulls need no insurance.';return}if(!c.wallet||!(FACTIONS[c.wallet]||c.wallet==='neutral')){dockErr='Insurance is sold at faction and freeport shipyards.';return}
+  const L=insLive(P),from=L?L.until:S.T;if(from-S.T+INS.cover>INS.maxAhead){dockErr=`You can hold at most ${INS.maxAhead/60} minutes of cover.`;return}
+  if(P.credits<q.prem){dockErr=`Cover costs ${fmt(q.prem)} cr.`;return}transfer('player',c.wallet,q.prem);P.policy={cls:P.cls,until:from+INS.cover};
+  dockErr=`✓ Insured for ${Math.round((P.policy.until-S.T)/60)} minutes: ${fmt(q.prem)} cr to the ${sideName(c.wallet)} treasury.`}
+function insHtml(c,P){if(S.unb||!c.wallet||!(FACTIONS[c.wallet]||c.wallet==='neutral'))return'';const q=insQuote(P),L=insLive(P),v=P.voucher,HN=k=>esc(FAC(P.faction).hulls[k]||k);
+  let h=`<div class="h3" style="margin-top:22px">Hull insurance · optional</div><p class="note" style="margin-top:0">Pay for ${INS.cover/60} minutes of cover on the hull you're flying. If it's destroyed in that time, you get a voucher for ${Math.round(INS.pay*100)}% of its price toward another of the same class, at any shipyard. The premium is ${Math.round(INS.rate*100)}% of the hull's price, plus ${Math.round(INS.load*100)}% for each bought hull you lost in the last ${INS.win/3600} hours (up to ${INS.max}×). Cargo and fitted upgrades aren't covered: they drop into the wreck as usual.</p>`;
+  if(v)h+=`<p class="note" style="color:var(--ok)">Voucher held: ${fmt(v.amt)} cr toward ${art(FAC(P.faction).hulls[v.cls]||v.cls).toLowerCase()} ${HN(v.cls)}. It comes off the price when you buy one below.</p>`;
+  if(!q)h+=`<p class="note">Your ${HN(P.cls)} is a starter hull: nothing to insure.</p>`;
+  else h+=`${L?`<p class="note" style="color:var(--ok)">Covered: ${Math.ceil((L.until-S.T)/60)} min left.</p>`:''}<div class="act"><button class="btn" type="button" data-act="insure" ${P.credits>=q.prem&&(L?L.until:S.T)-S.T+INS.cover<=INS.maxAhead?'':'disabled'}>${L?'Extend cover':'Insure'} on your ${HN(P.cls)} · ${INS.cover/60} min · ${fmt(q.prem)} cr</button></div>${q.n?`<p class="note">Premium ×${q.k}: ${q.n} hull${q.n>1?'s':''} lost in the last ${INS.win/3600} hours.</p>`:''}`;
+  return h}
+// ---- patronage: sponsor your faction's next station module or capital ship (Station → Patronage). Nothing is paid back:
+// the faction buys what the project is missing (freeport imports at market price, shipped by convoy, or supplies from its own
+// warehouse) and builds it as soon as the goods are in place. Price = market value of the project's goods × 1.5, × (1 + 0.35 per
+// module the station already has) for station work (× 1.25 at a core station), × 1.25 for a carrier and × 1.1 for a shipyard.
+// A sponsored capital is rushed into the slip as soon as its kit is complete and carries the patron's chosen name.
+const PAT={mul:1.5,lvl:.35,core:1.25,cap:{yard:1.1,car:1.25,esc:1},we:200,under:1.5,budget:.9,fly:4};
+const PAT_NAME={yard:'capital shipyard',car:'carrier',esc:'escort'};
+function patList(f){S.pat=S.pat||{};return S.pat[f]=S.pat[f]||[]}
+function patOn(f,kind){return!!(S.pat&&(S.pat[f]||[]).some(p=>p.kind===kind))}
+function patVal(f,kit){const C=S.stations[FAC_HOME(f)],st=S.econ.stock[f]||{};let v=0;for(const k in kit)v+=(C&&C.owner===f?stPrice(C,k):price(st,k))*kit[k];return v}
+function patKit(f,kind){return kind==='yard'?yardCost(f):kind==='car'?carCostF(f):escCost(f)}
+function patOpts(f,R){const out=[],L=patList(f);
+  if(R&&R.owner===f){const lv=devUsed(R)+devOf(R).life;for(const k of DEV_KEYS){const r=devNext(R,k);if(!r||L.some(p=>p.kind==='dev'&&p.sid===R.sid&&p.k===k))continue;
+    out.push({id:`dev:${R.sid}:${k}`,kind:'dev',sid:R.sid,k,name:`${DEV_TXT[k][0]} level ${(devOf(R)[k]||0)+1}`,kit:r,price:Math.ceil(patVal(f,r)*PAT.mul*(1+PAT.lvl*lv)*(R.kind==='core'?PAT.core:1)/50)*50})}}
+  const yb=S.events.some(e=>e.type==='yardbuild'&&e.att===f),fb=S.events.some(e=>e.type==='frigbuild'&&e.att===f),eb=S.events.filter(e=>e.type==='escbuild'&&e.att===f&&e.stage!=='done').length;
+  const caps=[];if(!S.yards[f]&&!yb)caps.push('yard');if(S.yards[f]&&facCar(f).length<1&&!fb)caps.push('car');if(S.yards[f]&&facEsc(f).length+eb<(ESC_CAP[f]||0))caps.push('esc');
+  for(const kind of caps){if(patOn(f,kind))continue;const kit=patKit(f,kind);out.push({id:kind,kind,name:PAT_NAME[kind][0].toUpperCase()+PAT_NAME[kind].slice(1),kit,price:Math.ceil(patVal(f,kit)*PAT.mul*PAT.cap[kind]/50)*50,cap:1})}
+  return out}
+function patUnder(f){let lo=null,ln=1e9;for(const g of FAC_IDS){const n=territory(g).size;if(n<ln){ln=n;lo=g}}return lo===f}
+function patClean(s){return String(s||'').replace(/[^\p{L}\p{N} '\-.]/gu,'').replace(/\s+/g,' ').trim().slice(0,24)}
+function patBuy(c,arg){const P=S.player,f=P.faction,[id,nm]=String(arg).split('|');if(S.unb||!FAC_IDS.includes(f)||c.owner!==f){dockErr='Patronage is open at your own faction\'s stations.';return}
+  const o=patOpts(f,S.stations[P.sector]).find(x=>x.id===id);if(!o){dockErr='That project is no longer open for sponsorship.';return}if(P.credits<o.price){dockErr=`Sponsoring it costs ${fmt(o.price)} cr.`;return}
+  const paid=transfer('player',f,o.price);if(paid<o.price){if(paid)transfer(f,'player',paid);dockErr='Not enough credits.';return}
+  const ship=o.cap&&o.kind!=='yard'?patClean(nm):'';patList(f).push({id:S.nextId++,kind:o.kind,sid:o.sid||null,k:o.k||null,name:o.name,ship,by:pkey(),who:P.name||'a pilot',T:S.T,paid,spent:0});
+  const und=patUnder(f);weAdd(f,paid/PAT.we*(und?PAT.under:1));
+  facFeed(f,`★ ${esc(P.name||'A pilot')} has sponsored ${o.cap?`the next ${FACTIONS[f].short} ${PAT_NAME[o.kind]}${ship?` (to be named ${esc(ship)})`:''}`:`a ${o.name} at ${S.stations[o.sid].name}`}.`,'good');
+  dockErr=`✓ Sponsored for ${fmt(paid)} cr. ${FACTIONS[f].short} is buying what it's missing${o.cap?' and will rush it into the slip':''}.${und?' Your faction holds the least territory: the sponsorship counts 1.5× toward its war effort.':''}`}
+function patEnroute(p,k){let n=0;for(const t of S.traders||[])if(t.kind==='haul'&&String(t.key).startsWith('pat:'+p.id+':'))n+=(t.load&&t.load[k])||0;return n}
+// at most one new shipment per project per tick, and a few in flight at once, so a sponsorship doesn't flood the lanes
+function patFlying(p){let n=0;for(const t of S.traders||[])if(t.kind==='haul'&&String(t.key).startsWith('pat:'+p.id+':'))n++;return n}
+function patSupply(f,p,kit,toSid,srcs){if(p.spent>=p.paid*PAT.budget||patFlying(p)>=PAT.fly)return;const home=FAC_HOME(f),st=S.econ.stock[f]||{},toHome=toSid===home||srcs.includes(st);
+  for(const k in kit){const miss=kit[k]-countIn(k,srcs)-patEnroute(p,k);if(miss<=0)continue;
+    if(!toHome){const spare=Math.min(miss,Math.max(0,(st[k]||0)-Math.ceil(((capNeed(f)||{})[k]||0)*.5)));if(spare>0){const got=inv.take(st,k,spare);if(got){haulSend(f,home,toSid,{[k]:got},`pat:${p.id}:${k}:${S.nextId}`,'sponsored supplies');return}}}
+    if(fpImportPat(f,k,miss,toSid,p)>0)return;if(!ITEMS[k].recipe||RAWS.includes(k))continue;
+    for(const i in ITEMS[k].recipe){const need=ITEMS[k].recipe[i]*miss-(st[i]||0)-patEnroute(p,i);if(need>0&&fpImportPat(f,i,need,home,p)>0)return}}}
+function fpImportPat(f,k,n,toSid,p){const t0=S.econ.treasury[f]||0,lim=Math.max(0,p.paid*PAT.budget-p.spent),floor=Math.max(0,t0-lim);
+  const got=fpImport(f,k,n,toSid,0,1,floor,'pat:'+p.id+':');p.spent+=t0-(S.econ.treasury[f]||0);return got}
+function patTick(){if(NET.cl||!S.pat)return;for(const f of FAC_IDS){const L=S.pat[f];if(!L||!L.length)continue;const st=S.econ.stock[f]||{};
+  for(let i=L.length-1;i>=0;i--){const p=L[i];
+    if(p.kind==='dev'){const R=S.stations[p.sid];if(!R||R.owner!==f){L.splice(i,1);keyFeed(p.by,`Your sponsorship of the ${p.name} lapsed: the station is no longer ${FACTIONS[f].short}.`,'warn');continue}
+      const r=devNext(R,p.k);if(!r){L.splice(i,1);keyFeed(p.by,`${R.name} can't take the ${DEV_TXT[p.k][0]} you sponsored any more; your credits stay with ${FACTIONS[f].short}.`,'warn');continue}
+      const srcs=isDepotF(R)?[dStore(R)]:[st];if(haveIn(r,srcs)&&devBuild(R,p.k,srcs)){L.splice(i,1);const lvl=devOf(R)[p.k];facFeed(f,`★ ${R.name} has ${lvl>1?'upgraded its':'added a'} ${DEV_TXT[p.k][0]}${lvl>1?' to level '+lvl:''}, sponsored by ${esc(p.who)}.`,'good');continue}
+      patSupply(f,p,r,R.sid,srcs);continue}
+    const ok=p.kind==='yard'?!S.yards[f]:S.yards[f]&&(p.kind==='car'?facCar(f).length<1:facEsc(f).length<(ESC_CAP[f]||0));
+    const building=S.events.some(e=>e.att===f&&e.stage!=='done'&&e.type===(p.kind==='yard'?'yardbuild':p.kind==='car'?'frigbuild':'escbuild'));
+    if(!ok&&!building){L.splice(i,1);continue}if(!building)patSupply(f,p,patKit(f,p.kind),FAC_HOME(f),[st])}}}
+function patLaunch(f,type,t){const kind=type==='yardbuild'?'yard':type==='frigbuild'?'car':type==='escbuild'?'esc':null,L=S.pat&&S.pat[f];if(!kind||!L)return;const i=L.findIndex(p=>p.kind===kind);if(i<0)return;const p=L.splice(i,1)[0];
+  if(t&&p.ship)t.name=p.ship;keyFeed(p.by,`★ The ${FACTIONS[f].short} ${PAT_NAME[kind]}${t?' '+esc(t.name):''} you sponsored is ${kind==='yard'?'complete':'launched'}.`,'good')}
+function patOK(c,P){return!S.unb&&FAC_IDS.includes(P.faction)&&c.kind==='station'&&c.owner===P.faction}
+function patronHtml(c,P){const f=P.faction,R=S.stations[P.sector],opts=patOpts(f,R),L=patList(f);
+  let h=`<p class="note" style="margin:0 0 12px">Sponsor ${FACTIONS[f].short}'s next station module or capital ship. Nothing is paid back: ${FACTIONS[f].short} spends your credits on the goods the project is missing, buying from freeports at market price or shipping from its warehouse, and builds it once everything is in place. Station work costs more the more developed the station is; a carrier costs more than a shipyard, and a shipyard more than an escort. You name a capital ship you sponsor, and every sponsorship counts toward the faction's war effort${patUnder(f)?' (1.5× now: your faction holds the least territory)':''}.</p>`;
+  if(opts.some(o=>o.cap&&o.kind!=='yard'))h+=`<div class="mprow" style="padding:0;margin:0 0 12px"><input class="mpin" id="patName" maxlength="24" placeholder="Name for a capital ship you sponsor" value="${esc(P.patName||'')}"></div>`;
+  if(!opts.length)h+=`<p class="note">Nothing here is open for sponsorship right now.</p>`;
+  else{h+=`<div class="tblw"><table class="t"><thead><tr><th>Project</th><th>Goods</th><th class="r">Price</th><th></th></tr></thead><tbody>`;
+    for(const o of opts)h+=`<tr><td>${esc(o.name)}${o.cap?'':`<br><span class="mass">${esc(R.name)}</span>`}</td><td><span style="display:flex;flex-wrap:wrap;gap:3px">${Object.keys(o.kit).map(k=>`<span class="req">${o.kit[k]} ${esc(ITEMS[k].name)}</span>`).join('')}</span></td><td class="r num">${fmt(o.price)} cr</td><td><button class="btn sm" type="button" data-act="patron" data-arg="${o.id}" ${P.credits>=o.price?'':'disabled'}>Sponsor</button></td></tr>`;
+    h+=`</tbody></table></div>`}
+  if(L.length){h+=`<div class="h3" style="margin-top:18px">Sponsored and under way</div>`;for(const p of L){const R2=p.sid&&S.stations[p.sid];h+=`<p class="note" style="margin:4px 0">${esc(p.name)}${R2?' at '+esc(R2.name):''}${p.ship?` · to be named ${esc(p.ship)}`:''} · sponsored by ${esc(p.who)} for ${fmt(p.paid)} cr</p>`}}
+  return h}
+// ---- hired wingmen (Jobs → Hire pilots): a 30-minute contract, paid up front to your faction's treasury, for an AI pilot who
+// falls in on your wing whenever you're in space. Its ship is kitted from the faction's fleet and warehouse stock like any
+// patrol and its kit goes back when it leaves, so nothing is created. If it's shot down its kit spills as salvage and a
+// replacement arrives 4 minutes later; the contract clock keeps running. Bounties count only your own damage, as always.
+const HIRE={cls:{interceptor:600,striker:1000,heavy:1600},T:1800,maxAhead:3600,re:240};
+const HIRE_E={};   // runtime only: pilot key → {e, sid} of the wingman now flying
+function hireOK(c,P){return!S.unb&&FAC_IDS.includes(P.faction)&&c.kind==='station'&&c.owner===P.faction}
+function hireLive(P){return P.hire&&P.hire.fac===P.faction&&P.hire.until>S.T?P.hire:null}
+function hireKit(f,cls){const srcs=[S.econ.fleet[f],S.econ.stock[f]].filter(Boolean);let t=factionTier(f),ld=loadout('patrol',t,cls);while(!haveIn(ld,srcs)&&t>1){t--;ld=loadout('patrol',t,cls)}return haveIn(ld,srcs)?{t,ld,srcs}:null}
+function hireDrop(k){const H=HIRE_E[k];delete HIRE_E[k];if(!H||!H.e||!H.e.alive)return;const w=WORLDS[H.sid];if(!w||!w.ents.includes(H.e))return;inW(w,()=>{returnHome(H.e);despawn(H.e)})}
+function hireBuy(c,arg){const P=S.player,f=P.faction,cls=String(arg),wage=HIRE.cls[cls];if(!hireOK(c,P)||!wage){dockErr='Pilots are hired at your own faction\'s stations.';return}
+  const L=hireLive(P),same=L&&L.cls===cls,from=same?L.until:S.T;if(from-S.T+HIRE.T>HIRE.maxAhead){dockErr=`You can book at most ${HIRE.maxAhead/60} minutes ahead.`;return}
+  if(!hireKit(f,cls)){dockErr=`${FACTIONS[f].short} can't kit ${art(FAC(f).hulls[cls]).toLowerCase()} ${FAC(f).hulls[cls]} right now: its warehouse is short.`;return}
+  if(P.credits<wage){dockErr=`${art(FAC(f).hulls[cls])} ${FAC(f).hulls[cls]} pilot costs ${fmt(wage)} cr for ${HIRE.T/60} minutes.`;return}
+  transfer('player',f,wage);if(L&&!same)hireDrop(pkey());P.hire={cls,fac:f,until:from+HIRE.T};P.hireT=0;
+  dockErr=`✓ ${same?'Contract extended':'Hired'}: ${art(FAC(f).hulls[cls]).toLowerCase()} ${FAC(f).hulls[cls]} pilot flies your wing for ${Math.round((P.hire.until-S.T)/60)} minutes. ${fmt(wage)} cr to the ${FACTIONS[f].short} treasury.${L&&!same?' Your previous contract ended.':''}`}
+function hireEnd(){const P=S.player;if(!P.hire)return;P.hire=null;hireDrop(pkey());dockErr='✓ Contract ended. Wages already paid are not refunded.'}
+// every frame in an open world, for the pilot whose ship it is (the host also runs it for guests' ships in its worlds)
+function hireTick(){const P=S.player,p=W&&W.player,k=pkey();if(!p||NET.cl)return;
+  if(!P.hire){if(HIRE_E[k])hireDrop(k);return}
+  if(!hireLive(P)){P.hire=null;hireDrop(k);feed('Your hired wingman\'s contract is up. Renew it under Jobs → Hire pilots.','info');return}
+  if(P.docked||p.alive===false||(!CTX&&W===LW&&W.dead))return;const H=HIRE_E[k];
+  if(H&&H.e&&H.e.alive&&W.ents.includes(H.e))return;
+  if(H&&H.e&&!H.e.alive){delete HIRE_E[k];P.hireT=S.T+HIRE.re;feed(`Your wingman is down. ${FACTIONS[P.hire.fac].short} is sending another in ${HIRE.re/60} minutes.`,'warn');return}
+  if(H)hireDrop(k);if((P.hireT||0)>S.T)return;
+  const f=P.hire.fac,K=hireKit(f,P.hire.cls);if(!K){P.hireT=S.T+60;feed(`${FACTIONS[f].short} can't kit your wingman right now; it will try again in a minute.`,'warn');return}
+  if(!takeFrom(K.ld,K.srcs)){P.hireT=S.T+60;return}const e=makeNPC('patrol',f,P.hire.cls,K.t,K.ld,'stock:'+f);const o=rdir();e.x=p.x+o.x*300;e.y=p.y+o.y*120;e.z=p.z+o.z*300;
+  e.order={kind:'escort',tgt:p,until:W.t+1e6,slot:0,by:true,pid:curPid()};e.hire=1;W.ents.push(e);HIRE_E[k]={e,sid:W.sid};feed(`Your hired ${FAC(f).hulls[P.hire.cls]} falls in on your wing.`,'good')}
+function hireWorld(){if(NET.cl||S.unb||!W)return;if(W===LW&&S.player)try{hireTick()}catch(e){frameErr('hire',e)}
+  if(NET.host)for(const e of W.ents.slice())if(e.rp&&e.alive&&S.pilots&&S.pilots[e.rp]&&e.rp!==NET.me)try{runAs(e.rp,()=>hireTick())}catch(er){frameErr('hire',er)}}
+function hireHtml(c,P){const f=P.faction,L=hireLive(P),HN=k=>esc(FAC(f).hulls[k]);
+  let h=`<p class="note" style="margin:0 0 12px">Hire a ${FACTIONS[f].short} pilot to fly escort on you for ${HIRE.T/60} minutes, paid up front to the treasury. Your wingman joins you whenever you're in space, in every system you fly to. If it's shot down, its kit is lost as salvage and a replacement arrives after ${HIRE.re/60} minutes; the contract keeps running. Your wingman's kills don't pay bounties: only your own damage does. Its ship comes from ${FACTIONS[f].short}'s own stock, so a short warehouse can't kit every class.</p>`;
+  if(L)h+=`<p class="note" style="color:var(--ok)">Under contract: ${art(FAC(f).hulls[L.cls]).toLowerCase()} ${HN(L.cls)} pilot, ${Math.ceil((L.until-S.T)/60)} min left${(P.hireT||0)>S.T?` · replacement arriving in ${fmtT(P.hireT-S.T)}`:''}.</p>`;
+  h+=`<div class="tblw"><table class="t"><thead><tr><th>Wingman</th><th class="r">30 min</th><th class="r">Per hour</th><th></th></tr></thead><tbody>`;
+  for(const cls in HIRE.cls){const w=HIRE.cls[cls],kit=!!hireKit(f,cls),same=L&&L.cls===cls,room=(same?L.until:S.T)-S.T+HIRE.T<=HIRE.maxAhead;
+    h+=`<tr><td>${HN(cls)}<br><span class="mass">${esc(CLASSES[cls].name)}${kit?'':' · warehouse can\'t kit one now'}</span></td><td class="r num">${fmt(w)} cr</td><td class="r num">${fmt(w*2)} cr</td><td><button class="btn sm" type="button" data-act="hire" data-arg="${cls}" ${kit&&room&&P.credits>=w?'':'disabled'}>${same?'Extend':L?'Switch':'Hire'}</button></td></tr>`}
+  h+=`</tbody></table></div>`;if(L)h+=`<div class="act" style="margin-top:10px"><button class="btn sm" type="button" data-act="hireend">End contract (no refund)</button></div>`;
+  return h}
 function factionIndustry(f){
   const st=S.econ.stock[f],fl=S.econ.fleet[f],war=S.ai[f]&&S.ai[f].war>S.T,need=S.T>150?capNeed(f):null;
   // the Brood grazes: its swarms strip rock from the systems it holds and the ones next door (ore out of real fields, nothing created)
@@ -45,8 +176,8 @@ function factionIndustry(f){
   // Trade Charter: Halcyon hires Freeport prospectors to work the rocks in its own systems when its ore runs short.
   // The ore comes out of those fields and the wages go to the Compact, so nothing is created.
   if(f==='halcyon'&&Math.random()<BAL.halProsp&&S.T>120&&(st.fe||0)+(st.cu||0)<300&&(S.econ.treasury[f]||0)>30000){const terr=[...territory(f)].filter(id=>S.sectors[id]&&S.sectors[id].ast.length);if(terr.length){const sc=S.sectors[pick(terr)],got=extract(sc,8,true,{ir:1,xc:1,au:1,nu:1});let cost=0;for(const k in got)cost+=Math.ceil(baseValue(k)*.9)*got[k];if(cost){transfer(f,'neutral',cost);inv.addAll(st,got)}}}
-  {const FPS=fpStores(),hal=f==='halcyon'&&Math.random()<BAL.halImp;/* halImp: share of ticks the Trade Charter discount applies */if(FPS.length&&f!=='brood'&&S.T>120)for(const k of hal?['plate','wire','fe','cu','nu']:['fe','cu','nu']){const proc=k==='plate'||k==='wire',low=k==='nu'?(need?48:16):proc?30:60;if((st[k]||0)>=low)continue;const N=FPS.reduce((a,x)=>(x[k]||0)>(a[k]||0)?x:a,FPS[0]),avail=(N[k]||0)-(k==='nu'?4:proc?7:27);if(avail<=0)continue;
-    const n=Math.min(avail,k==='nu'?(hal?8:4):hal?16:8),pr=Math.ceil(baseValue(k)*(k==='nu'?(hal?1.2:1.6):hal?.85:1.1)),cost=pr*n;if((S.econ.treasury[f]||0)<cost+20000)continue;inv.take(N,k,n);inv.add(st,k,n);transfer(f,'neutral',cost)}}
+  {const FPS=fpStores(),hal=f==='halcyon'&&Math.random()<BAL.halImp;/* halImp: share of ticks the Trade Charter discount applies */if(FPS.length&&f!=='brood'&&S.T>120)for(const k of hal?['plate','wire','fe','cu','nu']:['fe','cu','nu']){const proc=k==='plate'||k==='wire',low=k==='nu'?(need?48:16):proc?30:60;if((st[k]||0)>=low)continue;const enr=impEnroute(f,k);if((st[k]||0)+enr>=low)continue;const keep=k==='nu'?4:proc?7:27,lot=k==='nu'?(hal?8:4):hal?16:8,want=Math.max(lot,Math.min(lot*4,low+lot-(st[k]||0)-enr));
+    fpImport(f,k,want,FAC_HOME(f),keep,hal?IMP.hal:1,IMP.floor)}}
   craftDown(st,'plate',{fe:80},400);craftDown(st,'wire',{cu:80},400);craftAbstract(st,'coil',2,need?30:60);   // keep 80 ore each: below 60 the faction starts importing
   if(forgesOwned(f)>0||f==='brood'){craftAbstract(st,'lattice',1,16);if(S.T>200)craftAbstract(st,'core',1,4)}
   else{craftAbstract(st,'lattice',1,8);if(S.T>200)craftAbstract(st,'core',1,2)}
@@ -122,15 +253,15 @@ const CAR_K={ostrova:.92};function carCostF(f){const k=CAR_K[f]||1;if(k===1)retu
 function capitalTick(){const T=S.T;S.frigates=S.frigates||[];
   // AI shipyards: the carrier, then escorts beside it (or while the carrier kit is out of reach)
   for(const f of[...FAC_IDS,'brood']){const st=S.econ.stock[f],busyY=S.events.some(e=>e.type==='yardbuild'&&e.att===f),busyF=S.events.some(e=>e.type==='frigbuild'&&e.att===f);
-    if(!S.yards[f]&&!busyY&&T>300&&haveIn(yardCost(f),[st])&&Math.random()<.4){const force={};takeFrom(yardCost(f),[st]);inv.addAll(force,yardCost(f));S.events.push({id:S.nextId++,type:'yardbuild',att:f,sector:yardHome(f),force,until:T+YARD_TIME,stage:'building'});if(covered(yardHome(f))||f===S.player.faction)feed(`${FACTIONS[f].short} has begun building a capital shipyard at ${DEF[yardHome(f)].name}.`,'warn')}
-    const war=S.ai[f]&&S.ai[f].war>T;{const busyE=S.events.some(e=>e.type==='escbuild'&&e.att===f);const both={...carCostF(f)},EC=escCost(f);for(const k in EC)both[k]=(both[k]||0)+EC[k];if(S.yards[f]&&!busyE&&facEsc(f).length<(ESC_CAP[f]||0)&&(f!=='brood'||T>BAL.brLevT)&&(facCar(f).length>=1||haveIn(both,[st])||!haveIn(carCostF(f),[st]))&&haveIn(EC,[st])&&Math.random()<(war?.8:.35)){
-const force={};takeFrom(EC,[st]);inv.addAll(force,EC);S.events.push({id:S.nextId++,type:'escbuild',t0:S.T,yard:f,att:f,sector:S.yards[f].sector,force,until:T+ESCORT_TIME,stage:'building'})}}if(S.yards[f]&&!busyF&&(f!=='brood'||T>BAL.brLevT)&&facCar(f).length<1&&haveIn(carCostF(f),[st])&&Math.random()<(war?1:.5)){const force={};takeFrom(carCostF(f),[st]);inv.addAll(force,carCostF(f));S.events.push({id:S.nextId++,type:'frigbuild',t0:S.T,yard:f,att:f,sector:S.yards[f].sector,force,until:T+FRIGATE_TIME*(war?.7:1)*(CAR_K[f]||1),stage:'building'});if(war&&friendSide(f))feed(`${FACTIONS[f].short} has rushed a carrier into the slip at ${DEF[S.yards[f].sector].name} to answer the enemy capital ships.`,'info')}}
+    if(!S.yards[f]&&!busyY&&T>300&&haveIn(yardCost(f),[st])&&(patOn(f,'yard')||Math.random()<.4)){const force={};takeFrom(yardCost(f),[st]);inv.addAll(force,yardCost(f));S.events.push({id:S.nextId++,type:'yardbuild',att:f,sector:yardHome(f),force,until:T+YARD_TIME,stage:'building'});if(covered(yardHome(f))||f===S.player.faction)feed(`${FACTIONS[f].short} has begun building a capital shipyard at ${DEF[yardHome(f)].name}.`,'warn')}
+    const war=S.ai[f]&&S.ai[f].war>T;{const busyE=S.events.some(e=>e.type==='escbuild'&&e.att===f);const both={...carCostF(f)},EC=escCost(f);for(const k in EC)both[k]=(both[k]||0)+EC[k];if(S.yards[f]&&!busyE&&facEsc(f).length<(ESC_CAP[f]||0)&&(f!=='brood'||T>BAL.brLevT)&&(facCar(f).length>=1||haveIn(both,[st])||!haveIn(carCostF(f),[st]))&&haveIn(EC,[st])&&(patOn(f,'esc')||Math.random()<(war?.8:.35))){
+const force={};takeFrom(EC,[st]);inv.addAll(force,EC);S.events.push({id:S.nextId++,type:'escbuild',t0:S.T,yard:f,att:f,sector:S.yards[f].sector,force,until:T+ESCORT_TIME,stage:'building'})}}if(S.yards[f]&&!busyF&&(f!=='brood'||T>BAL.brLevT)&&facCar(f).length<1&&haveIn(carCostF(f),[st])&&(patOn(f,'car')||Math.random()<(war?1:.5))){const force={};takeFrom(carCostF(f),[st]);inv.addAll(force,carCostF(f));S.events.push({id:S.nextId++,type:'frigbuild',t0:S.T,yard:f,att:f,sector:S.yards[f].sector,force,until:T+FRIGATE_TIME*(war?.7:1)*(CAR_K[f]||1),stage:'building'});if(war&&friendSide(f))feed(`${FACTIONS[f].short} has rushed a carrier into the slip at ${DEF[S.yards[f].sector].name} to answer the enemy capital ships.`,'info')}}
   for(const ev of S.events){if(ev.type!=='yardbuild'&&ev.type!=='frigbuild'&&ev.type!=='escbuild')continue;if(ev.stage==='done'||T<ev.until)continue;ev.stage='done';const mkCap=ev.type==='escbuild'?makeEscort:makeCarrier,capW=ev.type==='escbuild'?'Escort':'Carrier';
     const evp=ykPid(ev.att);if(ev.type==='yardbuild'&&S.yards[ev.att]){inv.addAll(evp&&S.pilots&&S.pilots[evp]?S.pilots[evp].vault:S.econ.stock[ev.att]||S.econ.stock[S.player.faction],ev.force);ev.force={};continue}
     if(evp){if(ev.type==='yardbuild'){S.yards[ev.att]={sector:ev.sector,fort:ev.force};ev.force={};feedTo(evp,`Your capital shipyard at ${DEF[ev.sector].name} is complete. Commission a Carrier and Escorts from Ship → Shipyard there.`,'good')}
       else{const P=S.pilots&&S.pilots[evp];if(P){const t=mkCap(P.faction,ev.sector,ev.force,evp);feedTo(evp,`${capW} ${t.name} has launched from ${DEF[ev.sector].name}. Order it from the galaxy map (M).`,'good')}else{const h=S.econ.stock[S.player.faction];inv.addAll(h,ev.force)}ev.force={}}continue}
-    if(ev.type==='yardbuild'){S.yards[ev.att]={sector:ev.sector,fort:ev.force};ev.force={};feed(ev.att==='player'?`Your capital shipyard at ${DEF[ev.sector].name} is complete. Commission a Carrier and Escorts from Ship → Shipyard there.`:`${FACTIONS[ev.att].short} capital shipyard complete at ${DEF[ev.sector].name}.`,ev.att==='player'?'good':friendSide(ev.att)?'info':'warn')}
-    else{const t=mkCap(ev.att,ev.sector,ev.force);ev.force={};if(ev.att==='player')feed(`${capW} ${t.name} has launched from ${DEF[ev.sector].name}. Order it from the galaxy map (M).`,'good');else if(friendSide(ev.att)||covered(ev.sector))feed(`${ev.att==='brood'?`⚠ A Brood ${ev.type==='escbuild'?'Prowler':'Leviathan'} has been spawned`:FACTIONS[ev.att].short+' '+capW.toLowerCase()+' '+t.name+' has launched'} at ${DEF[ev.sector].name}.`,ev.att==='brood'?'bad':friendSide(ev.att)?'good':'warn')}}
+    if(ev.type==='yardbuild'){S.yards[ev.att]={sector:ev.sector,fort:ev.force};ev.force={};if(FAC_IDS.includes(ev.att))try{patLaunch(ev.att,'yardbuild',null)}catch(e){}feed(ev.att==='player'?`Your capital shipyard at ${DEF[ev.sector].name} is complete. Commission a Carrier and Escorts from Ship → Shipyard there.`:`${FACTIONS[ev.att].short} capital shipyard complete at ${DEF[ev.sector].name}.`,ev.att==='player'?'good':friendSide(ev.att)?'info':'warn')}
+    else{const t=mkCap(ev.att,ev.sector,ev.force);ev.force={};if(FAC_IDS.includes(ev.att))try{patLaunch(ev.att,ev.type,t)}catch(e){}if(ev.att==='player')feed(`${capW} ${t.name} has launched from ${DEF[ev.sector].name}. Order it from the galaxy map (M).`,'good');else if(friendSide(ev.att)||covered(ev.sector))feed(`${ev.att==='brood'?`⚠ A Brood ${ev.type==='escbuild'?'Prowler':'Leviathan'} has been spawned`:FACTIONS[ev.att].short+' '+capW.toLowerCase()+' '+t.name+' has launched'} at ${DEF[ev.sector].name}.`,ev.att==='brood'?'bad':friendSide(ev.att)?'good':'warn')}}
   for(const t of S.frigates)if(t.live){const w=WORLDS[t.sector];if(!w||!w.ents.some(e=>e.alive&&e.tok===t))t.live=false}
   // movement and AI orders
   for(const t of S.frigates){if(!t.live&&t.sector===capBase(t))capRefill(t);
