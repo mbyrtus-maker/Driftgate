@@ -174,7 +174,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'dock':hDock(c,m);break;
     case 'undock':hUndock(pid,m);break;
     case 'bridge':hBridge(c,m);break;
-    case 'stealth':{const e=MP.rp[c.pid];if(e)inW(worldOf(e),()=>{e.stealth=!!m.on;e.masked=!!m.on;e.maskR=m.on?STEALTH_R:0;if(m.on){e.shield=0;unTargetPlayer(e);for(const x of W.missiles||[])if(x.tgt===e&&d3(x,e)>STEALTH_R)x.tgt=null}else e.boot=W.t+BOOT_T});break}
+    case 'stealth':{const e=MP.rp[c.pid];if(e&&m.on&&(P.cls!=='wraith'||P.docked))break;if(e)inW(worldOf(e),()=>{e.stealth=!!m.on;e.masked=!!m.on;e.maskR=m.on?STEALTH_R:0;if(m.on){e.shield=0;unTargetPlayer(e);for(const x of W.missiles||[])if(x.tgt===e&&d3(x,e)>STEALTH_R)x.tgt=null}else e.boot=W.t+BOOT_T});break}
     case 'land':{const e=MP.rp[c.pid];if(e)inW(worldOf(e),()=>{e.masked=!!m.on;e.landed=m.on?{}:null;if(m.on){e.shield=0;unTargetPlayer(e);for(const x of W.missiles||[])if(x.tgt===e)x.tgt=null}else e.boot=W.t+BOOT_T});break}
     case 'gseat':hSeat(c,m);break;
     case 'g':{if(P.docked!=='turret')break;MP.ginp=MP.ginp||{};const o=MP.ginp[pid]||{};MP.ginp[pid]={yaw:+m.yaw||0,pitch:+m.pitch||0,f:m.f?1:0,at:performance.now(),msl:o.msl||0};break}
@@ -186,7 +186,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'convoy':{const P=S.pilots&&S.pilots[pid];if(!P)break;if(m.dest&&DEF[m.dest])P.route=String(m.dest);netMsg(pid,'flash',runAs(pid,()=>convoyCall()));break}
     case 'convoyoff':{if(S.pilots&&S.pilots[pid]&&S.pilots[pid].convoy)runAs(pid,()=>convoyEnd(false,'you called it off'));break}
     case 'resup':{const t=(S.frigates||[]).find(x=>x.id===m.id),P=S.pilots&&S.pilots[pid];if(!t||!P||t.sector!==P.sector)break;const e=MP.rp[pid],F=frigEnt(t);if(!(P.docked==='bridge'&&P.bridgeId===t.id)&&!(e&&F&&d3(e,F)<F.st.radius*1.25+700))break;runAs(pid,()=>carResupply(t,P,pid));break}
-    case 'limpet':{const P=S.pilots&&S.pilots[pid],w=P&&WORLDS[P.sector],me=MP.rp[pid];if(!P||!w||!me||P.docked||!isScoutCls(P.cls)||P.limpetUsed)break;inW(w,()=>{const E=m.k==='cap'?W.ents.find(e=>e.role==='frigate'&&e.alive&&e.tok&&e.tok.id===m.id):m.k==='station'?W.stationEnt:m.k==='outpost'?W.outpostEnt:null;if(E&&d3(E,me)<LIMPET_R+((E.st&&E.st.radius)||200)*1.2){P.limpetUsed=true;limpetPlant(E,P.faction,pid,m.at)}});break}
+    case 'limpet':{const P=S.pilots&&S.pilots[pid],w=P&&WORLDS[P.sector],me=MP.rp[pid];if(!P||!w||!me||P.docked||!isScoutCls(P.cls)||P.limpetUsed)break;inW(w,()=>{const E=m.k==='cap'?W.ents.find(e=>e.role==='frigate'&&e.alive&&e.tok&&e.tok.id===m.id):m.k==='station'?W.stationEnt:m.k==='outpost'?W.outpostEnt:null;if(E&&d3(E,me)<LIMPET_R+((E.st&&E.st.radius)||200)*1.2&&!(E.tok&&capPinged(E.tok,P.faction))){if(limpetPlant(E,P.faction,pid,m.at)!==false)P.limpetUsed=true}});break}
     case 'dev':{if($('dev').hidden){netMsg(pid,'flash','Developer tools are off: the host has to open the developer panel (Ctrl+Alt+D) first.');break}if(m.k==='efrig'||m.k==='levi'||m.k==='eesc'){netMsg(pid,'flash',runAs(pid,()=>devEnemyFrig(String(m.side||''),m.k==='levi',m.k==='eesc')));break}
       if(m.k==='squad'){const sd=String(m.side||'');if(!(FACTIONS[sd]||sd==='pirate'||sd==='brood'))break;netMsg(pid,'flash',runAs(pid,()=>devSquad(sd,+m.n,Array.isArray(m.types)?m.types.map(String).slice(0,6):[])));break}
       if(m.k==='gbwing'){netMsg(pid,'flash',runAs(pid,()=>devGunboat()));break}if(m.k==='hull'){const r=runAs(pid,()=>devHull(String(m.cls||'')));if(MP.rp[pid]&&!P.docked){spawnRP(pid)}sendPR(c,true,true);send(L,syncMsg(c));netMsg(pid,'flash',r);if(P.docked)send(L,{t:'actr',err:''});break}if(m.k==='frig'||m.k==='fesc'){netMsg(pid,'flash',devFrigFor(pid,m.k==='fesc'));sendFtok(c);break}if(m.k==='cr'){devLedger(()=>{P.credits+=10000});sendPR(c,false,true);netMsg(pid,'flash','Developer: +10,000 credits.');break}if(m.k==='res'){runAs(pid,()=>devRes(P));sendPR(c,false,true);send(L,syncMsg(c));if(P.docked)send(L,{t:'actr',err:''});netMsg(pid,'flash','Developer: added 10 of every resource to your vault.')}break}
@@ -230,7 +230,7 @@ function entInWorld(w,id){if(!w||!id)return null;if(id==='S')return w.stationEnt
 function frigEnt(t){const w=WORLDS[t.sector];return w?w.ents.find(e=>e.alive&&e.tok===t):null}
 function hBridge(c,m){const pid=c.pid,P=S.pilots[pid],e=MP.rp[pid],t=(S.frigates||[]).find(x=>x.id===m.id);
   const F=t&&(t.owner===pid||(!t.owner&&t.side===P.faction)||(t.owner&&S.pilots[t.owner]&&S.pilots[t.owner].faction===P.faction))&&t.sector===P.sector?frigEnt(t):null;if(!e||!F||d3(e,F)>F.st.radius*1.25+700){send(c.L,{t:'nobridge'});return}
-  despawnRP(pid,true);P.docked='bridge';P.bridgeId=t.id;P.bslot=(+m.slot|0)&3;P.vx=P.vy=P.vz=0;delete MP.inp[pid];netRoster()}
+  despawnRP(pid,true);P.docked='bridge';P.bridgeId=t.id;P.limpetUsed=false;P.bslot=(+m.slot|0)&3;P.vx=P.vy=P.vz=0;delete MP.inp[pid];netRoster()}
 function hBridgeTick(){for(const t of S.frigates||[])if(t.crew)for(const k in t.crew){const P=S.pilots[t.crew[k]];if(!P||P.docked!=='bridge'||P.bridgeId!==t.id)delete t.crew[k]}
   for(const pid in S.pilots||{}){const P=S.pilots[pid];if(P.docked!=='bridge'||pid===NET.me)continue;const c=Object.values(MP.cl).find(x=>x.pid===pid&&x.ready);if(!c)continue;
     const t=(S.frigates||[]).find(x=>x.id===P.bridgeId);
@@ -368,7 +368,7 @@ function clientRecv(m){
     case 'bcn':{if(S.beacons&&m.sid&&m.b){S.beacons[m.sid]=m.b;S.bcnV=m.v||((S.bcnV||0)+1);if(W&&W.tgt&&W.tgt.kind==='beacon'&&W.sid===m.sid)W.tgt.ref=m.b;if(W&&W.bcnF&&W.sid===m.sid){W.bcnF.t=0;W.bcnF.side=null}}break}
     case 'nobridge':{if(W&&W.bridge)exitBridge();else if(S.player.docked==='bridge'){S.player.docked=null;ejectReset()}else if(m.gone)break;flash(m.gone?'The ship is gone. Your fighter is adrift.':'You can only board your own capital ship, close up.',true);break}
     case 'ckpt':MP.ckpt=m.ck;MP.ckMeta={gid:m.ck.gid,T:m.ck.T};try{localStorage.setItem(ckKey(),JSON.stringify(m.ck))}catch(e){}break;
-    case 'msg':if(m.k==='taken'){mpShutdown();running=false;$('hud').hidden=true;$('start').hidden=false;showStart();mpStatus(`The callsign <b>${esc(m.a[0])}</b> is already taken in this galaxy. Pick another one and join again.`,true);$('mpName').focus();break}if(m.k==='feed')feed(...m.a);else if(m.k==='distress'){feed(m.a[0],'bad');SFX.distress()}else if(m.k==='flash')flash(...m.a);else if(m.k==='stat')mpStatus(m.a[0]);break;
+    case 'msg':if(m.k==='taken'){mpShutdown();running=false;$('hud').hidden=true;$('start').hidden=false;showStart();mpStatus(`The callsign <b>${esc(m.a[0])}</b> is already taken in this galaxy. Pick another one and join again.`,true);$('mpName').focus();break}if(m.k==='feed')feed(...m.a);else if(m.k==='distress'){feed(m.a[0],'bad');SFX.distress()}else if(m.k==='flash')flash(...m.a);else if(m.k==='stealthoff'){try{stealthOff(true)}catch(e){}}else if(m.k==='stat')mpStatus(m.a[0]);break;
     case 'actr':dockErr=m.err||'';if(!$('dock').hidden&&S.player.docked)renderDock();break;
     case 'dead':if(W){W.dead=W.t;$('deathMsg').hidden=false;W.tgt=null;if(W.player)W.player.alive=false}break;
     case 'roster':MP.roster=m.r;break;
@@ -389,7 +389,7 @@ function mpClientStart(m){const first=!running;if(W)exitSector();WORLDS={};LW=nu
   if(S.player.docked){const E=S.player.docked==='station'?W.stationEnt:W.outpostEnt;if(!E)S.player.docked=null;else openDock()}
   hudUpdate();const hn=(MP.roster.find(r=>r[5])||[])[1];feed(first?`Joined “${MP.code}”${hn?` hosted by ${hn}`:''}.`:'Reconnected to the galaxy.','good');flash(first?`Joined ${hn?hn+'\u2019s':'the'} galaxy “${MP.code}”.`:'Reconnected.');
   for(const r of MP.roster)if(r[0]!==MP.pid){const h=HOP[S.player.sector][r[3]];feed(`${r[1]} (${FAC(r[2]).short}) is ${h===0?'in this system':`at ${DEF[r[3]].name}, ${h} jump${h>1?'s':''} away`}${r[4]?', docked':''}.${h?' Map (M) can set a course to them.':''}`,'info')}}
-const OWN=['x','y','z','vx','vy','vz','q','fa','level','wpn','route','sector','docked'];
+const OWN=['x','y','z','vx','vy','vz','q','fa','level','wpn','route','sector','docked','capSeen'];
 function applyPR(m){const P=S&&S.player,R=m.r;if(!P||!R)return;const keep={};if(!m.fz)for(const k of OWN)keep[k]=P[k];
   for(const k of Object.keys(P))if(!(k in R))delete P[k];Object.assign(P,R,keep);if(W&&W.player&&W.player.alive)refreshPlayerStats()}
 function applySync(L){if(!S)return;const P=S.player;

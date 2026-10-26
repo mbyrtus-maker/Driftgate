@@ -402,7 +402,7 @@ const BCN_MIS_N=3,BCN_MIS_PAY=80,BCN_MIS_T=900;
 function bcnMissionsTick(){if(NET.cl||!S.beacons)return;S.bcnMis=S.bcnMis||{};
   for(const f of FAC_IDS){const L=(S.bcnMis[f]||[]).filter(m=>S.T<m.until&&S.beacons[m.sid]&&S.beacons[m.sid].owner!==f);
     if(L.length<BCN_MIS_N&&Math.random()<.5){const terr=territory(f),mv=S.plans&&S.plans[f]&&S.plans[f].mv,c=[];
-      for(const sid in S.beacons){const B=S.beacons[sid];if(B.owner===f||L.some(m=>m.sid===sid))continue;if(!(terr.has(sid)||NEIGH[sid].some(n=>terr.has(n))))continue;
+      for(const sid in S.beacons){const B=S.beacons[sid];if(B.owner===f||L.some(m=>m.sid===sid)||(B.owner&&bcnCrew(sid,B.owner)))continue;if(!(terr.has(sid)||NEIGH[sid].some(n=>terr.has(n))))continue;
         let w=B.owner&&hostile(f,B.owner)?3:1.5;if(terr.has(sid))w*=1.6;if(mv&&(mv.sector===sid||mv.obj===sid))w*=3;c.push([sid,w])}
       if(c.length){const sid=wpickArr(c),B=S.beacons[sid];L.push({id:S.nextId++,sid,reward:Math.round(BCN_MIS_PAY*(B.owner?1.4:1)/10)*10,until:S.T+BCN_MIS_T,vs:B.owner||null});
         if(f===S.player.faction&&isScoutCls(S.player.cls))feed(`◆ ${FACTIONS[f].short} command: flip the beacon in ${DEF[sid].name} for a ${fmt(L[L.length-1].reward)} cr bounty (Jobs tab).`,'info')}}
@@ -453,9 +453,9 @@ function stN(sid){return S.stations[sid]?S.stations[sid].name:DEF[sid]?DEF[sid].
 function pkey(){return NET.on?curPid():'me'}
 function isMe(k){return k==='me'||(NET.on&&k===NET.me)}
 function pSect(k){if(isMe(k))return S.player.sector;const P=S.pilots&&S.pilots[k];return P?P.sector:null}
-function keyFeed(k,msg,kind){if(isMe(k))feed(msg,kind);else feedTo(k,msg,kind)}
+function keyFeed(k,msg,kind){if(isMe(k))feedTo(null,msg,kind);else feedTo(k,msg,kind)}
 function facFeed(f,msg,kind){if(NET.cl)return;if(S.player.faction===f)feed(msg,kind);if(NET.host)for(const pid in S.pilots||{})if(pid!==NET.me&&S.pilots[pid].faction===f)feedTo(pid,msg,kind)}
-function payKey(k,f,n){return isMe(k)||!NET.on?transfer(f,'player',n):runAs(k,()=>transfer(f,'player',n))}
+function payKey(k,f,n){if(!NET.on)return transfer(f,'player',n);if(isMe(k)){const H=S.pilots&&S.pilots[NET.me];if(CTX&&!isMe(CTX)&&H){const w=wallet(f),a=Math.floor(Math.min(n,w.get()));if(a<=0)return 0;w.add(-a);H.credits+=a;return a}return transfer(f,'player',n)}return runAs(k,()=>transfer(f,'player',n))}
 function campOf(f){S.plans=S.plans||{};return S.plans[f]||(S.plans[f]={f,mv:null,next:null,crew:{},paid:{},wins:0,fails:0,goal:null,gap:S.T+rnd(20,60),side:[],purge:{}})}
 function myCamp(){return S.plans&&S.plans[S.player.faction]||null}
 function nearestOwnStation(f,sid){let b=null,bh=99;for(const id in S.stations){const R=S.stations[id];if(R.owner!==f||R.kind==='hive')continue;const h=HOP[id][sid];if(h<bh){bh=h;b=id}}return b}
@@ -596,7 +596,7 @@ function sideNew(f,P,kind,o,quiet){const D=SIDE[kind],x={id:S.nextId++,f,kind,la
 // a new campaign target: an intel order and a combat order beside the supply drive, closing when it does
 function sideChain(f,P,pk,m){const L=sideOf(P);for(const o of L)if(o.chain&&o.stage==='active'){o.stage='lost';o.end=S.T}
   const until=m.brief+(m.dur||360),W0=SIDE_W[f]||{},T=pk.st?S.stations[pk.st]:pk.out?S.outposts[pk.out]:null,ow=T&&T.owner?sideNorm(T.owner):null,base={chain:1,obj:pk.sid,st:pk.st||null,out:pk.out||null,tgtName:T?T.name:null,until};
-  const bs=[pk.sid,...NEIGH[pk.sid]].filter(x=>S.beacons&&S.beacons[x]&&DEF[x].kind!=='void').slice(0,2),ic=[['recon',W0.recon||1]];if(bs.length&&bs.some(x=>S.beacons[x].owner!==f))ic.push(['beacon',W0.beacon||1]);
+  const bs=[pk.sid,...NEIGH[pk.sid]].filter(x=>S.beacons&&S.beacons[x]&&DEF[x].kind!=='void'&&!(S.beacons[x].owner&&bcnCrew(x,S.beacons[x].owner))).slice(0,2),ic=[['recon',W0.recon||1]];if(bs.length&&bs.some(x=>S.beacons[x].owner!==f))ic.push(['beacon',W0.beacon||1]);
   if(wpickArr(ic)==='beacon')sideNew(f,P,'beacon',{...base,sector:pk.sid,sids:bs,need:bs.length},1);else sideNew(f,P,'recon',{...base,sector:pk.sid},1);
   const terr=territory(f),home=FAC_HOME(f),gate=NEIGH[pk.sid].filter(n=>terr.has(n)).sort((a,b)=>HOP[a][home]-HOP[b][home])[0]||pk.sid,cc=[['screen',W0.screen||1]];
   if(ow&&FAC_IDS.includes(ow)&&hostile(f,ow))cc.push(['interdict',W0.interdict||1]);if(T&&ow&&hostile(f,ow)&&pk.kind==='take')cc.push(['sabotage',W0.sabotage||1]);
@@ -618,7 +618,7 @@ function sideTick(f,P){const L=sideOf(P),T=S.T,pl=sidePilots(f);
     else if(o.kind==='interdict'||o.kind==='purge'){abs();o.prog=(o.abs||0)+(o.real||0)}
     else if(o.kind==='sabotage'){abs();const Tg=sideTgt(o);if(!Tg||sideNorm(Tg.owner)===f){sideEnd(f,P,o,false,'the target changed hands');continue}
       if(WORLDS[o.sector]){const d=Math.round(((o.hp0||1)-sideHp(Tg))*100);if(d>(o.dmg||0)){const g=d-(o.dmg||0);o.dmg=d;for(const[k,,e]of here)if(e)sideHelp(o,k,g)}}o.prog=Math.max(o.abs||0,o.dmg||0)}
-    else if(o.kind==='beacon'){if(Math.random()<.05*o.ai*SIDE_AI){const nx=o.sids.find(x=>S.beacons[x]&&S.beacons[x].owner!==f);if(nx&&!WORLDS[nx])beaconFlip(nx,f,null)}o.prog=o.sids.filter(x=>S.beacons[x]&&S.beacons[x].owner===f).length}
+    else if(o.kind==='beacon'){if(Math.random()<.05*o.ai*SIDE_AI){const nx=o.sids.find(x=>S.beacons[x]&&S.beacons[x].owner!==f&&bcnCan(S.beacons[x],f));if(nx&&!WORLDS[nx])beaconFlip(nx,f,null)}o.prog=o.sids.filter(x=>S.beacons[x]&&S.beacons[x].owner===f).length}
     else if(o.kind==='counter'){const ev=S.events.find(e=>e.id===o.evId);if(ev&&T>=ev.eta-20)for(const[k,,e]of here)if(e)sideHelp(o,k,10);
       if(!ev||ev.stage==='done'){const ow=o.st?(S.stations[o.st]||{}).owner:o.out?S.outposts[o.out].owner:null;sideEnd(f,P,o,sideNorm(ow)===f,'the target fell');continue}}
     else if(o.kind==='hunt'){const t=(S.frigates||[]).find(x=>x.id===o.tok);if(!t||t.hull<=0){sideEnd(f,P,o,true);continue}o.sector=t.sector;for(const[k,,e]of pl.filter(x=>x[1]===t.sector))if(e)sideHelp(o,k,10)}

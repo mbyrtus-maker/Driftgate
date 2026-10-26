@@ -269,7 +269,7 @@ function spotTarget(){const T=W.tgt;if(!T||T.kind!=='ship')return null;const e=T
 function spotTick(dt){const F=W.spotF||(W.spotF={id:null,t:0});const e=spotTarget(),p=W.player;
   if(!e||!p||!isScoutCls(S.player.cls)||S.player.docked||!FAC_IDS.includes(S.player.faction)||e.spotted||d3(e,p)>SPOT.r){F.t=0;return}
   if(F.id!==e.id){F.id=e.id;F.t=0}F.t+=dt;if(F.t<SPOT.t)return;F.t=0;SFX.spot();if(NET.cl){netSend({t:'spot',id:e.id});e.spotted=1}else spotPay(e,pkey())}
-function spotPay(e,k){if(!e||!e.alive||e.side!=='brood'||e.role!=='builder'||e.spotted)return;const P=isMe(k)?S.player:S.pilots&&S.pilots[k];if(!P||!FAC_IDS.includes(P.faction)||!isScoutCls(P.cls))return;
+function spotPay(e,k){if(!e||!e.alive||e.side!=='brood'||e.role!=='builder'||e.spotted)return;{const ev0=S.events.find(v=>v.type==='build'&&v.att==='brood'&&v.sector===W.sid&&v.stage!=='done');if(ev0&&ev0.spotted){e.spotted=1;return}}const P=isMe(k)?S.player:S.pilots&&S.pilots[k];if(!P||!FAC_IDS.includes(P.faction)||!isScoutCls(P.cls))return;
   e.spotted=1;const c=payKey(k,P.faction,SPOT.pay);keyFeed(k,`📡 Containment order: Seeder spotted before it planted. Every faction can see it now.${c?` +${fmt(c)} cr.`:''}`,'good');
   const ev=S.events.find(v=>v.type==='build'&&v.att==='brood'&&v.sector===W.sid&&v.stage!=='done');if(ev)ev.spotted=1}
 function spotChip(){const e=spotTarget();if(!e||!isScoutCls(S.player.cls)||S.player.docked)return null;if(e.spotted)return['📡 Seeder spotted: containment paid','good'];const d=d3(e,W.player),F=W.spotF||{};

@@ -128,7 +128,7 @@ function beaconWorld(dt){const B=S.beacons&&S.beacons[W.sid];if(!B)return;const 
   let side=null,by=null,many=false;for(const e of W.ents){if(e.type!=='ship'||d3(e,B)>BCN_R)continue;const f=bcnFlipper(e);if(!f)continue;if(side&&side!==f.side){many=true;continue}if(!side||(!by&&f.by)){side=f.side;by=f.by}}
   F.cont=many;if(many)return;                                   // two teams' scouts on it: nobody makes progress
   if(!side||!bcnCan(B,side)){F.t=Math.max(0,F.t-dt*2);if(F.t<=0)F.side=null;return}
-  if(F.side!==side){F.side=side;F.t=0;F.by=null}F.by=by||F.by;F.t+=dt*(F.by&&lvlOf(F.by)>=1?BCN_T/7:1);
+  if(F.side!==side){F.side=side;F.t=0;F.by=null}F.by=by;F.t+=dt*(F.by&&lvlOf(F.by)>=1?BCN_T/7:1);
   if(F.t>=BCN_T){const who=F.by;F.t=0;F.side=null;F.by=null;if(side===B.owner)beaconSecure(W.sid,side,who);else beaconFlip(W.sid,side,who)}}
 function beaconFlip(sid,side,by){const B=S.beacons[sid];if(!B||B.owner===side)return;const old=B.owner,oldBy=B.by,nm=DEF[sid].name;
   B.owner=side;B.by=by||null;B.T=S.T;B.sec=S.T;B.pay=S.T;B.byT=S.T;S.bcnV=(S.bcnV||0)+1;bcnMissionPay(sid,side,by);sideBcn(sid,side,by);
@@ -268,7 +268,7 @@ function completeBuild(ev,src){const f=ev.att,DC=f==='brood'?DEPOT_COST:FWD_COST
 function finishBuild(ev){ev.stage='done';inv.addAll(S.econ.stock[ev.att],ev.force);ev.force={}}
 // the convoy in person: a constructor plus its escort wing, flying to the site and building while you watch
 function engageBuild(ev){ev.live=true;const home=`ev:${ev.id}:${ev.att}`,mid=ev.prog>0;let C=null;
-  const CL=ev.att==='brood'?BROOD_SEED:CONSTR_LD;if(takeFrom(CL,[ev.force])){const ld={...CL};const fr=inv.take(ev.force,'frame',ev.force.frame||0);if(fr)ld.frame=fr;C=makeNPC('builder',ev.att,'constructor',1,ld,home);C.evId=ev.id;C.ai.site=ev.site}
+  const CL=ev.att==='brood'?BROOD_SEED:CONSTR_LD;if(takeFrom(CL,[ev.force])){const ld={...CL};const fr=inv.take(ev.force,'frame',ev.force.frame||0);if(fr)ld.frame=fr;C=makeNPC('builder',ev.att,'constructor',1,ld,home);if(ev.spotted)C.spotted=1;C.evId=ev.id;C.ai.site=ev.site}
   if(!C){finishBuild(ev);return}
   const g0=GATES[ev.sector].slice().sort((a,b)=>d3(a,ev.site)-d3(b,ev.site))[0];
   if(mid){const o=rdir();C.x=ev.site.x+o.x*60;C.y=ev.site.y+o.y*60;C.z=ev.site.z+o.z*60}else{C.x=g0.x*.93;C.y=g0.y*.93;C.z=g0.z*.93;fxWarp(C,sideCol(ev.att))}
