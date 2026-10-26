@@ -681,3 +681,19 @@ function capNearest(){let best=null,bh=1e9;for(const t of S.frigates||[]){if(!ca
 {const o=cmDo;cmDo=function(k,T){if(k!=='tocap')return o.apply(this,arguments);const t=capNearest();if(!t||!W){flash('No friendly capital ship is out.',true);return}
   if(t.sector!==W.sid){S.player.route=t.sector;const g=routeNext();if(g){W.tgt={kind:'gate',ref:g};apOn=true}flash(`Course set to ${DEF[t.sector].name}, where ${t.name} is. Autopilot on: steer to take back control.`);return}
   const e=W.ents.find(x=>x.alive&&x.tok===t);if(e){W.tgt={kind:'ship',ref:e};apOn=true;flash(`Autopilot to ${t.name}. Steer to take back control.`)}else flash(`${t.name} is in this system but not in sight yet.`)}}
+
+// ============================================================ AI carriers fly two wings (Oct 2026)
+// In a live system an AI carrier keeps Alpha on the carrier as its screen and sends Bravo hunting (enemy craft, bombers
+// first). When its target is next door (a hostile station or capital where it's headed, or a hostile depot beside it while
+// it holds) and nothing threatens it here, Bravo goes through the gate on a strike, the same sortie a pilot's carrier flies:
+// capture with assault ships aboard, destroy without. Off-screen carriers keep their stand-off strike (wingPower).
+const AICAR={cool:150,threat:5000,minCraft:3};
+function aiCarSortie(){if(NET.cl||!S||S.training)return;for(const t of S.frigates||[]){if(!isCar(t)||fOwn(t)||!t.live||t.hull<=0)continue;const w=WORLDS[t.sector];if(!w||S.T<(t.sorT||0)||sortiesOf(t).some(v=>v.wg==='B'))continue;
+    const sd=sideNorm(t.side),near=NEIGH[t.sector];let to=null,tgt=null;
+    if(t.dest&&near.includes(t.dest)){if(hostileStationAt(t.dest,sd)){to=t.dest;tgt='st'}else{const o=frigatesIn(t.dest).find(x=>hostile(sd,x.side));if(o){to=t.dest;tgt='c'+o.id}}}
+    if(!to&&(!t.dest||t.dest===t.sector)){let bh=2;for(const n of near){const R=S.stations[n];if(R&&R.kind==='depot'&&hostileStationAt(n,sd)){const h=R.hull/(R.hMax||1);if(h<bh){bh=h;to=n;tgt='st'}}}}
+    if(!to)continue;
+    inW(w,()=>{const E=W.ents.find(x=>x.tok===t&&x.alive);if(!E)return;if(W.ents.some(o=>o.type==='ship'&&o.alive&&o.role!=='frigate'&&hostile(sd,o.side)&&d3(o,E)<AICAR.threat))return;
+      if((E.pickets||[]).filter(p=>p.alive&&p.wg==='B'&&W.ents.includes(p)).length+(E.bay||[]).length<AICAR.minCraft)return;
+      const n=sortieStart(t,E,to,tgt,'B');if(!n)return;const ev=sortiesOf(t).find(v=>v.wg==='B');if(ev&&tgt==='st')ev.mode=sd!=='brood'&&aAvail(t)>0?'cap':'raze';t.sorT=S.T+AICAR.cool})}}
+{const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{aiCarSortie()}catch(e){frameErr('carrier wings',e)}return r}}

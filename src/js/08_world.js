@@ -156,7 +156,7 @@ function frigTurrets(e,dt){mdlFrigTurrets(e);const R=e.st.radius*1.1,C=e.tok&&fO
     if(t){const es=e.cls==='escort';tu.cool=es?.3:.42;turretShot(wp,t,1300,es?15:10,e.side,12,'pd');if(W.t-(e.pdSnd||0)>2.2&&W.t-(W.pdG||-9)>1.1){const v=vAt(e);if(v>.04){e.pdSnd=W.t;W.pdG=W.t;SFX.pd(Math.min(1,v*1.4))}}}else tu.cool=.3}}
 function frigateThink(e,dt){const t=e.tok;if(!t||!S.frigates.includes(t)){e.role='leave';return}if(t.dummy){e.vx=e.vy=e.vz=0;e.thrusting=e.boosting=false;e.hull=e.st.hull;e.shield=e.st.sCap;return}t.hull=e.hull;t.shield=e.shield;if(jamDark(e)){e.charging=0;e.thrusting=false;return}const C=fOwn(t)?fctl(t):null;
   frigTurrets(e,dt);
-  const nx=frigHop(t);
+  const nx=isCar(t)&&!fOwn(t)&&t.dest&&HOP[t.sector][t.dest]===1&&hostileStationAt(t.dest,t.side)?null:frigHop(t);   // an AI carrier stands off next door from a hostile station, as off-screen, and strikes it with Bravo
   if(nx){if(!t.spin||t.spin.to!==nx)t.spin={to:nx,p:0};t.spin.p+=dt/JUMP_TIME*pmul(t,'eng')*(isEsc(t)?ESC_JUMP:1);e.charging=t.spin.p;drumTick(e,t.spin.p,dt);if(Math.random()<.3)fxSpark({x:e.x+rnd(-80,80),y:e.y+rnd(-40,40),z:e.z+rnd(-80,80)},'#bfe0ff',2);
     if(t.spin.p>=1){t.spin=null;t.jumpTo=null;e.charging=0;e.drumT=0;{const v=vAt(e);if(v>.03)SFX.fjump(Math.min(1,v*1.4))}fxWarp(e,sideCol(e.side));fxBoom(e,220,'#bfe0ff');
       if(W.bridge&&W.bridge.f===e){W.pendingFJump={tok:t,to:nx};return}
@@ -597,7 +597,7 @@ function holdSlot(e,M,tx,ty,tz,dt,k){const dx=tx-e.x,dy=ty-e.y,dz=tz-e.z;let wx=
   const ux=wx-e.vx,uy=wy-e.vy,uz=wz-e.vz,u=hyp(ux,uy,uz)||1,acc=Math.min(e.st.thrust*1.3,u/dt);e.vx+=ux/u*acc*dt;e.vy+=uy/u*acc*dt;e.vz+=uz/u*acc*dt;e.thrusting=u>20}
 function droneThink(e,dt){const ai=e.ai,M=e.mom;
   if(!M||!M.alive||!W.ents.includes(M)){e.role='leave';e.mom=null;return}
-  const big=e.role==='picket',PM=big&&M.tok&&fOwn(M.tok)?(e.mis&&e.mis!=='sortie'?e.mis:wingMis(M.tok,e)):null;
+  const big=e.role==='picket',PM=big&&M.tok&&fOwn(M.tok)?(e.mis&&e.mis!=='sortie'?e.mis:wingMis(M.tok,e)):big&&M.tok&&e.wg==='B'?'hunt':null;   // an AI carrier: Alpha guards it, Bravo hunts
   if(e.mis==='sortie'&&big){if(NET.cl)return;const ev=S.events.find(v=>v.id===e.sortie),g=ev&&W.ents.find(x=>x.type==='gate'&&x.to===ev.to);if(!g||ev.stage!=='gather'){e.mis=null;e.sortie=null}else{const d=steer(e,g.x,g.y,g.z,dt,false,1.1);faceTo(e,g,dt);e.thrusting=true;e.boosting=d>900;if(d<260)sortieDepart(M,e);return}}
   if(PM==='recall'){if(NET.cl)return;const d=d3(e,M);if(d<M.st.radius+110){carStow(M,e);return}steer(e,M.x,M.y,M.z,dt,true);faceTo(e,M,dt);e.thrusting=true;return}
   if(PM==='hunt'){let T=ai.tgt&&ai.tgt.alive&&ai.tgt.type==='ship'&&W.ents.includes(ai.tgt)&&hostile(e.side,ai.tgt.side)?ai.tgt:null;

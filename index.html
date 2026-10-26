@@ -1485,7 +1485,7 @@ function sortieLiveHit(ev,w,sd){const pw=ev.craft.reduce((a,c)=>a+crPow(c),0),k=
 function sortieMode(sid,side){const ev=(S.events||[]).find(v=>v.type==='sortie'&&v.stage==='strike'&&v.to===sid&&v.tgt==='st'&&sortieSide(v)===sideNorm(side));return ev?ev.mode||'cap':null}
 function sortieTgtState(ev){if(ev.tgt==='st'){const R=S.stations[ev.to];if(!R)return null;const w=WORLDS[ev.to],E=w&&w.stationEnt&&w.stationEnt.rec===R?w.stationEnt:null;const sh=E?E.shield:R.shield,sm=(E&&E.sMax)||R.sMax||1;return{sh:Math.max(0,sh)/sm,hull:Math.max(0,R.hull)/(R.hMax||1),R}}
   const o=(S.frigates||[]).find(x=>'c'+x.id===ev.tgt);if(!o)return null;const w=WORLDS[o.sector],e=w&&w.ents.find(x=>x.tok===o&&x.alive);return{sh:e&&e.st&&e.st.sCap?Math.max(0,e.shield)/e.st.sCap:(o.shield||0)/(isCar(o)?CAR_SHIELD:1800),hull:Math.max(0,e?e.hull/e.st.hull:o.hull/capHullMax(o))}}
-function sortieReport(ev,t){if(!sortieTgtLive(ev))return;const X=sortieTgtState(ev);if(!X)return;const r=ev.rep||(ev.rep={T:S.T,lost:0,sh:X.sh>0,hb:0}),nm=sortieTgtName(ev),pc=v=>Math.round(v*100)+'%',sd=sortieSide(ev);
+function sortieReport(ev,t){if(!t||!t.owner||!sortieTgtLive(ev))return;const X=sortieTgtState(ev);if(!X)return;const r=ev.rep||(ev.rep={T:S.T,lost:0,sh:X.sh>0,hb:0}),nm=sortieTgtName(ev),pc=v=>Math.round(v*100)+'%',sd=sortieSide(ev);
   const line=()=>`${ev.craft.length} of ${ev.n0||ev.craft.length} craft · shields ${pc(X.sh)} · hull ${pc(X.hull)} · ${fmtT(Math.max(0,ev.until-S.T))} left`;
   if(!r.start){r.start=1;r.T=S.T;let a='';if(X.R&&X.R.kind==='depot'&&X.R.owner!=='brood'&&sd!=='brood'){const g=garrison(X.R),n=capLoads(ev.to,sd);a=ev.mode==='raze'?' Orders: destroy it.':n>=g?` Orders: capture. Assault ships ready: ${n} (the depot needs ${g} once its hull breaks).`:` Orders: capture, but no assault ships in reach (needs ${g}): the strike can break the depot but not take it.`}sortieFeed(ev,`⚔ Strike on ${nm} begins: ${line()}.${a}`,'info');return}
   if(ev.lost>r.lost){sortieFeed(ev,`⚔ Strike on ${nm}: ${ev.lost-r.lost} craft lost. ${line()}.`,'warn');r.lost=ev.lost;r.T=S.T;return}
@@ -3696,7 +3696,7 @@ function frigTurrets(e,dt){mdlFrigTurrets(e);const R=e.st.radius*1.1,C=e.tok&&fO
     if(t){const es=e.cls==='escort';tu.cool=es?.3:.42;turretShot(wp,t,1300,es?15:10,e.side,12,'pd');if(W.t-(e.pdSnd||0)>2.2&&W.t-(W.pdG||-9)>1.1){const v=vAt(e);if(v>.04){e.pdSnd=W.t;W.pdG=W.t;SFX.pd(Math.min(1,v*1.4))}}}else tu.cool=.3}}
 function frigateThink(e,dt){const t=e.tok;if(!t||!S.frigates.includes(t)){e.role='leave';return}if(t.dummy){e.vx=e.vy=e.vz=0;e.thrusting=e.boosting=false;e.hull=e.st.hull;e.shield=e.st.sCap;return}t.hull=e.hull;t.shield=e.shield;if(jamDark(e)){e.charging=0;e.thrusting=false;return}const C=fOwn(t)?fctl(t):null;
   frigTurrets(e,dt);
-  const nx=frigHop(t);
+  const nx=isCar(t)&&!fOwn(t)&&t.dest&&HOP[t.sector][t.dest]===1&&hostileStationAt(t.dest,t.side)?null:frigHop(t);   // an AI carrier stands off next door from a hostile station, as off-screen, and strikes it with Bravo
   if(nx){if(!t.spin||t.spin.to!==nx)t.spin={to:nx,p:0};t.spin.p+=dt/JUMP_TIME*pmul(t,'eng')*(isEsc(t)?ESC_JUMP:1);e.charging=t.spin.p;drumTick(e,t.spin.p,dt);if(Math.random()<.3)fxSpark({x:e.x+rnd(-80,80),y:e.y+rnd(-40,40),z:e.z+rnd(-80,80)},'#bfe0ff',2);
     if(t.spin.p>=1){t.spin=null;t.jumpTo=null;e.charging=0;e.drumT=0;{const v=vAt(e);if(v>.03)SFX.fjump(Math.min(1,v*1.4))}fxWarp(e,sideCol(e.side));fxBoom(e,220,'#bfe0ff');
       if(W.bridge&&W.bridge.f===e){W.pendingFJump={tok:t,to:nx};return}
@@ -4137,7 +4137,7 @@ function holdSlot(e,M,tx,ty,tz,dt,k){const dx=tx-e.x,dy=ty-e.y,dz=tz-e.z;let wx=
   const ux=wx-e.vx,uy=wy-e.vy,uz=wz-e.vz,u=hyp(ux,uy,uz)||1,acc=Math.min(e.st.thrust*1.3,u/dt);e.vx+=ux/u*acc*dt;e.vy+=uy/u*acc*dt;e.vz+=uz/u*acc*dt;e.thrusting=u>20}
 function droneThink(e,dt){const ai=e.ai,M=e.mom;
   if(!M||!M.alive||!W.ents.includes(M)){e.role='leave';e.mom=null;return}
-  const big=e.role==='picket',PM=big&&M.tok&&fOwn(M.tok)?(e.mis&&e.mis!=='sortie'?e.mis:wingMis(M.tok,e)):null;
+  const big=e.role==='picket',PM=big&&M.tok&&fOwn(M.tok)?(e.mis&&e.mis!=='sortie'?e.mis:wingMis(M.tok,e)):big&&M.tok&&e.wg==='B'?'hunt':null;   // an AI carrier: Alpha guards it, Bravo hunts
   if(e.mis==='sortie'&&big){if(NET.cl)return;const ev=S.events.find(v=>v.id===e.sortie),g=ev&&W.ents.find(x=>x.type==='gate'&&x.to===ev.to);if(!g||ev.stage!=='gather'){e.mis=null;e.sortie=null}else{const d=steer(e,g.x,g.y,g.z,dt,false,1.1);faceTo(e,g,dt);e.thrusting=true;e.boosting=d>900;if(d<260)sortieDepart(M,e);return}}
   if(PM==='recall'){if(NET.cl)return;const d=d3(e,M);if(d<M.st.radius+110){carStow(M,e);return}steer(e,M.x,M.y,M.z,dt,true);faceTo(e,M,dt);e.thrusting=true;return}
   if(PM==='hunt'){let T=ai.tgt&&ai.tgt.alive&&ai.tgt.type==='ship'&&W.ents.includes(ai.tgt)&&hostile(e.side,ai.tgt.side)?ai.tgt:null;
@@ -8317,6 +8317,22 @@ function capNearest(){let best=null,bh=1e9;for(const t of S.frigates||[]){if(!ca
 {const o=cmDo;cmDo=function(k,T){if(k!=='tocap')return o.apply(this,arguments);const t=capNearest();if(!t||!W){flash('No friendly capital ship is out.',true);return}
   if(t.sector!==W.sid){S.player.route=t.sector;const g=routeNext();if(g){W.tgt={kind:'gate',ref:g};apOn=true}flash(`Course set to ${DEF[t.sector].name}, where ${t.name} is. Autopilot on: steer to take back control.`);return}
   const e=W.ents.find(x=>x.alive&&x.tok===t);if(e){W.tgt={kind:'ship',ref:e};apOn=true;flash(`Autopilot to ${t.name}. Steer to take back control.`)}else flash(`${t.name} is in this system but not in sight yet.`)}}
+
+// ============================================================ AI carriers fly two wings (Oct 2026)
+// In a live system an AI carrier keeps Alpha on the carrier as its screen and sends Bravo hunting (enemy craft, bombers
+// first). When its target is next door (a hostile station or capital where it's headed, or a hostile depot beside it while
+// it holds) and nothing threatens it here, Bravo goes through the gate on a strike, the same sortie a pilot's carrier flies:
+// capture with assault ships aboard, destroy without. Off-screen carriers keep their stand-off strike (wingPower).
+const AICAR={cool:150,threat:5000,minCraft:3};
+function aiCarSortie(){if(NET.cl||!S||S.training)return;for(const t of S.frigates||[]){if(!isCar(t)||fOwn(t)||!t.live||t.hull<=0)continue;const w=WORLDS[t.sector];if(!w||S.T<(t.sorT||0)||sortiesOf(t).some(v=>v.wg==='B'))continue;
+    const sd=sideNorm(t.side),near=NEIGH[t.sector];let to=null,tgt=null;
+    if(t.dest&&near.includes(t.dest)){if(hostileStationAt(t.dest,sd)){to=t.dest;tgt='st'}else{const o=frigatesIn(t.dest).find(x=>hostile(sd,x.side));if(o){to=t.dest;tgt='c'+o.id}}}
+    if(!to&&(!t.dest||t.dest===t.sector)){let bh=2;for(const n of near){const R=S.stations[n];if(R&&R.kind==='depot'&&hostileStationAt(n,sd)){const h=R.hull/(R.hMax||1);if(h<bh){bh=h;to=n;tgt='st'}}}}
+    if(!to)continue;
+    inW(w,()=>{const E=W.ents.find(x=>x.tok===t&&x.alive);if(!E)return;if(W.ents.some(o=>o.type==='ship'&&o.alive&&o.role!=='frigate'&&hostile(sd,o.side)&&d3(o,E)<AICAR.threat))return;
+      if((E.pickets||[]).filter(p=>p.alive&&p.wg==='B'&&W.ents.includes(p)).length+(E.bay||[]).length<AICAR.minCraft)return;
+      const n=sortieStart(t,E,to,tgt,'B');if(!n)return;const ev=sortiesOf(t).find(v=>v.wg==='B');if(ev&&tgt==='st')ev.mode=sd!=='brood'&&aAvail(t)>0?'cap':'raze';t.sorT=S.T+AICAR.cool})}}
+{const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{aiCarSortie()}catch(e){frameErr('carrier wings',e)}return r}}
 
 //@src 17_main.js
 // ============================================================ main loop
