@@ -113,8 +113,8 @@ function crewOf(t,pid){const C=t.crew||{};return Object.keys(C).filter(k=>C[k]==
 function fOwn(t){return!!t&&(t.side==='player'||!!t.owner)}
 function fMine(t){return!!t&&(t.side==='player'||(!!t.owner&&t.owner===(curPid()||'me')))}
 // taking command of one of your faction's frigates: it stays your faction's ship, but you give the orders until you hand it back
-function fTake(t){if(!fGuest(t))return false;t.owner=curPid()||'me';t.cmd=1;t.dest=null;t.jumpTo=null;t.ctl=null;fctl(t);feed(`You have taken command of ${t.name}. Give it orders from its consoles or the galaxy map (M); hand it back to ${FACTIONS[t.side].short} command from the Strategic console.`,'good');return true}
-function fRelease(t){if(!t.cmd||!fMine(t))return false;delete t.owner;delete t.cmd;t.ctl=null;t.dest=null;t.jumpTo=null;feed(`${t.name} is back under ${FACTIONS[t.side].short} command.`,'info');return true}
+function fTake(t){if(!fGuest(t))return false;t.owner=curPid()||'me';t.cmd=1;t.crew={};t.dest=null;t.jumpTo=null;t.ctl=null;fctl(t);feed(`You have taken command of ${t.name}. Give it orders from its consoles or the galaxy map (M); hand it back to ${FAC(t.side).short} command from the Strategic console.`,'good');return true}
+function fRelease(t){if(!t.cmd||!fMine(t))return false;delete t.owner;delete t.cmd;t.crew={};t.ctl=null;t.dest=null;t.jumpTo=null;feed(`${t.name} is back under ${FAC(t.side).short} command.`,'info');return true}
 function yk(){return NET.on?'p:'+curPid():'player'}
 function ykPid(k){return typeof k==='string'&&k.startsWith('p:')?k.slice(2):null}
 function pmul(t,k){return fOwn(t)?fctl(t).power[k]/3:1}
@@ -136,7 +136,7 @@ const force={};takeFrom(EC,[st]);inv.addAll(force,EC);S.events.push({id:S.nextId
   for(const t of S.frigates){if(!t.live&&t.sector===capBase(t))capRefill(t);
     if(!fOwn(t)&&isEsc(t)&&t.side!=='brood'&&t.sector!==capBase(t)&&(t.aload||0)<1&&capCanRefill(t))t.dest=capBase(t);
     else if(!fOwn(t)&&!(t.call&&t.call.until>S.T)&&(!t.dest||t.dest===t.sector)&&Math.random()<.35)t.dest=frigOrders(t);
-    if(t.live)continue;if(isCar(t)&&t.dest&&t.dest!==t.sector&&HOP[t.sector][t.dest]===1&&hostileStationAt(t.dest,t.side)){t.moveT=0;continue}const nx=frigHop(t);if(!nx){t.moveT=0;t.spin=null;continue}t.moveT=(t.moveT||0)+pmul(t,'eng');if(t.moveT<(isEsc(t)?1.2:2))continue;t.moveT=0;t.spin=null;t.jumpTo=null;t.sector=nx;t.hold=0;
+    if(t.live)continue;if(isCar(t)&&t.dest&&t.dest!==t.sector&&HOP[t.sector][t.dest]===1&&hostileStationAt(t.dest,t.side)){t.moveT=0;if(!fOwn(t)){const Rk=S.stations[t.dest].kind;if(Rk==='core'||Rk==='hive'){t.soT=t.soT||S.T;if(S.T-t.soT>600){t.dest=null;t.soT=0}}else t.soT=0}continue}const nx=frigHop(t);if(!nx){t.moveT=0;t.spin=null;continue}t.moveT=(t.moveT||0)+pmul(t,'eng');if(t.moveT<(isEsc(t)?1.2:2))continue;t.moveT=0;t.spin=null;t.jumpTo=null;t.sector=nx;t.hold=0;
     if(fOwn(t)&&t.sector===t.dest)feedTo(t.owner,`${t.name} has arrived in ${DEF[t.sector].name}.`,'info');if(WORLDS[nx])inW(WORLDS[nx],()=>spawnFrigate(t,true))}
   // abstract fighting away from the player
   for(const t of S.frigates.slice()){if(t.live||t.hull<=0)continue;const own=t.sector;let hit=0;
@@ -290,7 +290,7 @@ function raidBounty(t){return Math.round((invValue(t.load||{})*.85+400)/10)*10}
 function weHtml(f){const b=Math.round(weBonus(f)*100);return` War effort: <b>${b?'+'+b+'%':'none'}</b> in battles fought out of sight${b?'':''} (pilots earn it with Orders, supply drives, campaign moves, beacon flips and kills; it fades over about 20 minutes).`}
 function resolveAbstract(ev){
   if(ev.st){resolveSiege(ev);return}
-  const o=S.outposts[ev.target],s=S.sectors[o.sector];
+  const o=S.outposts[ev.target],s=S.sectors[o.sector];if(o.owner&&!hostile(ev.att,o.owner)){finishOffensive(ev);return}
   const att=invValue(ev.force)*clsF(ev.cls);let def=o.owner?300+o.level*260:120,dforce=null;
   if(FACTIONS[o.owner]){dforce={};const fl=S.econ.fleet[o.owner],warned=covOf(o.owner,true).has(o.sector);for(let i=0;i<(warned?3:2);i++){const ld=loadout('patrol',factionTier(o.owner));if(takeFrom(ld,[fl,S.econ.stock[o.owner]]))inv.addAll(dforce,ld)}def+=invValue(dforce)}
   const win=Math.random()<att*weMul(ev.att)/(att*weMul(ev.att)+def*1.1*(o.owner?weMul(o.owner):1));

@@ -1691,3 +1691,34 @@ Two code reviews (the pilot's own controls; the host's handling of guests' comma
 - Developer tools from a guest work only while the host has the developer panel open.
 - The host's own death no longer blocks guests in the same system from building or calling for help.
 - A guest dock action that throws on the host now still answers (the guest's dock screen sat on "Working…").
+
+## Station, capital-ship and combat code passes (Oct 2026)
+Three code reviews; fixes below. (Not fixed yet: turret gunners get no kill credit for their own shots; Heavy Bomber turrets aim to 1,200 m but their shots fade at about 1,035 m; a capital wreck can drop a hold of zero-value items.)
+**Stations**
+- **Same-station round trips were profitable.** A lot is sold at one quoted price, and the lot can move the price up to 20%, so buying a lot and selling it straight back (or the reverse) paid: up to +810 cr a cycle in Aurorite in a Bulker. Now, for 10 minutes, selling back at a station what you bought there pays no more than you paid, and buying back what you sold there costs no less than you got (`rtBuy`/`rtSell`). Trade between stations is unchanged.
+- The Unbound hangar could store a free Raider and sell it for 250 cr plus a starter kit, over and over. Unbound pilots trade hulls only at the haven's Hulls tab.
+- A Claim Beacon bought for credits came from nothing (6 ferrite and 6 cuprite created each time); it's now built from the station's plate and conduit, or refused.
+- Drones issued from faction stock in the dock (hull switch, new starter, hangar store) are now paid for at base price; before, a pilot could sell the bay's drones and switch hulls for a free refill.
+- Guests can dock at freeports (the host refused them). A guest docked at a station that changed hands while they were away is put back in space instead of trading with the enemy.
+- A siege watched live razed depots it should capture: it only counted carriers' assault ships, never the assault loads the strike group carries (off-screen it captures with them). It now lands them; and a live depot with some but too few assault ships in reach is held at 1 hull (as off-screen) instead of razed. Only real factions take depots (no spent assault ships on a capture that can't happen).
+- Freeports never built station modules (they looked in the empty neutral stock); they now build from their own goods.
+- Capturing a depot keeps your target on the new station.
+**Capital ships**
+- An Unbound pilot boarding an Unbound capital crashed the bridge (`FACTIONS.pirate` doesn't exist).
+- A carrier destroyed in your system lost an assault load the fabricator had just finished; it now spills with the rest.
+- The host's bridge jump left the carrier's old entity behind when another pilot stayed in the old system (a duplicate carrier and a ledger leak).
+- Refills counted only craft aboard, not craft out on a strike, so a carrier could end up with 18; a borrowed faction carrier refilled from the pilot's personal vault.
+- "Call the strike back" while the craft were still in transit started the full strike; it now brings them home.
+- An AI Bravo strike that carried on off-screen counted at full weight on top of the carrier's stand-off strike; off-screen it now counts at the off-screen wing weight (`WING_K`), as the stand-off strike does.
+- A lost assault ship from a capital in your system cost nothing (its kit stayed aboard); strike craft respawn if the target system was closed and reopened between ticks; crew assignments clear when command changes hands; wing counts no longer count craft heading for the gate twice; an AI carrier standing off a core station or hive it can't take gives up after 10 minutes.
+**Combat**
+- **A guest dying alone in a system froze the host's simulation for the rest of the session** (the world being updated was closed mid-update). It's now closed after the frame.
+- **Flying a Bomber or Heavy Bomber could freeze the frame every frame** near an AI that checks hostile bombers' torpedoes (the player's ship has no NPC load).
+- Unbound guests were treated as ordinary pirates: freeport guns fired on them, their false colours didn't fool station or capital turrets, and their missiles and lasers did nothing to the Brood. Guests now follow the host's Unbound rules, with their own false colours.
+- Shock harpoons could jam capital ships (that's the jamming torpedo's job); jamming torpedoes worked without reaching their target (on expiry or hitting a rock); a guest's vault heist charged the host's heat and Deeds.
+- Jammed, landed or rebooting ships kept firing missiles, swarms, flares and turret guns.
+- The Unbound +25% against shields applied to guns too; it's for missiles (the host's and guests').
+- Hooking a second ship dropped the first take's Infamy, heat and Deeds (and dodged the ×5 heat for killing a ship you'd just robbed); jumping or dying now ends a take properly.
+- The AI kept chasing a Wraith that cloaked, and wings answered hits on their leader by picking a hidden or docked attacker.
+- An off-screen assault on an outpost that had become friendly (a truce formed, or it changed hands) still resolved and could take an ally's outpost.
+- Station turrets aimed up to 1,500–1,600 m but their shots faded at 1,300 m; shots now carry to the range they're fired at. False colours are blown by a shot, not by pressing fire while unable to.

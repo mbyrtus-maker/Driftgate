@@ -231,11 +231,11 @@ function devPick(f,R){const d=devOf(R),front=NEIGH[R.sid].some(n=>{const o=sideN
   if(devUsed(R)>=devCap(R)-0)W2.push(['life',4]);W2.push(['store',R.kind==='core'?2.5:1],['def',front?3:1],['armor',front?2.5:.8]);if(R.kind!=='core')W2.push(['prod',R.owner==='neutral'?2:1.2]);if(R.kind==='depot')W2.push(['hangar',front?2.6:1.1]);
   return W2.filter(([k])=>devNext(R,k))}
 function devTick(){const T=S.T;for(const f of[...FAC_IDS,'neutral']){const A=S.ai[f];if(!A)continue;if(A.dev===undefined)A.dev=T+rnd(60,200);if(T<A.dev)continue;A.dev=T+(f==='neutral'?rnd(150,240):rnd(80,120)*BAL.devGap);
-    const st=S.econ.stock[f];if(!st)continue;const capR=f==='neutral'?{}:(capNeed(f)||{});   // keep back half of the next shipyard or frigate
+    const st=S.econ.stock[f]||{};const capR=f==='neutral'?{}:(capNeed(f)||{});   // keep back half of the next shipyard or frigate
     if(f!=='neutral'){const fw=Object.values(S.stations).find(R=>R.owner===f&&R.fwd);if(fw&&Math.random()<.4){if((dStore(fw).frame||0)>=1){takeFrom({frame:1},[dStore(fw)]);inv.add(fw.fort,'frame',1);fw.fwd=0;applyDev(fw);if(friendSide(f)||covered(fw.sid))feed(`${fw.name} has been expanded into a full depot.`,friendSide(f)?'info':'news');continue}else if((st.frame||0)>=1&&depotAsk(fw,{frame:1}))continue}}
     const opts=[];for(const id in S.stations){const R=S.stations[id];if(R.owner!==f)continue;for(const[k,w]of devPick(f,R))opts.push([[R,k],w])}if(!opts.length)continue;
-    const[R,k]=wpickArr(opts),r=devNext(R,k);if(isDepotF(R)){if(!haveIn(r,[dStore(R)])){depotAsk(R,r);continue}}else{const spare=Object.keys(r).every(i=>(st[i]||0)>=r[i]*(f==='neutral'?(i==='plate'||i==='wire'?1.6:1.25):1.1)+(capR[i]||0)*.5);if(!spare)continue}
-    if(devBuild(R,k,[isDepotF(R)?dStore(R):st])){const lvl=devOf(R)[k];if(friendSide(f)||covered(R.sid)||f==='neutral')feed(`${R.name} has ${lvl>1?'upgraded its':'added a'} ${DEV_TXT[k][0]}${lvl>1?' to level '+lvl:''}.`,friendSide(f)?'info':'news')}}}
+    const[R,k]=wpickArr(opts),r=devNext(R,k);if(isDepotF(R)){if(!haveIn(r,[dStore(R)])){depotAsk(R,r);continue}}else{const pool=f==='neutral'?dStore(R):st,spare=Object.keys(r).every(i=>(pool[i]||0)>=r[i]*(f==='neutral'?(i==='plate'||i==='wire'?1.6:1.25):1.1)+(capR[i]||0)*.5);if(!spare)continue}
+    if(devBuild(R,k,[isDepotF(R)||f==='neutral'?dStore(R):st])){const lvl=devOf(R)[k];if(friendSide(f)||covered(R.sid)||f==='neutral')feed(`${R.name} has ${lvl>1?'upgraded its':'added a'} ${DEV_TXT[k][0]}${lvl>1?' to level '+lvl:''}.`,friendSide(f)?'info':'news')}}}
 // ---- life support: every station burns supplies each cycle (more crew, more modules, more burn). What it burns is recycled
 // into the outer drift, and the drift seeds fresh asteroids into depleted systems, so the economy still balances exactly.
 const LS_RATE={core:.8,free:.7,depot:.5,hive:.6};
@@ -357,7 +357,7 @@ function landedTick(dt){const p=W.player,L=p.landed,a=S.sectors[W.sid].ast.find(
   // look around while sat on the rock: the stick turns the ship on its belly, and tips the nose a little up or down
   if(!L.qr)Object.assign(L,astLandInit(p,a));const si=steerInput();if(Math.abs(si.yaw)>.02)L.yaw+=si.yaw*p.st.turn*.5*dt;if(Math.abs(si.pitch)>.02)L.pit=clamp(L.pit+si.pitch*p.st.turn*.5*dt,-.3,.45);
   astLandPlace(p,a,L)}
-function stHostile(SE,e){return hostile(SE.fac,e.side)}
+function stHostile(SE,e){return hostE(SE.fac,e)}
 // ---- dock tabs: station works (build modules at your depots, see any station's), freeport refits
 function worksHtml(c,P,srcs,R){const d=devOf(R),mine=R.owner==='player';let h=`<p class="note" style="margin:0 0 12px">${esc(R.name)} · modules ${devUsed(R)} of ${devCap(R)} (life support houses the crew for more). Every module stands beside the station as its own structure: torpedoes and capital guns can destroy it, and a destroyed module loses all its levels (its materials fall as debris). Crews repair damage when the fighting stops. Life support burns ${(((R.kind==='hive'?1:Math.max(1,d.life))*(LS_RATE[R.kind]||1)*(1+.12*devUsed(R)))*6).toFixed(0)} t of ore a minute${starving(R)?' · <b style="color:var(--danger)">short of ore: production and missiles offline</b>':''}.${mine?' Builds draw from the depot store first, then your vault.':''}</p>`;
   h+=`<div class="tblw"><table class="t"><thead><tr><th>Module</th><th class="r">Level</th><th>Next level</th><th></th></tr></thead><tbody>`;

@@ -322,7 +322,7 @@ function physics(e,dt){if(e.inJump)return;
 // strafing at 250 m/s for 80/60/40% hits at 600/900/1,200 m, and an inbound torpedo for 70/50/30%.
 let TUR={ship:[19.8,-.0126,1.52e-5],torp:[6.5,.0215,0]};
 function turretShot(from,t,spd,dmg,side,len,snd){if(!snd){const v=vAt(from);if(v>.08&&W.t-(W.turSnd||0)>.45){W.turSnd=W.t;SFX.turret(v*.8)}}const lp=leadPoint({x:from.x,y:from.y,z:from.z,vx:0,vy:0,vz:0},t,spd);const dd=d3(lp,from),TK=t&&t.kind==='torpedo'?TUR.torp:TUR.ship,jd=TK[0]+TK[1]*dd+TK[2]*dd*dd;let dx=lp.x-from.x+rnd(-jd,jd),dy=lp.y-from.y+rnd(-jd,jd),dz=lp.z-from.z+rnd(-jd,jd);const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
-  W.shots.push({x:from.x+dx*len,y:from.y+dy*len,z:from.z+dz*len,vx:dx*spd,vy:dy*spd,vz:dz*spd,dmg,side,src:null,ttl:1,col:sideCol(side),sty:'turret',snd});return{x:dx,y:dy,z:dz}}
+  W.shots.push({x:from.x+dx*len,y:from.y+dy*len,z:from.z+dz*len,vx:dx*spd,vy:dy*spd,vz:dz*spd,dmg,side,src:null,ttl:Math.max(1,Math.min(1.6,dd/spd*1.15)),col:sideCol(side),sty:'turret',snd});return{x:dx,y:dy,z:dz}}
 function structUpdate(dt){
   const SE=W.stationEnt;hgLive(dt);
   if(SE&&SE.rec){SE.rec.shield=SE.shield;if(!SE.offline&&W.t-SE.lastHit>8)SE.rec.hull=Math.min(SE.rec.hMax,SE.rec.hull+SE.rec.hMax*.004*dt)}
@@ -331,7 +331,7 @@ function structUpdate(dt){
     if(!SE.offline&&W.t-SE.lastHit>6&&!storm)SE.shield=Math.min(SE.sMax,SE.shield+SE.sMax*.03*dt);
     if(!SE.offline)for(const[ti,tu]of SE.turrets.entries()){tu.cool-=dt;if(tu.cool>0)continue;if(tu.mod&&SE.rec&&starving(SE.rec)){tu.cool=1;continue}qRot(SE.q,tu.p[0],tu.p[1],tu.p[2],_u);const wp={x:SE.x+_u.x,y:SE.y+_u.y,z:SE.z+_u.z};let t=null,bd=SE.range;
       if(ti%2===0)for(const m of W.missiles)if(m.kind==='torpedo'&&(m.tgt===SE||(m.tgt&&m.tgt.type==='works'&&m.tgt.fac===SE.fac))&&hostile(SE.fac,m.side)){const d=d3(m,wp);if(d<Math.min(bd,700)){bd=d;t=m}}
-      if(!t)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!hostile(SE.fac,e.side))continue;const d=d3(e,wp);if(d<bd){bd=d;t=e}}
+      if(!t)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!hostE(SE.fac,e))continue;const d=d3(e,wp);if(d<bd){bd=d;t=e}}
       if(t){tu.cool=SE.core?.45:.55;tu.aim=turretShot(wp,t,1300,STN[SE.kind||'core'].dmg*(1+.12*(SE.rec?devOf(SE.rec).def:0))*(t.role==='frigate'?3:1),SE.fac,22);if(t.role==='frigate')W.shots[W.shots.length-1].cap=true}else tu.cool=.3}}
   if(SE)stMissiles(SE,dt);
   const OE=W.outpostEnt;if(!OE)return;const o=OE.o,os=oStats(o);

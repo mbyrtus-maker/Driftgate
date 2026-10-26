@@ -361,7 +361,7 @@ function unbScan(dt){const P=unbP(),p=W.player,R=unbRT();if(!P.xpdr||!p||S.playe
     if(Math.random()<ch){coverBlow(f,'a patrol scan saw through your false colours');for(const e of pats)e.ai.tgt=p}else if(sm>0)P.conPass=true}}
 // ---- jam mode (4): guns fire jammers, missiles become shock harpoons (35% of the bar, and a tether that stretches the hook to 400 m)
 function jamToggle(){const p=W.player;if(!p)return;p.jamMode=!p.jamMode;SFX.jamMode(p.jamMode);if(NET.cl)netSend({t:'jam',on:p.jamMode?1:0});flash(p.jamMode?'Jam mode: guns fire jammers and missiles are shock harpoons. They never kill, and do nothing to a shielded ship.':'Jam mode off: guns and missiles kill again.')}
-function harpHit(m){let T=m.tgt&&m.tgt.type==='ship'&&m.tgt.alive&&d3(m.tgt,m)<m.tgt.st.radius+60?m.tgt:null;if(!T){let bd=90;for(const e of W.ents)if(e.type==='ship'&&e.alive&&e!==m.src&&hostile(m.side,e.side)){const d=d3(e,m)-e.st.radius;if(d<bd){bd=d;T=e}}}if(!T)return;fxSpark(m,'#b7c6ff',8);if(T.shield>T.st.sCap*.05){if(m.src===W.player)flash('Harpoon bounced off the shields. Strip them first.');return}T.shield=0;
+function harpHit(m){let T=m.tgt&&m.tgt.type==='ship'&&m.tgt.alive&&m.tgt.role!=='frigate'&&d3(m.tgt,m)<m.tgt.st.radius+60?m.tgt:null;if(!T){let bd=90;for(const e of W.ents)if(e.type==='ship'&&e.alive&&e.role!=='frigate'&&e!==m.src&&hostile(m.side,e.side)){const d=d3(e,m)-e.st.radius;if(d<bd){bd=d;T=e}}}if(!T)return;fxSpark(m,'#b7c6ff',8);if(T.shield>T.st.sCap*.05){if(m.src===W.player)flash('Harpoon bounced off the shields. Strip them first.');return}T.shield=0;
   jamHit(T,{side:m.side,dmg:jamCap(T)*.35,x:m.x,y:m.y,z:m.z,src:null});T.teth={by:m.src,until:W.t+30};if(m.src===W.player||T.isPlayer)SFX.tether();if(m.src===W.player)flash('Harpoon in: tethered for 30 s, hook reach 400 m.')}
 // ---- the cargo hook: hold E beside a jammed ship (150 m, 400 m tethered); 8 t/s, most valuable cargo first
 function hookReach(T){return T.teth&&T.teth.until>W.t&&T.teth.by===W.player?(W.player.st.tetherR||400):JAM.hookR}
@@ -370,7 +370,7 @@ function hookTarget(){return hookTargetOf(W.tgt&&W.tgt.kind==='ship'?W.tgt.ref:n
 function hookSrc(T){if(T.role==='frigate'){const st=T.tok&&T.tok.store;return st&&Object.keys(st).some(k=>st[k]>0)?st:T.load||{}}return T.cargo||{}}
 function unbHook(dt,hold,Tsel){const p=W.player,P=unbP(),R=unbRT(),T=hookTargetOf(Tsel);const tk=R.take;
   if(tk&&(!tk.T.alive||!jamDark(tk.T))){takeEnd()}
-  if(!T||!hold)return;const cg=hookSrc(T);if(!R.take||R.take.T!==T)R.take={T,moved:0,fac:T.side};const room=p.st.cargo-invMass(P.cargo);if(room<1){if(W.t-(R.hookMsg||0)>2){R.hookMsg=W.t;flash('Hold full. Let them go, or dump something.')}return}
+  if(!T||!hold)return;const cg=hookSrc(T);if(R.take&&R.take.T!==T)takeEnd();if(!R.take)R.take={T,moved:0,fac:T.side};const room=p.st.cargo-invMass(P.cargo);if(room<1){if(W.t-(R.hookMsg||0)>2){R.hookMsg=W.t;flash('Hold full. Let them go, or dump something.')}return}
   R.hookAcc=(R.hookAcc||0)+(unbWork('chop')>=3?12:unbWork('chop')>=1?10:JAM.hookRate)*dt;while(R.hookAcc>=1){const ks=Object.keys(cg).filter(k=>cg[k]>0&&mass(k)>0).sort((a,b)=>baseValue(b)/mass(b)-baseValue(a)/mass(a));const k=ks[0];if(!k){R.hookAcc=0;break}const m=mass(k);
     if(invMass(P.cargo)+m>p.st.cargo){R.hookAcc=0;break}if(R.hookAcc<m)break;R.hookAcc-=m;inv.take(cg,k,1);inv.add(P.cargo,k,1);inv.add(P.stolen,k,1);R.take.moved+=m;SFX.hook()}
   if(W.t-(R.hookMsg||0)>1.5&&R.take.moved){R.hookMsg=W.t;flash(`Hooking ${fmt(R.take.moved)} t · ${Math.max(0,Math.ceil(T.jamOff-W.t))} s left in the window`)}}
@@ -496,7 +496,9 @@ function fireJamTorp(){const P=S.player,L=W.lock,p=W.player;if(P.jt==null)P.jt=j
   if(!L.locked||!L.ref){flash('Lock a target first: a capital ship, a ship, or a faction station to crack its vault.',true);return true}if(NET.cl){netSend({t:'msl',tg:netTid(L.ref),k:'jt'});flash('Jamming torpedo away.');return true}P.jt--;if(P.jt<jtCap()&&!(P.jtT>0))P.jtT=40;launchMissile(p,L.ref,P.tiers.weapon,'torpedo',0,true);const m=W.missiles[W.missiles.length-1];if(m){m.jt=1;m.dmg=0;m.col='#b7c6ff'}SFX.jtorpLaunch();unbShot();flash(`Jamming torpedo away (${P.jt} left).`);return true}
 // a capital's jam bar: a third of an escort's per torpedo, a sixth of a carrier's; it drains slowly between hits
 function capJamFill(e){return e.cls==='escort'?1/3:e.cls==='carrier'?1/6:1/4}
-function jtHit(m){const T=m.tgt;fxBoom(m,90,'#b7c6ff');if(W.player&&d3(m,W.player)<4000)SFX.jtorpHit(!!(T&&T.role==='frigate'));if(!T)return;
+function jtHit(m){const T0=m.tgt,T=T0&&(T0.alive!==false)&&d3(T0,m)<(T0.type==='station'?240:((T0.st&&T0.st.radius)||40)+60)?T0:null;fxBoom(m,90,'#b7c6ff');if(W.player&&d3(m,W.player)<4000)SFX.jtorpHit(!!(T&&T.role==='frigate'));if(!T)return;
+  if(m.src&&m.src.rp&&!CTX){runAs(m.src.rp,()=>jtHit2(m,T));return}jtHit2(m,T)}
+function jtHit2(m,T){
   if(T.type==='station'){vaultHeist(T,m);return}
   if(T.type!=='ship'||!T.alive)return;if(T.role==='frigate'){if(T.shield>T.st.sCap*.05){if(m.src===W.player)flash('The torpedo splashed on its shields. Strip them first.');return}T.cjam=(T.cjam||0)+capJamFill(T);T.cjamT=W.t;
     if(T.cjam>=1){T.cjam=0;T.jamOff=W.t+(T.cls==='escort'?20:15);T.jamHard=T.jamOff+60;fxBoom(T,T.st.radius*.6,'#b7c6ff');if(W.player&&d3(T,W.player)<6000)SFX.capDark();if(m.src===W.player)flash(`${T.tok?T.tok.name:'The capital'} is jammed dark: turrets, launches and jump drive offline for ${Math.round(T.jamOff-W.t)} s. Hook its store (hold ${kb('act')}).`,true)}

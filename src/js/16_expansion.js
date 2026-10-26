@@ -702,3 +702,13 @@ function aiCarSortie(){if(NET.cl||!S||S.training)return;for(const t of S.frigate
 function lairEvict(L){if(!NET.host||!L||!L.pid||isMe(L.pid))return;const P=S.pilots&&S.pilots[L.pid];if(!P||P.docked!=='lair'||P.lairId!==L.id)return;P.docked=null;P.lairId=null;
   const c=readyCl().find(x=>x.pid===L.pid);try{spawnRP(L.pid)}catch(e){}if(c){send(c.L,{t:'kick'});sendPR(c,false,true)}netRoster()}
 {const o=spawnRP;spawnRP=function(pid){const e=o.apply(this,arguments);const P=S.pilots&&S.pilots[pid];if(e&&P&&P.jamMode&&S.unb)e.jamMode=true;return e}}   // a guest's jam mode survives docking and respawning
+
+// a live siege lands the assault loads its strike group carries (ev.force), as it does off-screen
+function siegeAssault(sid,side,g,use){const need={};for(const k in ASSAULT_LD)need[k]=ASSAULT_LD[k]*g;const ev=(S.events||[]).find(v=>v.type==='offensive'&&v.st===sid&&sideNorm(v.att)===side&&v.stage!=='done'&&haveIn(need,[v.force||{}]));if(!ev)return false;
+  if(use){const s=S.sectors[sid];for(let i=0;i<g;i++)if(Math.random()<ASSAULT.depotLoss){const got={};takeFrom(ASSAULT_LD,[ev.force]);inv.addAll(got,ASSAULT_LD);toDebris(s,got)}}return true}
+
+// hostility with a guest's ship in an Unbound galaxy: a guest pilot is Unbound like the host (side 'pirate' on the host), so the
+// host's player rules apply to them, with their own false colours (unbCoverP), not the host's
+function hostE(a,e){if(e&&e.rp&&S.unb){if(a==='player'||a==='pirate'||a==='neutral')return false;if(a==='brood')return true;if(FAC_IDS.includes(a))return!unbCoverP(S.pilots&&S.pilots[e.rp],a);}return hostile(a,e&&e.side)}
+// an attack (missile, laser) from a source on a target: guest targets as above; a guest's weapons hit the Brood as the host's do
+function hostAt(side,src,e){if(e&&e.rp&&S.unb)return hostE(side,e);if(src&&src.rp&&S.unb&&e&&e.side==='brood')return true;return hostile(side,e&&e.side)}
