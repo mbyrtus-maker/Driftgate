@@ -174,10 +174,10 @@ function coalTick(){const n=controlCounts();let lead=null,best=0;for(const k in 
   const C=S.coal,pf=S.player.faction,nb=n.brood||0;
   if(nb>=ACCORD_ON&&!(C&&C.lead==='brood')){S.ffa=null;S.coal={lead:'brood',mem:[...FAC_IDS],since:S.T,accord:1};if(running&&!STRAT_SIM())SFX.accord();feed(`⚠ The Containment Accord: the Brood holds ${nb} systems. Halcyon, Varkesh and Ostrova stop fighting each other everywhere and turn their fleets on the Bloom until it is pushed back below ${ACCORD_OFF}.`,'bad');return}
   // a faction passing the truce's leader while that leader still holds 7 breaks the truce: a free-for-all, and the leader's
-  // clock holds its count (paused) until one of them gives way (the leader drops under 7, or nobody is ahead of it any more)
-  if(S.ffa){const F=S.ffa;if((n[F.by]||0)>(n[F.hold]||0)&&(n[F.hold]||0)>=VIC_NEED)return;S.ffa=null;feed((n[F.hold]||0)>=VIC_NEED?`${sideName(F.hold)} is level again at ${n[F.hold]} systems: its clock runs again.`:`${sideName(F.hold)} has dropped to ${n[F.hold]||0} systems: the free-for-all is over.`,'news')}
+  // clock keeps running until one of them gives way (the leader drops under 7, or nobody is ahead of it any more)
+  if(S.ffa){const F=S.ffa;if((n[F.by]||0)>(n[F.hold]||0)&&(n[F.hold]||0)>=VIC_NEED)return;S.ffa=null;feed((n[F.hold]||0)>=VIC_NEED?`${sideName(F.hold)} is level again at ${n[F.hold]} systems: the truce against it re-forms.`:`${sideName(F.hold)} has dropped to ${n[F.hold]||0} systems: the free-for-all is over.`,'news')}
   if(C&&C.lead!=='brood'&&(n[C.lead]||0)>=VIC_NEED){let by=null;for(const k of FAC_IDS)if(k!==C.lead&&(n[k]||0)>(n[C.lead]||0)&&(!by||n[k]>n[by]))by=k;
-    if(by){S.coal=null;S.ffa={by,hold:C.lead,T:S.T};feed(`⚔ ${sideName(by)} has passed ${sideName(C.lead)}, ${n[by]} systems to ${n[C.lead]}: the truce is broken and it's every faction for itself. ${sideName(C.lead)}'s clock holds where it is until one of them gives way.`,by===pf||C.lead===pf?'warn':'news');return}}
+    if(by){S.coal=null;S.ffa={by,hold:C.lead,T:S.T};feed(`⚔ ${sideName(by)} has passed ${sideName(C.lead)}, ${n[by]} systems to ${n[C.lead]}: the truce is broken and it's every faction for itself. ${sideName(C.lead)}'s clock keeps running.`,by===pf||C.lead===pf?'warn':'news');return}}
   if(C){const m=n[C.lead]||0;if(C.lead==='brood'?m<ACCORD_OFF:m<=VIC_NEED-2){S.coal=null;feed(`The truce against ${C.lead==='brood'?'the Brood':FACTIONS[C.lead].short} has collapsed: ${m} systems is no longer a threat. ${coalNames(C.mem)} go back to their own wars.`,'news')}
     else if(C.lead==='brood'||!(lead&&lead!==C.lead&&best>=VIC_NEED&&best>m&&m<VIC_NEED))return}   // the truce stays on its leader while that leader still holds 7
   if(S.victory&&S.victory.side!=='brood'&&(n[S.victory.side]||0)===best)lead=S.victory.side;   // a tie: the truce goes after the side on the clock
@@ -201,8 +201,8 @@ function broodWatch(n){const b=n.brood||0,w=S.broodWarn||0;if(b<w){S.broodWarn=b
   const msg=b>=VIC_NEED?`⚠ The Brood holds ${b} systems. If it keeps ${VIC_NEED} for ${Math.round(WIN_TIME/60)} minutes, the galaxy is lost.`:`⚠ The Brood has spread to ${b} systems: ${VIC_NEED-b} more and it starts the clock on the galaxy. Kill its Seeders and burn its nodes.`;
   allFeed(msg,'bad');if(running&&!NET.cl){flash(msg,true);try{SFX.accord()}catch(e){}}}
 function victoryTick(){if(deadlineTick())return;const n=controlCounts(),need=VIC_NEED;broodWatch(n);const dtV=S.T-(S.vicLastT==null?S.T:S.vicLastT);S.vicLastT=S.T;
-  // free-for-all: the clock holds its count
-  if(S.ffa){if(S.victory)S.victory.since+=dtV;return}
+  // free-for-all: the leader's clock keeps running (it stays with the leader while it holds 7)
+  if(S.ffa&&S.victory&&S.victory.side===S.ffa.hold){if(S.T-S.victory.since>=WIN_TIME)galaxyWon(S.ffa.hold);return}
  let lead=null;for(const k in n)if(n[k]>=need&&(!lead||n[k]>n[lead]))lead=k;
   // two sides over the line at once: the side already holding keeps its clock unless the other clearly has more
   if(lead&&S.victory&&S.victory.side!==lead&&(n[S.victory.side]||0)>=need&&(n[S.victory.side]||0)>=n[lead])lead=S.victory.side;
