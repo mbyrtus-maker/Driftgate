@@ -8423,6 +8423,19 @@ function outLockSync(sid,quiet){const id=OUT_BY_SECTOR[sid],o=id&&S.outposts[id]
 {const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{if(!NET.cl)for(const sid in S.stations)outLockSync(sid)}catch(e){frameErr('outpost owners',e)}return r}}
 {const o=updateEvents;updateEvents=function(){const r=o.apply(this,arguments);try{if(!NET.cl&&S)for(const sid in S.stations)outLockSync(sid)}catch(e){}return r}}   // a depot finished or taken by an event hands over its outpost at once
 
+// ============================================================ the Brood takes a system whole (Oct 2026)
+// When the Brood takes a system's outpost it razes every other station there (a freeport included; a core station can't fall)
+// and roots a Bloom Node of its own if its stores hold one; a node it grows next to a faction outpost takes that outpost with it
+// (outLockSync). To take a Brood system back, everything Brood has to go: storming a Brood outpost burns the Bloom off it and
+// leaves it empty (claim it afterwards), and nothing can be built or claimed while a Brood node or outpost stands there.
+function broodTakeover(sid){const R=S.stations[sid];if(R&&R.owner!=='brood'&&R.kind!=='core'&&R.kind!=='haven')razeStation(sid,'brood');
+  if(!S.stations[sid]&&DEF[sid].kind!=='hive'&&haveIn(DEPOT_COST,[S.econ.stock.brood||{}])){takeFrom(DEPOT_COST,[S.econ.stock.brood]);const N=makeStation(sid,'brood','depot',stationSite(sid),{...DEPOT_COST});
+    if(WORLDS[sid])inW(WORLDS[sid],()=>{if(!W.stationEnt)addStationEnt(N)});if(covered(sid)||S.player.sector===sid)feed(`⚠ The Brood has rooted a Bloom Node in ${DEF[sid].name}: the system is theirs until everything they built there is burned out.`,'bad')}
+  outLockSync(sid)}
+{const o=capture;capture=function(ob,side){const prev=ob&&ob.owner,burn=prev==='brood'&&side!=='brood';let r;if(burn){const m0=MUTE;MUTE=true;try{r=o.apply(this,arguments)}finally{MUTE=m0}}else r=o.apply(this,arguments);try{if(!ob)return r;
+    if(side==='brood'&&ob.owner==='brood')broodTakeover(ob.sector);
+    else if(prev==='brood'&&ob.owner&&ob.owner!=='brood'){const by=ob.owner;ob.owner=null;if(ob.cap)ob.cap.p=0;if(by==='player'||friendSide(sideNorm(by))||covered(ob.sector))feed(`🔥 The Bloom has been burned off ${ob.name}: it stands empty. Claim it with a beacon (or let an assault take it) to hold it.`,friendSide(sideNorm(by))||by==='player'?'good':'news')}}catch(e){frameErr('brood takeover',e)}return r}}
+
 //@src 17_main.js
 // ============================================================ main loop
 let last=performance.now(),hudT=0,saveT=0,mapT=0;
