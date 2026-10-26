@@ -1,6 +1,6 @@
 //@src 09_input.js
 // ============================================================ input
-const keys={},mouse={x:0,y:0,l:false,r:false,aim:false,in:false},touch={on:false,ox:0,oy:0,dx:0,dy:0,id:null,fire:false,mine:false,boost:false,thrust:false};
+const keys={},mouse={x:0,y:0,l:false,r:false,aim:false,in:false,free:false},touch={on:false,ox:0,oy:0,dx:0,dy:0,id:null,fire:false,mine:false,boost:false,thrust:false};
 let coarse=matchMedia('(pointer:coarse)').matches,touchLast=coarse;
 // prompts and the steering ring follow the input you used last: keys or the mouse mean keyboard wording, a tap means touch
 function touchUI(){return touchLast&&!touchOff}
@@ -17,7 +17,7 @@ const KEY_ACTS=[
  ['Targets',[['tgtH','KeyT','Nearest hostile'],['cycleH','KeyQ','Cycle hostiles, nearest first'],['ahead','KeyG','The ship closest to your nose'],['ast','KeyR','Nearest rock (again: rescan it)'],['cycle','Tab','Cycle all targets, gates included (Shift+Tab: backwards)'],['assist','KeyY','Whoever is attacking a friendly']]],
  ['Command',[['comms','KeyI','Comms: Command, then the friendly ships nearby'],['distress','KeyU','Distress call'],['op','KeyO','Join the top friendly operation'],['orders','KeyP','Sign on to the picked order (Shift: pick the next)'],['stealth','KeyK','Wraith stealth, or Unbound false colours']]],
  ['Screens',[['map','KeyM','Galaxy map'],['help','KeyH','This manual'],['cam','KeyV','Chase or cockpit camera'],['sound','KeyN','Sound: all on, music off, muted'],['touch','Backquote','Show or hide touch buttons']]]];
-const KEY_FIXED=[['Mouse','Steer: the further from the centre ring, the harder you turn'],['Arrows','Pitch and yaw without the mouse'],['Shift','Afterburner'],['Click','Target a ship, or a row in Contacts'],['Wheel','Chase camera distance'],['Esc','Close a screen'],['F11','Full screen']];
+const KEY_FIXED=[['Mouse','Steer: the further from the centre ring, the harder you turn'],['Arrows','Pitch and yaw without the mouse'],['Shift','Afterburner'],['Click','Target a ship, or a row in Contacts'],['Wheel','Chase camera distance'],['Esc','Close a screen; in flight, free the mouse cursor (the ship holds its heading). Esc again to steer'],['F11','Full screen']];
 const KEY_DEF={};for(const[,L]of KEY_ACTS)for(const[id,code]of L)KEY_DEF[id]=code;
 let KEYB={};try{KEYB=JSON.parse(localStorage.getItem('driftgate.keys')||'{}')||{}}catch(e){KEYB={}}
 let KEY_P2D={},KEY_AWAY=new Set();
@@ -58,7 +58,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(c)&&running)e.preventDefault();
   if(keys[c])return;keys[c]=true;
   if(!running)return;
-  if(c==='Escape'){if(!$('sndPop').hidden){sndPanel(false);return}if(commsOpen()){closeComms();return}if(W&&W.bridge&&W.bridge.panel){closeConsole();return}closeSheets();return}
+  if(c==='Escape'){if(!$('sndPop').hidden){sndPanel(false);return}if(commsOpen()){closeComms();return}if(W&&W.bridge&&W.bridge.panel){closeConsole();return}if(running&&W&&!W.dead&&S.player&&!S.player.docked&&$('help').hidden&&$('map').hidden){mouseFreeToggle();return}closeSheets();return}
   if(c==='KeyM'){toggleMap();return}
   if(c==='KeyH'||c==='Slash'){toggleSheet('help');return}
   if(!$('map').hidden||!$('help').hidden)return;
@@ -99,7 +99,7 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=f
 const glc=$('gl');
 glc.addEventListener('mousemove',e=>{if(lookLocked()&&!(W&&(W.bridge||W.gunseat))){freeLook();return}if(lookLocked()&&W){const k=.0024;if(W.bridge&&!W.bridge.panel){W.bridge.yaw-=e.movementX*k;W.bridge.pitch=clamp(W.bridge.pitch-e.movementY*k,-1.2,1.2);return}if(W.gunseat){W.gunseat.yaw=wrapA(W.gunseat.yaw-e.movementX*k);W.gunseat.pitch=clamp(W.gunseat.pitch-e.movementY*k,GT_MINP,GT_MAXP);return}}mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});
 glc.addEventListener('mouseleave',()=>{mouse.in=false});
-glc.addEventListener('mousedown',e=>{if(W&&((W.bridge&&!W.bridge.panel)||W.gunseat)&&!lookLocked()&&glc.requestPointerLock){try{glc.requestPointerLock()}catch(er){}if(W.bridge&&!W.bridge.seat)return}if(lookLocked()&&W&&(W.bridge||W.gunseat)){if(W.bridge&&!W.bridge.panel&&e.button===0){bridgeClickTarget();return}if(e.button===0)mouse.l=true;return}mouse.x=e.clientX;mouse.y=e.clientY;mouse.in=true;if(e.button===0){mouse.l=true;clickTarget()}if(e.button===2)mouse.r=true;if(e.button===1){e.preventDefault();fireMissile()}});
+glc.addEventListener('mousedown',e=>{if(mouse.free&&!(W&&(W.bridge||W.gunseat))){mouse.x=e.clientX;mouse.y=e.clientY;mouse.in=true;if(e.button===0)clickTarget();return}if(W&&((W.bridge&&!W.bridge.panel)||W.gunseat)&&!lookLocked()&&glc.requestPointerLock){try{glc.requestPointerLock()}catch(er){}if(W.bridge&&!W.bridge.seat)return}if(lookLocked()&&W&&(W.bridge||W.gunseat)){if(W.bridge&&!W.bridge.panel&&e.button===0){bridgeClickTarget();return}if(e.button===0)mouse.l=true;return}mouse.x=e.clientX;mouse.y=e.clientY;mouse.in=true;if(e.button===0){mouse.l=true;clickTarget()}if(e.button===2)mouse.r=true;if(e.button===1){e.preventDefault();fireMissile()}});
 addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;if(e.button===2)mouse.r=false});
 glc.addEventListener('contextmenu',e=>e.preventDefault());
 glc.addEventListener('wheel',e=>{e.preventDefault();cam.dist=clamp(cam.dist*Math.exp(e.deltaY*.0012),.6,3)},{passive:false});
@@ -237,3 +237,8 @@ function orderThink(e,dt){const o=e.order,T=o.tgt,ai=e.ai;
   else{const a=n*Math.PI/2+W.t*.18,Rg=rr+330;holdSlot(e,T,T.x+Math.cos(a)*Rg,T.y+Math.sin(n*1.9+W.t*.1)*90,T.z+Math.sin(a)*Rg,dt,1.2);const v=hyp(e.vx-T.vx,e.vy-T.vy,e.vz-T.vz);if(v>12)faceDir(e,e.vx-T.vx,e.vy-T.vy,e.vz-T.vz,dt);else faceTo(e,T,dt)}
   return true}
 function clickTarget(){if(!W||S.player.docked)return;let best=null,bd=1e9;for(const t of targetables()){const r=t.ref,P=proj(r.x,r.y,r.z);if(P.behind)continue;const pr=projR(P.d,tRad(t)),d=hyp(P.x-mouse.x,P.y-mouse.y);if(d<Math.max(16,pr+6)&&d<bd){bd=d;best=t}}if(best)W.tgt=best}
+
+// ---- a free mouse cursor: Esc in flight stops the mouse steering, so the pointer can go to the HUD, another window or
+// another tab while the ship holds its heading (keys still fly it). A click only picks targets. Esc again to steer.
+function mouseFreeToggle(on){mouse.free=on===undefined?!mouse.free:!!on;mouse.l=mouse.r=false;freeLook();const g=$('gl');if(g)g.style.cursor=mouse.free?'default':'';
+  flash(mouse.free?'Mouse cursor free: the ship holds its heading and keys still fly it. Esc to steer with the mouse again.':'Mouse steering back on.')}

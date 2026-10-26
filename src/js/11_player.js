@@ -3,7 +3,7 @@
 function steerInput(){
   let yaw=0,pitch=0;
   if(touch.on){const m=hyp(touch.dx,touch.dy);if(m>8){yaw=-clamp(touch.dx/80,-1,1);pitch=clamp(touch.dy/80,-1,1)}}
-  else if(mouse.aim&&mouse.in&&$('map').hidden&&$('help').hidden){const sc=Math.min(VW,VH)*.42,dz=.07;let mx=(mouse.x-VW/2)/sc,my=(mouse.y-VH/2)/sc;const m=hyp(mx,my);
+  else if(mouse.aim&&mouse.in&&!mouse.free&&$('map').hidden&&$('help').hidden){const sc=Math.min(VW,VH)*.42,dz=.07;let mx=(mouse.x-VW/2)/sc,my=(mouse.y-VH/2)/sc;const m=hyp(mx,my);
     if(m<dz){mx=my=0}else{const s=Math.min(1,(m-dz)/(1-dz)),k=Math.pow(s,1.35)/m;mx*=k;my*=k}yaw=-mx;pitch=my}
   if(keys.ArrowLeft)yaw+=1;if(keys.ArrowRight)yaw-=1;if(keys.ArrowUp)pitch-=1;if(keys.ArrowDown)pitch+=1;
   return{yaw:clamp(yaw,-1,1),pitch:clamp(pitch,-1,1)};
@@ -76,7 +76,7 @@ function pbuildTick(dt){const B=W.pbuild;if(!B)return;if((B.pid||NET.me)!==(CTX|
 function playerUpdate(dt){
   const p=W.player,P=S.player,st=p.st;pbuildTick(dt);if(P.docked&&P.docked!=='turret')P.limpetUsed=false;if(P.docked||W.dead)return;if(jamDark(p)){p.boosting=false;p.thrusting=false;return}
   if(p.landed){landedTick(dt);updateLock(dt);return}
-  if(apOn){const man=keys.KeyW||keys.KeyS||keys.KeyA||keys.KeyD||keys.ArrowLeft||keys.ArrowRight||keys.ArrowUp||keys.ArrowDown||touch.on||(mouse.in&&mouse.aim&&hyp(mouse.x-VW/2,mouse.y-VH/2)>Math.min(VW,VH)*.42*.25);
+  if(apOn){const man=keys.KeyW||keys.KeyS||keys.KeyA||keys.KeyD||keys.ArrowLeft||keys.ArrowRight||keys.ArrowUp||keys.ArrowDown||touch.on||(mouse.in&&mouse.aim&&!mouse.free&&hyp(mouse.x-VW/2,mouse.y-VH/2)>Math.min(VW,VH)*.42*.25);
     if(man){apOn=false;flash('Autopilot off.')}else{p.wx=p.wy=p.wz=0;autopilot(p,dt);levelRoll(p,dt);if(keys.Space||mouse.l||touch.fire){if(P.wpn==='laser'&&!p.jamMode)fireLaser(p);else fire(p)}updateLock(dt);pickupAndGates(p,P,st);return}}
   const trk=keys.KeyZ&&W.tgt&&validTgt(W.tgt);
   const si=trk?{yaw:0,pitch:0}:steerInput();let roll=0;if(keys.KeyA)roll-=1;if(keys.KeyD)roll+=1;
