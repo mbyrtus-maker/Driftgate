@@ -272,7 +272,7 @@ function pirBarred(){return W&&DEF[W.sid]&&DEF[W.sid].home&&!frigatesIn(W.sid).s
 {const o=frigHop;frigHop=function(t){if(t&&t.side==='pirate'&&!t.jumpTo&&t.dest&&t.dest!==t.sector&&HOPP[t.dest]){let best=null,bh=99;for(const n of NEIGH[t.sector]){if(!PIR_OK.has(n))continue;const h=HOPP[t.dest][n];if(h!==undefined&&h<bh){bh=h;best=n}}return best}return o.apply(this,arguments)}}
 {const o=frigOrders;frigOrders=function(t){if(t&&t.side==='pirate')return pirOrders(t);return o.apply(this,arguments)}}
 const PIR_KIT={plate:9,wire:6};   // a capital refits at the haven when its stores can't fit one more raid
-function pirOrders(t){const hp=t.hull/capHullMax(t);if(hp<.55||(isCar(t)&&(t.wing||[]).length<2&&t.sector!=='wr'))return'wr';if(t.sector!=='wr'&&!haveIn(PIR_KIT,[t.store||{}]))return'wr';let best='wr',bs=-1e9;const from=HOPP[t.sector]||HOPP.wr;
+function pirOrders(t){const hp=t.hull/capHullMax(t);if(hp<.55||(isCar(t)&&(t.wing||[]).length<2&&t.sector!=='wr'))return'wr';if(t.sector!=='wr'&&!haveIn(PIR_KIT,[t.store||{}])&&haveIn(PIR_KIT,[S.econ.stock.pirate||{}]))return'wr';   // refit only if the haven can actually supply itlet best='wr',bs=-1e9;const from=HOPP[t.sector]||HOPP.wr;
   const lanes=(S.traders||[]).filter(x=>x.kind==='haul'&&FAC_IDS.includes(x.side)&&x.side!=='brood').map(x=>x.path.slice(x.leg));
   for(const sid of PIR_OK){const h=from[sid];if(h===undefined||h>3)continue;let sc=-.8*h+rnd(0,1.2);const d=DEF[sid],Rs=S.stations[sid];
     if(Rs&&FAC_IDS.includes(Rs.owner)&&Rs.kind==='depot')sc+=(isCar(t)?3.5:2.2)+(edgeDepot(Rs)?.8:0);if(d.home)sc-=.6;
@@ -405,7 +405,7 @@ function raidSources(side){const L=[];if(side==='pirate'){const H=S.stations.wr;
     for(const t of pirCaps())if(!t.jumpTo)L.push({sid:t.sector,srcs:[t.store=t.store||{}],cap:t.id,reach:RAID.reachCap,deep:true});return L}
   const srcs=[S.econ.fleet[side],S.econ.stock[side]].filter(Boolean);for(const id in S.stations){const R=S.stations[id];if(R.owner===side&&R.kind!=='haven')L.push({sid:id,srcs,cap:null,reach:RAID.reach,deep:true})}return L}
 // the first system on a convoy's route a raid from sid can reach before the convoy does
-function raidIntercept(src,t){const left=t.path.length-1-t.leg,eta0=Math.max(0,t.next-S.T),core=FAC_HOME(t.side);
+function raidIntercept(src,t){const left=t.path.length-1-t.leg,eta0=Math.max(0,t.next-S.T),core=homeOf(t.side);
   for(let i=t.live?1:0;i<=left;i++){const c=t.path[t.leg+i];if(c===core||DEF[c].kind==='hive')continue;if(!src.deep&&!PIR_OK0.has(c))continue;if(src.cap&&!PIR_OK.has(c))continue;const h=HOP[src.sid][c];if(h>src.reach)continue;
     const eta=i?eta0+(i-1)*TRADER_HOP:0;if(h*RAID.hop>eta+RAID.slack)continue;if(i===0&&h>0)continue;return{c,i,h}}return null}
 function raidTaken(t){return(S.raids||[]).some(r=>r.tgt===t.id)}
@@ -422,7 +422,7 @@ function raidSend(side,pk,kit){const src=pk.src,r={id:S.nextId++,side,src:src.si
   const t=r.tgt&&(S.traders||[]).find(x=>x.id===r.tgt);if(t&&t.esc)keyFeed(t.esc.k,`⚠ ${raidWho(side)} raiders are moving to intercept the convoy you're escorting. Expect them in ${DEF[r.dest].name}.`,'warn');
   if(r.dep&&friendSide(S.stations[r.dep].owner))feed(`⚠ An ${raidWho(side)} raiding party has been seen heading for ${S.stations[r.dep].name}.`,'warn');
   if(WORLDS[r.sector])inW(WORLDS[r.sector],()=>raidSpawn(r,false));else if(r.path.length===1)raidArrive(r);return r}
-function raidDispatch(){S.raids=S.raids||[];for(const side of[...FAC_IDS,'pirate']){const kind=side==='pirate'?'pirate':side==='brood'?'brood':'fac',mine=S.raids.filter(r=>r.side===side);if(mine.length>=RAID.max[kind])continue;
+function raidDispatch(){S.raids=S.raids||[];for(const side of[...FAC_IDS,'brood','pirate']){const kind=side==='pirate'?'pirate':side==='brood'?'brood':'fac',mine=S.raids.filter(r=>r.side===side);if(mine.length>=RAID.max[kind])continue;
     if(S.T<300)continue;const srcL=raidSources(side).filter(s=>!mine.some(r=>r.src===s.sid&&S.T-r.T0<RAID.cool));if(!srcL.length)continue;
     // escorted convoys draw raiders more often; an Unbound capital on the hunt launches far more often than the haven
     let p=RAID.rate[kind];if(side==='pirate'&&srcL.some(s=>s.cap))p=RAID.rate.cap;if((S.traders||[]).some(t=>t.esc&&hostile(side,t.side)&&!raidTaken(t)&&srcL.some(s=>raidIntercept(s,t))))p+=RAID.esc;if(Math.random()>=p)continue;
@@ -473,6 +473,7 @@ function raidSpawn(r,arrive){if(r.live||!W)return;const side=r.side,prev=arrive?
 {const o=returnHome;returnHome=function(e){if(typeof e.home==='string'&&e.home.startsWith('raid:')&&e.rsh&&e.role!=='drone'){const r=raidOf(+e.home.split(':')[1]);if(r)r.back.push(e.rsh)}return o.apply(this,arguments)}}
 // per frame in an open system: hold by the convoy's entry gate, go for the freighter when it shows, then leave by the right gate
 function raidGoal(r){const gt=to=>W.ents.find(x=>x.type==='gate'&&x.to===to);
+  if(r.state==='home'&&r.dest===W.sid)return{dock:1};   // home: the raiders put in and unload
   if(r.state==='home'||(r.state==='out'&&r.dest!==W.sid))return{gate:gt(r.path[r.leg+1])||null};
   if(r.dep){const SE=W.stationEnt;return SE?{hold:SE,R:900}:{gate:null}}
   const t=(S.traders||[]).find(x=>x.id===r.tgt);if(!t)return{gate:null};const T=W.ents.find(x=>x.alive&&x.home===`trader:${t.id}:${t.side}`);if(T)return{hunt:T};
@@ -480,6 +481,7 @@ function raidGoal(r){const gt=to=>W.ents.find(x=>x.type==='gate'&&x.to===to);
 function raidLiveFrame(){for(const id in W.groups){const g=W.groups[id];if(!g.raid)continue;const r=raidOf(g.raid),al=grpAlive(g);if(!r||!r.live){for(const m of al)m.role='leave';continue}if(g.fleeing)continue;
     if(r.dep&&r.state!=='home'&&r.dest===W.sid&&W.stationEnt&&S.T-r.liveT>RAID.liveDep&&al.length>=2){const R=S.stations[r.dep];if(R&&isDepotF(R)){inv.addAll(r.loot,raidGrab(dStore(R),RAID.carryDep,.4));if(friendSide(R.owner))feed(`⚠ ${raidWho(r.side)} raiders looted ${R.name} and are pulling out.`,'bad')}raidHome(r)}
     const G=raidGoal(r);
+    if(G.dock){for(const m of al){fxWarp(m,sideCol(m.side));despawn(m)}continue}
     if(G.hunt){for(const m of al){m.ai.hunt=G.hunt;m.ai.huntUntil=W.t+30;if(!m.ai.tgt)m.ai.tgt=G.hunt}continue}
     if(G.gate===null&&!G.hold){if(r.state!=='home')raidHome(r);continue}
     const L=grpLead(g);if(!L)continue;
@@ -491,6 +493,7 @@ function raidLiveCheck(r){const w=WORLDS[r.sector];const al=w?w.ents.filter(e=>e
   r.live=false;r.ships=r.back.slice();r.back=[];if(!r.ships.length){raidWipe(r,r.sector,null);return}if(r.ships.length<2&&r.state!=='home')raidHome(r);
   if(r.state==='home'){if(r.leg>=r.path.length-1){raidUnload(r);return}r.leg++;r.sector=r.path[r.leg];r.next=S.T+RAID.hop;if(WORLDS[r.sector])inW(WORLDS[r.sector],()=>raidSpawn(r,true));return}
   if(r.state==='out'&&r.dest!==r.sector){r.leg++;r.sector=r.path[r.leg];r.next=S.T+RAID.hop;if(WORLDS[r.sector])inW(WORLDS[r.sector],()=>raidSpawn(r,true));else if(r.leg>=r.path.length-1)raidArrive(r);return}
+  if(r.state!=='home'&&r.dest===r.sector&&raidStillOn(r)){r.state='wait';r.until=S.T+RAID.wait;raidCatch(r);return}   // the system closed while they waited: keep waiting out of sight
   raidHome(r)}
 {const o=groupsUpdate;groupsUpdate=function(){const x=o.apply(this,arguments);try{if(!NET.cl&&S&&S.raids&&S.raids.length)raidLiveFrame()}catch(e){frameErr('raid frame',e)}return x}}
 {const o=openWorld;openWorld=function(sid){const w=o.apply(this,arguments);if(!NET.cl&&S&&S.raids)inW(w,()=>{for(const r of S.raids.slice()){if(r.sector!==sid)continue;if(r.live){r.live=false;if(!r.back.length){raidWipe(r,sid,null);continue}r.ships=r.back;r.back=[]}raidSpawn(r,false)}});return w}}
@@ -550,10 +553,10 @@ function ujobHit(T,how){if(!S.unb||!T)return;for(const j of ujobs().slice()){if(
 let ujPick=null;
 function ujList(){return ujobs().slice().sort((a,b)=>(b.on?1:0)-(a.on?1:0))}
 function ujStat(j){if(j.kind==='mine')return`${j.n}/${j.need} miners · ${DEF[j.sid].name}`;const t=(S.traders||[]).find(x=>x.id===j.tgt);return t?`now ${DEF[t.sector].name} → ${DEF[t.to].name} · meet it in ${DEF[j.at].name}`:'gone'}
-function ujobKey(next){const L=ujList();if(!L.length){flash('No haven jobs right now. They come over the wire every few minutes.',true);return}let i=Math.max(0,L.findIndex(j=>j.id===ujPick));
+function ujobKey(next){if(NET.cl){flash('Haven jobs are taken by the galaxy host for now.',true);return}const L=ujList();if(!L.length){flash('No haven jobs right now. They come over the wire every few minutes.',true);return}let i=Math.max(0,L.findIndex(j=>j.id===ujPick));
   if(next){if(L.length<2){flash('That is the only job right now.');ujPick=L[0].id;return}i=(i+1)%L.length;ujPick=L[i].id;flash(`Job ${i+1} of ${L.length}: ${L[i].title}. Press P to take it.`);return}
   const j=L[i];ujPick=j.id;if(!j.on){if(ujobs().filter(x=>x.on).length>=2){flash('You already have two jobs on. Finish one first.',true);return}j.on=1;j.until=S.T+(j.kind==='mine'?UJOB.mine.T:UJOB.icpt.T);feed(`☠ Job taken: ${j.title}. ${j.kind==='mine'?`Rob or kill ${j.need} ${FACTIONS[j.f].short} miners in ${DEF[j.sid].name}.`:'Rob it or kill it.'} Pays ${fmt(j.pay)} cr and Infamy.`,'good');SFX.count&&SFX.count(true)}ujobCourse(j)}
-function ujobHud(el){const L=ujList(),si=Math.max(0,L.findIndex(j=>j.id===ujPick));let h=`<div class="ot" style="border-color:${sideCol('pirate')}"><span>Haven jobs</span><b>${L.filter(j=>j.on).length} on</b></div>`;
+function ujobHud(el){if(NET.cl){el.hidden=true;return}const L=ujList(),si=Math.max(0,L.findIndex(j=>j.id===ujPick));let h=`<div class="ot" style="border-color:${sideCol('pirate')}"><span>Haven jobs</span><b>${L.filter(j=>j.on).length} on</b></div>`;
   if(!L.length)h+=`<div class="om" style="color:var(--dim)">Nothing on the wire. Jobs come in every few minutes.</div>`;
   L.forEach((j,i)=>{const on=i===si;h+=`<div class="oi sd${on?' sel':''}"><div class="om"><i class="otg cmb">${j.kind==='mine'?'Disrupt':'Intercept'}</i>${esc(j.title)}</div><div class="os"><span>${esc(ujStat(j))} · ${fmtT(Math.max(0,j.until-S.T))} · ${fmt(j.pay)} cr</span><span class="${j.on?'ok':'go'}">${j.on?(on?'✓ P course':'✓'):on?'P · take':''}</span></div></div>`});
   if(L.length>1)h+=`<div class="onx"><kbd>⇧P</kbd> next job · ${si+1} of ${L.length}</div>`;el.hidden=false;if(el._h!==h){el._h=h;el.innerHTML=h}}

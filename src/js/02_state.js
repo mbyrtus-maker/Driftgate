@@ -58,7 +58,8 @@ function jamDark(e){return!!e&&(e.jamOff||0)>W.t}
 function gateLocked(e){return!!e&&(e.jam>0||jamDark(e)||!!(e.teth&&e.teth.until>W.t))}
 function jamWin(e){const c=e.cls;return c==='freighter'||c==='bulker'?12:c==='courier'||c==='skiff'||c==='prospector'||c==='dredger'?10:5}
 // jam rounds still knock shields down (at JAM.shK of the gun's damage, never into the hull); the jam bar only fills once they're gone
-function jamHit(e,b){e.lastHit=W.t;e.lastHitBy=b.side;if(e.shield>0){if(b.dmg>0&&b.src){damageShip(e,Math.min(b.dmg*JAM.shK,e.shield),b.side,b,'jam');if(e.shield>0)return}else{fxSpark(b,'#8fc8ff',3);return}}if(jamDark(e)||(e.jamHard||0)>W.t){fxSpark(b,'#b7c6ff',2);return}
+function jamHit(e,b){e.lastHit=W.t;e.lastHitBy=b.side;if(e.shield>0){if(b.dmg>0&&b.src){const a=Math.min(e.shield,b.dmg*JAM.shK);e.shield-=a;e.shHitT=W.t;e.shHitA=Math.min(1,a/(e.st.sCap*.25)+.35);fxSpark(b,'#8fc8ff',3);if(e.isPlayer){W.shHit=.35;SFX.shield&&SFX.shield()}
+    if(e.shield<=.01){e.shield=0;e.shBreakT=W.t;e.shDown=true;fxShieldBreak(e);if(e.isPlayer){flash('Shields down! Hold Shift to boost away.',true);SFX.shieldDown&&SFX.shieldDown()}}else return}else{fxSpark(b,'#8fc8ff',3);return}}if(jamDark(e)||(e.jamHard||0)>W.t){fxSpark(b,'#b7c6ff',2);return}
   if(!(e.jam>0)){ // the bar appears: a Snap-back emitter answers once a minute, freighters call for help, a pilot is warned
     if(e.st.snapBack&&!((e.snapT||0)>W.t)){e.shield=e.st.sCap*.3;e.snapT=W.t+60;fxSpark(e,'#8fc8ff',8);if(e.isPlayer)flash('Snap-back emitter: shields back to 30%. The jam is broken.',true);return}
     if(e.isPlayer)flash('Jammer on your hull! Get your shields back up or break away.',true);else if(e.npc&&(e.role==='hauler'||e.role==='miner')&&FACTIONS[e.side])distressCall(W.sid,`a ${FACTIONS[e.side].short} ${CLASSES[e.cls].name}`,e.side,b.side)}
