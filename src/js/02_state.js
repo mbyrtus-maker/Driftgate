@@ -263,7 +263,8 @@ function sortieTick(){for(const ev of S.events){if(ev.type!=='sortie'||ev.stage=
     // strike
     const sd=sortieSide(ev),w=WORLDS[ev.to];if(!ev.craft.length){ev.stage='done';sortieFeed(ev,`The strike on ${DEF[ev.to].name} was wiped out.`,'bad');continue}
     if(w){if(!ev.spawned){ev.spawned=1;inW(w,()=>{const g=GATES[ev.to].find(x=>x.to===ev.from)||pick(GATES[ev.to]);const TE=ev.tgt==='st'?W.stationEnt:W.ents.find(x=>x.tok&&'c'+x.tok.id===ev.tgt&&x.alive);
-        for(const c of ev.craft){const ld=carKit(c),got={};for(const k in ld){const m=Math.min(ld[k],ev.force[k]||0);if(m>0)got[k]=inv.take(ev.force,k,m)}const e=makeNPC('raider',sd,c,factionTier(sd),got,'ev:'+ev.id);e.fac=sd;e.sortieEv=ev.id;e.x=g.x*.93+rnd(-80,80);e.y=g.y*.93+rnd(-40,40);e.z=g.z*.93+rnd(-80,80);if(TE&&TE.type==='ship')e.ai.tgt=TE;fxWarp(e,sideCol(sd));W.ents.push(e)}})}}
+        for(const c of ev.craft){const ld=carKit(c),got={};for(const k in ld){const m=Math.min(ld[k],ev.force[k]||0);if(m>0)got[k]=inv.take(ev.force,k,m)}const sg=ev.tgt==='st'&&!isBmb(c),e=makeNPC(sg?'strike':'raider',sd,c,factionTier(sd),got,'ev:'+ev.id);if(sg)e.ai.siege=1;e.fac=sd;e.sortieEv=ev.id;e.x=g.x*.93+rnd(-80,80);e.y=g.y*.93+rnd(-40,40);e.z=g.z*.93+rnd(-80,80);if(TE&&TE.type==='ship')e.ai.tgt=TE;fxWarp(e,sideCol(sd));W.ents.push(e)}})}}
+    if(w&&ev.spawned)sortieLiveHit(ev,w,sd);
     else{if(ev.spawned)ev.spawned=0;   // the system closed: the craft's kits are back in ev.force; survivors are what's left in ev.craft
       const pw=ev.craft.reduce((a,c)=>a+crPow(c),0),k=pw/5,Rs=S.stations[ev.to],caps=frigatesIn(ev.to).filter(o=>hostile(sd,o.side));
       if(ev.tgt==='st'&&Rs&&hostileStationAt(ev.to,sd)){distressCall(ev.to,Rs.name,Rs.owner,sd);if(Rs.shield>0){const d=Math.min(Rs.shield,700*k);Rs.shield-=d;ev.dmg+=d}else{const d=rnd(320,420)*k;Rs.hull-=d;ev.dmg+=d;wkAbstractHit(ev.to,sd,.3)}
@@ -272,9 +273,24 @@ function sortieTick(){for(const ev of S.events){if(ev.type!=='sortie'||ev.stage=
       // the defences answer: station guns, hostile capitals' turrets and the local patrols
       const pl=.008+(Rs&&hostileStationAt(ev.to,sd)?(Rs.kind==='core'?.03:Rs.kind==='hive'?.025:.012):0)+.02*caps.length;
       for(let i=ev.craft.length-1;i>=0;i--)if(Math.random()<pl){const c=ev.craft.splice(i,1)[0],ld=carKit(c),got={};for(const kk in ld){const m=Math.min(ld[kk],ev.force[kk]||0);if(m>0)got[kk]=inv.take(ev.force,kk,m)}toDebris(S.sectors[ev.to],got);ev.lost++}}
+    sortieReport(ev,t);
     const broken=ev.craft.length*2<=(ev.n0||1);
     if(S.T>=ev.until||!sortieTgtLive(ev)||!t||broken){if(w&&ev.spawned)inW(w,()=>{for(const e of W.ents.slice())if(e.sortieEv===ev.id&&e.alive){fxWarp(e,sideCol(e.side));despawn(e)}});ev.spawned=0;ev.stage='back';ev.until=S.T+SORTIE.back;
-      sortieFeed(ev,!sortieTgtLive(ev)?`Strike on ${DEF[ev.to].name}: target down. The craft are heading back.`:broken?`Strike on ${DEF[ev.to].name}: half the craft are lost. The rest are breaking off.`:`Strike on ${DEF[ev.to].name} is over; the craft are heading back.`,broken?'warn':'info')}}}
+      sortieFeed(ev,!sortieTgtLive(ev)?(ev.tgt==='st'&&S.stations[ev.to]&&sideNorm(S.stations[ev.to].owner)===sd?`✔ Strike on ${DEF[ev.to].name}: ${S.stations[ev.to].name} captured. The craft are heading back.`:`✔ Strike on ${DEF[ev.to].name}: target down. The craft are heading back.`):broken?`Strike on ${DEF[ev.to].name}: half the craft are lost. The rest are breaking off.`:`Strike on ${DEF[ev.to].name} is over; the craft are heading back.`,broken?'warn':'info')}}}
+// live strike runs: the same damage per 10 s as off-screen, applied to the real station or capital, with hits shown on it
+function sortieLiveHit(ev,w,sd){const pw=ev.craft.reduce((a,c)=>a+crPow(c),0),k=pw/5;if(!pw)return;inW(w,()=>{
+  if(ev.tgt==='st'){const E=W.stationEnt;if(!E||!hostile(sd,E.fac))return;const d=E.shield>0&&!E.offline?700*k:rnd(320,420)*k;for(let i=0;i<3;i++)fxBoom({x:E.x+rnd(-90,90),y:E.y+rnd(-90,90),z:E.z+rnd(-90,90)},60,'#ffcf8a');damageStation(E,d,sd,'capital');ev.dmg+=d}
+  else{const T=W.ents.find(x=>x.tok&&'c'+x.tok.id===ev.tgt&&x.alive);if(T){const d=pw*rnd(40,70);fxBoom({x:T.x+rnd(-60,60),y:T.y+rnd(-40,40),z:T.z+rnd(-60,60)},60,'#ffcf8a');damageShip(T,d,sd,T,'capital');ev.dmg+=d}}})}
+// progress reports to the carrier's commander: the start, shields down, every craft lost, every 30 s, a broken hull and what the assault ships can do
+function sortieTgtState(ev){if(ev.tgt==='st'){const R=S.stations[ev.to];if(!R)return null;const w=WORLDS[ev.to],E=w&&w.stationEnt&&w.stationEnt.rec===R?w.stationEnt:null;const sh=E?E.shield:R.shield,sm=(E&&E.sMax)||R.sMax||1;return{sh:Math.max(0,sh)/sm,hull:Math.max(0,R.hull)/(R.hMax||1),R}}
+  const o=(S.frigates||[]).find(x=>'c'+x.id===ev.tgt);if(!o)return null;const w=WORLDS[o.sector],e=w&&w.ents.find(x=>x.tok===o&&x.alive);return{sh:e&&e.st&&e.st.sCap?Math.max(0,e.shield)/e.st.sCap:(o.shield||0)/(isCar(o)?CAR_SHIELD:1800),hull:Math.max(0,e?e.hull/e.st.hull:o.hull/capHullMax(o))}}
+function sortieReport(ev,t){const X=sortieTgtState(ev);if(!X)return;const r=ev.rep||(ev.rep={T:S.T,lost:0,sh:X.sh>0,hb:0}),nm=sortieTgtName(ev),pc=v=>Math.round(v*100)+'%',sd=sortieSide(ev);
+  const line=()=>`${ev.craft.length} of ${ev.n0||ev.craft.length} craft · shields ${pc(X.sh)} · hull ${pc(X.hull)} · ${fmtT(Math.max(0,ev.until-S.T))} left`;
+  if(!r.start){r.start=1;r.T=S.T;let a='';if(X.R&&X.R.kind==='depot'&&X.R.owner!=='brood'&&sd!=='brood'){const g=garrison(X.R),n=capLoads(ev.to,sd);a=n>=g?` Assault ships ready: ${n} (the depot needs ${g} once its hull breaks).`:` No assault ships in reach (needs ${g}): the strike can break the depot but not take it.`}sortieFeed(ev,`⚔ Strike on ${nm} begins: ${line()}.${a}`,'info');return}
+  if(ev.lost>r.lost){sortieFeed(ev,`⚔ Strike on ${nm}: ${ev.lost-r.lost} craft lost. ${line()}.`,'warn');r.lost=ev.lost;r.T=S.T;return}
+  if(r.sh&&X.sh<=0){r.sh=false;sortieFeed(ev,`⚔ Strike on ${nm}: shields down. ${line()}.`,'good');r.T=S.T;return}
+  if(X.R&&X.R.kind==='depot'&&X.hull*(X.R.hMax||1)<=1.5&&!r.hb){r.hb=1;const g=garrison(X.R),n=capLoads(ev.to,sd);sortieFeed(ev,n>=g?`⚔ Strike on ${nm}: hull broken. Assault ships going in.`:`⚔ Strike on ${nm}: hull broken, but no assault ships in reach to take it (needs ${g}). It holds and will repair.`,n>=g?'good':'warn');r.T=S.T;return}
+  if(S.T-r.T>=30){r.T=S.T;sortieFeed(ev,`⚔ Strike on ${nm}: ${line()}.`,'info')}}
 function wingPower(t){let p=0;for(const c of t.wing||[])p+=crPow(c);return p}
 // garrisons: assault loads needed to take a structure (never more than 3, so a full carrier or 3 ships in flight always suffice)
 function garrison(R){if(!R||R.kind!=='depot')return 99;if(R.fwd)return 1;const d=devOf(R);return Math.min(3,1+((d.def||0)>=2?1:0)+((d.hangar||0)>=2?1:0))}
