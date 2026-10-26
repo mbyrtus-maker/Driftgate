@@ -193,6 +193,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'act':{if(!(P.docked==='station'||P.docked==='lair'||(S.outposts&&S.outposts[P.docked])))break;const err=runAs(pid,()=>{dockErr='';dockAction(m.act,String(m.arg||''));return dockErr});send(L,{t:'actr',err});sendPR(c,false,true);send(L,syncMsg(c));break}
     case 'build':{const e=MP.rp[pid];if(e)runAs(pid,()=>{const had=W.pbuild;startPlayerBuild();if(W.pbuild&&W.pbuild!==had)W.pbuild.pid=pid});break}
     case 'plan':{const C=S.plans&&S.plans[P.faction],mv=C&&C.mv;if(mv&&mv.id===+m.id)campAccept(pid,mv);else{const o=C&&sideOf(C).find(x=>x.id===+m.id&&x.stage==='active');if(o)sideAccept(pid,o)}break}
+    case 'ujob':{if(S.unb)runAs(pid,()=>ujobTake(m.id));break}
     case 'hold':{const ev=S.events.find(v=>v.id===m.id);if(ev)ev.hold=Math.max(ev.hold||0,Math.min(+m.hold||0,S.T+240));break}
     case 'chat':{const t=String(m.m||'').slice(0,160);if(t)netChat(P.name,t,pid);break}
     case 'bye':{if(!P.docked)poseFrom(P,m);delete MP.cl[L.peer];pilotLeft(c);setTimeout(()=>linkClose(L,true),200);break}

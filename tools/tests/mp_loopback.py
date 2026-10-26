@@ -56,6 +56,14 @@ async def main():
     print('client sees:',await ev(C,"(()=>JSON.stringify({heat:S.player.heat,inf:S.player.inf,stolen:invMass(S.player.stolen||{}),xpdr:S.player.xpdr}))()"))
     # ledger on the host
     print('ledger:',await ev(H,"(()=>{const l=ledger();let bad=0;for(const e of RAWS)if(Math.abs(l.tot[e]-S.ledger0.tot[e])>1e-6)bad=1;return bad?'DRIFT':'exact'})()"))
+    # haven jobs: each pilot gets their own board; the guest takes one and is paid for it
+    print('jobs offered:',await ev(H,"(()=>{UJOB.chance=1;for(let i=0;i<90;i++){S.T+=10;strategicTick()}UJOB.chance=.25;if(!ujobs().some(j=>j.k==='clipid1'))ujobs().push({id:S.nextId++,k:'clipid1',kind:'mine',f:'halcyon',sid:'sh',need:2,n:0,pay:350,inf:25,until:S.T+240,title:'Disrupt Halcyon mining in The Shoal (test)'});for(const c of readyCl())send(c.L,syncMsg(c));const by={};for(const j of ujobs())by[j.k]=(by[j.k]||0)+1;return JSON.stringify({by,haul:(S.traders||[]).filter(t=>t.kind==='haul').length,err:(window.__dgErr||[]).map(x=>x.where+':'+x.msg).slice(-3)})})()"))
+    await C.wait_for_timeout(2500)
+    print('guest board:',await ev(C,"(()=>{const L=ujList();const el=document.getElementById('hOrd');campHud();return JSON.stringify({pk:pkey(),all:(S.ujobs||[]).map(j=>j.k),n:L.length,mine:L.every(j=>j.k==='clipid1'),hud:el&&!el.hidden&&el.innerText.slice(0,80)})})()"))
+    print('guest takes:',await ev(C,"(()=>{const L=ujList();if(!L.length)return 'none';ujPick=L[0].id;ujobKey(false);return JSON.stringify({id:L[0].id,kind:L[0].kind,route:S.player.route})})()"))
+    await C.wait_for_timeout(1500)
+    print('host job on:',await ev(H,"(()=>JSON.stringify(ujobs().filter(j=>j.on).map(j=>[j.k,j.kind,j.title])))()"))
+    print('guest paid:',await ev(H,"(()=>{const P=S.pilots['clipid1'],j=ujobs().find(x=>x.on&&x.k==='clipid1');if(!j)return 'no job';const c0=P.credits,i0=P.inf;S.econ.treasury.pirate=(S.econ.treasury.pirate||0)+2000;runAs('clipid1',()=>{if(j.kind==='mine'){P.sector=j.sid;for(let i=0;i<j.need;i++)unbKill({side:j.f,role:'miner',cls:'skiff',tier:1,id:'x'+i})}else unbKill({side:j.f,role:'hauler',cls:'freighter',tier:1,tradeT:{id:j.tgt},id:'xt'})});return JSON.stringify({kind:j.kind,cr:P.credits-c0,inf:Math.round(P.inf-i0),left:ujobs().filter(x=>x.on&&x.k==='clipid1').length})})()"))
     # the end: legend points for both
     await ev(H,"(()=>{const P=S.pilots['clipid1'];P.inf=300;P.deeds=[{k:'three',t:10,sid:'wr'}];S.player.inf=10;galaxyWon('halcyon','hold');return 1})()");await C.wait_for_timeout(2500)
     print('legend host:',await ev(H,"(()=>JSON.stringify(legPeek('Hosty')))()"))

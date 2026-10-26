@@ -272,7 +272,7 @@ function pirBarred(){return W&&DEF[W.sid]&&DEF[W.sid].home&&!frigatesIn(W.sid).s
 {const o=frigHop;frigHop=function(t){if(t&&t.side==='pirate'&&!t.jumpTo&&t.dest&&t.dest!==t.sector&&HOPP[t.dest]){let best=null,bh=99;for(const n of NEIGH[t.sector]){if(!PIR_OK.has(n))continue;const h=HOPP[t.dest][n];if(h!==undefined&&h<bh){bh=h;best=n}}return best}return o.apply(this,arguments)}}
 {const o=frigOrders;frigOrders=function(t){if(t&&t.side==='pirate')return pirOrders(t);return o.apply(this,arguments)}}
 const PIR_KIT={plate:9,wire:6};   // a capital refits at the haven when its stores can't fit one more raid
-function pirOrders(t){const hp=t.hull/capHullMax(t);if(hp<.55||(isCar(t)&&(t.wing||[]).length<2&&t.sector!=='wr'))return'wr';if(t.sector!=='wr'&&!haveIn(PIR_KIT,[t.store||{}])&&haveIn(PIR_KIT,[S.econ.stock.pirate||{}]))return'wr';   // refit only if the haven can actually supply itlet best='wr',bs=-1e9;const from=HOPP[t.sector]||HOPP.wr;
+function pirOrders(t){const hp=t.hull/capHullMax(t);if(hp<.55||(isCar(t)&&(t.wing||[]).length<2&&t.sector!=='wr'))return'wr';if(t.sector!=='wr'&&!haveIn(PIR_KIT,[t.store||{}])&&haveIn(PIR_KIT,[S.econ.stock.pirate||{}]))return'wr';let best='wr',bs=-1e9;const from=HOPP[t.sector]||HOPP.wr;
   const lanes=(S.traders||[]).filter(x=>x.kind==='haul'&&FAC_IDS.includes(x.side)&&x.side!=='brood').map(x=>x.path.slice(x.leg));
   for(const sid of PIR_OK){const h=from[sid];if(h===undefined||h>3)continue;let sc=-.8*h+rnd(0,1.2);const d=DEF[sid],Rs=S.stations[sid];
     if(Rs&&FAC_IDS.includes(Rs.owner)&&Rs.kind==='depot')sc+=(isCar(t)?3.5:2.2)+(edgeDepot(Rs)?.8:0);if(d.home)sc-=.6;
@@ -526,37 +526,56 @@ function ujobOk(sid){const R=S.stations[sid];return!DEF[sid].home&&DEF[sid].kind
 function icptFor(t,P,ok){const left=t.path.length-1-t.leg,eta0=Math.max(0,t.next-S.T);for(let i=0;i<=left;i++){const c=t.path[t.leg+i];if(ok&&!ok(c))continue;const j=HOP[P.sector][c],tp=j*ICPT_HOP,leave=i===0?eta0:eta0+i*TRADER_HOP;if(tp<=leave-10)return{c,j}}return null}
 // faction miners out in open space: the systems where a faction holds the outpost (forge) but no depot
 function ujobMinePick(P){const L=[];for(const f of FAC_IDS){if(f==='brood')continue;for(const id in S.outposts){const o=S.outposts[id],sid=o.sector;if(o.owner!==f||DEF[sid].kind!=='contested'||!ujobOk(sid)||!S.sectors[sid].ast.length)continue;const h=HOP[P.sector][sid];if(h>UJOB.mine.hops||ujobs().some(j=>j.sid===sid&&j.kind==='mine'))continue;L.push({f,sid,h})}}return L.length?pick(L):null}
-function ujobOffer(){const P=S.player,J=ujobs();if(J.filter(j=>!j.on).length>=UJOB.offers)return;
-  if(Math.random()<.55){let best=null;for(const f of FAC_IDS){if(f==='brood')continue;for(const t of S.traders||[]){if(t.kind!=='haul'||t.side!==f||J.some(j=>j.tgt===t.id))continue;const I=icptFor(t,P,ujobOk);if(!I)continue;const v=invValue(t.load||{});if(v<60)continue;const sc=v/(1+I.j);if(!best||sc>best.sc)best={sc,t,I,v}}}
-    if(best){const t=best.t,pay=Math.round((UJOB.icpt.cr+best.v*UJOB.icpt.val)/10)*10;J.push({id:S.nextId++,kind:'icpt',f:t.side,tgt:t.id,at:best.I.c,v:best.v,pay,inf:UJOB.icpt.inf,until:S.T+UJOB.life,title:`Intercept: ${FACTIONS[t.side].short} supply convoy (${haulWhat(t)})`});return}}
-  const m=ujobMinePick(P);if(m)J.push({id:S.nextId++,kind:'mine',f:m.f,sid:m.sid,need:UJOB.mine.need,n:0,pay:UJOB.mine.cr,inf:UJOB.mine.inf,until:S.T+UJOB.life,title:`Disrupt ${FACTIONS[m.f].short} mining in ${DEF[m.sid].name}`})}
-function ujobEnd(j,ok,why){const J=ujobs();J.splice(J.indexOf(j),1);if(!j.on)return;
-  if(!ok){feed(`✗ Job failed: ${j.title}${why?' ('+why+')':''}.`,'warn');return}const got=transfer('pirate','player',j.pay);infAdd(j.inf,'a haven job');SFX.count&&SFX.count(true);feed(`☠ Job done: ${j.title}. The haven pays +${fmt(got)} cr${got<j.pay?' (all the treasury had)':''}, and your Infamy grows.`,'good')}
-function ujobCourse(j){const P=S.player;let to=j.kind==='mine'?j.sid:j.at;if(!to)return;if(to===P.sector){flash(j.kind==='mine'?`You're in ${DEF[to].name}: find the ${FACTIONS[j.f].short} miners (Q cycles hostiles).`:`The ${FACTIONS[j.f].short} convoy comes through here: wait by the gate it uses.`);return}
+// every pilot has their own board: each job carries its pilot's key (k), offers are drawn from where that pilot is,
+// and the host pays the pilot who did the work. Guests ask the host to take a job; steering happens on each pilot's own machine.
+function ujMine(j){return(j.k||'me')===pkey()||(!NET.on&&!j.k)}
+function ujPilotOn(P){return!NET.on||!P.pid||isMe(P.pid)||Object.values(MP.cl||{}).some(c=>c.pid===P.pid&&c.ready)}
+function ujobOffer(){const P=S.player,k=pkey(),J=ujobs();if(J.filter(j=>!j.on&&j.k===k).length>=UJOB.offers)return;
+  if(Math.random()<.55){let best=null;for(const f of FAC_IDS){if(f==='brood')continue;for(const t of S.traders||[]){if(t.kind!=='haul'||t.side!==f||J.some(j=>j.tgt===t.id&&j.k===k))continue;const I=icptFor(t,P,ujobOk);if(!I)continue;const v=invValue(t.load||{});if(v<60)continue;const sc=v/(1+I.j);if(!best||sc>best.sc)best={sc,t,I,v}}}
+    if(best){const t=best.t,pay=Math.round((UJOB.icpt.cr+best.v*UJOB.icpt.val)/10)*10;J.push({id:S.nextId++,k,kind:'icpt',f:t.side,tgt:t.id,at:best.I.c,v:best.v,pay,inf:UJOB.icpt.inf,until:S.T+UJOB.life,title:`Intercept: ${FACTIONS[t.side].short} supply convoy (${haulWhat(t)})`});return}}
+  const m=ujobMinePick(P);if(m)J.push({id:S.nextId++,k,kind:'mine',f:m.f,sid:m.sid,need:UJOB.mine.need,n:0,pay:UJOB.mine.cr,inf:UJOB.mine.inf,until:S.T+UJOB.life,title:`Disrupt ${FACTIONS[m.f].short} mining in ${DEF[m.sid].name}`})}
+// (called in the job owner's context: runAs on the host, so the pay and Infamy reach the right pilot)
+function ujobEnd(j,ok,why){const J=ujobs();if(J.includes(j))J.splice(J.indexOf(j),1);if(!j.on)return;
+  if(!ok){feed(`✗ Job failed: ${j.title}${why?' ('+why+')':''}.`,'warn');return}const got=transfer('pirate','player',j.pay);infAdd(j.inf,'a haven job');if(!CTX||isMe(CTX))SFX.count&&SFX.count(true);feed(`☠ Job done: ${j.title}. The haven pays +${fmt(got)} cr${got<j.pay?' (all the treasury had)':''}, and your Infamy grows.`,'good')}
+function ujobCourse(j){const P=S.player;let to=j.kind==='mine'?j.sid:j.at;if(!to)return;ujAt[j.id]=to;if(to===P.sector){flash(j.kind==='mine'?`You're in ${DEF[to].name}: find the ${FACTIONS[j.f].short} miners (Q cycles hostiles).`:`The ${FACTIONS[j.f].short} convoy comes through here: wait by the gate it uses.`);return}
   P.route=to;if(W&&!P.docked){apOn=true;const g=routeNext();if(g)W.tgt={kind:'gate',ref:g};flash(`Course set to ${DEF[to].name}. Autopilot on: steer to take back control.`)}else flash(`Course set to ${DEF[to].name}. Undock and press J to fly it.`)}
-function ujobTick(){if(!S||!S.unb||NET.cl||S.training)return;const P=S.player,J=ujobs();
-  for(const j of J.slice()){if(!j.on){if(S.T>j.until||(j.kind==='icpt'&&!(S.traders||[]).some(t=>t.id===j.tgt)))J.splice(J.indexOf(j),1);continue}
+// host: every pilot's jobs, each in that pilot's context (their sector, their feed, their wallet)
+function ujobTick(){if(!S||!S.unb||NET.cl||S.training)return;const J=ujobs();for(const j of J)if(!j.k)j.k=pkey();
+  for(const P of allPilots()){if(!P)continue;runAs(P.pid&&!isMe(P.pid)?P.pid:null,()=>{ujobTickFor();if(ujPilotOn(P)&&Math.random()<UJOB.chance)ujobOffer()})}
+  const ks=new Set(allPilots().map(P=>P&&P.pid&&!isMe(P.pid)?P.pid:pkey()));for(const j of J.slice())if(!ks.has(j.k))J.splice(J.indexOf(j),1)}
+function ujobTickFor(){const P=S.player,k=pkey(),J=ujobs();
+  for(const j of J.slice()){if(j.k!==k)continue;if(!j.on){if(S.T>j.until||(j.kind==='icpt'&&!(S.traders||[]).some(t=>t.id===j.tgt)))J.splice(J.indexOf(j),1);continue}
     if(j.kind==='icpt'){const t=(S.traders||[]).find(x=>x.id===j.tgt);if(!t){ujobEnd(j,false,'the convoy docked or was lost to someone else');continue}if(S.T>j.until){ujobEnd(j,false,'time ran out');continue}
-      if(t.sector===P.sector){const e=W&&W.ents.find(x=>x.alive&&x.tradeT===t);if(e&&(!W.tgt||W.tgt.kind==='gate')&&!j.marked){j.marked=1;W.tgt={kind:'ship',ref:e};flash(`The ${FACTIONS[j.f].short} convoy is here: targeted.`)}continue}
+      if(t.sector===P.sector)continue;
       const i=t.path.indexOf(j.at,t.leg),late=i<t.leg||HOP[P.sector][j.at]*ICPT_HOP>Math.max(0,t.next-S.T)+(i-t.leg)*TRADER_HOP+5;if(!late)continue;const I=icptFor(t,P,ujobOk);if(!I){ujobEnd(j,false,'it got past you');continue}
-      if(I.c!==j.at){j.at=I.c;if(P.route&&P.route!==P.sector){P.route=I.c;if(W&&!P.docked&&apOn){const g=routeNext();if(g)W.tgt={kind:'gate',ref:g}}}feed(`Job: the convoy moved on. New intercept in ${DEF[I.c].name}.`,'info')}}
-    else if(S.T>j.until)ujobEnd(j,false,'time ran out')}
-  if(Math.random()<UJOB.chance)ujobOffer()}
+      if(I.c!==j.at){j.at=I.c;feed(`Job: the convoy moved on. New intercept in ${DEF[I.c].name}.`,'info')}}
+    else if(S.T>j.until)ujobEnd(j,false,'time ran out')}}
 {const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{ujobTick()}catch(e){frameErr('unbound jobs',e)}return r}}
+// each machine steers its own pilot: follow a moved intercept, and target the convoy when it's in your system
+const ujAt={},ujMarked={};
+function ujobSteer(){if(!S||!S.unb||!S.player)return;const P=S.player;
+  for(const j of ujobs()){if(!j.on||!ujMine(j)||j.kind!=='icpt')continue;const t=(S.traders||[]).find(x=>x.id===j.tgt);
+    if(t&&t.sector===P.sector&&W&&!ujMarked[j.id]){const e=W.ents.find(x=>x.alive&&x.tradeT&&x.tradeT.id===t.id);if(e&&(!W.tgt||W.tgt.kind==='gate')){ujMarked[j.id]=1;W.tgt={kind:'ship',ref:e};flash(`The ${FACTIONS[j.f].short} convoy is here: targeted.`)}}
+    const was=ujAt[j.id];if(was&&was!==j.at){ujAt[j.id]=j.at;if(P.route===was&&j.at!==P.sector){P.route=j.at;if(W&&!P.docked&&apOn){const g=routeNext();if(g)W.tgt={kind:'gate',ref:g}}}}}}
 // what counts: robbing or killing the named freighter; robbing or killing faction miners in the job's system
-function ujobHit(T,how){if(!S.unb||!T)return;for(const j of ujobs().slice()){if(!j.on)continue;
+// (runs in the context of the pilot who did it, so a guest's take or kill counts for the guest's own jobs)
+function ujobHit(T,how){if(!S.unb||!T)return;const k=pkey();for(const j of ujobs().slice()){if(!j.on||j.k!==k)continue;
   if(j.kind==='icpt'&&T.tradeT&&T.tradeT.id===j.tgt){ujobEnd(j,true);continue}
-  if(j.kind==='mine'&&T.role==='miner'&&T.side===j.f&&W&&W.sid===j.sid&&!T.ujob){T.ujob=1;j.n++;if(j.n>=j.need)ujobEnd(j,true);else flash(`Mining disrupted: ${j.n} of ${j.need} miners.`)}}}
-{const o=takeEnd;takeEnd=function(){const tk=unbRT().take;const r=o.apply(this,arguments);try{if(tk&&tk.moved>=3&&W===LW)ujobHit(tk.T,'take')}catch(e){}return r}}
-{const o=unbKill;unbKill=function(e){const r=o.apply(this,arguments);try{if(W===LW)ujobHit(e,'kill')}catch(x){}return r}}
+  if(j.kind==='mine'&&T.role==='miner'&&T.side===j.f&&S.player.sector===j.sid&&!T.ujob){T.ujob=1;j.n++;if(j.n>=j.need)ujobEnd(j,true);else flash(`Mining disrupted: ${j.n} of ${j.need} miners.`)}}}
+{const o=takeEnd;takeEnd=function(){const tk=unbRT().take;const r=o.apply(this,arguments);try{if(tk&&tk.moved>=3&&!NET.cl)ujobHit(tk.T,'take')}catch(e){}return r}}
+{const o=unbKill;unbKill=function(e){const r=o.apply(this,arguments);try{if(!NET.cl)ujobHit(e,'kill')}catch(x){}return r}}
+// host: a guest takes a job from their board
+function ujobTake(id){const k=pkey(),J=ujobs(),j=J.find(x=>x.id===+id&&x.k===k);if(!j||j.on)return;if(J.filter(x=>x.on&&x.k===k).length>=2){flash('You already have two jobs on. Finish one first.',true);return}
+  j.on=1;j.until=S.T+(j.kind==='mine'?UJOB.mine.T:UJOB.icpt.T);feed(`☠ Job taken: ${j.title}. ${j.kind==='mine'?`Rob or kill ${j.need} ${FACTIONS[j.f].short} miners in ${DEF[j.sid].name}.`:'Rob it or kill it.'} Pays ${fmt(j.pay)} cr and Infamy.`,'good')}
 // the HUD card and the P key
 let ujPick=null;
-function ujList(){return ujobs().slice().sort((a,b)=>(b.on?1:0)-(a.on?1:0))}
+function ujList(){return ujobs().filter(ujMine).sort((a,b)=>(b.on?1:0)-(a.on?1:0))}
 function ujStat(j){if(j.kind==='mine')return`${j.n}/${j.need} miners · ${DEF[j.sid].name}`;const t=(S.traders||[]).find(x=>x.id===j.tgt);return t?`now ${DEF[t.sector].name} → ${DEF[t.to].name} · meet it in ${DEF[j.at].name}`:'gone'}
-function ujobKey(next){if(NET.cl){flash('Haven jobs are taken by the galaxy host for now.',true);return}const L=ujList();if(!L.length){flash('No haven jobs right now. They come over the wire every few minutes.',true);return}let i=Math.max(0,L.findIndex(j=>j.id===ujPick));
+function ujobKey(next){const L=ujList();if(!L.length){flash('No haven jobs right now. They come over the wire every few minutes.',true);return}let i=Math.max(0,L.findIndex(j=>j.id===ujPick));
   if(next){if(L.length<2){flash('That is the only job right now.');ujPick=L[0].id;return}i=(i+1)%L.length;ujPick=L[i].id;flash(`Job ${i+1} of ${L.length}: ${L[i].title}. Press P to take it.`);return}
-  const j=L[i];ujPick=j.id;if(!j.on){if(ujobs().filter(x=>x.on).length>=2){flash('You already have two jobs on. Finish one first.',true);return}j.on=1;j.until=S.T+(j.kind==='mine'?UJOB.mine.T:UJOB.icpt.T);feed(`☠ Job taken: ${j.title}. ${j.kind==='mine'?`Rob or kill ${j.need} ${FACTIONS[j.f].short} miners in ${DEF[j.sid].name}.`:'Rob it or kill it.'} Pays ${fmt(j.pay)} cr and Infamy.`,'good');SFX.count&&SFX.count(true)}ujobCourse(j)}
-function ujobHud(el){if(NET.cl){el.hidden=true;return}const L=ujList(),si=Math.max(0,L.findIndex(j=>j.id===ujPick));let h=`<div class="ot" style="border-color:${sideCol('pirate')}"><span>Haven jobs</span><b>${L.filter(j=>j.on).length} on</b></div>`;
+  const j=L[i];ujPick=j.id;if(!j.on){if(L.filter(x=>x.on).length>=2){flash('You already have two jobs on. Finish one first.',true);return}
+    if(NET.cl){netSend({t:'ujob',id:j.id});j.on=1;j.until=S.T+(j.kind==='mine'?UJOB.mine.T:UJOB.icpt.T);feed(`☠ Job taken: ${j.title}. ${j.kind==='mine'?`Rob or kill ${j.need} ${FACTIONS[j.f].short} miners in ${DEF[j.sid].name}.`:'Rob it or kill it.'} Pays ${fmt(j.pay)} cr and Infamy.`,'good')}else ujobTake(j.id);SFX.count&&SFX.count(true)}ujobCourse(j)}
+function ujobHud(el){try{ujobSteer()}catch(e){}const L=ujList(),si=Math.max(0,L.findIndex(j=>j.id===ujPick));let h=`<div class="ot" style="border-color:${sideCol('pirate')}"><span>Haven jobs</span><b>${L.filter(j=>j.on).length} on</b></div>`;
   if(!L.length)h+=`<div class="om" style="color:var(--dim)">Nothing on the wire. Jobs come in every few minutes.</div>`;
   L.forEach((j,i)=>{const on=i===si;h+=`<div class="oi sd${on?' sel':''}"><div class="om"><i class="otg cmb">${j.kind==='mine'?'Disrupt':'Intercept'}</i>${esc(j.title)}</div><div class="os"><span>${esc(ujStat(j))} · ${fmtT(Math.max(0,j.until-S.T))} · ${fmt(j.pay)} cr</span><span class="${j.on?'ok':'go'}">${j.on?(on?'✓ P course':'✓'):on?'P · take':''}</span></div></div>`});
   if(L.length>1)h+=`<div class="onx"><kbd>⇧P</kbd> next job · ${si+1} of ${L.length}</div>`;el.hidden=false;if(el._h!==h){el._h=h;el.innerHTML=h}}
