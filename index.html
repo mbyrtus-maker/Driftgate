@@ -4832,7 +4832,7 @@ if(T.type==='station')return W.stationEnt===T;if(T.type==='ship')return T.alive&
 // torpedoes are siege weapons: their blast is built to crack hulls the size of a capital ship or a station, and a small ship
 // takes only TORP_SMALL of it, so a bomber can't torpedo its way through a dogfight
 const TORP_SMALL=.3;
-function detonate(m,i){if(m.harp){W.missiles.splice(i,1);harpHit(m);return}if(m.jt){W.missiles.splice(i,1);jtHit(m);return}const s=S.sectors[W.sid],tp=m.kind==='torpedo',sw=m.kind==='swarm',BR=tp?110:sw?26:70;W.missiles.splice(i,1);fxBoom(m,tp?130:sw?28:55,m.col);if(tp)fxBoom(m,80,'#ffe2b0');
+function detonate(m,i){if(m.harp||m.jt){W.missiles.splice(i,1);toDebris(S.sectors[W.sid],m.inv||{});if(m.harp)harpHit(m);else jtHit(m);return}   // harpoons and jamming torpedoes leave their casing as debris tooconst s=S.sectors[W.sid],tp=m.kind==='torpedo',sw=m.kind==='swarm',BR=tp?110:sw?26:70;W.missiles.splice(i,1);fxBoom(m,tp?130:sw?28:55,m.col);if(tp)fxBoom(m,80,'#ffe2b0');
   for(const e of W.ents.slice()){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead))continue;if(!hostile(m.side,e.side))continue;const d=d3(e,m);if(d<BR+e.st.radius){
     const bare=!tp&&e.shield<=e.st.sCap*.05,mul=bare?BARE_MUL:1;if(bare){fxSpark(e,'#ff9a6a',sw?3:8);if(m.side==='player'&&W.t-(W.bareT||-9)>1.5){W.bareT=W.t;flash('Shields down: missiles hit for ×1.8!')}}
     damageShip(e,(m.incend?(e.side==='brood'&&e.role==='builder'?1.5:.85):1)*m.dmg*mul*(d<e.st.radius+28?1:.45)*(tp&&e.role!=='frigate'?TORP_SMALL:1),m.side,m)}}
