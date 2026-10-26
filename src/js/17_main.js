@@ -14,7 +14,7 @@ function step(dt){if(S&&S.won)return;legFlownTick(dt);
   if(NET.on)netTick(dt);
   hudT-=dt;if(hudT<=0&&W){hudT=.1;hudUpdate();netHud()}
   saveT+=dt;if(saveT>20){saveT=0;if(!NET.on)save()}
-  if(!$('map').hidden){mapT-=dt;if(mapT<=0){mapT=.5;drawMap();renderMapSide()}}
+  if(!$('map').hidden){mapT-=dt;if(mapT<=0){mapT=.5;drawMap();if(!$('mapSide').matches(':hover'))renderMapSide()}}
   if(!$('dock').hidden&&W&&S.player.docked){W.dockR=(W.dockR||0)-dt;if(W.dockR<=0){W.dockR=2;if(!document.activeElement||!$('dock').contains(document.activeElement))renderDock()}}
 }
 function resize(){DPR=Math.min(2,devicePixelRatio||1);VW=glc.clientWidth;VH=glc.clientHeight;glc.width=Math.round(VW*DPR);glc.height=Math.round(VH*DPR);ovc.width=Math.round(VW*DPR);ovc.height=Math.round(VH*DPR);cam.fovBase=VW<VH?78:62;cam.fov=cam.fovBase}

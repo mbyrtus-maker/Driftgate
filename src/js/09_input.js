@@ -193,7 +193,7 @@ function issueOrder(k,T){const fac=S.player.faction,me=T===W.player||T.rp===S.pl
   feed(`${who}: copy, ${k==='guard'?'guarding':'escorting'} ${me?'you':ftgtName(T)} for ${ORDER_TIME/60} minutes.`,'good');return pick.length}
 // comms: ask your faction to build. In its home system that means a capital shipyard; anywhere else, a depot near you (a constructor convoy flies in)
 function lackText(cost,src){const m=[];for(const k in cost){const h=(src&&src[k])||0;if(h<cost[k]){const n=cost[k]-h;m.push(`${n} ${ITEMS[k].name}${n>1&&!/s$/.test(ITEMS[k].name)?'s':''}`)}}return m.join(', ')}
-function requestBuild(){if(!W||!W.player||W.dead||S.player.docked)return;if(S.unb){lairBuild();return}if(truceAt(W.sid)){feed('Command: nothing can be built in a truce zone. Burn the Bloom out of this system first.','warn');return}const f=S.player.faction,sid=W.sid,F=FACTIONS[f].short,st=S.econ.stock[f],p=W.player;
+function requestBuild(){if(!W||!W.player||W.dead||(S.player.docked&&S.player.docked!=='bridge'))return;if(S.unb){lairBuild();return}if(truceAt(W.sid)){feed('Command: nothing can be built in a truce zone. Burn the Bloom out of this system first.','warn');return}const f=S.player.faction,sid=W.sid,F=FACTIONS[f].short,st=S.econ.stock[f],p=W.player;
   if(sid===FAC_HOME(f)){
     if(S.yards[f]){feed(`${F} command: ${DEF[sid].name} already has a capital shipyard. Commission a carrier or escorts from Ship → Shipyard at the station.`,'info');return}
     const yb=S.events.find(e=>e.type==='yardbuild'&&e.att===f);if(yb){feed(`${F} command: the shipyard is already under construction, about ${Math.max(1,Math.ceil((yb.until-S.T)/60))} min to go.`,'info');return}

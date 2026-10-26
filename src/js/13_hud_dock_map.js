@@ -225,7 +225,7 @@ function renderDock(){
   $('dTitle').textContent=c.name;$('dTitle').style.color=sideCol(c.owner);$('dSub').textContent=c.sub;
   $('dMeta').innerHTML=`<div>Credits<b class="amber">${fmt(P.credits)}</b></div><div>Hold<b>${invMass(P.cargo)}/${p.st.cargo} t</b></div><div>${c.storageName}<b>${invMass(c.storage)} t</b></div>${c.wallet?`<div>${sideName(c.wallet)} treasury<b>${fmt(S.econ.treasury[c.wallet])}</b></div>`:''}`;
   const hasOrders=!S.unb&&c.contracts||(c.wallet&&c.wallet===P.faction&&S.plans&&S.plans[P.faction]),hasMis=!!FACTIONS[P.faction];
-  const tabs=[['home','Overview']];if(c.haven)tabs.push(['fence','Fence'],['black','Hulls'],['marks','Marks'],['wanted','Wanted'],['works','Works']);if(c.market)tabs.push(['market','Market']);if(!c.haven)tabs.push(['trade','Best runs']);if(hasOrders||hasMis)tabs.push(['jobs','Jobs']);tabs.push(['fab','Fabricate'],['upg','Systems']);if(c.refit)tabs.push(['refit','Refits']);if(c.works)tabs.push(['works','Station works']);if(c.fortify)tabs.push(['outpost','Outpost']);if(!c.haven&&!S.unb)tabs.push(['ship','Shipyard']);tabs.push(['storage',c.storageName]);if(c.lair){}else if(c.storage===P.vault)tabs.push(['bay',`Hangar ${shipsCount(P)}/${BAY_MAX}`]);
+  const tabs=[['home','Overview']];if(c.haven)tabs.push(['fence','Fence'],['black','Hulls'],['marks','Marks'],['wanted','Wanted'],['works','Works']);if(c.market)tabs.push(['market','Market']);if(!c.haven)tabs.push(['trade','Best runs']);if(hasOrders||hasMis)tabs.push(['jobs','Jobs']);tabs.push(['fab','Fabricate'],['upg','Systems']);if(c.refit)tabs.push(['refit','Refits']);if(c.works)tabs.push(['works','Station works']);if(c.fortify)tabs.push(['outpost','Outpost']);if(!c.haven&&!S.unb)tabs.push(['ship','Shipyard']);tabs.push(['storage',c.storageName]);if(c.lair){}else if(c.storage===P.vault&&!S.unb)tabs.push(['bay',`Hangar ${shipsCount(P)}/${BAY_MAX}`]);
   if(dockTab==='orders'||dockTab==='missions')dockTab='jobs';
   if(!tabs.some(t=>t[0]===dockTab))dockTab=tabs[0][0];
   {const G=DOCK_TOP.map(([g,n,ks],i)=>[g,n,ks.map(k=>tabs.find(t=>t[0]===k)).filter(Boolean),i+1]).filter(x=>x[2].length);dockG=G;const cur=G.find(x=>x[2].some(t=>t[0]===dockTab))||G[0];dockSubMem[cur[0]]=dockTab;const dots=dockDots(c,P,srcs);
@@ -333,7 +333,8 @@ $('dock').addEventListener('click',e=>{
   if(act==='vcourse'){S.player.route=arg;dockErr=`✓ Course set to ${DEF[arg].name}. Launch and press J.`;renderDock();return}
   if(act==='sideon'){const C=myCamp(),o=C&&sideOf(C).find(x=>String(x.id)===arg);if(o)sideTake(o);dockErr=S.player.route&&S.player.route!==S.player.sector?`✓ Signed on. Course set to ${DEF[S.player.route].name}. Launch and press J.`:'✓ Signed on.';renderDock();return}
   if(act==='opjoin'){joinOp(friendlyOps()[+arg]);dockErr=S.player.route?`✓ Course set to ${DEF[S.player.route].name}. Launch and press J.`:'';renderDock();return}
-  if(NET.cl){netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
+  if(NET.cl&&act==='csell'&&arg!=='yes'&&arg!=='no'){const q=csellQuote(P);if(!q.bare){csAsk=1;renderDock();return}}if(NET.cl&&act==='csell'&&arg==='no'){csAsk=0;renderDock();return}
+  if(NET.cl){if(act==='csell')csAsk=0;netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
   dockAction(act,arg);renderDock()});
 function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.cargo,c.storage];if(act==='fence'){unbFence(arg);return}if(act==='work'){unbBuildWork(arg);return}if(act==='launder'){unbLaunder();return}if(act==='unbvar'){unbBuyVar(arg);return}if(act==='callcap'){const[k,sid]=String(arg).split(':');callCap(k,sid);return}if(act==='unbhull'){unbHull(arg);return}if(act==='fixer'){unbFixer(arg);return}
   if(act==='sell'&&S.unb&&c.owner==='neutral'){const k=String(arg).split(':')[0];if((P.stolen||{})[k]&&!(P.xpdr&&!((P.xpdrOut||0)>S.T))){dockErr='Stolen goods sell at a Freeport only under false colours (K).';return}}
@@ -374,7 +375,7 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
     const old=P.cls,to=starterFor(old),got=q.tot&&c.wallet?transfer(c.wallet,'player',q.tot):0;inv.addAll(c.market||c.storage,q.parts);inv.addAll(c.market||c.storage,P.hullInv||{});inv.addAll(c.market||c.storage,baseKit());inv.addAll(c.storage,P.bay||{});inv.addAll(c.storage,P.cargo);P.cargo={};
     shipLoad(P,{cls:to,tiers:baseTiers(),tune:{},bay:{},rack:rackCapC(to,1),swarm:CLASSES[to].swarm||0});droneTopUp(P,c.storage,c.wallet,1);refreshPlayerStats();if(p){p.hull=p.st.hull;p.shield=p.st.sCap}
     dockErr=`✓ ${FAC(P.faction).hulls[old]} sold${got?` for ${fmt(got)} cr`:''}. You're in a fresh ${FAC(P.faction).hulls[to]}; your hold and drones went to the vault.${got<q.tot?` (The ${sideName(c.wallet)} treasury could only pay ${fmt(got)} cr.)`:''}`}
-  else if(act==='bfly'){const i=+arg,r=(P.ships||[])[i];if(!r||c.storage!==P.vault)return;const room=shipStats(P.faction,r.cls,r.tiers,r.tune).cargo;if(invMass(P.cargo)>room){inv.addAll(c.storage,P.cargo);P.cargo={}}
+  else if(act==='bfly'){if(S.unb)return;const i=+arg,r=(P.ships||[])[i];if(!r||c.storage!==P.vault)return;const room=shipStats(P.faction,r.cls,r.tiers,r.tune).cargo;if(invMass(P.cargo)>room){inv.addAll(c.storage,P.cargo);P.cargo={}}
     const cur=shipRec(P),bare=START_HULLS.includes(cur.cls)&&shipBare(cur);if(bare){inv.addAll(c.market||c.storage,baseKit());inv.addAll(c.storage,cur.bay||{});P.ships.splice(i,1)}else P.ships[i]=cur;
     shipLoad(P,r);refreshPlayerStats();p.hull=p.st.hull;dockErr=`✓ You're flying your ${FAC(P.faction).hulls[r.cls]}.${bare?'':` Your ${FAC(P.faction).hulls[cur.cls]} took its place in the bay.`}`}
   else if(act==='bupg'){const[i,sl]=String(arg).split(':'),r=(P.ships||[])[+i];if(!r||!SLOT[sl]||c.storage!==P.vault)return;const t=r.tiers[sl]||1;if(t>=MK_TOP)return;const rc=upgRecipe(sl,t+1),fee=c.fee?Math.ceil(invValue(rc)*.08):0;
@@ -406,10 +407,10 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
 
 // ============================================================ map
 let mapSel=null,resetArm=false;
-function toggleMap(){if(!$('map').hidden){$('map').hidden=true;return}$('help').hidden=true;$('map').hidden=false;mapSel=mapSel||S.player.sector;drawMap();renderMapSide()}
-function toggleSheet(id){const el=$(id);el.hidden=!el.hidden;if(!el.hidden&&id==='help')$('map').hidden=true}
+function toggleMap(){if(!$('map').hidden){$('map').hidden=true;return}$('help').hidden=true;keyWait=null;if(W&&W.bridge&&W.bridge.panel)closeConsole();$('map').hidden=false;mapSel=mapSel||S.player.sector;drawMap();renderMapSide()}
+function toggleSheet(id){const el=$(id);el.hidden=!el.hidden;if(!el.hidden&&id==='help')$('map').hidden=true;if(!el.hidden&&W&&W.bridge&&W.bridge.panel)closeConsole();if(el.hidden&&id==='help')keyWait=null}
 function closeSheets(){if(!$('help').hidden){$('help').hidden=true;return}if(!$('map').hidden){$('map').hidden=true;return}if(W&&W.gunseat){leaveSeat();return}if(W&&W.bridge){if(W.bridge.seat)standChair();return}if(S.player.docked)undock()}
-function hideSheets(){$('help').hidden=true;$('map').hidden=true}
+function hideSheets(){$('help').hidden=true;$('map').hidden=true;keyWait=null;for(const id of['dev','comms','fcon'])if($(id))$(id).hidden=true}
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{$(b.dataset.close).hidden=true}));
 let quitArm=0;$('bQuit').addEventListener('click',()=>{if(!running)return;const b=$('bQuit');if(performance.now()-quitArm>3000){quitArm=performance.now();b.textContent='Save & quit?';b.style.color='var(--amber)';setTimeout(()=>{if(performance.now()-quitArm>=2900){b.textContent='Quit';b.style.color=''}},3000);return}b.textContent='Quit';b.style.color='';quitGame()});
 $('bMap').addEventListener('click',toggleMap);
