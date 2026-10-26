@@ -23,7 +23,7 @@ function openWorld(sid){const o=W;
     for(const t of S.traders||[])if(t.sector===sid){t.live=false;spawnTrader(t,false)}
     for(const t of S.frigates||[])if(t.sector===sid){t.live=false;spawnFrigate(t,false)}}
   const w=W;W=o;return w}
-function enterSector(sid){
+function enterSector(sid){try{closeComms()}catch(e){}
   W=WORLDS[sid]||openWorld(sid);LW=W;
   Object.assign(W,{lock:{p:0,locked:false,ref:null},flareCd:0,mslCd:0,tgt:null,jump:null,dead:0,capMsgT:0,hitDirs:[],bridge:null,docking:null,hurt:0,shHit:0,shake:0});
   const P=S.player,st=shipStats(P.faction,P.cls,P.tiers,P.tune),q=q0();if(P.q){q.x=P.q[0];q.y=P.q[1];q.z=P.q[2];q.w=P.q[3]}
@@ -312,7 +312,7 @@ function bridgeLight(d){const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return
       f=wall*flo*cei*pool;
     d[i+6]*=f;d[i+7]*=f;d[i+8]*=f}}
 function bridgeOrigin(F){const k=F.st.radius*1.25;qRot(F.q,BRIDGE.off[0]*k,BRIDGE.off[1]*k,BRIDGE.off[2]*k,_u);return{x:F.x+_u.x,y:F.y+_u.y,z:F.z+_u.z}}
-function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(F.tok&&isCar(F.tok)&&Object.keys(S.player.cargo||{}).length){if(NET.cl)netSend({t:'resup',id:F.tok.id});else carResupply(F.tok)}if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id,slot:S.player.bslot|0});if(NET.host)S.hostAtt={id:F.tok&&F.tok.id,slot:S.player.bslot|0,cls:S.player.cls,fac:S.player.faction};W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(fGuest(F.tok)?`Aboard ${F.tok.name}, a ${FAC(F.tok.side).short} ${capName(F.tok)}. Take command, or ride along as a guest.`:`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok);if(fGuest(F.tok))openConsole('strat')}
+function enterBridge(F){closeComms();recallPlayerDrones();S.player.docked='bridge';if(F.tok&&isCar(F.tok)&&Object.keys(S.player.cargo||{}).length){if(NET.cl)netSend({t:'resup',id:F.tok.id});else carResupply(F.tok)}if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id,slot:S.player.bslot|0});if(NET.host)S.hostAtt={id:F.tok&&F.tok.id,slot:S.player.bslot|0,cls:S.player.cls,fac:S.player.faction};W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(fGuest(F.tok)?`Aboard ${F.tok.name}, a ${FAC(F.tok.side).short} ${capName(F.tok)}. Take command, or ride along as a guest.`:`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok);if(fGuest(F.tok))openConsole('strat')}
 function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;if(NET.host)S.hostAtt=null;const bp=F.alive?berthPose(F,S.player.bslot|0,S.player.cls,_bp):null;
   if(bp){p.x=bp.x;p.y=bp.y;p.z=bp.z;qCopy(p.q,bp.q);p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;W.detach={F,slot:S.player.bslot|0,t:0};flash(carBay(F)?'Lifting off the flight deck…':'Releasing the hull clamps…')}
   else{qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q)}cam.snap=true;SFX.clunk();SFX.hatch();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}

@@ -3577,7 +3577,7 @@ function openWorld(sid){const o=W;
     for(const t of S.traders||[])if(t.sector===sid){t.live=false;spawnTrader(t,false)}
     for(const t of S.frigates||[])if(t.sector===sid){t.live=false;spawnFrigate(t,false)}}
   const w=W;W=o;return w}
-function enterSector(sid){
+function enterSector(sid){try{closeComms()}catch(e){}
   W=WORLDS[sid]||openWorld(sid);LW=W;
   Object.assign(W,{lock:{p:0,locked:false,ref:null},flareCd:0,mslCd:0,tgt:null,jump:null,dead:0,capMsgT:0,hitDirs:[],bridge:null,docking:null,hurt:0,shHit:0,shake:0});
   const P=S.player,st=shipStats(P.faction,P.cls,P.tiers,P.tune),q=q0();if(P.q){q.x=P.q[0];q.y=P.q[1];q.z=P.q[2];q.w=P.q[3]}
@@ -3866,7 +3866,7 @@ function bridgeLight(d){const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return
       f=wall*flo*cei*pool;
     d[i+6]*=f;d[i+7]*=f;d[i+8]*=f}}
 function bridgeOrigin(F){const k=F.st.radius*1.25;qRot(F.q,BRIDGE.off[0]*k,BRIDGE.off[1]*k,BRIDGE.off[2]*k,_u);return{x:F.x+_u.x,y:F.y+_u.y,z:F.z+_u.z}}
-function enterBridge(F){recallPlayerDrones();S.player.docked='bridge';if(F.tok&&isCar(F.tok)&&Object.keys(S.player.cargo||{}).length){if(NET.cl)netSend({t:'resup',id:F.tok.id});else carResupply(F.tok)}if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id,slot:S.player.bslot|0});if(NET.host)S.hostAtt={id:F.tok&&F.tok.id,slot:S.player.bslot|0,cls:S.player.cls,fac:S.player.faction};W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(fGuest(F.tok)?`Aboard ${F.tok.name}, a ${FAC(F.tok.side).short} ${capName(F.tok)}. Take command, or ride along as a guest.`:`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok);if(fGuest(F.tok))openConsole('strat')}
+function enterBridge(F){closeComms();recallPlayerDrones();S.player.docked='bridge';if(F.tok&&isCar(F.tok)&&Object.keys(S.player.cargo||{}).length){if(NET.cl)netSend({t:'resup',id:F.tok.id});else carResupply(F.tok)}if(NET.cl)netSend({t:'bridge',id:F.tok&&F.tok.id,slot:S.player.bslot|0});if(NET.host)S.hostAtt={id:F.tok&&F.tok.id,slot:S.player.bslot|0,cls:S.player.cls,fac:S.player.faction};W.bridge={f:F,x:-5,z:-6,yaw:.25,pitch:0,panel:null};ghostSync();cam.snap=true;closeConsole();SFX.clunk();SFX.hatch();flash(fGuest(F.tok)?`Aboard ${F.tok.name}, a ${FAC(F.tok.side).short} ${capName(F.tok)}. Take command, or ride along as a guest.`:`Aboard ${F.tok.name}. WASD to walk, mouse to look, E at a console.`);fctl(F.tok);if(fGuest(F.tok))openConsole('strat')}
 function exitBridge(){const B=W.bridge;if(!B)return;freeLook();if(B.seat)standChair();const F=B.f,p=W.player;W.bridge=null;closeConsole();S.player.docked=null;if(NET.host)S.hostAtt=null;const bp=F.alive?berthPose(F,S.player.bslot|0,S.player.cls,_bp):null;
   if(bp){p.x=bp.x;p.y=bp.y;p.z=bp.z;qCopy(p.q,bp.q);p.vx=F.vx;p.vy=F.vy;p.vz=F.vz;W.detach={F,slot:S.player.bslot|0,t:0};flash(carBay(F)?'Lifting off the flight deck…':'Releasing the hull clamps…')}
   else{qRot(F.q,0,-1,0,_u);const k=F.st.radius*1.25;p.x=F.x+_u.x*k*.9;p.y=F.y+_u.y*k*.9;p.z=F.z+_u.z*k*.9;p.vx=F.vx+_u.x*60;p.vy=F.vy+_u.y*60;p.vz=F.vz+_u.z*60;qCopy(p.q,F.q)}cam.snap=true;SFX.clunk();SFX.hatch();launchPlayerDrones();if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]})}
@@ -4224,7 +4224,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
   // docked: 1–5 pick the station screen's tabs
   if(S&&S.player&&S.player.docked&&!$('dock').hidden&&/^Digit[1-5]$/.test(e.code)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){e.preventDefault();dockTop(+e.code.slice(5)-1);return}
-  if(running&&/^Digit[1-6]$/.test(e.code)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){if(commsOpen()){e.preventDefault();commsPick(String(+e.code.slice(5)-1));return}if(W&&W.bridge&&W.bridge.panel&&+e.code.slice(5)<=FC_TABS.length){e.preventDefault();W.bridge.panel=fcTabs(W.bridge.f.tok)[+e.code.slice(5)-1][0];renderConsole(true);return}}
+  if(running&&/^Digit[1-6]$/.test(e.code)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){if(commsOpen()){e.preventDefault();{const kc=keyOf(e.code);if(kc)keys[kc]=true}if(e.repeat)return;commsPick(String(+e.code.slice(5)-1));return}if(W&&W.bridge&&W.bridge.panel&&+e.code.slice(5)<=FC_TABS.length){e.preventDefault();W.bridge.panel=fcTabs(W.bridge.f.tok)[+e.code.slice(5)-1][0];renderConsole(true);return}}
   const c=keyOf(e.code);if(running)auInit();if(!c)return;
   if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();devCredits();return}
   if(c==='Enter'&&running&&NET.on&&(!S.player.docked||S.player.docked==='bridge'||S.player.docked==='turret')){e.preventDefault();openChat();return}
@@ -4313,18 +4313,19 @@ const ORDER_TIME=120;
 function friendlyList(){const p=W.player,out=[p];for(const e of W.ents){if(e.type!=='ship'||!e.alive||e===p||e.isPlayer)continue;if(e.role==='drone'||e.role==='picket')continue;if(hostile('player',e.side))continue;if(e.pup&&e.side==='pirate')continue;if(d3(e,p)>6000)continue;out.push(e)}
   return[p,...out.slice(1).sort((a,b)=>d3(a,p)-d3(b,p)).slice(0,14)]}
 function ftgtName(e){return!e?'':e===W.player?'You':shipLabel(e)}
-function cycleFriendly(){if(!W||S.player.docked)return;const L=friendlyList();let i=L.indexOf(W.ftgt);W.ftgt=L[(i+1)%L.length];openComms()}
+function cycleFriendly(){if(!W||S.player.docked||W.dead)return;const L=friendlyList();let i=L.indexOf(W.ftgt);W.ftgt=L[(i+1)%L.length];openComms()}
 // ---- comms pages: Command first (call-ins for you), then each friendly ship nearby, with what that kind of ship can do
 const CM_FIGHT=['patrol','escort','screen','strike','raider'];
 // a crew pilot sees the host's ships without their convoy record: match it by system and side
 function cmTrader(T){if(T.tradeT)return T.tradeT;if(!T.pup||T.role!=='trader')return null;return(S.traders||[]).find(t=>t.live&&t.sector===W.sid&&t.side===T.side&&t.kind==='haul')||null}
 function cmRole(T){const t=cmTrader(T);if(T.role==='trader')return t&&t.kind==='haul'?`freighter → ${DEF[t.to]?DEF[t.to].name:'?'}`:'trader';if(T.role==='frigate')return T.tok?capName(T.tok):'capital ship';if(T.role==='builder')return'constructor';if(T.role==='miner')return'miner';if(T.role==='hauler')return'hauler';if(T.role==='scout')return'scout';return T.grp&&grpAlive(T.grp).length>1?'wing':'fighter'}
 function cmOpts(T){const P=S.player,p=W.player,f=P.faction,O=[];
-  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},{k:'help',l:'Distress: send help to me'});{const C=!S.unb&&!NET.cl&&typeof csupCap==='function'&&csupCap();if(C)O.push(haulBusy('csup:'+C.id)?{k:'none',l:`Supply run for ${C.name}: on its way`,off:1}:{k:'csup',l:`Request a supply run for ${C.name}`})}return O}
+  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},...(S.unb?[]:[{k:'help',l:'Distress: send help to me'}]));{const C=!S.unb&&!NET.cl&&typeof csupCap==='function'&&csupCap();if(C)O.push(haulBusy('csup:'+C.id)?{k:'none',l:`Supply run for ${C.name}: on its way`,off:1}:{k:'csup',l:`Request a supply run for ${C.name}`})}return O}
+  if(sideNorm(T.side)!==S.player.faction&&!(T.tok&&fMine(T.tok))){O.push({k:'none',l:`${ftgtName(T)} doesn't take orders from you`,off:1});return O}
   const nm=ftgtName(T),t=cmTrader(T),cv=T.role==='trader'&&t&&t.kind==='haul'&&t.side===f,car=T.role==='frigate'&&T.tok&&isCar(T.tok)&&T.tok.side!=='brood',hit=W.t-(T.lastHit||-99)<4&&T.lastHitBy&&hostile('player',T.lastHitBy);
   if(hit)O.push({k:'assist',l:`Help: target the ship attacking ${nm}`});
   if(cv){const me=P.pid||'me',E=t.esc,n=cvLeft(t);O.push(E&&E.k===me?{k:'none',l:`Escorting: ${E.hops} of ${E.need} jumps · paid when it docks`,off:1}:E?{k:'none',l:`Already escorted by ${E.name||'another pilot'}`,off:1}:n<1?{k:'none',l:'Last leg: no escort contract',off:1}:{k:'cvesc',l:`Escort this convoy · ${n} jump${n>1?'s':''} · ${fmt(cvPay(t,Math.ceil(n*ESC_CV.need)))} cr`},{k:'guard',l:'Guard '+nm},{k:'bound',l:'Where are you bound?'})}
-  else if(car){const n=carNeed(T.tok),ks=Object.keys(n),have=ks.some(k=>(P.cargo[k]||0)>0);O.push({k:'land',l:ks.length?`Resupply: needs ${ks.slice(0,2).map(k=>n[k]+' '+ITEMS[k].name).join(', ')}${have?' · you carry some':''}`:'Clear me to land on its deck'},{k:'launch',l:'Launch fighters on my target'},{k:'guard',l:'Guard '+nm},{k:'escort',l:'Escort '+nm})}
+  else if(car){const n=carNeed(T.tok),ks=Object.keys(n),have=ks.some(k=>(P.cargo[k]||0)>0),bo=typeof fBoard!=='function'||fBoard(T.tok);if(!bo){O.push({k:'guard',l:'Guard '+nm},{k:'escort',l:'Escort '+nm});return O.slice(0,4)}O.push({k:'land',l:ks.length?`Resupply: needs ${ks.slice(0,2).map(k=>n[k]+' '+ITEMS[k].name).join(', ')}${have?' · you carry some':''}`:'Clear me to land on its deck'},...(fMine(T.tok)?[{k:'launch',l:'Launch fighters on my target'}]:[]),{k:'guard',l:'Guard '+nm},{k:'escort',l:'Escort '+nm})}
   else if(T.role==='builder')O.push({k:'escort',l:'Escort it to the build site'},{k:'guard',l:'Guard it'});
   else if(CM_FIGHT.includes(T.role)&&T.role!=='pilot')O.push({k:'guard',l:'Guard '+nm},{k:'escort',l:'Escort '+nm},{k:'form',l:'Form up on me'},{k:'attack',l:'Attack my target'});
   else{O.push({k:'guard',l:'Guard '+nm},{k:'escort',l:'Escort '+nm});if(T.role==='trader'||T.role==='hauler')O.push({k:'bound',l:'Where are you bound?'})}
@@ -4336,7 +4337,7 @@ function openComms(){const T=W&&W.ftgt;if(!T)return;const me=T===W.player,O=cmOp
 function closeComms(){const el=$('comms');if(el)el.hidden=true;if(W&&W.ftgt&&W.ftgt!==W.player)W.ftgt=null}   // next I opens on the Command page
 function commsOpen(){const el=$('comms');return el&&!el.hidden}
 function commsPick(k){if(k==='close'){closeComms();return}const o=W&&W.cmOpts&&W.cmOpts[+k],T=W&&W.ftgt;if(!o||o.off)return;closeComms();if(T)cmDo(o.k,T)}
-function cmDo(k,T){const P=S.player,me=T===W.player;
+function cmDo(k,T){const P=S.player,me=T===W.player;if(!me&&T&&T.side&&T.side!=='player'&&hostile('player',T.side)){flash(`${ftgtName(T)} won't take orders from you now.`,true);return}
   if(k==='help'){if(NET.cl)netSend({t:'order',k:'help'});else pilotDistress();return}
   if(k==='build'){if(NET.cl)netSend({t:'order',k:'build'});else requestBuild();return}
   if(k==='csup'){csupRequest();return}
@@ -4345,11 +4346,11 @@ function cmDo(k,T){const P=S.player,me=T===W.player;
   if(k==='form'||k==='attack'||k==='launch'){const tg=W.tgt&&W.tgt.kind==='ship'&&W.tgt.ref;if(k!=='form'&&!(tg&&tg.alive&&hostile('player',tg.side))){flash('Target an enemy ship first (T, Q or G), then give the order.',true);return}
     if(NET.cl){netSend({t:'order',k,id:T.id,tg:tg&&tg.id});return}cmWing(k,T,tg);return}
   if(k==='assist'){const at=attackersOf(T).sort((a,b)=>d3(a,W.player)-d3(b,W.player))[0]||W.ents.find(e=>e.type==='ship'&&e.alive&&e.ai&&e.ai.tgt===T&&hostile('player',e.side));if(at){W.tgt={kind:'ship',ref:at};apOn=false;flash(`Targeted ${shipLabel(at)}: it is attacking ${ftgtName(T)}.`)}else flash('No attacker in range.');return}
-  if(k==='cvesc'){const t=cmTrader(T);if(!t)return;if(NET.cl){netSend({t:'cvesc',id:t.id});flash('Signing on as escort…');return}cvTake(t);return}
+  if(k==='cvesc'){const t=cmTrader(T);if(!t)return;if(NET.cl){netSend({t:'cvesc',id:t.id,eid:T.id});flash('Signing on as escort…');return}cvTake(t);return}
   if(k==='bound'){const t=cmTrader(T);feed(t&&t.to&&DEF[t.to]?`${shipLabel(T)}: bound for ${DEF[t.to].name}${t.load?' with '+haulWhat(t):''}${t.esc?`, escorted by ${t.esc.name||'a pilot'}`:''}.`:`${shipLabel(T)}: working this system.`,'info');return}
   if(k==='land'){W.tgt={kind:'ship',ref:T};apOn=true;const has=Object.keys(carNeed(T.tok)).some(i=>(P.cargo[i]||0)>0);flash(`${T.tok.name}: cleared to land. Autopilot is bringing you in: press E at its deck${has?' and your cargo unloads into its store (paid at the front-line rate)':''}.`);return}}
 // a ship's own wing (or a carrier's fighters) takes your order: form up on you, or attack your target
-function cmWing(k,T,tg){const pl=W.player,mem=k==='launch'?(T.pickets||[]).filter(e=>e.alive&&W.ents.includes(e)):(T.grp?grpAlive(T.grp):[T]).filter(e=>e.alive&&e.npc&&CM_FIGHT.includes(e.role));
+function cmWing(k,T,tg){if(sideNorm(T.side)!==S.player.faction||(k==='launch'&&!(T.tok&&fMine(T.tok))))return 0;const pl=W.player,mem=k==='launch'?(T.pickets||[]).filter(e=>e.alive&&W.ents.includes(e)):(T.grp?grpAlive(T.grp):[T]).filter(e=>e.alive&&e.npc&&CM_FIGHT.includes(e.role)&&sideNorm(e.side)===S.player.faction);
   if(!mem.length){feed(k==='launch'?`${T.tok?T.tok.name:shipLabel(T)}: no fighters out to send.`:`${shipLabel(T)}: no one free to take that order.`,'warn');return 0}
   const use=mem.slice(0,k==='launch'?6:4),opid=CTX||NET.me||null;use.forEach((e,i)=>{e.order=k==='form'?{kind:'escort',tgt:pl,until:W.t+ORDER_TIME,slot:i,by:true,pid:opid}:{kind:'attack',tgt:tg,until:W.t+90,slot:i,by:false,pid:opid};e.ai.tgt=k==='form'?null:tg;e.ai.t=0});
   feed(`${k==='launch'?(T.tok?T.tok.name:shipLabel(T))+': '+use.length+' fighters':shipLabel(use[0])+(use.length>1?` and ${use.length-1} more`:'')}: copy, ${k==='form'?'forming up on you':'attacking '+shipLabel(tg)}.`,'good');return use.length}
@@ -4358,7 +4359,7 @@ function cvTake(t){const P=S.player;if(!t||t.side!==P.faction||t.esc||cvLeft(t)<
   feed(`✓ Escort contract: the convoy is bound for ${DEF[t.to].name}. Stay with it for ${E.need} jump${E.need>1?'s':''}; Command pays when it docks.`,'good');return true}
 // who answers: the closest friendly combat ships of your faction (not frigates, drones or civilians), up to four, within 3.5 km of the ship to protect
 function issueOrder(k,T){const fac=S.player.faction,me=T===W.player||T.rp===S.player||(T.isPlayer&&!T.rp),cand=[];
-  for(const e of W.ents){if(e.type!=='ship'||!e.alive||!e.npc||e===T||e.side!==fac)continue;if(!['patrol','escort','screen','strike','raider'].includes(e.role))continue;if(isBmb(e.cls)&&e.role==='strike')continue;const d=d3(e,T);if(d<3500)cand.push([e,d])}
+  for(const e of W.ents){if(e.type!=='ship'||!e.alive||!e.npc||e===T||e.side!==fac)continue;if(!['patrol','escort','screen','strike','raider'].includes(e.role))continue;if(e.cvy||e.capt||(e.order&&e.order.by&&e.order.by!==(curPid()||'me')))continue;if(isBmb(e.cls)&&e.role==='strike')continue;const d=d3(e,T);if(d<3500)cand.push([e,d])}
   cand.sort((a,b)=>a[1]-b[1]);const pick=cand.slice(0,4).map(c=>c[0]);
   if(!pick.length){feed(`No friendly fighters within range to ${k} ${me?'you':ftgtName(T)}.`,'warn');return 0}
   const opid=CTX||NET.me||null;pick.forEach((e,i)=>{e.order={kind:k,tgt:T,until:W.t+ORDER_TIME,slot:i,by:me,pid:opid};e.ai.tgt=null;e.ai.t=0});
@@ -4366,7 +4367,7 @@ function issueOrder(k,T){const fac=S.player.faction,me=T===W.player||T.rp===S.pl
   feed(`${who}: copy, ${k==='guard'?'guarding':'escorting'} ${me?'you':ftgtName(T)} for ${ORDER_TIME/60} minutes.`,'good');return pick.length}
 // comms: ask your faction to build. In its home system that means a capital shipyard; anywhere else, a depot near you (a constructor convoy flies in)
 function lackText(cost,src){const m=[];for(const k in cost){const h=(src&&src[k])||0;if(h<cost[k]){const n=cost[k]-h;m.push(`${n} ${ITEMS[k].name}${n>1&&!/s$/.test(ITEMS[k].name)?'s':''}`)}}return m.join(', ')}
-function requestBuild(){if(!W||!W.player)return;if(S.unb){lairBuild();return}if(truceAt(W.sid)){feed('Command: nothing can be built in a truce zone. Burn the Bloom out of this system first.','warn');return}const f=S.player.faction,sid=W.sid,F=FACTIONS[f].short,st=S.econ.stock[f],p=W.player;
+function requestBuild(){if(!W||!W.player||W.dead||S.player.docked)return;if(S.unb){lairBuild();return}if(truceAt(W.sid)){feed('Command: nothing can be built in a truce zone. Burn the Bloom out of this system first.','warn');return}const f=S.player.faction,sid=W.sid,F=FACTIONS[f].short,st=S.econ.stock[f],p=W.player;
   if(sid===FAC_HOME(f)){
     if(S.yards[f]){feed(`${F} command: ${DEF[sid].name} already has a capital shipyard. Commission a carrier or escorts from Ship → Shipyard at the station.`,'info');return}
     const yb=S.events.find(e=>e.type==='yardbuild'&&e.att===f);if(yb){feed(`${F} command: the shipyard is already under construction, about ${Math.max(1,Math.ceil((yb.until-S.T)/60))} min to go.`,'info');return}
@@ -4457,7 +4458,7 @@ function gunboatsIn(){const out=W.ents.filter(e=>e.type==='ship'&&e.alive&&hasTu
 // ---- the gunner's seat (this browser's player in someone else's turret)
 function gsEnt(){const G=W&&W.gunseat;if(!G)return null;if(G.ent&&G.ent.alive&&(W.ents.includes(G.ent)||G.ent===W.player))return G.ent;if(G.id){const e=NET.cl?(W.pup||{})[G.id]:entInWorld(W,G.id);if(e&&hasTur(e.cls)){G.ent=e;return e}}return null}
 function seatCandidate(){if(!W||!W.player)return null;const p=W.player;let best=null,bd=1e9;for(const e of W.ents){if(e.type!=='ship'||!e.alive||!hasTur(e.cls)||e===p||e.isPlayer)continue;if(hostile('player',e.side))continue;const d=d3(e,p);if(d<e.st.radius*1.25+260&&d<bd){bd=d;best=e}}return best}
-function enterSeat(e){const p=W.player;if(hyp(p.vx-e.vx,p.vy-e.vy,p.vz-e.vz)>140){flash('Match speed with the heavy bomber to board its turret (under 140 m/s relative).');return false}
+function enterSeat(e){closeComms();const p=W.player;if(hyp(p.vx-e.vx,p.vy-e.vy,p.vz-e.vz)>140){flash('Match speed with the heavy bomber to board its turret (under 140 m/s relative).');return false}
   if(e.tur&&e.tur.gunner&&e.tur.gunner!=='local'){flash('That turret is already manned.',true);return false}
   const T=turretOf(e);W.gunseat={ent:e,id:e.id,yaw:T.yaw,pitch:T.pitch,msl:0};S.player.docked='turret';ghostSync();recallPlayerDrones();cam.snap=true;SFX.clunk();
   if(NET.cl)netSend({t:'gseat',id:e.id});else{T.gunner='local';if(e.npc&&e.order&&e.order.tgt===W.player){e.order=null;e.ai.tgt=null}}
@@ -4725,7 +4726,7 @@ function killShip(e,src,at){if(e.role==='limpet'){limpetShot(e,src,at);return}
   {const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null;
   payKill(e,src,at)
 }
-function playerDeath(p0){apOn=false;if(S.unb)try{takeEnd()}catch(e){}
+function playerDeath(p0){apOn=false;closeComms();if(S.unb)try{takeEnd()}catch(e){}
   if(S.player.convoy&&!NET.cl)convoyEnd(false,'your ship was destroyed');
   const p=p0||W.player,P=S.player,s=S.sectors[W.sid],crate={};
   inv.addAll(crate,P.cargo);P.cargo={};P.rack=0;P.mslT=0;
@@ -5200,7 +5201,7 @@ function tryDock(){if(W&&W.docking){abortDocking('Docking aborted.');return fals
   if(hyp(p.vx,p.vy,p.vz)>180){flash('Too fast to dock. Slow below 180 m/s.');return false}
   return startDocking(E,E.type);
 }
-function finishDock(E){const p=W.player;if(p.stealth){p.stealth=false;p.masked=false;p.maskR=0}SFX.clunk();recallPlayerDrones();{const C=S.player.convoy;if(C&&!NET.cl){convoyPack();const fr=E.type==='station'?E.fac:E.o&&E.o.owner;if(W.sid===C.dest&&(fr===S.player.faction||fr==='neutral'))convoyEnd(true)}}S.player.docked=E.type==='station'?'station':E.o.id;p.vx=p.vy=p.vz=0;p.x=E.x;p.y=E.y-E.r-40;p.z=E.z;W.tgt=null;ghostSync();if(NET.cl)netSend({t:'dock',d:S.player.docked});openDock();save();return true}
+function finishDock(E){closeComms();const p=W.player;if(p.stealth){p.stealth=false;p.masked=false;p.maskR=0}SFX.clunk();recallPlayerDrones();{const C=S.player.convoy;if(C&&!NET.cl){convoyPack();const fr=E.type==='station'?E.fac:E.o&&E.o.owner;if(W.sid===C.dest&&(fr===S.player.faction||fr==='neutral'))convoyEnd(true)}}S.player.docked=E.type==='station'?'station':E.o.id;p.vx=p.vy=p.vz=0;p.x=E.x;p.y=E.y-E.r-40;p.z=E.z;W.tgt=null;ghostSync();if(NET.cl)netSend({t:'dock',d:S.player.docked});openDock();save();return true}
 function seatOk(e){const p=W.player;if(hyp(p.vx-e.vx,p.vy-e.vy,p.vz-e.vz)>140){flash('Match speed with the heavy bomber to board its turret (under 140 m/s relative).');return false}
   if(e.tur&&e.tur.gunner&&e.tur.gunner!=='local'){flash('That turret is already manned.',true);return false}return true}
 // ---- docking ports: the tips of a structure's arms, found from the model (farthest points around its vertical axis).
@@ -7274,8 +7275,8 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'gseat':hSeat(c,m);break;
     case 'g':{if(P.docked!=='turret')break;MP.ginp=MP.ginp||{};const o=MP.ginp[pid]||{};MP.ginp[pid]={yaw:+m.yaw||0,pitch:+m.pitch||0,f:m.f?1:0,at:performance.now(),msl:o.msl||0};break}
     case 'gmsl':{if(P.docked==='turret'&&MP.ginp&&MP.ginp[pid])MP.ginp[pid].msl=1;break}
-    case 'order':{if(m.k==='build'){runAs(pid,()=>requestBuild());break}if(m.k==='help'){runAs(pid,()=>pilotDistress());break}const e=MP.rp[pid],w=e?worldOf(e):WORLDS[P.sector],k=m.k==='guard'?'guard':'escort';if(!w)break;runAs(pid,()=>{const T=m.id==='me'?W.player:entInWorld(w,String(m.id||''));if(!T||hostile(S.player.faction,T.side==='player'?S.player.faction:T.side))return;if(m.k==='form'||m.k==='attack'||m.k==='launch'){const tg=m.tg!=null?entInWorld(w,String(m.tg)):null;if(m.k==='form'||(tg&&tg.alive&&hostile(S.player.faction,tg.side==='player'?S.player.faction:tg.side)))cmWing(m.k,T,tg)}else issueOrder(k,T)});break}
-    case 'cvesc':{const t=(S.traders||[]).find(x=>x.id===m.id&&x.kind==='haul');if(t)runAs(pid,()=>cvTake(t));break}
+    case 'order':{if(m.k==='build'){runAs(pid,()=>requestBuild());break}if(m.k==='help'){runAs(pid,()=>pilotDistress());break}const e=MP.rp[pid],w=e?worldOf(e):WORLDS[P.sector],k=m.k==='guard'?'guard':'escort';if(!w)break;runAs(pid,()=>{const T=m.id==='me'?W.player:entInWorld(w,String(m.id||''));if(!T){flash('That ship is gone.',true);return}if(m.id!=='me'&&(sideNorm(T.side)!==S.player.faction||hostile('player',T.side))){flash(`${shipLabel(T)} won't take orders from you.`,true);return}if(m.k==='form'||m.k==='attack'||m.k==='launch'){const tg=m.tg!=null?entInWorld(w,String(m.tg)):null;if(m.k==='form'||(tg&&tg.alive&&hostile(S.player.faction,tg.side==='player'?S.player.faction:tg.side)))cmWing(m.k,T,tg)}else issueOrder(k,T)});break}
+    case 'cvesc':{let t=null;if(m.eid){const e0=MP.rp[pid],w=e0?worldOf(e0):WORLDS[P.sector],E=w&&entInWorld(w,String(m.eid));if(E&&E.tradeT&&E.tradeT.kind==='haul')t=E.tradeT}if(!t)t=(S.traders||[]).find(x=>x.id===m.id&&x.kind==='haul');if(t)runAs(pid,()=>cvTake(t));else netMsg(pid,'flash','That convoy has moved on.',true);break}
     case 'fcon':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(!t)break;if(m.a==='take'){if(!t.owner&&t.side===S.pilots[pid].faction&&P.docked==='bridge'&&P.bridgeId===t.id)runAs(pid,()=>fTake(t));sendFtok(c);break}const a0=String(m.a||'');if(!(a0.startsWith('crewoff')||(t.owner===pid)||crewCan(t,pid,a0)))break;const ent=m.e?entInWorld(WORLDS[t.sector],String(m.e)):null;if(ent&&/^(tgt|wtgt)/.test(a0)&&!hostile(P.faction,ent.side||ent.fac))break;runAs(pid,()=>fconApply(t,String(m.a||'').slice(0,40),ent));sendFtok(c);break}
     case 'fdest':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(t&&t.owner===pid&&DEF[m.dest]){t.dest=String(m.dest);t.jumpTo=null}sendFtok(c);break}
     case 'convoy':{const P=S.pilots&&S.pilots[pid];if(!P)break;if(m.dest&&DEF[m.dest])P.route=String(m.dest);netMsg(pid,'flash',runAs(pid,()=>convoyCall()));break}
@@ -8344,8 +8345,8 @@ function fleetHtml(){const pf=S.player.faction,L=(S.frigates||[]).filter(t=>capF
     for(const b of el.querySelectorAll('#fleetBox [data-fcourse]'))b.onclick=e=>{e.stopPropagation();const sid=b.dataset.fcourse;S.player.route=sid;feed(`Course set for ${DEF[sid].name}. Press J in flight to engage autopilot.`,'info');drawMap();renderMapSide()}}catch(e){frameErr('fleet panel',e)}return r}}
 // comms, Command page: fly to the nearest friendly capital
 function capNearest(){let best=null,bh=1e9;for(const t of S.frigates||[]){if(!capFriendly(t))continue;const h=HOP[S.player.sector][t.sector];if(h<bh){bh=h;best=t}}return best}
-{const o=cmOpts;cmOpts=function(T){const O=o.apply(this,arguments);try{if(W&&T===W.player){const t=capNearest();if(t)O.push({k:'tocap',l:`Fly to the nearest capital: ${t.name} (${capJumps(t.sector)})`})}}catch(e){}return O}}
-{const o=cmDo;cmDo=function(k,T){if(k!=='tocap')return o.apply(this,arguments);const t=capNearest();if(!t||!W){flash('No friendly capital ship is out.',true);return}
+{const o=cmOpts;cmOpts=function(T){const O=o.apply(this,arguments);try{if(W&&T===W.player){const t=capNearest();if(t){W.tocapId=t.id;O.push({k:'tocap',l:`Fly to the nearest capital: ${t.name} (${capJumps(t.sector)})`})}}}catch(e){}return O}}
+{const o=cmDo;cmDo=function(k,T){if(k!=='tocap')return o.apply(this,arguments);const t=(S.frigates||[]).find(x=>x.id===W.tocapId&&capFriendly(x))||capNearest();if(!t||!W){flash('No friendly capital ship is out.',true);return}
   if(t.sector!==W.sid){S.player.route=t.sector;const g=routeNext();if(g){W.tgt={kind:'gate',ref:g};apOn=true}flash(`Course set to ${DEF[t.sector].name}, where ${t.name} is. Autopilot on: steer to take back control.`);return}
   const e=W.ents.find(x=>x.alive&&x.tok===t);if(e){W.tgt={kind:'ship',ref:e};apOn=true;flash(`Autopilot to ${t.name}. Steer to take back control.`)}else flash(`${t.name} is in this system but not in sight yet.`)}}
 

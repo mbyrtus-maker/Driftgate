@@ -34,7 +34,7 @@ function gunboatsIn(){const out=W.ents.filter(e=>e.type==='ship'&&e.alive&&hasTu
 // ---- the gunner's seat (this browser's player in someone else's turret)
 function gsEnt(){const G=W&&W.gunseat;if(!G)return null;if(G.ent&&G.ent.alive&&(W.ents.includes(G.ent)||G.ent===W.player))return G.ent;if(G.id){const e=NET.cl?(W.pup||{})[G.id]:entInWorld(W,G.id);if(e&&hasTur(e.cls)){G.ent=e;return e}}return null}
 function seatCandidate(){if(!W||!W.player)return null;const p=W.player;let best=null,bd=1e9;for(const e of W.ents){if(e.type!=='ship'||!e.alive||!hasTur(e.cls)||e===p||e.isPlayer)continue;if(hostile('player',e.side))continue;const d=d3(e,p);if(d<e.st.radius*1.25+260&&d<bd){bd=d;best=e}}return best}
-function enterSeat(e){const p=W.player;if(hyp(p.vx-e.vx,p.vy-e.vy,p.vz-e.vz)>140){flash('Match speed with the heavy bomber to board its turret (under 140 m/s relative).');return false}
+function enterSeat(e){closeComms();const p=W.player;if(hyp(p.vx-e.vx,p.vy-e.vy,p.vz-e.vz)>140){flash('Match speed with the heavy bomber to board its turret (under 140 m/s relative).');return false}
   if(e.tur&&e.tur.gunner&&e.tur.gunner!=='local'){flash('That turret is already manned.',true);return false}
   const T=turretOf(e);W.gunseat={ent:e,id:e.id,yaw:T.yaw,pitch:T.pitch,msl:0};S.player.docked='turret';ghostSync();recallPlayerDrones();cam.snap=true;SFX.clunk();
   if(NET.cl)netSend({t:'gseat',id:e.id});else{T.gunner='local';if(e.npc&&e.order&&e.order.tgt===W.player){e.order=null;e.ai.tgt=null}}
@@ -302,7 +302,7 @@ function killShip(e,src,at){if(e.role==='limpet'){limpetShot(e,src,at);return}
   {const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null;
   payKill(e,src,at)
 }
-function playerDeath(p0){apOn=false;if(S.unb)try{takeEnd()}catch(e){}
+function playerDeath(p0){apOn=false;closeComms();if(S.unb)try{takeEnd()}catch(e){}
   if(S.player.convoy&&!NET.cl)convoyEnd(false,'your ship was destroyed');
   const p=p0||W.player,P=S.player,s=S.sectors[W.sid],crate={};
   inv.addAll(crate,P.cargo);P.cargo={};P.rack=0;P.mslT=0;
