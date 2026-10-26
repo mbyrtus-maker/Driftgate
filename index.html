@@ -2004,7 +2004,7 @@ const force={};takeFrom(EC,[st]);inv.addAll(force,EC);S.events.push({id:S.nextId
     if(hit){t.fightT=S.T;t.hull-=hit;if(t.hull<=0)killFrigateToken(t,'in battle')}else t.hull=Math.min(capHullMax(t),t.hull+capHullMax(t)*.03)}
   // outposts: a capital carrying an assault load takes an unguarded hostile outpost after a minute
   for(const t of S.frigates){const own=t.side==='player'?'player':t.side;if(!(aAvail(t)>0)||frigatesIn(t.sector).some(o=>hostile(t.side,o.side))){t.hold=0;continue}
-    const oid=OUT_BY_SECTOR[t.sector],o=oid&&S.outposts[oid];if(!o||!o.owner||!hostile(t.side,o.owner)||(own==='player'&&o.owner===S.player.faction)){t.hold=0;continue}t.hold=(t.hold||0)+1;
+    const oid=OUT_BY_SECTOR[t.sector],o=oid&&S.outposts[oid];if(!o||!o.owner||!hostile(t.side,o.owner)||(own==='player'&&o.owner===S.player.faction)||outLockBars(t.sector,own)){t.hold=0;continue}t.hold=(t.hold||0)+1;
     if(t.hold>=6){aSend(t,t.sector,ASSAULT.outLoss);capture(o,own);t.hold=0}}}
 function killFrigateToken(t,how){capPingPay(t);toDebris(S.sectors[t.sector],t.load);t.load={};if(t.store){toDebris(S.sectors[t.sector],t.store);t.store={}}if(t.fab){toDebris(S.sectors[t.sector],t.fab.kit);t.fab=null}S.frigates=S.frigates.filter(x=>x!==t);if(friendSide(t.side)||covered(t.sector))feed(`${t.side==='player'?'Your '+capName(t):t.owner&&S.pilots&&S.pilots[t.owner]?S.pilots[t.owner].name+'\'s '+capName(t):t.side==='brood'?'A Brood '+broodCap(t):sideName(t.side)+' '+capName(t)} ${t.side==='brood'?'':t.name+' '}was destroyed ${how} in ${DEF[t.sector].name}.`,friendSide(t.side)?'bad':'good')}
 function frigOrders(t){let best=t.sector,bs=-1e9;const bro=t.side==='brood',bcc=bro?controlCounts():null,bmx=bro?Math.max(1,...FAC_IDS.map(k=>bcc[k]||0)):1;for(const d of SECTOR_DEFS){const h=HOP[d.id][t.sector];if(h>(bro?5:3))continue;let sc=-(bro?.55:.8)*h+rnd(0,1);const Rs=S.stations[d.id];
@@ -2077,7 +2077,7 @@ function planOffensive(f){if(FACTIONS[f]&&f!=='brood'&&campBusy(f)){S.ai[f].next
   const adjOf=sec=>terr.has(sec)||NEIGH[sec].some(n=>terr.has(n)),hopTo=sec=>{let m=9;for(const t of terr)m=Math.min(m,HOP[t][sec]);return m},bw=sec=>{const h=hopTo(sec);return h<=1?1.6:h===2?1.1:h===3?.7:.4};
   // the Brood hunts the strong: targets held by the faction with the most systems weigh up to 1.5x, the weakest down to 0.6x
   const bcc=f==='brood'?controlCounts():null,bmx=bcc?Math.max(1,...FAC_IDS.map(k=>bcc[k]||0)):1,bstr=ow=>!bcc||!FAC_IDS.includes(sideNorm(ow))?1:.6+.9*(bcc[sideNorm(ow)]||0)/bmx;
-  for(const id in S.outposts){const o=S.outposts[id];if(o.owner===f||busy.has(id))continue;let w;
+  for(const id in S.outposts){const o=S.outposts[id];if(o.owner===f||busy.has(id)||outLockBars(o.sector,f))continue;let w;
     if(f==='pirate'&&o.owner==='brood')continue;if(f==='pirate'){if(id!=='wrack'&&!o.owner&&!RAID.pirHold)continue;w=id==='wrack'?6:o.owner==='player'?2.2:1}
     else if(f==='brood'){if(o.owner==='pirate')continue;w=(o.owner?1.6*bstr(o.owner):2.2)*bw(o.sector)}
     else{w=!o.owner?3:o.owner==='player'?2:o.owner==='brood'?3.4:o.owner==='pirate'?(id==='wrack'?.8:2):1.4;w*=adjOf(o.sector)?1.6:.3}
@@ -5336,6 +5336,7 @@ function structUpdate(dt){
       else if(e.rp){const R=S.pilots[e.rp];if(R&&(R.cargo.beacon||0)>0&&beaconCls(R.cls)&&o.owner!==e.side){claim.add(e.side);rpClaim[e.side]=e.rp}else if(o.owner===e.side)block=true;else if(W.t-(e.capMsgT||-9)>6){e.capMsgT=W.t;netMsg(e.rp,'flash',o.owner?'Defenses down. You need a Claim Beacon in your hold to take it.':'Unclaimed outpost. Carry a Claim Beacon into the ring to claim it.')}}
       else if(e.role==='strike'&&e.side!==o.owner)claim.add(e.side);
       if(o.owner&&e.side===o.owner&&!e.isPlayer)block=true;}
+    {const lk=outLock(o.sector);if(lk)for(const c of[...claim])if(sideNorm(c)!==sideNorm(lk)){claim.delete(c);if(c==='player'&&W.t-(W.capMsgT||-9)>6){flash(`The ${sideName(sideNorm(lk))} station in this system holds ${o.name}: take the station first.`,true);W.capMsgT=W.t}}}
     if(claim.has('player'))claim.delete(S.player.faction);
     if(claim.size===1&&!block){const c=[...claim][0];if(o.cap.side!==c){o.cap.side=c;o.cap.p=0}o.cap.p+=dt/(c==='player'?12:16);
       if(o.cap.p>=1){if(c==='player'){inv.take(S.player.cargo,'beacon',1);const v=invVec({beacon:1});for(const e of RAWS)o.fort[e]+=v[e]}else if(rpClaim[c]){const RC=S.pilots[rpClaim[c]];inv.take(RC.cargo,'beacon',1);const v=invVec({beacon:1});for(const e of RAWS)o.fort[e]+=v[e];runAs(rpClaim[c],()=>feed(`You claimed ${o.name} for the ${FACTIONS[c].name}.`,'good'))}capture(o,c)}}
@@ -8409,6 +8410,18 @@ function scoutCallHtml(t){const f=sideNorm(t.side);if(!FAC_IDS.includes(f))retur
 {const o=renderConsole;renderConsole=function(full){const r=o.apply(this,arguments);try{const B=W&&W.bridge;if(B&&B.panel==='strat'&&B.f&&B.f.tok&&isCar(B.f.tok)){const el=$('stratSide');if(el&&!el.querySelector('[data-fc^="scout:"]'))el.insertAdjacentHTML('beforeend',scoutCallHtml(B.f.tok))}}catch(e){}return r}}
 // a guest's interdiction order follows its freighter on the guest's own machine (the host only steers its own pilot)
 let icptClT=-99;{const o=campHud;campHud=function(){try{if(NET.cl&&S&&S.player&&(S.T-icptClT>=2||S.T<icptClT)){icptClT=S.T;icptTick()}}catch(e){}return o.apply(this,arguments)}}
+
+// ============================================================ an outpost answers to its system's station (Oct 2026)
+// A forge, relay or yard in a system with a depot (or a core station, hive or the haven) always belongs to that station's
+// owner: taking the station takes the outpost with it, and nobody else can claim or capture the outpost while it stands.
+function outLock(sid){const R=S.stations[sid];return R&&R.owner&&R.owner!=='neutral'&&['depot','core','hive','haven'].includes(R.kind)?R.owner:null}
+function outLockBars(sid,side){const lk=outLock(sid);return!!lk&&sideNorm(lk)!==sideNorm(side)}
+function outLockSync(sid,quiet){const id=OUT_BY_SECTOR[sid],o=id&&S.outposts[id],lk=outLock(sid);if(!o||!lk||sideNorm(o.owner||'')===sideNorm(lk))return;const prev=o.owner;o.owner=lk;if(o.cap)o.cap.p=0;o.breached=false;
+  if(!quiet&&(friendSide(lk)||(prev&&friendSide(prev))||covered(sid)))feed(`${o.name} now flies the ${sideName(sideNorm(lk))} flag: it answers to the station in ${DEF[sid].name}.`,friendSide(lk)?'good':prev&&friendSide(prev)?'bad':'news')}
+{const o=capture;capture=function(ob,side){if(ob&&outLockBars(ob.sector,side==='player'?S.player.faction:side))return;return o.apply(this,arguments)}}
+{const o=captureDepot;captureDepot=function(sid){const r=o.apply(this,arguments);try{outLockSync(sid)}catch(e){}return r}}
+{const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{if(!NET.cl)for(const sid in S.stations)outLockSync(sid)}catch(e){frameErr('outpost owners',e)}return r}}
+{const o=updateEvents;updateEvents=function(){const r=o.apply(this,arguments);try{if(!NET.cl&&S)for(const sid in S.stations)outLockSync(sid)}catch(e){}return r}}   // a depot finished or taken by an event hands over its outpost at once
 
 //@src 17_main.js
 // ============================================================ main loop

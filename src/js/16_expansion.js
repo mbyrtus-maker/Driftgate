@@ -743,3 +743,15 @@ function scoutCallHtml(t){const f=sideNorm(t.side);if(!FAC_IDS.includes(f))retur
 {const o=renderConsole;renderConsole=function(full){const r=o.apply(this,arguments);try{const B=W&&W.bridge;if(B&&B.panel==='strat'&&B.f&&B.f.tok&&isCar(B.f.tok)){const el=$('stratSide');if(el&&!el.querySelector('[data-fc^="scout:"]'))el.insertAdjacentHTML('beforeend',scoutCallHtml(B.f.tok))}}catch(e){}return r}}
 // a guest's interdiction order follows its freighter on the guest's own machine (the host only steers its own pilot)
 let icptClT=-99;{const o=campHud;campHud=function(){try{if(NET.cl&&S&&S.player&&(S.T-icptClT>=2||S.T<icptClT)){icptClT=S.T;icptTick()}}catch(e){}return o.apply(this,arguments)}}
+
+// ============================================================ an outpost answers to its system's station (Oct 2026)
+// A forge, relay or yard in a system with a depot (or a core station, hive or the haven) always belongs to that station's
+// owner: taking the station takes the outpost with it, and nobody else can claim or capture the outpost while it stands.
+function outLock(sid){const R=S.stations[sid];return R&&R.owner&&R.owner!=='neutral'&&['depot','core','hive','haven'].includes(R.kind)?R.owner:null}
+function outLockBars(sid,side){const lk=outLock(sid);return!!lk&&sideNorm(lk)!==sideNorm(side)}
+function outLockSync(sid,quiet){const id=OUT_BY_SECTOR[sid],o=id&&S.outposts[id],lk=outLock(sid);if(!o||!lk||sideNorm(o.owner||'')===sideNorm(lk))return;const prev=o.owner;o.owner=lk;if(o.cap)o.cap.p=0;o.breached=false;
+  if(!quiet&&(friendSide(lk)||(prev&&friendSide(prev))||covered(sid)))feed(`${o.name} now flies the ${sideName(sideNorm(lk))} flag: it answers to the station in ${DEF[sid].name}.`,friendSide(lk)?'good':prev&&friendSide(prev)?'bad':'news')}
+{const o=capture;capture=function(ob,side){if(ob&&outLockBars(ob.sector,side==='player'?S.player.faction:side))return;return o.apply(this,arguments)}}
+{const o=captureDepot;captureDepot=function(sid){const r=o.apply(this,arguments);try{outLockSync(sid)}catch(e){}return r}}
+{const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{if(!NET.cl)for(const sid in S.stations)outLockSync(sid)}catch(e){frameErr('outpost owners',e)}return r}}
+{const o=updateEvents;updateEvents=function(){const r=o.apply(this,arguments);try{if(!NET.cl&&S)for(const sid in S.stations)outLockSync(sid)}catch(e){}return r}}   // a depot finished or taken by an event hands over its outpost at once

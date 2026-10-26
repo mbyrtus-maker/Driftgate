@@ -151,7 +151,7 @@ const force={};takeFrom(EC,[st]);inv.addAll(force,EC);S.events.push({id:S.nextId
     if(hit){t.fightT=S.T;t.hull-=hit;if(t.hull<=0)killFrigateToken(t,'in battle')}else t.hull=Math.min(capHullMax(t),t.hull+capHullMax(t)*.03)}
   // outposts: a capital carrying an assault load takes an unguarded hostile outpost after a minute
   for(const t of S.frigates){const own=t.side==='player'?'player':t.side;if(!(aAvail(t)>0)||frigatesIn(t.sector).some(o=>hostile(t.side,o.side))){t.hold=0;continue}
-    const oid=OUT_BY_SECTOR[t.sector],o=oid&&S.outposts[oid];if(!o||!o.owner||!hostile(t.side,o.owner)||(own==='player'&&o.owner===S.player.faction)){t.hold=0;continue}t.hold=(t.hold||0)+1;
+    const oid=OUT_BY_SECTOR[t.sector],o=oid&&S.outposts[oid];if(!o||!o.owner||!hostile(t.side,o.owner)||(own==='player'&&o.owner===S.player.faction)||outLockBars(t.sector,own)){t.hold=0;continue}t.hold=(t.hold||0)+1;
     if(t.hold>=6){aSend(t,t.sector,ASSAULT.outLoss);capture(o,own);t.hold=0}}}
 function killFrigateToken(t,how){capPingPay(t);toDebris(S.sectors[t.sector],t.load);t.load={};if(t.store){toDebris(S.sectors[t.sector],t.store);t.store={}}if(t.fab){toDebris(S.sectors[t.sector],t.fab.kit);t.fab=null}S.frigates=S.frigates.filter(x=>x!==t);if(friendSide(t.side)||covered(t.sector))feed(`${t.side==='player'?'Your '+capName(t):t.owner&&S.pilots&&S.pilots[t.owner]?S.pilots[t.owner].name+'\'s '+capName(t):t.side==='brood'?'A Brood '+broodCap(t):sideName(t.side)+' '+capName(t)} ${t.side==='brood'?'':t.name+' '}was destroyed ${how} in ${DEF[t.sector].name}.`,friendSide(t.side)?'bad':'good')}
 function frigOrders(t){let best=t.sector,bs=-1e9;const bro=t.side==='brood',bcc=bro?controlCounts():null,bmx=bro?Math.max(1,...FAC_IDS.map(k=>bcc[k]||0)):1;for(const d of SECTOR_DEFS){const h=HOP[d.id][t.sector];if(h>(bro?5:3))continue;let sc=-(bro?.55:.8)*h+rnd(0,1);const Rs=S.stations[d.id];
@@ -224,7 +224,7 @@ function planOffensive(f){if(FACTIONS[f]&&f!=='brood'&&campBusy(f)){S.ai[f].next
   const adjOf=sec=>terr.has(sec)||NEIGH[sec].some(n=>terr.has(n)),hopTo=sec=>{let m=9;for(const t of terr)m=Math.min(m,HOP[t][sec]);return m},bw=sec=>{const h=hopTo(sec);return h<=1?1.6:h===2?1.1:h===3?.7:.4};
   // the Brood hunts the strong: targets held by the faction with the most systems weigh up to 1.5x, the weakest down to 0.6x
   const bcc=f==='brood'?controlCounts():null,bmx=bcc?Math.max(1,...FAC_IDS.map(k=>bcc[k]||0)):1,bstr=ow=>!bcc||!FAC_IDS.includes(sideNorm(ow))?1:.6+.9*(bcc[sideNorm(ow)]||0)/bmx;
-  for(const id in S.outposts){const o=S.outposts[id];if(o.owner===f||busy.has(id))continue;let w;
+  for(const id in S.outposts){const o=S.outposts[id];if(o.owner===f||busy.has(id)||outLockBars(o.sector,f))continue;let w;
     if(f==='pirate'&&o.owner==='brood')continue;if(f==='pirate'){if(id!=='wrack'&&!o.owner&&!RAID.pirHold)continue;w=id==='wrack'?6:o.owner==='player'?2.2:1}
     else if(f==='brood'){if(o.owner==='pirate')continue;w=(o.owner?1.6*bstr(o.owner):2.2)*bw(o.sector)}
     else{w=!o.owner?3:o.owner==='player'?2:o.owner==='brood'?3.4:o.owner==='pirate'?(id==='wrack'?.8:2):1.4;w*=adjOf(o.sector)?1.6:.3}

@@ -347,6 +347,7 @@ function structUpdate(dt){
       else if(e.rp){const R=S.pilots[e.rp];if(R&&(R.cargo.beacon||0)>0&&beaconCls(R.cls)&&o.owner!==e.side){claim.add(e.side);rpClaim[e.side]=e.rp}else if(o.owner===e.side)block=true;else if(W.t-(e.capMsgT||-9)>6){e.capMsgT=W.t;netMsg(e.rp,'flash',o.owner?'Defenses down. You need a Claim Beacon in your hold to take it.':'Unclaimed outpost. Carry a Claim Beacon into the ring to claim it.')}}
       else if(e.role==='strike'&&e.side!==o.owner)claim.add(e.side);
       if(o.owner&&e.side===o.owner&&!e.isPlayer)block=true;}
+    {const lk=outLock(o.sector);if(lk)for(const c of[...claim])if(sideNorm(c)!==sideNorm(lk)){claim.delete(c);if(c==='player'&&W.t-(W.capMsgT||-9)>6){flash(`The ${sideName(sideNorm(lk))} station in this system holds ${o.name}: take the station first.`,true);W.capMsgT=W.t}}}
     if(claim.has('player'))claim.delete(S.player.faction);
     if(claim.size===1&&!block){const c=[...claim][0];if(o.cap.side!==c){o.cap.side=c;o.cap.p=0}o.cap.p+=dt/(c==='player'?12:16);
       if(o.cap.p>=1){if(c==='player'){inv.take(S.player.cargo,'beacon',1);const v=invVec({beacon:1});for(const e of RAWS)o.fort[e]+=v[e]}else if(rpClaim[c]){const RC=S.pilots[rpClaim[c]];inv.take(RC.cargo,'beacon',1);const v=invVec({beacon:1});for(const e of RAWS)o.fort[e]+=v[e];runAs(rpClaim[c],()=>feed(`You claimed ${o.name} for the ${FACTIONS[c].name}.`,'good'))}capture(o,c)}}
