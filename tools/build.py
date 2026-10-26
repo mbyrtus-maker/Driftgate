@@ -14,6 +14,10 @@ for n,lines in parts:
     for m in re.finditer(r'(?:^|[;{}\s])function\s+([A-Za-z_$][\w$]*)\s*\(','\n'.join(lines)):_seen[m.group(1)].append(n)
 _dup={k:v for k,v in _seen.items() if len(v)>1}
 if _dup:print('duplicate function names (rename one):',_dup);sys.exit(2)
+# code hidden behind a line comment: a '// ...' comment added in the middle of a packed line swallows the rest of that line
+_hid=re.compile(r'(?:^|[;{}\)\]])\s+//[^\n]*?(?:;\s*(?:const|let|if|for|return|function)\b|\)\{|=>\{)')
+_bad=[(n,i+1,l.strip()[:120]) for n,lines in parts if n.endswith('.js') for i,l in enumerate(lines) if _hid.search(l) and 'http' not in l]
+if _bad:print('code after a // comment on the same line (it would never run):');[print('  ',*b) for b in _bad];sys.exit(3)
 cur=open(INDEX,encoding='utf-8',newline='').read() if os.path.exists(INDEX) else ''
 if '--check' in sys.argv:
   if text==cur:print('src/ and index.html match');sys.exit(0)
