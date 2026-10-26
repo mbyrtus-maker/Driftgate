@@ -712,3 +712,32 @@ function siegeAssault(sid,side,g,use){const need={};for(const k in ASSAULT_LD)ne
 function hostE(a,e){if(e&&e.rp&&S.unb){if(a==='player'||a==='pirate'||a==='neutral')return false;if(a==='brood')return true;if(FAC_IDS.includes(a))return!unbCoverP(S.pilots&&S.pilots[e.rp],a);}return hostile(a,e&&e.side)}
 // an attack (missile, laser) from a source on a target: guest targets as above; a guest's weapons hit the Brood as the host's do
 function hostAt(side,src,e){if(e&&e.rp&&S.unb)return hostE(side,e);if(src&&src.rp&&S.unb&&e&&e.side==='brood')return true;return hostile(side,e&&e.side)}
+
+// ============================================================ a carrier calls for a scout (Oct 2026)
+// From the Strategic console a carrier's commander can call one of the faction's scouts to a system within 3 jumps: the scout
+// flies straight there (a jump each tick) and keeps watch for 10 minutes, seeing the system and its neighbours (and flipping its
+// beacon if it can), then goes back to its rounds. If no scout is free, command readies one (a faction keeps a second scout
+// while a call is waiting). The Unbound and the Brood have no scouts to call.
+const SCALL={reach:3,watch:600};
+function scoutFor(t){const f=sideNorm(t.side);return(S.scouts||[]).filter(x=>x.side===f&&!x.ord).sort((a,b)=>HOP[a.sector][t.sector]-HOP[b.sector][t.sector])[0]||null}
+function scoutAssign(t){const R=t.scoutReq;if(!R||R.sc)return;const sc=scoutFor(t);if(!sc)return;R.sc=sc.id;sc.ord={to:R.sid,car:t.id,until:null};
+  const j=HOP[sc.sector][R.sid];scoutSay(t,j?`A ${FAC(sc.side).short} scout is on its way to ${DEF[R.sid].name} for ${t.name} (${j} jump${j>1?'s':''}).`:`A ${FAC(sc.side).short} scout is already in ${DEF[R.sid].name}: it keeps watch there for ${t.name}.`)}
+function scoutSay(t,msg){if(t.owner)keyFeed(t.owner,msg,'info');else if(friendSide(t.side))feed(msg,'info')}
+function scoutOrdStep(sc){const o=sc.ord,t=(S.frigates||[]).find(x=>x.id===o.car);
+  if(sc.sector!==o.to){const p=trPath(sc.sector,o.to);const nx=p&&p[1];if(!nx){scoutDone(sc,t,'it found no way there');return}sc.sector=nx;if(WORLDS[nx])inW(WORLDS[nx],()=>spawnScout(sc,true));if(nx===o.to){o.until=S.T+SCALL.watch;if(t)scoutSay(t,`📡 The scout is over ${DEF[o.to].name}: ${t.name} can see it and its neighbours for ${Math.round(SCALL.watch/60)} minutes.`)}return}
+  if(o.until==null)o.until=S.T+SCALL.watch;if(S.T>o.until)scoutDone(sc,t,null)}
+function scoutDone(sc,t,why){if(t&&t.scoutReq&&t.scoutReq.sc===sc.id){scoutSay(t,why?`The scout couldn't reach ${DEF[sc.ord.to].name}: ${why}.`:`The scout's watch over ${DEF[sc.ord.to].name} is over.`);t.scoutReq=null}sc.ord=null}
+{const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{if(!NET.cl)for(const t of S.frigates||[])if(t.scoutReq&&!t.scoutReq.sc)scoutAssign(t);
+  for(const sc of S.scouts||[])if(sc.ord&&!(S.frigates||[]).some(x=>x.id===sc.ord.car))sc.ord=null;
+  for(const t of S.frigates||[])if(t.scoutReq&&t.scoutReq.sc&&!(S.scouts||[]).some(x=>x.id===t.scoutReq.sc)){scoutSay(t,'Contact lost with the scout you called.');t.scoutReq=null}}catch(e){frameErr('scout calls',e)}return r}}
+// the console command: scout:<system> (call), scout:- (cancel)
+{const o=fconApply;fconApply=function(t,a,ent){const s=String(a);if(!s.startsWith('scout:'))return o.apply(this,arguments);if(!isCar(t))return;const sid=s.slice(6),f=sideNorm(t.side);
+  if(!FAC_IDS.includes(f)){flash('The Unbound keep no scouts to call.',true);return}
+  if(sid==='-'){const R=t.scoutReq;if(R){const sc=(S.scouts||[]).find(x=>x.id===R.sc);if(sc)sc.ord=null;t.scoutReq=null;flash('Scout call cancelled.')}return}
+  if(!DEF[sid]||HOP[t.sector][sid]>SCALL.reach){flash('Too far: a scout can be called to a system within 3 jumps of the carrier.',true);return}
+  {const R=t.scoutReq;if(R&&R.sc){const sc=(S.scouts||[]).find(x=>x.id===R.sc);if(sc)sc.ord=null}}t.scoutReq={sid,T:S.T,sc:null};scoutAssign(t);if(!t.scoutReq.sc)scoutSay(t,`No ${FAC(f).short} scout is free: command is readying one for ${t.name}.`)}}
+function scoutCallHtml(t){const f=sideNorm(t.side);if(!FAC_IDS.includes(f))return'';const R=t.scoutReq,sc=R&&R.sc&&(S.scouts||[]).find(x=>x.id===R.sc);
+  let st='No scout called.';if(R&&!sc)st=`Waiting for a scout to ${esc(DEF[R.sid].name)}: command is readying one.`;else if(sc){const o=sc.ord;st=sc.sector!==o.to?`Scout on its way to ${esc(DEF[o.to].name)} · now in ${esc(DEF[sc.sector].name)} (${HOP[sc.sector][o.to]} jump${HOP[sc.sector][o.to]>1?'s':''})`:`Scout watching ${esc(DEF[o.to].name)} · ${fmtT(Math.max(0,(o.until||S.T)-S.T))} left`}
+  const L=SECTOR_DEFS.filter(d=>{const h=HOP[t.sector][d.id];return h>=1&&h<=SCALL.reach}).sort((a,b)=>HOP[t.sector][a.id]-HOP[t.sector][b.id]||(covered(a.id)?1:0)-(covered(b.id)?1:0));
+  return`<div class="h3" style="margin-top:14px">Call for a scout</div><p class="note" style="margin-top:0">${st}</p><p class="note" style="margin-top:0">A faction scout flies to the system you pick (up to ${SCALL.reach} jumps) and keeps watch for ${Math.round(SCALL.watch/60)} minutes: you see it and its neighbours, enemy capitals included.</p><div class="fbtns">${L.map(d=>`<button class="btn sm" data-fc="scout:${d.id}" aria-pressed="${!!(R&&R.sid===d.id)}">${esc(d.name)} · ${HOP[t.sector][d.id]}${covered(d.id)?'':' · unseen'}</button>`).join('')}${R?'<button class="btn sm bad" data-fc="scout:-">Cancel</button>':''}</div>`}
+{const o=renderConsole;renderConsole=function(full){const r=o.apply(this,arguments);try{const B=W&&W.bridge;if(B&&B.panel==='strat'&&B.f&&B.f.tok&&isCar(B.f.tok)){const el=$('stratSide');if(el&&!el.querySelector('[data-fc^="scout:"]'))el.insertAdjacentHTML('beforeend',scoutCallHtml(B.f.tok))}}catch(e){}return r}}

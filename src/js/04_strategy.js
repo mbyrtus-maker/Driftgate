@@ -105,7 +105,7 @@ function fCrewOK(t){if(!NET.on||!t||!t.owner||t.owner===curPid())return false;co
 function fBoard(t){return fMine(t)||fGuest(t)||fCrewOK(t)}
 // crew stations on a capital ship: the commander can hand a guest one station; the commander loses it while it's assigned,
 // the guest can use only that station, and it returns to the commander the moment the guest steps away from the console
-const CREW_STN={helm:'nav',man:'nav',thrset:'nav',thr:'nav',move:'nav',stop:'nav',jump:'nav',course:'nav',abort:'nav',lmode:'wpn',tgt:'wpn',fire:'wpn',pd:'wpn',pk:'wpn',pm:'wpn',hl:'wpn',sor:'wpn',sorsz:'wpn',wsw:'wpn',pw:'eng',preset:'eng'},CREW_NAME={nav:'Helm',wpn:'Weapons',eng:'Engineering'};
+const CREW_STN={helm:'nav',man:'nav',thrset:'nav',thr:'nav',move:'nav',stop:'nav',jump:'nav',course:'nav',abort:'nav',lmode:'wpn',tgt:'wpn',fire:'wpn',pd:'wpn',pk:'wpn',pm:'wpn',hl:'wpn',sor:'wpn',sorsz:'wpn',wsw:'wpn',scout:'nav',pw:'eng',preset:'eng'},CREW_NAME={nav:'Helm',wpn:'Weapons',eng:'Engineering'};
 function crewStn(a){return CREW_STN[String(a).split(':')[0]]||null}
 function crewCan(t,pid,a){const st=crewStn(a),C=t.crew||{};if(t.owner===pid||(!NET.on&&fMine(t)))return!(st&&C[st]&&C[st]!==pid);return!!st&&C[st]===pid}
 function crewAboard(t){const out=[];for(const pid in S.pilots||{}){const P=S.pilots[pid];if(pid!==t.owner&&P.docked==='bridge'&&P.bridgeId===t.id)out.push(pid)}return out}

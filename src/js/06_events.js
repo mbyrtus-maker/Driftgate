@@ -81,13 +81,14 @@ function updateEvents(){
 const CONSTR_LD={plate:6,wire:4,coil:2},BROOD_SEED={plate:2},   // Bloom nodes are grown from a frame, not assembled by a constructor
  SCOUT_LD={plate:1,wire:2},SCOUT2_LD={plate:2,wire:3,coil:1};
 function scoutsTick(){S.scouts=S.scouts||[];const pf=S.player.faction;
-  for(const f of FAC_IDS){const mine=S.scouts.filter(x=>x.side===f).length,want=1;
+  for(const f of FAC_IDS){const mine=S.scouts.filter(x=>x.side===f).length,want=1+((S.frigates||[]).some(c=>c.scoutReq&&!c.scoutReq.sc&&sideNorm(c.side)===f)?1:0);
     const srcs=[S.econ.fleet[f],S.econ.stock[f]],adv=facVet(f)&&haveIn(SCOUT2_LD,srcs),LD=adv?SCOUT2_LD:SCOUT_LD;if(mine<want&&haveIn(LD,srcs)){const load={};takeFrom(LD,srcs);inv.addAll(load,LD);if(adv&&srcs.some(x=>(x.swarm||0)>0)){takeFrom({swarm:1},srcs);inv.add(load,'swarm',1)}const home=SECTOR_DEFS.find(d=>d.home===f&&d.kind==='frontier').id;
       const t={id:S.nextId++,side:f,sector:home,load};if(adv)t.cls='scout2';S.scouts.push(t);if(WORLDS[home])inW(WORLDS[home],()=>spawnScout(t,true))}}
   for(const t of S.scouts)if(t.live){const w=WORLDS[t.sector];if(!w||!w.ents.some(e=>e.alive&&e.home===`scout:${t.id}:${t.side}`))t.live=false}
-  for(let i=S.scouts.length-1;i>=0;i--){const t=S.scouts[i];if(t.live)continue;const d=DEF[t.sector];
+  for(let i=S.scouts.length-1;i>=0;i--){const t=S.scouts[i];if(t.live){if(t.ord&&t.ord.to!==t.sector){const w=WORLDS[t.sector];if(w)inW(w,()=>{const e=W.ents.find(x=>x.alive&&x.home===`scout:${t.id}:${t.side}`);if(e){fxWarp(e,sideCol(e.side));despawn(e)}});t.live=false}else{if(t.ord)scoutOrdStep(t);continue}}const d=DEF[t.sector];
     let risk=d.kind==='hive'?.3:0;const rk=t.cls==='scout2'?.6:1;const oid=OUT_BY_SECTOR[t.sector];if(oid&&S.outposts[oid].owner&&hostile(t.side,S.outposts[oid].owner))risk+=.05;const Rs=S.stations[t.sector];if(Rs&&hostile(t.side,Rs.owner))risk+=.08;if(d.kind==='den')risk+=.04;
-    if(Math.random()<risk*rk){toDebris(S.sectors[t.sector],t.load);S.scouts.splice(i,1);if(t.side===pf)feed(`Contact lost with our scout in ${d.name}.`,'warn');continue}
+    if(Math.random()<risk*rk*(t.ord&&t.ord.to===t.sector?.25:1)){toDebris(S.sectors[t.sector],t.load);S.scouts.splice(i,1);if(t.side===pf)feed(`Contact lost with our scout in ${d.name}.`,'warn');continue}
+    if(t.ord){scoutOrdStep(t);continue}
     if(Math.random()<.25){const terr=territory(t.side),opts=NEIGH[t.sector].map(n=>{const dn=DEF[n];let w=1;if(!covOf(t.side,true).has(n))w+=2;if(broodNear(n))w+=1.5;if(dn.kind==='hive')w*=.25;if(dn.kind==='den')w*=.4;if(dn.home===t.side&&dn.kind==='core')w*=.2;if(S.scouts.some(o=>o!==t&&o.side===t.side&&o.sector===n))w*=.3;if(S.beacons&&S.beacons[n]&&bcnCan(S.beacons[n],t.side))w+=1.5;return[n,w]});
       const to=wpickArr(opts);t.sector=to;if(WORLDS[to])inW(WORLDS[to],()=>spawnScout(t,true))}}}
 function spawnScout(t,arrive){const e=makeNPC('scout',t.side,t.cls||'scout',factionTier(t.side),t.load,`scout:${t.id}:${t.side}`);t.load={};t.live=true;

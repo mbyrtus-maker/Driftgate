@@ -1325,7 +1325,7 @@ function oresNoNu(d){if(!d.ores.nu)return d.ores;const o={...d.ores};delete o.nu
 const STN={fdepot:{sMax:1200,hMax:2500,tur:2,dmg:11,range:1200},free:{sMax:3600,hMax:10000,tur:6,dmg:16,range:1500},core:{sMax:3200,hMax:9000,tur:6,dmg:15,range:1500},depot:{sMax:2000,hMax:4000,tur:4,dmg:12,range:1300},hive:{sMax:4200,hMax:14000,tur:6,dmg:18,range:1600}};
 // balance levers, tuned by simulation so each of the four powers (the Brood included) wins about a quarter of galaxies
 // (tuned for the 2-hour deadline and the 20-minute hold over 18 rounds of simulated galaxies)
-const BAL={carFab:14,carAsk:30,hiveRegrow:240,aiEff:.7,brBuild:1.15,brOff:.9,brLevT:3300,brN:2,brHive:4,antiBrood:2.8,halProsp:.5,halImp:.08,brGraze:2.7,coal:.35,devGap:1,ext:{halcyon:.715,varkesh:1.21,ostrova:.93}};   // ext: each faction's station mining rate
+const BAL={carFab:14,carAsk:30,hiveRegrow:240,aiEff:.7,brBuild:1.15,brOff:.9,brLevT:3300,brN:2,brHive:4,antiBrood:2.8,halProsp:.5,halImp:.08,brGraze:2.7,coal:.35,devGap:1,ext:{halcyon:.715,varkesh:1.235,ostrova:.93}};   // ext: each faction's station mining rate
 const CAP_SEAL={yard:2,carrier:3,escort:1},sealed=f=>f!=='brood'&&f!=='pirate',withSeal=(C,f,n)=>sealed(f)?{...C,seal:n}:C;
 const yardCost=f=>withSeal(YARD_COST,f,CAP_SEAL.yard),escCost=f=>withSeal(ESCORT_COST,f,CAP_SEAL.escort);
 const DEPOT_COST={frame:2},YARD_COST={frame:4,keel:4,lattice:4,plate:40},YARD_FEE=5000,YARD_TIME=180,FRIGATE_TIME=150;   // FRIGATE_TIME: a carrier's time in the slip (the 'frigbuild' event name is kept for old saves)
@@ -1958,7 +1958,7 @@ function fCrewOK(t){if(!NET.on||!t||!t.owner||t.owner===curPid())return false;co
 function fBoard(t){return fMine(t)||fGuest(t)||fCrewOK(t)}
 // crew stations on a capital ship: the commander can hand a guest one station; the commander loses it while it's assigned,
 // the guest can use only that station, and it returns to the commander the moment the guest steps away from the console
-const CREW_STN={helm:'nav',man:'nav',thrset:'nav',thr:'nav',move:'nav',stop:'nav',jump:'nav',course:'nav',abort:'nav',lmode:'wpn',tgt:'wpn',fire:'wpn',pd:'wpn',pk:'wpn',pm:'wpn',hl:'wpn',sor:'wpn',sorsz:'wpn',wsw:'wpn',pw:'eng',preset:'eng'},CREW_NAME={nav:'Helm',wpn:'Weapons',eng:'Engineering'};
+const CREW_STN={helm:'nav',man:'nav',thrset:'nav',thr:'nav',move:'nav',stop:'nav',jump:'nav',course:'nav',abort:'nav',lmode:'wpn',tgt:'wpn',fire:'wpn',pd:'wpn',pk:'wpn',pm:'wpn',hl:'wpn',sor:'wpn',sorsz:'wpn',wsw:'wpn',scout:'nav',pw:'eng',preset:'eng'},CREW_NAME={nav:'Helm',wpn:'Weapons',eng:'Engineering'};
 function crewStn(a){return CREW_STN[String(a).split(':')[0]]||null}
 function crewCan(t,pid,a){const st=crewStn(a),C=t.crew||{};if(t.owner===pid||(!NET.on&&fMine(t)))return!(st&&C[st]&&C[st]!==pid);return!!st&&C[st]===pid}
 function crewAboard(t){const out=[];for(const pid in S.pilots||{}){const P=S.pilots[pid];if(pid!==t.owner&&P.docked==='bridge'&&P.bridgeId===t.id)out.push(pid)}return out}
@@ -3106,13 +3106,14 @@ function updateEvents(){
 const CONSTR_LD={plate:6,wire:4,coil:2},BROOD_SEED={plate:2},   // Bloom nodes are grown from a frame, not assembled by a constructor
  SCOUT_LD={plate:1,wire:2},SCOUT2_LD={plate:2,wire:3,coil:1};
 function scoutsTick(){S.scouts=S.scouts||[];const pf=S.player.faction;
-  for(const f of FAC_IDS){const mine=S.scouts.filter(x=>x.side===f).length,want=1;
+  for(const f of FAC_IDS){const mine=S.scouts.filter(x=>x.side===f).length,want=1+((S.frigates||[]).some(c=>c.scoutReq&&!c.scoutReq.sc&&sideNorm(c.side)===f)?1:0);
     const srcs=[S.econ.fleet[f],S.econ.stock[f]],adv=facVet(f)&&haveIn(SCOUT2_LD,srcs),LD=adv?SCOUT2_LD:SCOUT_LD;if(mine<want&&haveIn(LD,srcs)){const load={};takeFrom(LD,srcs);inv.addAll(load,LD);if(adv&&srcs.some(x=>(x.swarm||0)>0)){takeFrom({swarm:1},srcs);inv.add(load,'swarm',1)}const home=SECTOR_DEFS.find(d=>d.home===f&&d.kind==='frontier').id;
       const t={id:S.nextId++,side:f,sector:home,load};if(adv)t.cls='scout2';S.scouts.push(t);if(WORLDS[home])inW(WORLDS[home],()=>spawnScout(t,true))}}
   for(const t of S.scouts)if(t.live){const w=WORLDS[t.sector];if(!w||!w.ents.some(e=>e.alive&&e.home===`scout:${t.id}:${t.side}`))t.live=false}
-  for(let i=S.scouts.length-1;i>=0;i--){const t=S.scouts[i];if(t.live)continue;const d=DEF[t.sector];
+  for(let i=S.scouts.length-1;i>=0;i--){const t=S.scouts[i];if(t.live){if(t.ord&&t.ord.to!==t.sector){const w=WORLDS[t.sector];if(w)inW(w,()=>{const e=W.ents.find(x=>x.alive&&x.home===`scout:${t.id}:${t.side}`);if(e){fxWarp(e,sideCol(e.side));despawn(e)}});t.live=false}else{if(t.ord)scoutOrdStep(t);continue}}const d=DEF[t.sector];
     let risk=d.kind==='hive'?.3:0;const rk=t.cls==='scout2'?.6:1;const oid=OUT_BY_SECTOR[t.sector];if(oid&&S.outposts[oid].owner&&hostile(t.side,S.outposts[oid].owner))risk+=.05;const Rs=S.stations[t.sector];if(Rs&&hostile(t.side,Rs.owner))risk+=.08;if(d.kind==='den')risk+=.04;
-    if(Math.random()<risk*rk){toDebris(S.sectors[t.sector],t.load);S.scouts.splice(i,1);if(t.side===pf)feed(`Contact lost with our scout in ${d.name}.`,'warn');continue}
+    if(Math.random()<risk*rk*(t.ord&&t.ord.to===t.sector?.25:1)){toDebris(S.sectors[t.sector],t.load);S.scouts.splice(i,1);if(t.side===pf)feed(`Contact lost with our scout in ${d.name}.`,'warn');continue}
+    if(t.ord){scoutOrdStep(t);continue}
     if(Math.random()<.25){const terr=territory(t.side),opts=NEIGH[t.sector].map(n=>{const dn=DEF[n];let w=1;if(!covOf(t.side,true).has(n))w+=2;if(broodNear(n))w+=1.5;if(dn.kind==='hive')w*=.25;if(dn.kind==='den')w*=.4;if(dn.home===t.side&&dn.kind==='core')w*=.2;if(S.scouts.some(o=>o!==t&&o.side===t.side&&o.sector===n))w*=.3;if(S.beacons&&S.beacons[n]&&bcnCan(S.beacons[n],t.side))w+=1.5;return[n,w]});
       const to=wpickArr(opts);t.sector=to;if(WORLDS[to])inW(WORLDS[to],()=>spawnScout(t,true))}}}
 function spawnScout(t,arrive){const e=makeNPC('scout',t.side,t.cls||'scout',factionTier(t.side),t.load,`scout:${t.id}:${t.side}`);t.load={};t.live=true;
@@ -8376,6 +8377,35 @@ function siegeAssault(sid,side,g,use){const need={};for(const k in ASSAULT_LD)ne
 function hostE(a,e){if(e&&e.rp&&S.unb){if(a==='player'||a==='pirate'||a==='neutral')return false;if(a==='brood')return true;if(FAC_IDS.includes(a))return!unbCoverP(S.pilots&&S.pilots[e.rp],a);}return hostile(a,e&&e.side)}
 // an attack (missile, laser) from a source on a target: guest targets as above; a guest's weapons hit the Brood as the host's do
 function hostAt(side,src,e){if(e&&e.rp&&S.unb)return hostE(side,e);if(src&&src.rp&&S.unb&&e&&e.side==='brood')return true;return hostile(side,e&&e.side)}
+
+// ============================================================ a carrier calls for a scout (Oct 2026)
+// From the Strategic console a carrier's commander can call one of the faction's scouts to a system within 3 jumps: the scout
+// flies straight there (a jump each tick) and keeps watch for 10 minutes, seeing the system and its neighbours (and flipping its
+// beacon if it can), then goes back to its rounds. If no scout is free, command readies one (a faction keeps a second scout
+// while a call is waiting). The Unbound and the Brood have no scouts to call.
+const SCALL={reach:3,watch:600};
+function scoutFor(t){const f=sideNorm(t.side);return(S.scouts||[]).filter(x=>x.side===f&&!x.ord).sort((a,b)=>HOP[a.sector][t.sector]-HOP[b.sector][t.sector])[0]||null}
+function scoutAssign(t){const R=t.scoutReq;if(!R||R.sc)return;const sc=scoutFor(t);if(!sc)return;R.sc=sc.id;sc.ord={to:R.sid,car:t.id,until:null};
+  const j=HOP[sc.sector][R.sid];scoutSay(t,j?`A ${FAC(sc.side).short} scout is on its way to ${DEF[R.sid].name} for ${t.name} (${j} jump${j>1?'s':''}).`:`A ${FAC(sc.side).short} scout is already in ${DEF[R.sid].name}: it keeps watch there for ${t.name}.`)}
+function scoutSay(t,msg){if(t.owner)keyFeed(t.owner,msg,'info');else if(friendSide(t.side))feed(msg,'info')}
+function scoutOrdStep(sc){const o=sc.ord,t=(S.frigates||[]).find(x=>x.id===o.car);
+  if(sc.sector!==o.to){const p=trPath(sc.sector,o.to);const nx=p&&p[1];if(!nx){scoutDone(sc,t,'it found no way there');return}sc.sector=nx;if(WORLDS[nx])inW(WORLDS[nx],()=>spawnScout(sc,true));if(nx===o.to){o.until=S.T+SCALL.watch;if(t)scoutSay(t,`📡 The scout is over ${DEF[o.to].name}: ${t.name} can see it and its neighbours for ${Math.round(SCALL.watch/60)} minutes.`)}return}
+  if(o.until==null)o.until=S.T+SCALL.watch;if(S.T>o.until)scoutDone(sc,t,null)}
+function scoutDone(sc,t,why){if(t&&t.scoutReq&&t.scoutReq.sc===sc.id){scoutSay(t,why?`The scout couldn't reach ${DEF[sc.ord.to].name}: ${why}.`:`The scout's watch over ${DEF[sc.ord.to].name} is over.`);t.scoutReq=null}sc.ord=null}
+{const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{if(!NET.cl)for(const t of S.frigates||[])if(t.scoutReq&&!t.scoutReq.sc)scoutAssign(t);
+  for(const sc of S.scouts||[])if(sc.ord&&!(S.frigates||[]).some(x=>x.id===sc.ord.car))sc.ord=null;
+  for(const t of S.frigates||[])if(t.scoutReq&&t.scoutReq.sc&&!(S.scouts||[]).some(x=>x.id===t.scoutReq.sc)){scoutSay(t,'Contact lost with the scout you called.');t.scoutReq=null}}catch(e){frameErr('scout calls',e)}return r}}
+// the console command: scout:<system> (call), scout:- (cancel)
+{const o=fconApply;fconApply=function(t,a,ent){const s=String(a);if(!s.startsWith('scout:'))return o.apply(this,arguments);if(!isCar(t))return;const sid=s.slice(6),f=sideNorm(t.side);
+  if(!FAC_IDS.includes(f)){flash('The Unbound keep no scouts to call.',true);return}
+  if(sid==='-'){const R=t.scoutReq;if(R){const sc=(S.scouts||[]).find(x=>x.id===R.sc);if(sc)sc.ord=null;t.scoutReq=null;flash('Scout call cancelled.')}return}
+  if(!DEF[sid]||HOP[t.sector][sid]>SCALL.reach){flash('Too far: a scout can be called to a system within 3 jumps of the carrier.',true);return}
+  {const R=t.scoutReq;if(R&&R.sc){const sc=(S.scouts||[]).find(x=>x.id===R.sc);if(sc)sc.ord=null}}t.scoutReq={sid,T:S.T,sc:null};scoutAssign(t);if(!t.scoutReq.sc)scoutSay(t,`No ${FAC(f).short} scout is free: command is readying one for ${t.name}.`)}}
+function scoutCallHtml(t){const f=sideNorm(t.side);if(!FAC_IDS.includes(f))return'';const R=t.scoutReq,sc=R&&R.sc&&(S.scouts||[]).find(x=>x.id===R.sc);
+  let st='No scout called.';if(R&&!sc)st=`Waiting for a scout to ${esc(DEF[R.sid].name)}: command is readying one.`;else if(sc){const o=sc.ord;st=sc.sector!==o.to?`Scout on its way to ${esc(DEF[o.to].name)} · now in ${esc(DEF[sc.sector].name)} (${HOP[sc.sector][o.to]} jump${HOP[sc.sector][o.to]>1?'s':''})`:`Scout watching ${esc(DEF[o.to].name)} · ${fmtT(Math.max(0,(o.until||S.T)-S.T))} left`}
+  const L=SECTOR_DEFS.filter(d=>{const h=HOP[t.sector][d.id];return h>=1&&h<=SCALL.reach}).sort((a,b)=>HOP[t.sector][a.id]-HOP[t.sector][b.id]||(covered(a.id)?1:0)-(covered(b.id)?1:0));
+  return`<div class="h3" style="margin-top:14px">Call for a scout</div><p class="note" style="margin-top:0">${st}</p><p class="note" style="margin-top:0">A faction scout flies to the system you pick (up to ${SCALL.reach} jumps) and keeps watch for ${Math.round(SCALL.watch/60)} minutes: you see it and its neighbours, enemy capitals included.</p><div class="fbtns">${L.map(d=>`<button class="btn sm" data-fc="scout:${d.id}" aria-pressed="${!!(R&&R.sid===d.id)}">${esc(d.name)} · ${HOP[t.sector][d.id]}${covered(d.id)?'':' · unseen'}</button>`).join('')}${R?'<button class="btn sm bad" data-fc="scout:-">Cancel</button>':''}</div>`}
+{const o=renderConsole;renderConsole=function(full){const r=o.apply(this,arguments);try{const B=W&&W.bridge;if(B&&B.panel==='strat'&&B.f&&B.f.tok&&isCar(B.f.tok)){const el=$('stratSide');if(el&&!el.querySelector('[data-fc^="scout:"]'))el.insertAdjacentHTML('beforeend',scoutCallHtml(B.f.tok))}}catch(e){}return r}}
 
 //@src 17_main.js
 // ============================================================ main loop
