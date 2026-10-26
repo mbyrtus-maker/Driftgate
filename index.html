@@ -5008,8 +5008,12 @@ function pbuildTick(dt){const B=W.pbuild;if(!B)return;if((B.pid||NET.me)!==(CTX|
   if(!haveIn(DEPOT_COST,[P.cargo])||S.stations[W.sid]){feed('Construction failed: the frames are gone.','bad');return}
   takeFrom(DEPOT_COST,[P.cargo]);const Rr=makeStation(W.sid,NET.on?S.player.faction:'player','depot',B,{...DEPOT_COST});addStationEnt(Rr);fxBoom(Rr,160,PLAYER_COL);SFX.clunk();
   feed(`${Rr.name} is online. Dock to use its store; it mines this sector for you and its turrets defend it.`,'good');save()}
+// a new course (map, dock, job, operation, convoy) points the target at its next gate, so J flies the course rather than
+// the old target (often the station you just launched from). A target picked after the course is left alone.
+let routeSeen;
+function courseWatch(){const P=S.player;if(P.route===routeSeen)return;routeSeen=P.route;if(!P.route||!W||P.route===W.sid)return;const g=routeNext();if(g&&!(W.tgt&&W.tgt.kind==='ship'&&hostile('player',W.tgt.ref.side)))W.tgt={kind:'gate',ref:g}}
 function playerUpdate(dt){
-  const p=W.player,P=S.player,st=p.st;pbuildTick(dt);if(P.docked&&P.docked!=='turret')P.limpetUsed=false;if(P.docked||W.dead)return;if(jamDark(p)){p.boosting=false;p.thrusting=false;return}
+  const p=W.player,P=S.player,st=p.st;pbuildTick(dt);if(P.docked&&P.docked!=='turret')P.limpetUsed=false;if(P.docked||W.dead)return;courseWatch();if(jamDark(p)){p.boosting=false;p.thrusting=false;return}
   if(p.landed){landedTick(dt);updateLock(dt);return}
   if(apOn){const man=keys.KeyW||keys.KeyS||keys.KeyA||keys.KeyD||keys.ArrowLeft||keys.ArrowRight||keys.ArrowUp||keys.ArrowDown||touch.on||(mouse.in&&mouse.aim&&!mouse.free&&hyp(mouse.x-VW/2,mouse.y-VH/2)>Math.min(VW,VH)*.42*.25);
     if(man){apOn=false;flash('Autopilot off.')}else{p.wx=p.wy=p.wz=0;autopilot(p,dt);levelRoll(p,dt);if(keys.Space||mouse.l||touch.fire){if(P.wpn==='laser'&&!p.jamMode)fireLaser(p);else fire(p)}updateLock(dt);pickupAndGates(p,P,st);return}}
