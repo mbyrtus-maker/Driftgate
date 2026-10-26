@@ -1621,3 +1621,38 @@ It was hard to tell where your own faction's capital ships were: on the galaxy m
 - **Friendly capitals stand out on the map.** Chevrons with a pale rim (yours in amber, the faction's in its colour), up to three under a system and then a count; a red pulse while one is fighting (a hostile capital or station there, or hit in the last 30 s, `t.fightT`). Every friendly capital's course is drawn: yours solid amber, the faction's dashed and dim. Enemy capitals in sight keep the plain diamond.
 - **Comms, Command page: "Fly to the nearest capital"** (key 6 when it's the sixth option). In another system it sets your course there and starts the autopilot; in the same system it targets the ship and flies to it. Landing on a friendly carrier to resupply was already in its comms page.
 - **Last-seen marks for every enemy capital** (faction and Brood alike). Whenever an enemy capital is in sight (a covered system, or tracked by a ping), its system and time are remembered on your pilot record. When it drops out of sight, a dashed, fading diamond with the minutes since ("4m") stays at the last system it was seen in, for 15 minutes (`CAP_SIGHT_T`) or until it's seen again or destroyed. The fleet panel lists them under "Enemy capitals · last seen" ("in sight now" or "seen 3:20 ago").
+
+## Sub-targets on capitals and stations (Oct 2026) — DESIGN ONLY, NOT BUILT
+*Stored to come back to. Nothing below is in the game.*
+**Why.** Once capitals fly, fighters lose their job against them: gun hits chip a capital's hull at 10% (`CAP_CHIP`, missiles 25%) and only torpedoes (x4) do real damage, so a fighter pilot's role shrinks to killing fighters and escorting bombers. Stations are the same: fighters can't do much to a depot that a strike group or capital can't do better. Sub-targets give fighters their own job, one that makes torpedo runs and assaults work rather than replacing them: **fighters disable, bombers and assault loads finish.**
+
+**Capital sub-systems** (tied to the four power systems a capital already has, `fctl(t).power`: eng, shd, lance, pd, so the effects reuse those multipliers):
+- **Point-defence turrets** (six on a carrier, each its own target). A dead turret stops shooting torpedoes down (turrets hit torpedoes 70/50/30% by range, so each one lost is a big gain for the bombers). The core of the idea: fighters clear the PD, the bombers' torpedoes land.
+- **Engines.** Damaged: slower, turns slower. Disabled: can't use a jumpgate (the same rule disabled fighters have), so a capital can be pinned for the fleet to catch.
+- **Shield generator.** Damaged: slower recharge; disabled: no recharge and a lower maximum.
+- **Main gun (escort, the lance) / launch bay (carrier).** The gun goes quiet; the carrier can't launch or recover its wing.
+
+**Station sub-systems** (tied to the station modules, `DEV_KEYS`, so a better-built station has more to strip):
+- **Turret mounts and the missile battery** (Defence platform). Each mount its own target, outside the shield like a capital's PD. Fewer guns: easier for bombers, constructors' escorts and raiders.
+- **Shield generator** (Hull & shield works). As on a capital.
+- **Fighter hangar bays** (depots). A disabled bay launches nothing when the depot is attacked.
+- **Docking ring / market.** Disabled: no docking or trade there for its own side until repaired (supply convoys wait outside), so a raid can cut a depot off from the economy for a while without taking it.
+- **Production module.** Disabled: no Lattice, Cores or hulls built there.
+- **Ties to capture:** a depot's garrison (`garrison(R)`: +1 for Defence platform 2+, +1 for hangar 2+) counts only working modules, so stripping the turrets and hangar first means fewer assault loads to take it. Unbound depot raids (`raidOdds`, `RAID.stnCut`) get better odds against a depot whose guns are down.
+- **Core stations** can't be captured, so disabling their systems is a temporary blow (guns, shields, market, production) rather than a step toward taking them. **Freeports** stay neutral: exempt for players (only the Brood attacks them). **Scrapheart Haven** gets the same treatment from the factions. **Brood hives** get their own versions (spawning chambers instead of hangar bays) or are left out at first.
+
+**Rules for both:**
+- Sub-targets are real points on the model (turret positions already exist for capitals, `turMount`, and for stations, placed on the surface in `addStationEnt`). With a capital or station targeted, a key cycles its systems (Shift+T is a candidate; check it's free); the HUD shows a lead marker on the point.
+- Turrets sit outside the shield and can be hit at any time; engines, shield generators, guns, bays, docking ring and production only once the shields are down. Shields first (torpedoes, sustained fire), then systems.
+- Hits on a sub-target do full fighter damage instead of the 10% chip; hull still only falls to torpedoes (and, for stations, assaults and sieges). Fighters disable, bombers kill.
+- Systems are disabled, not destroyed. They repair slowly out of combat. A capital repairs fully at its base or from a supply run (`csup`); **a station repairs from its own stores, spending Alloy Plate and Conduit**, so the ledger stays exact and a raided, starved depot stays crippled longer.
+- The target panel lists the systems with health bars; the galaxy map's fleet panel and a station's map detail show disabled systems ("engines out", "2 of 4 turrets down", "docking ring out").
+
+**Who uses it:** AI fighter wings go for turrets when friendly bombers are near ("Attack my target" on a capital or station does the same); AI strike groups strip a depot's turrets and hangar before the assault lands. Unbound: knocking out a capital's engines could open it to the cargo hook, as jamming opens a freighter; disabling a depot's docking ring is a raid objective in itself.
+
+**Risks:**
+- **Too fragile.** Several pilots could strip a capital or station fast. Keep system health high, make each further disabled system do less, keep hull damage for torpedoes and assaults.
+- **Off-screen battles change.** Abstract fights count a carrier's wing as raw damage (`wingPower`) and station sieges as flat hull and shield loss; with sub-targets, fighters should instead lower PD and garrisons. That needs a war check and probably a retune.
+- **Multiplayer:** system state lives on the capital token and the station record on the host, synced to guests like the rest of their state.
+
+**Phasing:** phase 1 is point-defence turrets and engines on capitals, plus turret mounts and the shield generator on stations: that alone gives fighters a job and makes fighter-plus-bomber attacks a thing. Then hangar bays and the garrison tie-in, then the docking ring, production, main gun and launch bay if the first phase plays well.
