@@ -61,13 +61,19 @@ def scout2():
         S.add('rocket_topA',(1.85*sx,-.32,-.55+4*.5*sc),0,sc,False,math.pi/2)
     S.add('machine_barrel',(0,1.05,-.45),math.pi/2,1.15);S.add('satelliteDish',(0,1.4,-1.05),math.pi,.95)
     M=S.model();GLOW_N['scout2']=len(P);return np.concatenate([np.array(P).reshape(-1,3,3),M['P']]),list(N)+list(M['N']),list(R)+[kenney_role(c) for c in M['cols']]
+# the kit's miner flies blunt end first with its two long arms trailing; turned about so the arms lead into the rock and
+# the drives sit in the dark openings at the blunt end (only those dark recesses glow, not the whole back plate)
+def aboutface(m):
+    P,N,R=m;P=np.array(P,dtype=float).reshape(-1,3,3)*np.array([-1,1,-1])
+    return P,[(None if n is None else np.array(n,dtype=float)*np.array([-1,1,-1])) for n in N],R
+DARK_GLOW={'skiff','prospector','dredger'}
 H=math.pi
 MODELS={
  'interceptor':('ship',lambda:ql_model(4)),'striker':('ship',lambda:ql_model('')),'heavy':('ship',lambda:ql_model(5)),'bomber':('ship',lambda:ql_model(3)),'scout':('ship',lambda:ql_model(2)),'scout2':('ship',scout2),
  'picket':('ship',lambda:glb_model('craft_speederB')),'gunboat':('ship',lambda:glb_model('craft_speederD')),
- 'skiff':('ship',lambda:glb_model('craft_miner')),
- 'prospector':('ship',lambda:comp([('craft_miner',(0,0,0),0,1),('machine_barrel',(.95,.15,-.2),0,.55),('machine_barrel',(-.95,.15,-.2),0,.55)])),
- 'dredger':('ship',lambda:comp([('craft_miner',(0,0,0),0,1),('pipe_straight',(.75,.05,1.0),0,.6),('pipe_straight',(-.75,.05,1.0),0,.6),('machine_generator',(0,.62,-.5),0,.7),('machine_barrel',(1.05,.1,-.5),0,.6),('machine_barrel',(-1.05,.1,-.5),0,.6)])),
+ 'skiff':('ship',lambda:aboutface(glb_model('craft_miner'))),
+ 'prospector':('ship',lambda:aboutface(comp([('craft_miner',(0,0,0),0,1),('machine_barrel',(.95,.15,-.2),0,.55),('machine_barrel',(-.95,.15,-.2),0,.55)]))),
+ 'dredger':('ship',lambda:aboutface(comp([('craft_miner',(0,0,0),0,1),('pipe_straight',(.75,.05,1.0),0,.6),('pipe_straight',(-.75,.05,1.0),0,.6),('machine_generator',(0,.62,-.5),0,.7),('machine_barrel',(1.05,.1,-.5),0,.6),('machine_barrel',(-1.05,.1,-.5),0,.6)]))),
  'courier':('ship',lambda:glb_model('craft_cargoA')),'freighter':('ship',lambda:glb_model('craft_cargoB')),
  'bulker':('ship',lambda:comp([('craft_cargoB',(0,0,0),0,1),('barrels_rail',(.95,.1,-.1),0,.8),('barrels_rail',(-.95,.1,-.1),0,.8),('barrels',(0,.85,-.4),0,.7)])),
  'constructor':('ship',lambda:comp([('craft_cargoA',(0,0,0),0,1.1),('structure',(0,.85,-.35),0,.8),('machine_wireless',(0,1.65,-.35),0,.7),('pipe_supportLow',(.9,.1,.4),0,.5),('pipe_supportLow',(-.9,.1,.4),0,.5)])),
@@ -99,7 +105,7 @@ def pack():
             n/=l;vn=N[k] if k<len(N) else None
             if vn is not None and np.dot(n,np.array(vn,dtype=float))<0:t=t[[0,2,1]];n=-n
             r,sh=R[k]
-            if kind=='ship' and k<GLOW_N.get(name,1<<30) and n[2]<-.8 and t[:,2].mean()<zlo+.3*L and r!=GLASS:r=GLOW   # aft-facing faces at the stern glow as engines
+            if kind=='ship' and k<GLOW_N.get(name,1<<30) and n[2]<-.8 and t[:,2].mean()<zlo+.3*L and r!=GLASS and (name not in DARK_GLOW or r==DARK):r=GLOW   # aft-facing faces at the stern glow as engines
             if kind=='struct' and r==DARK:r=WIN                                             # dark recesses on structures read as lit windows
             tris.append(t);roles.append(r);shades.append(sh)
         T=np.array(tris);q=np.clip(np.round(T*32767),-32767,32767).astype('<i2')
