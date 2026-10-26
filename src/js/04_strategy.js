@@ -174,7 +174,7 @@ function coalTick(){const n=controlCounts();let lead=null,best=0;for(const k in 
   const C=S.coal,pf=S.player.faction,nb=n.brood||0;
   if(nb>=ACCORD_ON&&!(C&&C.lead==='brood')){S.coal={lead:'brood',mem:[...FAC_IDS],since:S.T,accord:1};if(running&&!STRAT_SIM())SFX.accord();feed(`⚠ The Containment Accord: the Brood holds ${nb} systems. Halcyon, Varkesh and Ostrova stop fighting each other everywhere and turn their fleets on the Bloom until it is pushed back below ${ACCORD_OFF}.`,'bad');return}
   if(C){const m=n[C.lead]||0;if(C.lead==='brood'?m<ACCORD_OFF:m<=VIC_NEED-2){S.coal=null;feed(`The truce against ${C.lead==='brood'?'the Brood':FACTIONS[C.lead].short} has collapsed: ${m} systems is no longer a threat. ${coalNames(C.mem)} go back to their own wars.`,'news')}
-    else if(C.lead==='brood'||!(lead&&lead!==C.lead&&best>=VIC_NEED&&best>m))return}
+    else if(C.lead==='brood'||!(lead&&lead!==C.lead&&best>=VIC_NEED&&best>m&&m<VIC_NEED))return}   // the truce stays on its leader while that leader still holds 7
   if(!lead||best<VIC_NEED)return;const mem=FAC_IDS.filter(f=>f!==lead);if(!mem.length)return;S.coal={lead,mem,since:S.T};
   if(lead==='brood')feed(`⚠ The Brood holds ${best} systems. ${coalNames(mem)} have set aside their war to stop the Bloom: their fleets hold fire on each other and turn on the Brood.`,'bad');
   else feed(`${coalNames(mem)} have called a truce to stop ${FACTIONS[lead].name} (${best} of ${VIC_NEED} systems). Their fleets now hold fire on each other and go after ${FACTIONS[lead].short}.${lead===pf?' The galaxy is coming for you.':mem.includes(pf)?` ${FAC(pf).short} is in the truce: their ships won't fire on you and your guns won't touch theirs.`:''}`,lead===pf?'bad':'warn')}
@@ -197,6 +197,8 @@ function broodWatch(n){const b=n.brood||0,w=S.broodWarn||0;if(b<w){S.broodWarn=b
 function victoryTick(){if(deadlineTick())return;const n=controlCounts(),need=VIC_NEED;broodWatch(n);let lead=null;for(const k in n)if(n[k]>=need&&(!lead||n[k]>n[lead]))lead=k;
   // two sides over the line at once: the side already holding keeps its clock unless the other clearly has more
   if(lead&&S.victory&&S.victory.side!==lead&&(n[S.victory.side]||0)>=need&&(n[S.victory.side]||0)>=n[lead])lead=S.victory.side;
+  // during a truce, a second faction reaching 7 gets no clock while the truce's leader still holds 7: it starts when that leader is down to 6
+  {const C=S.coal;if(C&&C.lead!=='brood'&&(n[C.lead]||0)>=need){for(const k in n)if(k!==C.lead&&k!=='brood'&&k!=='pirate'&&n[k]>=need&&S.vicHeld!==k){S.vicHeld=k;feed(`${sideName(k)} now holds ${n[k]} systems, but the truce is still aimed at ${sideName(C.lead)}: ${sideName(k)}'s clock starts only once ${sideName(C.lead)} is down to ${need-1}.`,k===S.player.faction?'warn':'news')}if(lead&&lead!=='brood')lead=C.lead}else S.vicHeld=null}
   if(!lead){if(S.victory)feed(`${sideName(S.victory.side)} has lost its grip on the galaxy.`,'news');S.victory=null;return}
   if(!S.victory||S.victory.side!==lead){S.victory={side:lead,since:S.T};feed(`${lead==='brood'?'⚠ The Brood':sideName(lead)} now controls ${n[lead]} of ${SECTOR_DEFS.length} systems. Hold ${VIC_NEED} for ${Math.round(WIN_TIME/60)} minutes and the galaxy is ${lead===S.player.faction?'yours':'theirs'}.`,lead===S.player.faction?'good':'bad');return}
   if(S.T-S.victory.since>=WIN_TIME)galaxyWon(lead)}
