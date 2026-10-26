@@ -50,9 +50,10 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
   // docked: 1–5 pick the station screen's tabs
   if(S&&S.player&&S.player.docked&&!$('dock').hidden&&/^Digit[1-5]$/.test(e.code)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){e.preventDefault();dockTop(+e.code.slice(5)-1);return}
+  if(running&&/^Digit[1-6]$/.test(e.code)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){if(commsOpen()){e.preventDefault();commsPick(String(+e.code.slice(5)-1));return}if(W&&W.bridge&&W.bridge.panel&&+e.code.slice(5)<=FC_TABS.length){e.preventDefault();W.bridge.panel=fcTabs(W.bridge.f.tok)[+e.code.slice(5)-1][0];renderConsole(true);return}}
   const c=keyOf(e.code);if(running)auInit();if(!c)return;
   if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();devCredits();return}
-  if(c==='Enter'&&running&&NET.on&&!S.player.docked){e.preventDefault();openChat();return}
+  if(c==='Enter'&&running&&NET.on&&(!S.player.docked||S.player.docked==='bridge'||S.player.docked==='turret')){e.preventDefault();openChat();return}
   if(c==='KeyN'&&running&&!keys[c]){keys[c]=true;auToggle();return}
   if(c==='Backquote'&&running&&!keys[c]){keys[c]=true;toggleTouch();return}
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(c)&&running)e.preventDefault();
@@ -62,10 +63,10 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyM'){toggleMap();return}
   if(c==='KeyH'||c==='Slash'){toggleSheet('help');return}
   if(!$('map').hidden||!$('help').hidden)return;
-  if(W&&W.gunseat){if(c==='KeyE'){leaveSeat();return}if(c==='KeyC'){if(NET.cl)netSend({t:'gmsl'});else W.gunseat.msl=1;return}}
+  if(W&&W.gunseat){if(c==='KeyC'){if(NET.cl)netSend({t:'gmsl'});else W.gunseat.msl=1;return}}
   if(W&&W.bridge&&W.bridge.panel){const i=['Digit1','Digit2','Digit3','Digit4','Digit5'].indexOf(e.code);if(i>=0){W.bridge.panel=FC_TABS[i][0];renderConsole(true);return}}
   if(W&&W.bridge&&!W.bridge.panel&&(c==='KeyT'||c==='KeyQ')){bridgeTarget(c==='KeyQ');return}
-  if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd'){const tk=W.bridge.f.tok;if(fGuest(tk)){openConsole('strat');flash('Take command first to use the command chair.',true)}else if(NET.on&&tk.owner&&!crewCan(tk,curPid(),'helm')){flash('The command chair goes with the Helm station.',true)}else sitChair()}else openConsole(n.id)}return}if(S.player.docked)undock();else if(W&&W.player&&W.player.landed)liftOff();else if(S.unb&&hookTarget()){if(NET.cl){const T=hookTarget();MP.hookOn=1;netSend({t:'hook',on:1,id:netTid(T)})}return}else if(S.unb&&lairNear()){lairEnter(lairNear());return}else tryDock();return}
+  if(c==='KeyE'){actPress();return}
   if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey(e.shiftKey);return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
@@ -95,7 +96,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyX'){S.player.fa=!S.player.fa;feed(`Flight assist ${S.player.fa?'on':'off'}.`)}
 });
 addEventListener('keyup',e=>{{const k=keyOf(e.code);if(k)keys[k]=false}if(keyOf(e.code)==='KeyE'&&NET.cl&&MP.hookOn){MP.hookOn=0;netSend({t:'hook',on:0})}});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false;if(NET.cl&&MP.hookOn){MP.hookOn=0;netSend({t:'hook',on:0})}});
 const glc=$('gl');
 glc.addEventListener('mousemove',e=>{if(lookLocked()&&!(W&&(W.bridge||W.gunseat))){freeLook();return}if(lookLocked()&&W){const k=.0024;if(W.bridge&&!W.bridge.panel){W.bridge.yaw-=e.movementX*k;W.bridge.pitch=clamp(W.bridge.pitch-e.movementY*k,-1.2,1.2);return}if(W.gunseat){W.gunseat.yaw=wrapA(W.gunseat.yaw-e.movementX*k);W.gunseat.pitch=clamp(W.gunseat.pitch-e.movementY*k,GT_MINP,GT_MAXP);return}}mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});
 glc.addEventListener('mouseleave',()=>{mouse.in=false});
@@ -112,7 +113,7 @@ $('contacts').addEventListener('pointerdown',e=>{const ob=e.target.closest('[dat
   if(W.bridge){const fac=kind==='ship'?ent.side:kind==='station'||kind==='works'?ent.fac:ent.o.owner;if(!fac||!hostile('player',fac)||(kind==='outpost'&&ent.o.breached)){flash('The battery only fires on hostiles.',true);return}bridgeSetTgt(ent);return}
   W.tgt={kind,ref:ent}});
 document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.t;
-  b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('on');if(k==='act'){if(S.player.docked)undock();else tryDock()}else if(k==='tgt')cycleHostile();else if(k==='msl')fireMissile();else if(k==='flare')playerFlares();else if(k==='wpn')setWeapon(S.player.wpn==='laser'?'kinetic':'laser');else touch[k]=true});
+  b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('on');if(k==='act'){actPress()}else if(k==='tgt')cycleHostile();else if(k==='msl')fireMissile();else if(k==='flare')playerFlares();else if(k==='wpn')setWeapon(S.player.wpn==='laser'?'kinetic':'laser');else touch[k]=true});
   const up=()=>{b.classList.remove('on');if(!['act','tgt','msl','flare','wpn'].includes(k))touch[k]=false};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up)});
 // the touch buttons can be switched off with ` (remembered on this device)
 let touchOff=false;try{touchOff=localStorage.getItem('dg_touchOff')==='1'}catch(e){}
@@ -145,7 +146,7 @@ const CM_FIGHT=['patrol','escort','screen','strike','raider'];
 function cmTrader(T){if(T.tradeT)return T.tradeT;if(!T.pup||T.role!=='trader')return null;return(S.traders||[]).find(t=>t.live&&t.sector===W.sid&&t.side===T.side&&t.kind==='haul')||null}
 function cmRole(T){const t=cmTrader(T);if(T.role==='trader')return t&&t.kind==='haul'?`freighter → ${DEF[t.to]?DEF[t.to].name:'?'}`:'trader';if(T.role==='frigate')return T.tok?capName(T.tok):'capital ship';if(T.role==='builder')return'constructor';if(T.role==='miner')return'miner';if(T.role==='hauler')return'hauler';if(T.role==='scout')return'scout';return T.grp&&grpAlive(T.grp).length>1?'wing':'fighter'}
 function cmOpts(T){const P=S.player,p=W.player,f=P.faction,O=[];
-  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},{k:'help',l:'Distress: send help to me'});{const C=!S.unb&&typeof csupCap==='function'&&csupCap();if(C)O.push(haulBusy('csup:'+C.id)?{k:'none',l:`Supply run for ${C.name}: on its way`,off:1}:{k:'csup',l:`Request a supply run for ${C.name}`})}return O}
+  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},{k:'help',l:'Distress: send help to me'});{const C=!S.unb&&!NET.cl&&typeof csupCap==='function'&&csupCap();if(C)O.push(haulBusy('csup:'+C.id)?{k:'none',l:`Supply run for ${C.name}: on its way`,off:1}:{k:'csup',l:`Request a supply run for ${C.name}`})}return O}
   const nm=ftgtName(T),t=cmTrader(T),cv=T.role==='trader'&&t&&t.kind==='haul'&&t.side===f,car=T.role==='frigate'&&T.tok&&isCar(T.tok)&&T.tok.side!=='brood',hit=W.t-(T.lastHit||-99)<4&&T.lastHitBy&&hostile('player',T.lastHitBy);
   if(hit)O.push({k:'assist',l:`Help: target the ship attacking ${nm}`});
   if(cv){const me=P.pid||'me',E=t.esc,n=cvLeft(t);O.push(E&&E.k===me?{k:'none',l:`Escorting: ${E.hops} of ${E.need} jumps · paid when it docks`,off:1}:E?{k:'none',l:`Already escorted by ${E.name||'another pilot'}`,off:1}:n<1?{k:'none',l:'Last leg: no escort contract',off:1}:{k:'cvesc',l:`Escort this convoy · ${n} jump${n>1?'s':''} · ${fmt(cvPay(t,Math.ceil(n*ESC_CV.need)))} cr`},{k:'guard',l:'Guard '+nm},{k:'bound',l:'Where are you bound?'})}
@@ -240,5 +241,8 @@ function clickTarget(){if(!W||S.player.docked)return;let best=null,bd=1e9;for(co
 
 // ---- a free mouse cursor: Esc in flight stops the mouse steering, so the pointer can go to the HUD, another window or
 // another tab while the ship holds its heading (keys still fly it). A click only picks targets. Esc again to steer.
-function mouseFreeToggle(on){mouse.free=on===undefined?!mouse.free:!!on;mouse.l=mouse.r=false;freeLook();const g=$('gl');if(g)g.style.cursor=mouse.free?'default':'';
+function mouseFreeToggle(on){mouse.free=on===undefined?!mouse.free:!!on;mouse.l=mouse.r=false;if(!mouse.free)mouse.aim=false;freeLook();const g=$('gl');if(g)g.style.cursor=mouse.free?'default':'';
   flash(mouse.free?'Mouse cursor free: the ship holds its heading and keys still fly it. Esc to steer with the mouse again.':'Mouse steering back on.')}
+
+// the act key (E) and the touch Act button: leave a gunner seat, bridge chairs and consoles, launch, lift off, hook, Lair, dock
+function actPress(){if(!running||!W)return;if(W.gunseat){leaveSeat();return}if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd'){const tk=W.bridge.f.tok;if(fGuest(tk)){openConsole('strat');flash('Take command first to use the command chair.',true)}else if(NET.on&&tk.owner&&!crewCan(tk,curPid(),'helm')){flash('The command chair goes with the Helm station.',true)}else sitChair()}else openConsole(n.id)}return}if(S.player.docked)undock();else if(W&&W.player&&W.player.landed)liftOff();else if(S.unb&&hookTarget()){if(NET.cl){const T=hookTarget();MP.hookOn=1;netSend({t:'hook',on:1,id:netTid(T)})}return}else if(S.unb&&lairNear()){lairEnter(lairNear());return}else tryDock();}

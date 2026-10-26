@@ -302,7 +302,7 @@ function killShip(e,src,at){if(e.role==='limpet'){limpetShot(e,src,at);return}
   {const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null;
   payKill(e,src,at)
 }
-function playerDeath(p0){
+function playerDeath(p0){apOn=false;
   if(S.player.convoy&&!NET.cl)convoyEnd(false,'your ship was destroyed');
   const p=p0||W.player,P=S.player,s=S.sectors[W.sid],crate={};
   inv.addAll(crate,P.cargo);P.cargo={};P.rack=0;P.mslT=0;
@@ -437,7 +437,7 @@ function detonate(m,i){if(m.harp||m.jt){W.missiles.splice(i,1);toDebris(S.sector
   toDebris(s,m.inv)}
 function deployFlares(e){const fl=[];for(let i=0;i<3;i++){const d=rdir(),f={decoy:true,x:e.x,y:e.y,z:e.z,vx:e.vx*.4+d.x*120,vy:e.vy*.4+d.y*120,vz:e.vz*.4+d.z*120,life:3.2};W.decoys.push(f);fl.push(f)}
   const chance=Math.min(.95,(e.isPlayer||e.flares?.8:.6)*(1+.3*((CLASSES[e.cls].agile||1)-1)));for(const m of W.missiles)if(m.tgt===e&&d3(m,e)<1700&&Math.random()<chance*(m.kind==='torpedo'?.5:m.kind==='swarm'?.55:1))m.tgt=pick(fl);fxSpark(e,'#fff1c0',10)}
-function playerFlares(){if(!W||!running||S.player.docked||W.dead)return;const p=W.player;if(W.flareCd>0){flash(`Flares recharging (${Math.ceil(W.flareCd)} s).`);return}if(p.energy<30){flash('Not enough energy for flares.');return}p.energy-=30;W.flareCd=5;deployFlares(p);if(p.teth&&p.st.tetherCut){p.teth=null;feed('Tether cutter: the harpoon line is cut.','good')}if(NET.cl)netSend({t:'flare'});flash('Flares away.')}
+function playerFlares(){if(!W||!running||S.player.docked||W.dead)return;const p=W.player;if(p.landed){flash('Systems are powered down while landed.');return}if(W.flareCd>0){flash(`Flares recharging (${Math.ceil(W.flareCd)} s).`);return}if(p.energy<30){flash('Not enough energy for flares.');return}p.energy-=30;W.flareCd=5;deployFlares(p);if(p.teth&&p.st.tetherCut){p.teth=null;feed('Tether cutter: the harpoon line is cut.','good')}if(NET.cl)netSend({t:'flare'});flash('Flares away.')}
 function missilesUpdate(dt){
   W.flareCd=Math.max(0,W.flareCd-dt);W.mslCd=Math.max(0,W.mslCd-dt);
   for(let i=W.beams.length-1;i>=0;i--){W.beams[i].ttl-=dt;if(W.beams[i].ttl<=0)W.beams.splice(i,1)}

@@ -1671,3 +1671,23 @@ It was hard to tell where your own faction's capital ships were: on the galaxy m
 - **Passing the truce's leader breaks the truce (Oct 2026).** If, during a truce, another faction passes the leader while the leader still holds 7 (8 systems to 7, say), the truce breaks: a free-for-all (no truce at all), and the leader's win clock keeps running: it stays with the leader while it holds 7, so the side that passed it has to take systems off it, not just out-grow it. If the leader is level again (nobody ahead of it), the truce re-forms on it; if the leader drops under 7, the free-for-all ends, the truce goes after the side that passed it, and that side's clock starts from zero. HUD chip: "Free-for-all · Halcyon on the clock". A Brood Containment Accord still overrides all of it.
 - **Build check for hidden code.** Twice this month a `//` comment added in the middle of a packed line swallowed the rest of that line (the Unbound capitals' orders, then missile detonation). `tools/build.py` now refuses to build when code follows a `//` comment on the same line.
 - **War check with both truce rules (no clock for a second faction at 7; passing the leader breaks the truce, its clock running on), 480 games per side:** as Halcyon O34 H30 V28 B8; as Varkesh O32 H32 V26 B10; as Ostrova H32 O30 V29 B8; as an Unbound captain O35 H31 V25 B9. Average Halcyon 31, Varkesh 27, Ostrova 33, Brood 9 (before: 32.5 / 27 / 30 / 10). Inside the spread, Ostrova a little up; no retune. Galaxies decided by the 7-system hold: 52%, about as before.
+
+## Controls bug sweep: pilot, host and guest (Oct 2026)
+Two code reviews (the pilot's own controls; the host's handling of guests' commands), then fixes:
+**Pilot controls**
+- Esc (and the touch Act button) on a capital ship's bridge or in a gunner seat ran the station undock code and left the pilot half in the seat and half flying. Esc on the bridge now stands you up from the chair (or does nothing); in a gunner seat it leaves the seat; `undock()` refuses anything but a station, outpost or Lair. Quitting or winning no longer "undocks" (which re-saved the pilot outside the station and threw in a timer).
+- The touch Act button now does everything E does (one shared `actPress`): lift off a rock (touch pilots were stuck landed), hook a jammed ship, enter a Lair, bridge consoles and chairs, leave a gunner seat.
+- Autopilot: picking a hostile target by hand while it flies now turns it off with a message, instead of being snapped back to the gate every frame. It can't be engaged while dead, landed, on the bridge or in a seat, and death or landing switches it off (no more ship flying itself after a respawn).
+- Number keys pick comms options and console tabs as printed even after remapping keys (they were swallowed when a weapon key was moved away).
+- Chat (Enter) works on the bridge and in a gunner seat.
+- Turning mouse steering back on (Esc) waits for the next mouse move instead of swerving to wherever the cursor was left.
+- Flares refuse while landed. A guest's comms no longer offers a carrier supply run (the host can't take it from a guest yet).
+- Guest: auto-level (L) stuck to the guest's own setting (it reverted every half second); losing focus while hooking releases the hook on the host.
+**Host handling of guests**
+- A guest docked in their Lair when it was destroyed (or replaced by a new Rigger) stayed "docked" in a Lair that no longer existed, and anything they stashed was lost; the Lair messages went to the host. The guest is now put back in space, dock actions check the Lair still exists and is theirs, and the messages reach its owner.
+- A guest's convoy escorts were left behind on every jump (the escorts were packed after the guest's sector had already changed).
+- Stealth and landing for a guest now act in the guest's own system (they used the host's), and drop the guest's shields as they do for the host. A guest's jam mode survives docking and respawning (the host respawned their ship in lethal mode).
+- Validation: taking command of a faction capital needs the guest on its bridge; capital battery and wing targets must be hostile; carrier resupply needs the guest at the carrier; a guest can hold an allied strike at the gate only for their own faction's inbound strikes, once each, up to 220 s; a guest can't jump while docked; limpets need the guest undocked and within limpet range (and aren't spent on a miss); guest flares have a 4 s host cooldown.
+- Developer tools from a guest work only while the host has the developer panel open.
+- The host's own death no longer blocks guests in the same system from building or calling for help.
+- A guest dock action that throws on the host now still answers (the guest's dock screen sat on "Working…").

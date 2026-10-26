@@ -338,7 +338,7 @@ function astLandPlace(e,a,L){const qa=astPose(a,W.t,_lq),h=astSurf(a,L.d),bl=shi
   qMul(qa,L.qr,_lq2);qMul(_lq2,qAxis(0,1,0,L.yaw||0,_lq3),_lq2);qMul(_lq2,qAxis(1,0,0,L.pit||0,_lq3),e.q);qNorm(e.q)}
 function landCandidate(){const p=W&&W.player;if(!p||S.player.docked||W.dead||p.landed||W.docking||W.bridge)return null;let b=null,bd=1e9;
   for(const a of S.sectors[W.sid].ast){if(a.comet)continue;const d=d3(a,p)-astR(a)-p.st.radius;if(d<LAND_REACH&&d<bd){bd=d;b=a}}return b?{a:b,d:Math.max(0,bd)}:null}
-function landOn(a){const p=W.player;if(hyp(p.vx,p.vy,p.vz)>LAND_SPD){flash(`Too fast to land. Slow below ${LAND_SPD} m/s.`,true);return false}
+function landOn(a){const p=W.player;apOn=false;if(hyp(p.vx,p.vy,p.vz)>LAND_SPD){flash(`Too fast to land. Slow below ${LAND_SPD} m/s.`,true);return false}
   const dx=p.x-a.x,dy=p.y-a.y,dz=p.z-a.z,l=hyp(dx,dy,dz)||1;p.landed={aid:a.id,nx:dx/l,ny:dy/l,nz:dz/l,t:W.t,...astLandInit(p,a)};astLandPlace(p,a,p.landed);p.vx=p.vy=p.vz=0;p.wx=p.wy=p.wz=0;apOn=false;p.mining=null;p.thrusting=p.boosting=false;
   p.masked=true;p.shield=0;p.boot=0;unTargetPlayer(p);for(const m of W.missiles)if(m.tgt===p)m.tgt=null;if(W.lock){W.lock.p=0;W.lock.locked=false}
   if(NET.cl)netSend({t:'land',on:1});SFX.clunk();flash(`Landed. Systems down: you are off enemy sensors beyond ${MASK_NEAR} m. Radar stays live. E to lift off.`);return true}

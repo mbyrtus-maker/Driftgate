@@ -408,7 +408,8 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
 let mapSel=null,resetArm=false;
 function toggleMap(){if(!$('map').hidden){$('map').hidden=true;return}$('help').hidden=true;$('map').hidden=false;mapSel=mapSel||S.player.sector;drawMap();renderMapSide()}
 function toggleSheet(id){const el=$(id);el.hidden=!el.hidden;if(!el.hidden&&id==='help')$('map').hidden=true}
-function closeSheets(){if(!$('help').hidden){$('help').hidden=true;return}if(!$('map').hidden){$('map').hidden=true;return}if(S.player.docked)undock()}
+function closeSheets(){if(!$('help').hidden){$('help').hidden=true;return}if(!$('map').hidden){$('map').hidden=true;return}if(W&&W.gunseat){leaveSeat();return}if(W&&W.bridge){if(W.bridge.seat)standChair();return}if(S.player.docked)undock()}
+function hideSheets(){$('help').hidden=true;$('map').hidden=true}
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{$(b.dataset.close).hidden=true}));
 let quitArm=0;$('bQuit').addEventListener('click',()=>{if(!running)return;const b=$('bQuit');if(performance.now()-quitArm>3000){quitArm=performance.now();b.textContent='Save & quit?';b.style.color='var(--amber)';setTimeout(()=>{if(performance.now()-quitArm>=2900){b.textContent='Quit';b.style.color=''}},3000);return}b.textContent='Quit';b.style.color='';quitGame()});
 $('bMap').addEventListener('click',toggleMap);

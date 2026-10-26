@@ -1128,8 +1128,8 @@ function lairBuild(){const P=unbP(),d=DEF[W.sid];if(!d||!LAIR.kinds.includes(d.k
   if(lairHere()){flash('There is already a Lair in this system.',true);return}const st=S.econ.stock.pirate;if(!haveIn(LAIR.cost,[st])){flash('Scrapheart is short of a Depot Frame and 20 plate for the Rigger.',true);return}
   if(S.events.some(e=>e.type==='rigger'&&e.stage!=='done')){flash('A Rigger is already out.',true);return}takeFrom(LAIR.cost,[st]);const p=W.player,force={};inv.addAll(force,LAIR.cost);
   S.events.push({id:S.nextId++,type:'rigger',att:'pirate',sector:W.sid,force,at:{x:Math.round(p.x),y:Math.round(p.y),z:Math.round(p.z)},until:S.T+90,stage:'inbound',pid:curPid()||'me'});feed(`☠ A Rigger is on its way from Scrapheart with two Raiders to build your Lair here (90 s).`,'info')}
-function riggerTick(){for(const ev of S.events){if(ev.type!=='rigger'||ev.stage==='done'||S.T<ev.until)continue;ev.stage='done';S.lairs=(S.lairs||[]).filter(L=>{if(L.pid!==ev.pid)return true;const s=S.sectors[L.sid];if(Object.keys(L.stash).length)s.crates.push({id:S.nextId++,x:L.x,y:L.y,z:L.z,inv:L.stash,until:S.T+600});toDebris(s,L.fort||{});return false});
-    S.lairs.push({id:S.nextId++,pid:ev.pid,sid:ev.sector,x:ev.at.x+300,y:ev.at.y,z:ev.at.z+300,stash:{},fort:ev.force,hull:LAIR.hull,seen:{}});ev.force={};if(!MUTE)SFX.rigger();feed(`☠ Your Lair in ${DEF[ev.sector].name} is ready: stash and repairs. Dock with E. Factions can't see it until one of their scouts comes within 5 km.`,'good')}}
+function riggerTick(){for(const ev of S.events){if(ev.type!=='rigger'||ev.stage==='done'||S.T<ev.until)continue;ev.stage='done';S.lairs=(S.lairs||[]).filter(L=>{if(L.pid!==ev.pid)return true;lairEvict(L);const s=S.sectors[L.sid];if(Object.keys(L.stash).length)s.crates.push({id:S.nextId++,x:L.x,y:L.y,z:L.z,inv:L.stash,until:S.T+600});toDebris(s,L.fort||{});return false});
+    S.lairs.push({id:S.nextId++,pid:ev.pid,sid:ev.sector,x:ev.at.x+300,y:ev.at.y,z:ev.at.z+300,stash:{},fort:ev.force,hull:LAIR.hull,seen:{}});ev.force={};if(!MUTE&&isMe(ev.pid))SFX.rigger();keyFeed(ev.pid,`☠ Your Lair in ${DEF[ev.sector].name} is ready: stash and repairs. Dock with E. Factions can't see it until one of their scouts comes within 5 km.`,'good')}}
 function lairWorld(dt){const L=lairHere();if(!L)return;const p=W.player;
   // only scouts find a Lair: AI scouts, and pilots flying a Scout or Advanced Scout (paid a finder's fee by their faction)
   for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;const k=e.isPlayer?pkey():e.rp||null,sd=e.isPlayer?S.player.faction:e.rp?(S.pilots[e.rp]||{}).faction:e.side;if(!FAC_IDS.includes(sd))continue;
@@ -1137,7 +1137,7 @@ function lairWorld(dt){const L=lairHere();if(!L)return;const p=W.player;
       facFeed(sd,`☠ Unbound Lair found in ${DEF[W.sid].name}.`,'info');if(k){const got=payKey(k,sd,LAIR.findPay);if(got)keyFeed(k,`☠ You found an Unbound Lair: +${fmt(got)} cr. Your side's ships will attack it on sight.`,'good')}}
     if(!e.npc||!FAC_IDS.includes(e.side))continue;
     if(L.seen[e.side]&&d3(e,L)<2500)L.hull-=6*dt}   // a Lair has no guns: hiding is its only defence
-  if(L.hull<=0){const s=S.sectors[W.sid];s.crates.push({id:S.nextId++,x:L.x,y:L.y,z:L.z,inv:L.stash,until:S.T+600});toDebris(s,L.fort||{});L.stash={};L.fort={};S.lairs=S.lairs.filter(x=>x!==L);fxBoom(L,260,'#ffcf5a');feed(`✕ Your Lair in ${DEF[W.sid].name} was destroyed. Its stash is drifting as salvage.`,'bad')}}
+  if(L.hull<=0){const s=S.sectors[W.sid];s.crates.push({id:S.nextId++,x:L.x,y:L.y,z:L.z,inv:L.stash,until:S.T+600});toDebris(s,L.fort||{});L.stash={};L.fort={};S.lairs=S.lairs.filter(x=>x!==L);fxBoom(L,260,'#ffcf5a');keyFeed(L.pid||'me',`✕ Your Lair in ${DEF[W.sid].name} was destroyed. Its stash is drifting as salvage.`,'bad');lairEvict(L)}}
 function lairDraw(){const L=W&&lairHere();if(!L||!inView(L.x,L.y,L.z,120))return;qAxis(.2,1,.1,.6,_xq);qNorm(_xq);mModel(MM,L.x,L.y,L.z,_xq,90,70,84);drawMesh(astMesh(3,'fe'),MM);sprite(L.x,L.y+70,L.z,18+4*Math.sin(W.t*3),[.85,.8,.55],.7)}
 function lairNear(){const L=W&&lairHere(),p=W&&W.player;return L&&p&&d3(L,p)<260&&L.pid===(curPid()||'me')?L:null}
 // docking at a Lair: the ship lines up on the rock's mouth and slides inside it (out of sight, as at any dock) before the
@@ -2064,7 +2064,7 @@ function victoryTick(){if(deadlineTick())return;const n=controlCounts(),need=VIC
   if(S.T-S.victory.since>=WIN_TIME)galaxyWon(lead)}
 function loadLegacy(){try{return JSON.parse(localStorage.getItem('driftgate.legacy')||'{}')||{}}catch(e){return{}}}
 function galaxyWon(side,how){{const v=$('winV');if(v)v.hidden=true}if(!NET.cl)legAward(side);if(NET.host)for(const c of readyCl())send(c.L,{t:'won',side,how});const lg=loadLegacy();lg.wins=lg.wins||{};lg.wins[side]=(lg.wins[side]||0)+1;lg.last=side;try{localStorage.setItem('driftgate.legacy',JSON.stringify(lg));localStorage.removeItem(SAVE_KEY)}catch(e){}
-  S.won=side;closeSheets&&closeSheets();const mine=side===S.player.faction,n=controlCounts()[side]||0;
+  S.won=side;hideSheets();const mine=side===S.player.faction,n=controlCounts()[side]||0;
   $('winT').textContent=side==='brood'?'The Bloom spreads':mine?'Victory':`${FACTIONS[side].short} rules`;
   const held=how==='tie'?`held the most systems (${n} of ${SECTOR_DEFS.length}) when the two-hour deadline arrived`:`held ${n} of ${SECTOR_DEFS.length} systems for ${Math.round(WIN_TIME/60)} minutes`;
   $('winP').textContent=side==='brood'?`The Vael Brood ${held}. The galaxy is consumed. No pilot earns a Legend point. A new galaxy waits.`:`The ${FACTIONS[side].name} ${held} and unites the galaxy.${mine?' Your faction won, and you with it.':''} A new galaxy begins: ${FACTIONS[side].short} starts it with a finished capital shipyard and 40% richer stores${mine?', and you start with 4,000 extra credits and a crate of parts':''}.`;
@@ -2233,7 +2233,7 @@ function responseTick(ev){const T=S.T;
     if(!alive.length){finishOffensive(ev);if(ev.kind==='hunt'){const A=S.ai[ev.att],t=(S.frigates||[]).find(x=>x.id===ev.tok);if(t&&A)A.huntFail=(A.huntFail||0)+1;else if(A)A.huntFail=0}}
     else if(T>ev.until)for(const e of alive){e.role='leave';e.order=null}}}
 // a pilot calls for help: friendly fighters nearby break off to cover them, and their faction sends a wing from the closest station
-function pilotDistress(){if(!W||!W.player)return;if(S.unb){flash('Nobody answers an Unbound distress call.',true);return}const P=S.player,p=W.player;if(P.docked||W.dead){flash('You can only call for help in space.');return}
+function pilotDistress(){if(!W||!W.player)return;if(S.unb){flash('Nobody answers an Unbound distress call.',true);return}const P=S.player,p=W.player;if(P.docked||(W===LW&&!CTX&&W.dead)){flash('You can only call for help in space.');return}
   if(S.T<(P.distT||0)){flash(`Distress beacon recharging (${Math.ceil(P.distT-S.T)} s).`);return}P.distT=S.T+90;
   const fac=P.faction,Fs=FACTIONS[fac].short;let near=0;
   {const cand=[];for(const e of W.ents){if(e.type!=='ship'||!e.alive||!e.npc||e.side!==fac||e.order)continue;if(!['patrol','escort','screen','strike','raider'].includes(e.role))continue;if(isBmb(e.cls)&&e.role==='strike')continue;const d=d3(e,p);if(d<4500)cand.push([e,d])}
@@ -2597,7 +2597,7 @@ function astLandPlace(e,a,L){const qa=astPose(a,W.t,_lq),h=astSurf(a,L.d),bl=shi
   qMul(qa,L.qr,_lq2);qMul(_lq2,qAxis(0,1,0,L.yaw||0,_lq3),_lq2);qMul(_lq2,qAxis(1,0,0,L.pit||0,_lq3),e.q);qNorm(e.q)}
 function landCandidate(){const p=W&&W.player;if(!p||S.player.docked||W.dead||p.landed||W.docking||W.bridge)return null;let b=null,bd=1e9;
   for(const a of S.sectors[W.sid].ast){if(a.comet)continue;const d=d3(a,p)-astR(a)-p.st.radius;if(d<LAND_REACH&&d<bd){bd=d;b=a}}return b?{a:b,d:Math.max(0,bd)}:null}
-function landOn(a){const p=W.player;if(hyp(p.vx,p.vy,p.vz)>LAND_SPD){flash(`Too fast to land. Slow below ${LAND_SPD} m/s.`,true);return false}
+function landOn(a){const p=W.player;apOn=false;if(hyp(p.vx,p.vy,p.vz)>LAND_SPD){flash(`Too fast to land. Slow below ${LAND_SPD} m/s.`,true);return false}
   const dx=p.x-a.x,dy=p.y-a.y,dz=p.z-a.z,l=hyp(dx,dy,dz)||1;p.landed={aid:a.id,nx:dx/l,ny:dy/l,nz:dz/l,t:W.t,...astLandInit(p,a)};astLandPlace(p,a,p.landed);p.vx=p.vy=p.vz=0;p.wx=p.wy=p.wz=0;apOn=false;p.mining=null;p.thrusting=p.boosting=false;
   p.masked=true;p.shield=0;p.boot=0;unTargetPlayer(p);for(const m of W.missiles)if(m.tgt===p)m.tgt=null;if(W.lock){W.lock.p=0;W.lock.locked=false}
   if(NET.cl)netSend({t:'land',on:1});SFX.clunk();flash(`Landed. Systems down: you are off enemy sensors beyond ${MASK_NEAR} m. Radar stays live. E to lift off.`);return true}
@@ -4221,9 +4221,10 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
   // docked: 1–5 pick the station screen's tabs
   if(S&&S.player&&S.player.docked&&!$('dock').hidden&&/^Digit[1-5]$/.test(e.code)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){e.preventDefault();dockTop(+e.code.slice(5)-1);return}
+  if(running&&/^Digit[1-6]$/.test(e.code)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){if(commsOpen()){e.preventDefault();commsPick(String(+e.code.slice(5)-1));return}if(W&&W.bridge&&W.bridge.panel&&+e.code.slice(5)<=FC_TABS.length){e.preventDefault();W.bridge.panel=fcTabs(W.bridge.f.tok)[+e.code.slice(5)-1][0];renderConsole(true);return}}
   const c=keyOf(e.code);if(running)auInit();if(!c)return;
   if(c==='KeyD'&&e.ctrlKey&&e.altKey&&running){e.preventDefault();devToggle();devCredits();return}
-  if(c==='Enter'&&running&&NET.on&&!S.player.docked){e.preventDefault();openChat();return}
+  if(c==='Enter'&&running&&NET.on&&(!S.player.docked||S.player.docked==='bridge'||S.player.docked==='turret')){e.preventDefault();openChat();return}
   if(c==='KeyN'&&running&&!keys[c]){keys[c]=true;auToggle();return}
   if(c==='Backquote'&&running&&!keys[c]){keys[c]=true;toggleTouch();return}
   if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(c)&&running)e.preventDefault();
@@ -4233,10 +4234,10 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyM'){toggleMap();return}
   if(c==='KeyH'||c==='Slash'){toggleSheet('help');return}
   if(!$('map').hidden||!$('help').hidden)return;
-  if(W&&W.gunseat){if(c==='KeyE'){leaveSeat();return}if(c==='KeyC'){if(NET.cl)netSend({t:'gmsl'});else W.gunseat.msl=1;return}}
+  if(W&&W.gunseat){if(c==='KeyC'){if(NET.cl)netSend({t:'gmsl'});else W.gunseat.msl=1;return}}
   if(W&&W.bridge&&W.bridge.panel){const i=['Digit1','Digit2','Digit3','Digit4','Digit5'].indexOf(e.code);if(i>=0){W.bridge.panel=FC_TABS[i][0];renderConsole(true);return}}
   if(W&&W.bridge&&!W.bridge.panel&&(c==='KeyT'||c==='KeyQ')){bridgeTarget(c==='KeyQ');return}
-  if(c==='KeyE'){if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd'){const tk=W.bridge.f.tok;if(fGuest(tk)){openConsole('strat');flash('Take command first to use the command chair.',true)}else if(NET.on&&tk.owner&&!crewCan(tk,curPid(),'helm')){flash('The command chair goes with the Helm station.',true)}else sitChair()}else openConsole(n.id)}return}if(S.player.docked)undock();else if(W&&W.player&&W.player.landed)liftOff();else if(S.unb&&hookTarget()){if(NET.cl){const T=hookTarget();MP.hookOn=1;netSend({t:'hook',on:1,id:netTid(T)})}return}else if(S.unb&&lairNear()){lairEnter(lairNear());return}else tryDock();return}
+  if(c==='KeyE'){actPress();return}
   if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey(e.shiftKey);return}
   if(S.player.docked)return;
   if(c==='KeyT')targetNearest('hostile');
@@ -4266,7 +4267,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(c==='KeyX'){S.player.fa=!S.player.fa;feed(`Flight assist ${S.player.fa?'on':'off'}.`)}
 });
 addEventListener('keyup',e=>{{const k=keyOf(e.code);if(k)keys[k]=false}if(keyOf(e.code)==='KeyE'&&NET.cl&&MP.hookOn){MP.hookOn=0;netSend({t:'hook',on:0})}});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false;if(NET.cl&&MP.hookOn){MP.hookOn=0;netSend({t:'hook',on:0})}});
 const glc=$('gl');
 glc.addEventListener('mousemove',e=>{if(lookLocked()&&!(W&&(W.bridge||W.gunseat))){freeLook();return}if(lookLocked()&&W){const k=.0024;if(W.bridge&&!W.bridge.panel){W.bridge.yaw-=e.movementX*k;W.bridge.pitch=clamp(W.bridge.pitch-e.movementY*k,-1.2,1.2);return}if(W.gunseat){W.gunseat.yaw=wrapA(W.gunseat.yaw-e.movementX*k);W.gunseat.pitch=clamp(W.gunseat.pitch-e.movementY*k,GT_MINP,GT_MAXP);return}}mouse.x=e.clientX;mouse.y=e.clientY;mouse.aim=true;mouse.in=true});
 glc.addEventListener('mouseleave',()=>{mouse.in=false});
@@ -4283,7 +4284,7 @@ $('contacts').addEventListener('pointerdown',e=>{const ob=e.target.closest('[dat
   if(W.bridge){const fac=kind==='ship'?ent.side:kind==='station'||kind==='works'?ent.fac:ent.o.owner;if(!fac||!hostile('player',fac)||(kind==='outpost'&&ent.o.breached)){flash('The battery only fires on hostiles.',true);return}bridgeSetTgt(ent);return}
   W.tgt={kind,ref:ent}});
 document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.t;
-  b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('on');if(k==='act'){if(S.player.docked)undock();else tryDock()}else if(k==='tgt')cycleHostile();else if(k==='msl')fireMissile();else if(k==='flare')playerFlares();else if(k==='wpn')setWeapon(S.player.wpn==='laser'?'kinetic':'laser');else touch[k]=true});
+  b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('on');if(k==='act'){actPress()}else if(k==='tgt')cycleHostile();else if(k==='msl')fireMissile();else if(k==='flare')playerFlares();else if(k==='wpn')setWeapon(S.player.wpn==='laser'?'kinetic':'laser');else touch[k]=true});
   const up=()=>{b.classList.remove('on');if(!['act','tgt','msl','flare','wpn'].includes(k))touch[k]=false};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up)});
 // the touch buttons can be switched off with ` (remembered on this device)
 let touchOff=false;try{touchOff=localStorage.getItem('dg_touchOff')==='1'}catch(e){}
@@ -4316,7 +4317,7 @@ const CM_FIGHT=['patrol','escort','screen','strike','raider'];
 function cmTrader(T){if(T.tradeT)return T.tradeT;if(!T.pup||T.role!=='trader')return null;return(S.traders||[]).find(t=>t.live&&t.sector===W.sid&&t.side===T.side&&t.kind==='haul')||null}
 function cmRole(T){const t=cmTrader(T);if(T.role==='trader')return t&&t.kind==='haul'?`freighter → ${DEF[t.to]?DEF[t.to].name:'?'}`:'trader';if(T.role==='frigate')return T.tok?capName(T.tok):'capital ship';if(T.role==='builder')return'constructor';if(T.role==='miner')return'miner';if(T.role==='hauler')return'hauler';if(T.role==='scout')return'scout';return T.grp&&grpAlive(T.grp).length>1?'wing':'fighter'}
 function cmOpts(T){const P=S.player,p=W.player,f=P.faction,O=[];
-  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},{k:'help',l:'Distress: send help to me'});{const C=!S.unb&&typeof csupCap==='function'&&csupCap();if(C)O.push(haulBusy('csup:'+C.id)?{k:'none',l:`Supply run for ${C.name}: on its way`,off:1}:{k:'csup',l:`Request a supply run for ${C.name}`})}return O}
+  if(T===p){O.push({k:'escort',l:'Escort me: a wing forms up on me'},{k:'guard',l:'Guard me here'},{k:'build',l:S.unb?'Build here':W.sid===FAC_HOME(f)?'Request a shipyard here':'Request a depot here'},{k:'help',l:'Distress: send help to me'});{const C=!S.unb&&!NET.cl&&typeof csupCap==='function'&&csupCap();if(C)O.push(haulBusy('csup:'+C.id)?{k:'none',l:`Supply run for ${C.name}: on its way`,off:1}:{k:'csup',l:`Request a supply run for ${C.name}`})}return O}
   const nm=ftgtName(T),t=cmTrader(T),cv=T.role==='trader'&&t&&t.kind==='haul'&&t.side===f,car=T.role==='frigate'&&T.tok&&isCar(T.tok)&&T.tok.side!=='brood',hit=W.t-(T.lastHit||-99)<4&&T.lastHitBy&&hostile('player',T.lastHitBy);
   if(hit)O.push({k:'assist',l:`Help: target the ship attacking ${nm}`});
   if(cv){const me=P.pid||'me',E=t.esc,n=cvLeft(t);O.push(E&&E.k===me?{k:'none',l:`Escorting: ${E.hops} of ${E.need} jumps · paid when it docks`,off:1}:E?{k:'none',l:`Already escorted by ${E.name||'another pilot'}`,off:1}:n<1?{k:'none',l:'Last leg: no escort contract',off:1}:{k:'cvesc',l:`Escort this convoy · ${n} jump${n>1?'s':''} · ${fmt(cvPay(t,Math.ceil(n*ESC_CV.need)))} cr`},{k:'guard',l:'Guard '+nm},{k:'bound',l:'Where are you bound?'})}
@@ -4411,8 +4412,11 @@ function clickTarget(){if(!W||S.player.docked)return;let best=null,bd=1e9;for(co
 
 // ---- a free mouse cursor: Esc in flight stops the mouse steering, so the pointer can go to the HUD, another window or
 // another tab while the ship holds its heading (keys still fly it). A click only picks targets. Esc again to steer.
-function mouseFreeToggle(on){mouse.free=on===undefined?!mouse.free:!!on;mouse.l=mouse.r=false;freeLook();const g=$('gl');if(g)g.style.cursor=mouse.free?'default':'';
+function mouseFreeToggle(on){mouse.free=on===undefined?!mouse.free:!!on;mouse.l=mouse.r=false;if(!mouse.free)mouse.aim=false;freeLook();const g=$('gl');if(g)g.style.cursor=mouse.free?'default':'';
   flash(mouse.free?'Mouse cursor free: the ship holds its heading and keys still fly it. Esc to steer with the mouse again.':'Mouse steering back on.')}
+
+// the act key (E) and the touch Act button: leave a gunner seat, bridge chairs and consoles, launch, lift off, hook, Lair, dock
+function actPress(){if(!running||!W)return;if(W.gunseat){leaveSeat();return}if(W&&W.bridge){if(W.bridge.panel){closeConsole();return}if(W.bridge.seat){standChair();return}const n=bridgeNear();if(n){if(n.id==='hatch')exitBridge();else if(n.id==='cmd'){const tk=W.bridge.f.tok;if(fGuest(tk)){openConsole('strat');flash('Take command first to use the command chair.',true)}else if(NET.on&&tk.owner&&!crewCan(tk,curPid(),'helm')){flash('The command chair goes with the Helm station.',true)}else sitChair()}else openConsole(n.id)}return}if(S.player.docked)undock();else if(W&&W.player&&W.player.landed)liftOff();else if(S.unb&&hookTarget()){if(NET.cl){const T=hookTarget();MP.hookOn=1;netSend({t:'hook',on:1,id:netTid(T)})}return}else if(S.unb&&lairNear()){lairEnter(lairNear());return}else tryDock();}
 
 //@src 10_combat.js
 // ============================================================ combat helpers
@@ -4718,7 +4722,7 @@ function killShip(e,src,at){if(e.role==='limpet'){limpetShot(e,src,at);return}
   {const _i=W.ents.indexOf(e);if(_i>=0)W.ents.splice(_i,1)}if(W.tgt&&W.tgt.ref===e)W.tgt=null;
   payKill(e,src,at)
 }
-function playerDeath(p0){
+function playerDeath(p0){apOn=false;
   if(S.player.convoy&&!NET.cl)convoyEnd(false,'your ship was destroyed');
   const p=p0||W.player,P=S.player,s=S.sectors[W.sid],crate={};
   inv.addAll(crate,P.cargo);P.cargo={};P.rack=0;P.mslT=0;
@@ -4853,7 +4857,7 @@ function detonate(m,i){if(m.harp||m.jt){W.missiles.splice(i,1);toDebris(S.sector
   toDebris(s,m.inv)}
 function deployFlares(e){const fl=[];for(let i=0;i<3;i++){const d=rdir(),f={decoy:true,x:e.x,y:e.y,z:e.z,vx:e.vx*.4+d.x*120,vy:e.vy*.4+d.y*120,vz:e.vz*.4+d.z*120,life:3.2};W.decoys.push(f);fl.push(f)}
   const chance=Math.min(.95,(e.isPlayer||e.flares?.8:.6)*(1+.3*((CLASSES[e.cls].agile||1)-1)));for(const m of W.missiles)if(m.tgt===e&&d3(m,e)<1700&&Math.random()<chance*(m.kind==='torpedo'?.5:m.kind==='swarm'?.55:1))m.tgt=pick(fl);fxSpark(e,'#fff1c0',10)}
-function playerFlares(){if(!W||!running||S.player.docked||W.dead)return;const p=W.player;if(W.flareCd>0){flash(`Flares recharging (${Math.ceil(W.flareCd)} s).`);return}if(p.energy<30){flash('Not enough energy for flares.');return}p.energy-=30;W.flareCd=5;deployFlares(p);if(p.teth&&p.st.tetherCut){p.teth=null;feed('Tether cutter: the harpoon line is cut.','good')}if(NET.cl)netSend({t:'flare'});flash('Flares away.')}
+function playerFlares(){if(!W||!running||S.player.docked||W.dead)return;const p=W.player;if(p.landed){flash('Systems are powered down while landed.');return}if(W.flareCd>0){flash(`Flares recharging (${Math.ceil(W.flareCd)} s).`);return}if(p.energy<30){flash('Not enough energy for flares.');return}p.energy-=30;W.flareCd=5;deployFlares(p);if(p.teth&&p.st.tetherCut){p.teth=null;feed('Tether cutter: the harpoon line is cut.','good')}if(NET.cl)netSend({t:'flare'});flash('Flares away.')}
 function missilesUpdate(dt){
   W.flareCd=Math.max(0,W.flareCd-dt);W.mslCd=Math.max(0,W.mslCd-dt);
   for(let i=W.beams.length-1;i>=0;i--){W.beams[i].ttl-=dt;if(W.beams[i].ttl<=0)W.beams.splice(i,1)}
@@ -5030,9 +5034,10 @@ function say(text){try{if(!AU.on.sfx||!('speechSynthesis' in window))return;cons
   if(v)u.voice=v;u.lang='en-GB';u.rate=.92;u.pitch=.72;u.volume=.9;ss.speak(u)}catch(e){}}
 try{if('speechSynthesis' in window){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}}catch(e){}
 function apTarget(){if(W.tgt&&validTgt(W.tgt)&&W.tgt.kind!=='ship')return W.tgt;if(W.tgt&&W.tgt.kind==='ship'&&!hostile('player',W.tgt.ref.side)&&validTgt(W.tgt))return W.tgt;const g=routeNext();return g?{kind:'gate',ref:g}:null}
-function toggleAutopilot(){if(!W||S.player.docked)return;if(apOn){apOn=false;flash('Autopilot off.');return}const T=apTarget();if(!T){flash('Autopilot needs a destination: target a gate, station or rock (Tab cycles), or set a course on the map (M).',true);return}
-  if(T.kind==='ship'&&hostile('player',T.ref.side)){flash('Autopilot will not fly at hostiles.',true);return}apOn=true;W.tgt=T;flash('Autopilot engaged. Steer or thrust to take back control.')}
-function autopilot(p,dt){const T=apTarget();if(!T||!T.ref){apOn=false;if(T&&!T.ref)W.tgt=null;return false}W.tgt=T;const R=T.ref;let stand=0,arrive=true;
+function toggleAutopilot(){if(!W||S.player.docked||W.dead||W.bridge||W.gunseat||(W.player&&W.player.landed)){if(W&&W.player&&W.player.landed)flash('Lift off first.',true);return}if(apOn){apOn=false;flash('Autopilot off.');return}const T=apTarget();if(!T){flash('Autopilot needs a destination: target a gate, station or rock (Tab cycles), or set a course on the map (M).',true);return}
+  if(T.kind==='ship'&&hostile('player',T.ref.side)){flash('Autopilot will not fly at hostiles.',true);return}apOn=true;W.tgt=T;W.apSet=T;flash('Autopilot engaged. Steer or thrust to take back control.')}
+function autopilot(p,dt){if(W.apSet&&W.tgt&&W.tgt.ref!==W.apSet.ref&&W.tgt.kind==='ship'&&hostile('player',W.tgt.ref.side)){apOn=false;W.apSet=null;flash('Autopilot off: you picked a hostile target.');return false}
+  const T=apTarget();if(!T||!T.ref){apOn=false;W.apSet=null;if(T&&!T.ref)W.tgt=null;return false}W.tgt=T;W.apSet=T;const R=T.ref;let stand=0,arrive=true;
   if(T.kind==='gate'){const g=R,d=gateAxis(g),z=gateZone(g,p);if(W.gc||(z.inZone&&z.along>-420)){faceDir(p,d.x,d.y,d.z,dt);p.thrusting=false;if(!W.gc&&z.cos>.9)brake(p,dt*.6);return true}
     const ax=g.x-d.x*300,ay=g.y-d.y*300,az=g.z-d.z*300,ex=ax-p.x,ey=ay-p.y,ez=az-p.z,de=hyp(ex,ey,ez)||1,er=faceDir(p,ex,ey,ez,dt);if(er<.6)steer(p,ax,ay,az,dt,true,1);else brake(p,dt*.4);p.thrusting=er<.6;return true}else if(T.kind==='station'||T.kind==='outpost')stand=230;else if(T.kind==='ast')stand=astR(R)+140;else if(T.kind==='ship')stand=180;else if(T.kind==='beacon')stand=90;else stand=0;
   const dx=R.x-p.x,dy=R.y-p.y,dz=R.z-p.z,d=hyp(dx,dy,dz)||1,tx=R.x-dx/d*stand,ty=R.y-dy/d*stand,tz=R.z-dz/d*stand;
@@ -5040,7 +5045,7 @@ function autopilot(p,dt){const T=apTarget();if(!T||!T.ref){apOn=false;if(T&&!T.r
   if(arrive&&d-stand<40&&hyp(p.vx,p.vy,p.vz)<40){apOn=false;flash(T.kind==='station'||T.kind==='outpost'?'Arrived. Press E to dock.':'Arrived.');return true}return true}
 // auto-level: when you are not rolling, ease the wings back level with the sector plane (skipped when pointing near straight up or down)
 function levelRoll(p,dt){if(S.player.level===false)return;qRot(p.q,0,0,1,_f);if(Math.abs(_f.y)>.88)return;qRot(p.q,1,0,0,_r);qRot(p.q,0,1,0,_u);const err=Math.atan2(_r.y,_u.y);if(Math.abs(err)<.002)return;qMul(p.q,qAxis(0,0,1,-err*Math.min(1,2.4*dt),_qa),p.q);qNorm(p.q)}
-function startPlayerBuild(){if(!W||S.player.docked||W.dead)return;if(NET.cl){netSend({t:'build'});return}const P=S.player,p=W.player;
+function startPlayerBuild(){if(!W||S.player.docked||(W===LW&&W.dead&&!CTX))return;if(NET.cl){netSend({t:'build'});return}const P=S.player,p=W.player;
   if(W.pbuild){flash('Construction already under way.');return}
   if(P.cls!=='constructor'){flash('Depots are built from a Constructor hull (Shipyard at a core station).',true);return}
   if(S.stations[W.sid]){flash('This sector already has a station.',true);return}
@@ -5273,7 +5278,7 @@ function drawDocking(c){const D=W.docking;if(!D)return;const k=Math.min(1,D.t/DO
   c.fillStyle='rgba(4,10,18,.65)';c.fillRect(x-10,y-26,w+20,46);c.fillStyle='rgba(111,183,255,.25)';c.fillRect(x,y,w,8);c.fillStyle='#6fb7ff';c.fillRect(x,y,w*k,8);
   c.font='700 13px "Big Shoulders Display",sans-serif';c.textAlign='center';c.fillStyle='#cfe6ff';
   c.fillText(`${D.kind==='turret'?'BOARDING TURRET':D.berth!=null&&carBay(D.E)?(D.t<2?'LANDING · LINING UP OVER THE FLIGHT DECK':'LANDING · SETTING DOWN ON THE DECK'):D.berth!=null?(D.t<2?'DOCKING · LINING UP ON THE HULL':'DOCKING · HULL CLAMPS DRAWING YOU IN'):D.port!=null?(D.t<2?'DOCKING · LINING UP ON THE ARM':'DOCKING · ARM CLAMPS DRAWING YOU IN'):D.t<2?'DOCKING · ALIGNING OVER HANGAR':'DOCKING · LOWERING INTO HANGAR'}  ${Math.max(0,DOCK_T-D.t).toFixed(1)} s  ·  E TO ABORT`,VW/2,y-9)}
-function undock(){const P=S.player;if(!P.docked||!W)return;if(P.docked==='lair'){P.docked=null;$('dock').hidden=true;const p=W.player;p.alive=true;{const L=(S.lairs||[]).find(x=>x.id===P.lairId),o=rdir(.3),B=L||p,r=L?LAIR_R+p.st.radius*1.25+40:0;p.x=B.x+o.x*r;p.y=B.y+o.y*r;p.z=B.z+o.z*r;faceInstant(p,o.x,o.y,o.z);p.vx=o.x*60;p.vy=o.y*60;p.vz=o.z*60}setTimeout(launchPlayerDrones,0);cam.snap=true;if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]});save();return}if(NET.host)setTimeout(()=>crewLaunch(NET.me),400);setTimeout(launchPlayerDrones,0);setTimeout(convoyLaunch,0);SFX.clunk();const E=P.docked==='station'?W.stationEnt:W.outpostEnt;P.docked=null;const p=W.player;const L=portsW(E);
+function undock(){const P=S.player;if(!P.docked||!W||P.docked==='bridge'||P.docked==='turret'||W.bridge||W.gunseat)return;if(P.docked==='lair'){P.docked=null;$('dock').hidden=true;const p=W.player;p.alive=true;{const L=(S.lairs||[]).find(x=>x.id===P.lairId),o=rdir(.3),B=L||p,r=L?LAIR_R+p.st.radius*1.25+40:0;p.x=B.x+o.x*r;p.y=B.y+o.y*r;p.z=B.z+o.z*r;faceInstant(p,o.x,o.y,o.z);p.vx=o.x*60;p.vy=o.y*60;p.vz=o.z*60}setTimeout(launchPlayerDrones,0);cam.snap=true;if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]});save();return}if(NET.host)setTimeout(()=>crewLaunch(NET.me),400);setTimeout(launchPlayerDrones,0);setTimeout(convoyLaunch,0);SFX.clunk();const E=P.docked==='station'?W.stationEnt:W.outpostEnt;P.docked=null;const p=W.player;const L=portsW(E);
   if(L&&L.length){const pt=L[W.dockPort!=null&&L[W.dockPort]?W.dockPort:Math.floor(Math.random()*L.length)],sc=p.st.radius*1.25,f=sc*1.3+25,u=dockUp(E);p.x=pt.x+pt.dx*f;p.y=pt.y+pt.dy*f;p.z=pt.z+pt.dz*f;p.vx=pt.dx*110+(E.vx||0);p.vy=pt.dy*110;p.vz=pt.dz*110+(E.vz||0);qLook(pt.dx,pt.dy,pt.dz,u.x,u.y,u.z,p.q)}
   else{const o=rdir(.8),B0=E||p,rr=(E&&E.r||0)+90;p.x=B0.x+o.x*rr;p.y=B0.y+o.y*rr;p.z=B0.z+o.z*rr;p.vx=o.x*120;p.vy=o.y*120;p.vz=o.z*120;faceInstant(p,o.x,o.y,o.z)}W.dockPort=null;cam.snap=true;$('dock').hidden=true;p.alive=true;if(NET.cl)netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,q:[p.q.x,p.q.y,p.q.z,p.q.w]});save()}
 let flashMsg=null;
@@ -6617,7 +6622,8 @@ function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.car
 let mapSel=null,resetArm=false;
 function toggleMap(){if(!$('map').hidden){$('map').hidden=true;return}$('help').hidden=true;$('map').hidden=false;mapSel=mapSel||S.player.sector;drawMap();renderMapSide()}
 function toggleSheet(id){const el=$(id);el.hidden=!el.hidden;if(!el.hidden&&id==='help')$('map').hidden=true}
-function closeSheets(){if(!$('help').hidden){$('help').hidden=true;return}if(!$('map').hidden){$('map').hidden=true;return}if(S.player.docked)undock()}
+function closeSheets(){if(!$('help').hidden){$('help').hidden=true;return}if(!$('map').hidden){$('map').hidden=true;return}if(W&&W.gunseat){leaveSeat();return}if(W&&W.bridge){if(W.bridge.seat)standChair();return}if(S.player.docked)undock()}
+function hideSheets(){$('help').hidden=true;$('map').hidden=true}
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{$(b.dataset.close).hidden=true}));
 let quitArm=0;$('bQuit').addEventListener('click',()=>{if(!running)return;const b=$('bQuit');if(performance.now()-quitArm>3000){quitArm=performance.now();b.textContent='Save & quit?';b.style.color='var(--amber)';setTimeout(()=>{if(performance.now()-quitArm>=2900){b.textContent='Quit';b.style.color=''}},3000);return}b.textContent='Quit';b.style.color='';quitGame()});
 $('bMap').addEventListener('click',toggleMap);
@@ -7239,37 +7245,37 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
   switch(m.t){
     case 'u':{if(P.docked)break;MP.inp[pid]={...m,at:performance.now()};P.x=m.x;P.y=m.y;P.z=m.z;P.vx=m.vx;P.vy=m.vy;P.vz=m.vz;P.q=m.q;P.fa=!!m.fa;P.wpn=m.w==='l'?'laser':'kinetic';P.route=m.rt||null;break}
     case 'msl':hMissile(pid,m);break;
-    case 'jam':{const e=MP.rp[pid];if(e)e.jamMode=!!m.on;break}
+    case 'jam':{const e=MP.rp[pid];P.jamMode=!!m.on;if(e)e.jamMode=!!m.on;break}
     case 'xpdr':{if(S.unb)runAs(pid,()=>{const R=unbP();if((R.xpdrOut||0)>S.T)return;R.xpdr=!!m.on});break}
     case 'hook':{MP.hook=MP.hook||{};MP.hook[pid]={on:!!m.on,id:m.id};break}
     case 'spot':{const e0=MP.rp[pid];if(e0)inW(worldOf(e0),()=>{const e=W.ents.find(x=>x.id===m.id);if(e&&d3(e,e0)<SPOT.r*1.2)spotPay(e,pid)});break}
     case 'blast':{const e=MP.rp[pid];if(e)inW(worldOf(e),()=>{if(m.k==='fire')blFire(e,P);else if(m.k==='det')blDetReq(P,e);else if(m.k==='cancel')blCancel(P)});break}
-    case 'flare':{const e=MP.rp[pid];if(e)inW(worldOf(e),()=>deployFlares(e));break}
+    case 'flare':{const e=MP.rp[pid];if(e&&!(e.flareH>performance.now())){e.flareH=performance.now()+4000;inW(worldOf(e),()=>deployFlares(e))}break}
     case 'jump':hJump(pid,m);break;
     case 'dock':hDock(c,m);break;
     case 'undock':hUndock(pid,m);break;
     case 'bridge':hBridge(c,m);break;
-    case 'stealth':{const e=MP.rp[c.pid];if(e){e.stealth=!!m.on;e.masked=!!m.on;e.maskR=m.on?STEALTH_R:0;if(m.on){unTargetPlayer(e);for(const x of W.missiles||[])if(x.tgt===e&&d3(x,e)>STEALTH_R)x.tgt=null}else e.boot=(WORLDS[e.sector||S.pilots[c.pid].sector]||{t:0}).t+BOOT_T}break}
-    case 'land':{const e=MP.rp[c.pid];if(e){e.masked=!!m.on;e.landed=m.on?{}:null;if(m.on){unTargetPlayer(e);for(const x of W.missiles||[])if(x.tgt===e)x.tgt=null}else e.boot=(WORLDS[e.sector||S.pilots[c.pid].sector]||{t:0}).t+BOOT_T}break}
+    case 'stealth':{const e=MP.rp[c.pid];if(e)inW(worldOf(e),()=>{e.stealth=!!m.on;e.masked=!!m.on;e.maskR=m.on?STEALTH_R:0;if(m.on){e.shield=0;unTargetPlayer(e);for(const x of W.missiles||[])if(x.tgt===e&&d3(x,e)>STEALTH_R)x.tgt=null}else e.boot=W.t+BOOT_T});break}
+    case 'land':{const e=MP.rp[c.pid];if(e)inW(worldOf(e),()=>{e.masked=!!m.on;e.landed=m.on?{}:null;if(m.on){e.shield=0;unTargetPlayer(e);for(const x of W.missiles||[])if(x.tgt===e)x.tgt=null}else e.boot=W.t+BOOT_T});break}
     case 'gseat':hSeat(c,m);break;
     case 'g':{if(P.docked!=='turret')break;MP.ginp=MP.ginp||{};const o=MP.ginp[pid]||{};MP.ginp[pid]={yaw:+m.yaw||0,pitch:+m.pitch||0,f:m.f?1:0,at:performance.now(),msl:o.msl||0};break}
     case 'gmsl':{if(P.docked==='turret'&&MP.ginp&&MP.ginp[pid])MP.ginp[pid].msl=1;break}
-    case 'order':{if(m.k==='build'){runAs(pid,()=>requestBuild());break}if(m.k==='help'){runAs(pid,()=>pilotDistress());break}const e=MP.rp[pid],w=e?worldOf(e):WORLDS[P.sector],k=m.k==='guard'?'guard':'escort';if(!w)break;runAs(pid,()=>{const T=m.id==='me'?W.player:entInWorld(w,String(m.id||''));if(!T||hostile(S.player.faction,T.side==='player'?S.player.faction:T.side))return;if(m.k==='form'||m.k==='attack'||m.k==='launch'){const tg=m.tg!=null?entInWorld(w,String(m.tg)):null;if(m.k==='form'||(tg&&tg.alive))cmWing(m.k,T,tg)}else issueOrder(k,T)});break}
+    case 'order':{if(m.k==='build'){runAs(pid,()=>requestBuild());break}if(m.k==='help'){runAs(pid,()=>pilotDistress());break}const e=MP.rp[pid],w=e?worldOf(e):WORLDS[P.sector],k=m.k==='guard'?'guard':'escort';if(!w)break;runAs(pid,()=>{const T=m.id==='me'?W.player:entInWorld(w,String(m.id||''));if(!T||hostile(S.player.faction,T.side==='player'?S.player.faction:T.side))return;if(m.k==='form'||m.k==='attack'||m.k==='launch'){const tg=m.tg!=null?entInWorld(w,String(m.tg)):null;if(m.k==='form'||(tg&&tg.alive&&hostile(S.player.faction,tg.side==='player'?S.player.faction:tg.side)))cmWing(m.k,T,tg)}else issueOrder(k,T)});break}
     case 'cvesc':{const t=(S.traders||[]).find(x=>x.id===m.id&&x.kind==='haul');if(t)runAs(pid,()=>cvTake(t));break}
-    case 'fcon':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(!t)break;if(m.a==='take'){if(!t.owner&&t.side===S.pilots[pid].faction)runAs(pid,()=>fTake(t));sendFtok(c);break}const a0=String(m.a||'');if(!(a0.startsWith('crewoff')||(t.owner===pid)||crewCan(t,pid,a0)))break;const ent=m.e?entInWorld(WORLDS[t.sector],String(m.e)):null;runAs(pid,()=>fconApply(t,String(m.a||'').slice(0,40),ent));sendFtok(c);break}
+    case 'fcon':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(!t)break;if(m.a==='take'){if(!t.owner&&t.side===S.pilots[pid].faction&&P.docked==='bridge'&&P.bridgeId===t.id)runAs(pid,()=>fTake(t));sendFtok(c);break}const a0=String(m.a||'');if(!(a0.startsWith('crewoff')||(t.owner===pid)||crewCan(t,pid,a0)))break;const ent=m.e?entInWorld(WORLDS[t.sector],String(m.e)):null;if(ent&&/^(tgt|wtgt)/.test(a0)&&!hostile(P.faction,ent.side||ent.fac))break;runAs(pid,()=>fconApply(t,String(m.a||'').slice(0,40),ent));sendFtok(c);break}
     case 'fdest':{const t=(S.frigates||[]).find(x=>x.id===m.id);if(t&&t.owner===pid&&DEF[m.dest]){t.dest=String(m.dest);t.jumpTo=null}sendFtok(c);break}
     case 'convoy':{const P=S.pilots&&S.pilots[pid];if(!P)break;if(m.dest&&DEF[m.dest])P.route=String(m.dest);netMsg(pid,'flash',runAs(pid,()=>convoyCall()));break}
     case 'convoyoff':{if(S.pilots&&S.pilots[pid]&&S.pilots[pid].convoy)runAs(pid,()=>convoyEnd(false,'you called it off'));break}
-    case 'resup':{const t=(S.frigates||[]).find(x=>x.id===m.id),P=S.pilots&&S.pilots[pid];if(t&&P)runAs(pid,()=>carResupply(t,P,pid));break}
-    case 'limpet':{const P=S.pilots&&S.pilots[pid],w=P&&WORLDS[P.sector];if(!P||!w||!isScoutCls(P.cls)||P.limpetUsed)break;P.limpetUsed=true;inW(w,()=>{const E=m.k==='cap'?W.ents.find(e=>e.role==='frigate'&&e.alive&&e.tok&&e.tok.id===m.id):m.k==='station'?W.stationEnt:m.k==='outpost'?W.outpostEnt:null;if(E)limpetPlant(E,P.faction,pid,m.at)});break}
-    case 'dev':{if(m.k==='efrig'||m.k==='levi'||m.k==='eesc'){netMsg(pid,'flash',runAs(pid,()=>devEnemyFrig(String(m.side||''),m.k==='levi',m.k==='eesc')));break}
+    case 'resup':{const t=(S.frigates||[]).find(x=>x.id===m.id),P=S.pilots&&S.pilots[pid];if(!t||!P||t.sector!==P.sector)break;const e=MP.rp[pid],F=frigEnt(t);if(!(P.docked==='bridge'&&P.bridgeId===t.id)&&!(e&&F&&d3(e,F)<F.st.radius*1.25+700))break;runAs(pid,()=>carResupply(t,P,pid));break}
+    case 'limpet':{const P=S.pilots&&S.pilots[pid],w=P&&WORLDS[P.sector],me=MP.rp[pid];if(!P||!w||!me||P.docked||!isScoutCls(P.cls)||P.limpetUsed)break;inW(w,()=>{const E=m.k==='cap'?W.ents.find(e=>e.role==='frigate'&&e.alive&&e.tok&&e.tok.id===m.id):m.k==='station'?W.stationEnt:m.k==='outpost'?W.outpostEnt:null;if(E&&d3(E,me)<LIMPET_R+((E.st&&E.st.radius)||200)*1.2){P.limpetUsed=true;limpetPlant(E,P.faction,pid,m.at)}});break}
+    case 'dev':{if($('dev').hidden){netMsg(pid,'flash','Developer tools are off: the host has to open the developer panel (Ctrl+Alt+D) first.');break}if(m.k==='efrig'||m.k==='levi'||m.k==='eesc'){netMsg(pid,'flash',runAs(pid,()=>devEnemyFrig(String(m.side||''),m.k==='levi',m.k==='eesc')));break}
       if(m.k==='squad'){const sd=String(m.side||'');if(!(FACTIONS[sd]||sd==='pirate'||sd==='brood'))break;netMsg(pid,'flash',runAs(pid,()=>devSquad(sd,+m.n,Array.isArray(m.types)?m.types.map(String).slice(0,6):[])));break}
       if(m.k==='gbwing'){netMsg(pid,'flash',runAs(pid,()=>devGunboat()));break}if(m.k==='hull'){const r=runAs(pid,()=>devHull(String(m.cls||'')));if(MP.rp[pid]&&!P.docked){spawnRP(pid)}sendPR(c,true,true);send(L,syncMsg(c));netMsg(pid,'flash',r);if(P.docked)send(L,{t:'actr',err:''});break}if(m.k==='frig'||m.k==='fesc'){netMsg(pid,'flash',devFrigFor(pid,m.k==='fesc'));sendFtok(c);break}if(m.k==='cr'){devLedger(()=>{P.credits+=10000});sendPR(c,false,true);netMsg(pid,'flash','Developer: +10,000 credits.');break}if(m.k==='res'){runAs(pid,()=>devRes(P));sendPR(c,false,true);send(L,syncMsg(c));if(P.docked)send(L,{t:'actr',err:''});netMsg(pid,'flash','Developer: added 10 of every resource to your vault.')}break}
-    case 'act':{if(!(P.docked==='station'||P.docked==='lair'||(S.outposts&&S.outposts[P.docked])))break;const err=runAs(pid,()=>{dockErr='';dockAction(m.act,String(m.arg||''));return dockErr});send(L,{t:'actr',err});sendPR(c,false,true);send(L,syncMsg(c));break}
+    case 'act':{if(!(P.docked==='station'||P.docked==='lair'||(S.outposts&&S.outposts[P.docked])))break;if(P.docked==='lair'&&!(S.lairs||[]).some(x=>x.id===P.lairId&&x.pid===pid&&x.hull>0)){send(L,{t:'actr',err:'Your Lair is gone.'});break}let err='';try{err=runAs(pid,()=>{dockErr='';dockAction(m.act,String(m.arg||''));return dockErr})}catch(x){err='That did not work.';frameErr('guest dock action',x)}send(L,{t:'actr',err});sendPR(c,false,true);send(L,syncMsg(c));break}
     case 'build':{const e=MP.rp[pid];if(e)runAs(pid,()=>{const had=W.pbuild;startPlayerBuild();if(W.pbuild&&W.pbuild!==had)W.pbuild.pid=pid});break}
     case 'plan':{const C=S.plans&&S.plans[P.faction],mv=C&&C.mv;if(mv&&mv.id===+m.id)campAccept(pid,mv);else{const o=C&&sideOf(C).find(x=>x.id===+m.id&&x.stage==='active');if(o)sideAccept(pid,o)}break}
     case 'ujob':{if(S.unb)runAs(pid,()=>ujobTake(m.id));break}
-    case 'hold':{const ev=S.events.find(v=>v.id===m.id);if(ev)ev.hold=Math.max(ev.hold||0,Math.min(+m.hold||0,S.T+240));break}
+    case 'hold':{const ev=S.events.find(v=>v.id===m.id);if(ev&&(ev.type==='offensive'||ev.type==='build')&&ev.stage==='inbound'&&sideNorm(ev.att)===P.faction&&!(ev.held||{})[pid]){(ev.held=ev.held||{})[pid]=1;ev.hold=Math.max(ev.hold||0,Math.min(+m.hold||0,S.T+220))}break}
     case 'chat':{const t=String(m.m||'').slice(0,160);if(t)netChat(P.name,t,pid);break}
     case 'bye':{if(!P.docked)poseFrom(P,m);delete MP.cl[L.peer];pilotLeft(c);setTimeout(()=>linkClose(L,true),200);break}
   }}
@@ -7365,9 +7371,9 @@ function hMissile(pid,m){const e=MP.rp[pid],P=S.pilots[pid];if(!e)return;inW(wor
   if(m.k==='s'){if((P.swarm||0)>0&&CLASSES[P.cls].swarm&&T.type==='ship'){P.swarm--;launchSwarm(e,T,P.tiers.weapon)}}
   else if(P.rack>0){const n=CLASSES[P.cls].twin?Math.min(2,P.rack,m.n|0||1):1;P.rack-=n;for(let i=0;i<n;i++)launchMissile(e,T,P.tiers.weapon,CLASSES[P.cls].torp?'torpedo':'missile',n>1?(i?1:-1):0);if(S.unb){if(e.jamMode)for(let i=n0;i<W.missiles.length;i++){const mm=W.missiles[i];if(mm.src===e){mm.harp=1;mm.col='#b7c6ff'}}runAs(pid,()=>unbShot())}}})}
 function poseFrom(P,m){for(const k of['x','y','z','vx','vy','vz'])if(typeof m[k]==='number'&&isFinite(m[k]))P[k]=m[k];if(Array.isArray(m.q)&&m.q.length===4)P.q=m.q}
-function hJump(pid,m){const P=S.pilots[pid],from=P.sector,to=String(m.to);if(!GATES[from]||!GATES[from].some(g=>g.to===to))return;if(P.convoy&&MP.rp[pid])runAs(pid,()=>convoyJump());
+function hJump(pid,m){const P=S.pilots[pid],from=P.sector,to=String(m.to);if(P.docked||!GATES[from]||!GATES[from].some(g=>g.to===to))return;if(P.convoy&&MP.rp[pid])runAs(pid,()=>convoyJump());
   runAs(pid,()=>{const h=S.outposts.hollow;if((from==='ho'||to==='ho')&&h.owner&&h.owner!=='player'&&h.owner!==S.player.faction){const n=transfer('player',h.owner,40);if(n)feed(`Paid ${n} cr gate toll to ${sideName(h.owner)} at Hollow Relay.`,'news')}});
-  P.sector=to;despawnRP(pid);poseFrom(P,m);delete MP.inp[pid];if(!WORLDS[to])openWorld(to);if(!P.docked)spawnRP(pid);netRoster()}
+  despawnRP(pid);P.sector=to;poseFrom(P,m);delete MP.inp[pid];if(!WORLDS[to])openWorld(to);if(!P.docked)spawnRP(pid);netRoster()}
 function hDock(c,m){const pid=c.pid,P=S.pilots[pid],e=MP.rp[pid];if(!e)return;const w=worldOf(e);let ok=false;
   inW(w,()=>{if(m.d==='lair'){const L=(S.lairs||[]).find(x=>x.id===+m.id&&x.pid===pid&&x.sid===P.sector&&x.hull>0);ok=!!L&&d3(L,e)<320;if(ok)P.lairId=L.id}else if(m.d==='station'){const SE=W.stationEnt;ok=!!SE&&(SE.fac===P.faction||(S.unb&&SE.fac==='neutral'&&runAs(pid,()=>unbFreeportOK())))&&d3(SE,e)<520}else{const OE=W.outpostEnt;ok=!!OE&&OE.o.id===m.d&&!OE.o.breached&&OE.o.owner===P.faction&&d3(OE,e)<520}});
   if(!ok){send(c.L,{t:'nodock'});return}
@@ -7464,7 +7470,7 @@ function mpClientStart(m){const first=!running;if(W)exitSector();WORLDS={};LW=nu
   if(S.player.docked){const E=S.player.docked==='station'?W.stationEnt:W.outpostEnt;if(!E)S.player.docked=null;else openDock()}
   hudUpdate();const hn=(MP.roster.find(r=>r[5])||[])[1];feed(first?`Joined “${MP.code}”${hn?` hosted by ${hn}`:''}.`:'Reconnected to the galaxy.','good');flash(first?`Joined ${hn?hn+'\u2019s':'the'} galaxy “${MP.code}”.`:'Reconnected.');
   for(const r of MP.roster)if(r[0]!==MP.pid){const h=HOP[S.player.sector][r[3]];feed(`${r[1]} (${FAC(r[2]).short}) is ${h===0?'in this system':`at ${DEF[r[3]].name}, ${h} jump${h>1?'s':''} away`}${r[4]?', docked':''}.${h?' Map (M) can set a course to them.':''}`,'info')}}
-const OWN=['x','y','z','vx','vy','vz','q','fa','wpn','route','sector','docked'];
+const OWN=['x','y','z','vx','vy','vz','q','fa','level','wpn','route','sector','docked'];
 function applyPR(m){const P=S&&S.player,R=m.r;if(!P||!R)return;const keep={};if(!m.fz)for(const k of OWN)keep[k]=P[k];
   for(const k of Object.keys(P))if(!(k in R))delete P[k];Object.assign(P,R,keep);if(W&&W.player&&W.player.alive)refreshPlayerStats()}
 function applySync(L){if(!S)return;const P=S.player;
@@ -7641,7 +7647,7 @@ function quitGame(){if(!S||!running)return;const wasNet=NET.on,code=MP.code;
   if(NET.host){const ck=hostSave();for(const c of readyCl()){if(ck)send(c.L,{t:'ckpt',ck});send(c.L,{t:'hostquit'})}}
   else if(NET.cl){const p=W&&W.player;netSend({t:'bye',...(p&&!S.player.docked?{x:p.x,y:p.y,z:p.z,vx:0,vy:0,vz:0,q:[p.q.x,p.q.y,p.q.z,p.q.w]}:{})})}
   else save();
-  setTimeout(()=>{try{closeSheets()}catch(e){}mpShutdown();if(W)exitSector();WORLDS={};LW=null;W=null;S=null;running=false;apOn=false;$('hud').hidden=true;$('dock').hidden=true;$('deathMsg').hidden=true;$('start').hidden=false;buildSectorScene(null);showStart();
+  setTimeout(()=>{try{hideSheets()}catch(e){}mpShutdown();if(W)exitSector();WORLDS={};LW=null;W=null;S=null;running=false;apOn=false;$('hud').hidden=true;$('dock').hidden=true;$('deathMsg').hidden=true;$('start').hidden=false;buildSectorScene(null);showStart();
     mpStatus(wasNet?`Saved and left “${esc(code)}”. Join again any time to pick up where you left off.`:'To play together, one of you presses <b>Create a galaxy for friends</b> and sends the invite link (or the code) to the others. Everyone who uses the same code shares one galaxy, up to four pilots. Leave it empty to play solo.');
     if(!wasNet)$('ssum').innerHTML='<b>Saved.</b> Press <b>Continue saved pilot</b> to fly again.'},wasNet?250:30)}
 function mpShutdown(){if(MP.sig){MP.sig.close();MP.sig=null}for(const q of MP.mq||[])q.close();MP.mq=[];for(const L of Object.values(MP.links))linkClose(L,true);MP.links={};MP.host=null;MP.cl={};MP.rp={};MP.inp={};MP.elect=0;MP.st='off';MP.roster=[];NET.on=false;NET.host=false;NET.cl=false;const b=$('bMp');if(b)b.disabled=false;const n=$('mpName');if(n){n.readOnly=false;n.title=''}}
@@ -8344,6 +8350,11 @@ function aiCarSortie(){if(NET.cl||!S||S.training)return;for(const t of S.frigate
       if((E.pickets||[]).filter(p=>p.alive&&p.wg==='B'&&W.ents.includes(p)).length+(E.bay||[]).length<AICAR.minCraft)return;
       const n=sortieStart(t,E,to,tgt,'B');if(!n)return;const ev=sortiesOf(t).find(v=>v.wg==='B');if(ev&&tgt==='st')ev.mode=sd!=='brood'&&aAvail(t)>0?'cap':'raze';t.sorT=S.T+AICAR.cool})}}
 {const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{aiCarSortie()}catch(e){frameErr('carrier wings',e)}return r}}
+
+// a guest docked in a Lair that is destroyed or replaced goes back into space (on the host), so nothing is moved into a stash that's gone
+function lairEvict(L){if(!NET.host||!L||!L.pid||isMe(L.pid))return;const P=S.pilots&&S.pilots[L.pid];if(!P||P.docked!=='lair'||P.lairId!==L.id)return;P.docked=null;P.lairId=null;
+  const c=readyCl().find(x=>x.pid===L.pid);try{spawnRP(L.pid)}catch(e){}if(c){send(c.L,{t:'kick'});sendPR(c,false,true)}netRoster()}
+{const o=spawnRP;spawnRP=function(pid){const e=o.apply(this,arguments);const P=S.pilots&&S.pilots[pid];if(e&&P&&P.jamMode&&S.unb)e.jamMode=true;return e}}   // a guest's jam mode survives docking and respawning
 
 //@src 17_main.js
 // ============================================================ main loop

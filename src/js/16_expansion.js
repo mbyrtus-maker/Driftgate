@@ -697,3 +697,8 @@ function aiCarSortie(){if(NET.cl||!S||S.training)return;for(const t of S.frigate
       if((E.pickets||[]).filter(p=>p.alive&&p.wg==='B'&&W.ents.includes(p)).length+(E.bay||[]).length<AICAR.minCraft)return;
       const n=sortieStart(t,E,to,tgt,'B');if(!n)return;const ev=sortiesOf(t).find(v=>v.wg==='B');if(ev&&tgt==='st')ev.mode=sd!=='brood'&&aAvail(t)>0?'cap':'raze';t.sorT=S.T+AICAR.cool})}}
 {const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{aiCarSortie()}catch(e){frameErr('carrier wings',e)}return r}}
+
+// a guest docked in a Lair that is destroyed or replaced goes back into space (on the host), so nothing is moved into a stash that's gone
+function lairEvict(L){if(!NET.host||!L||!L.pid||isMe(L.pid))return;const P=S.pilots&&S.pilots[L.pid];if(!P||P.docked!=='lair'||P.lairId!==L.id)return;P.docked=null;P.lairId=null;
+  const c=readyCl().find(x=>x.pid===L.pid);try{spawnRP(L.pid)}catch(e){}if(c){send(c.L,{t:'kick'});sendPR(c,false,true)}netRoster()}
+{const o=spawnRP;spawnRP=function(pid){const e=o.apply(this,arguments);const P=S.pilots&&S.pilots[pid];if(e&&P&&P.jamMode&&S.unb)e.jamMode=true;return e}}   // a guest's jam mode survives docking and respawning

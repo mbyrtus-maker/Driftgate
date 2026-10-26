@@ -213,7 +213,7 @@ function victoryTick(){if(deadlineTick())return;const n=controlCounts(),need=VIC
   if(S.T-S.victory.since>=WIN_TIME)galaxyWon(lead)}
 function loadLegacy(){try{return JSON.parse(localStorage.getItem('driftgate.legacy')||'{}')||{}}catch(e){return{}}}
 function galaxyWon(side,how){{const v=$('winV');if(v)v.hidden=true}if(!NET.cl)legAward(side);if(NET.host)for(const c of readyCl())send(c.L,{t:'won',side,how});const lg=loadLegacy();lg.wins=lg.wins||{};lg.wins[side]=(lg.wins[side]||0)+1;lg.last=side;try{localStorage.setItem('driftgate.legacy',JSON.stringify(lg));localStorage.removeItem(SAVE_KEY)}catch(e){}
-  S.won=side;closeSheets&&closeSheets();const mine=side===S.player.faction,n=controlCounts()[side]||0;
+  S.won=side;hideSheets();const mine=side===S.player.faction,n=controlCounts()[side]||0;
   $('winT').textContent=side==='brood'?'The Bloom spreads':mine?'Victory':`${FACTIONS[side].short} rules`;
   const held=how==='tie'?`held the most systems (${n} of ${SECTOR_DEFS.length}) when the two-hour deadline arrived`:`held ${n} of ${SECTOR_DEFS.length} systems for ${Math.round(WIN_TIME/60)} minutes`;
   $('winP').textContent=side==='brood'?`The Vael Brood ${held}. The galaxy is consumed. No pilot earns a Legend point. A new galaxy waits.`:`The ${FACTIONS[side].name} ${held} and unites the galaxy.${mine?' Your faction won, and you with it.':''} A new galaxy begins: ${FACTIONS[side].short} starts it with a finished capital shipyard and 40% richer stores${mine?', and you start with 4,000 extra credits and a crate of parts':''}.`;
@@ -382,7 +382,7 @@ function responseTick(ev){const T=S.T;
     if(!alive.length){finishOffensive(ev);if(ev.kind==='hunt'){const A=S.ai[ev.att],t=(S.frigates||[]).find(x=>x.id===ev.tok);if(t&&A)A.huntFail=(A.huntFail||0)+1;else if(A)A.huntFail=0}}
     else if(T>ev.until)for(const e of alive){e.role='leave';e.order=null}}}
 // a pilot calls for help: friendly fighters nearby break off to cover them, and their faction sends a wing from the closest station
-function pilotDistress(){if(!W||!W.player)return;if(S.unb){flash('Nobody answers an Unbound distress call.',true);return}const P=S.player,p=W.player;if(P.docked||W.dead){flash('You can only call for help in space.');return}
+function pilotDistress(){if(!W||!W.player)return;if(S.unb){flash('Nobody answers an Unbound distress call.',true);return}const P=S.player,p=W.player;if(P.docked||(W===LW&&!CTX&&W.dead)){flash('You can only call for help in space.');return}
   if(S.T<(P.distT||0)){flash(`Distress beacon recharging (${Math.ceil(P.distT-S.T)} s).`);return}P.distT=S.T+90;
   const fac=P.faction,Fs=FACTIONS[fac].short;let near=0;
   {const cand=[];for(const e of W.ents){if(e.type!=='ship'||!e.alive||!e.npc||e.side!==fac||e.order)continue;if(!['patrol','escort','screen','strike','raider'].includes(e.role))continue;if(isBmb(e.cls)&&e.role==='strike')continue;const d=d3(e,p);if(d<4500)cand.push([e,d])}
