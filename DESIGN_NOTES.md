@@ -1768,3 +1768,11 @@ Not built: calling in assault ships by comms (mentioned in older notes).
 
 ## v231 code brought into the repo (Oct 2026)
 (Full design and review: ECONOMY_DESIGN.md, copied from the "Driftgate Economy Design" doc.) v231 was published by another session without its code reaching GitHub. Its source was taken from the live page (v232 = v231 + the miners turned about), split back into src/ and checked byte-exact. It adds: AI imports at market prices (a faction short of ore buys at the cheapest freeport and the goods fly home on a raidable supply convoy, `fpImport`, `IMP`); optional hull insurance (30 minutes of cover bought at a shipyard, a loss pays a 70% voucher toward the same class, `INS`); patronage (sponsor your faction's next station module or capital ship, Station → Patronage, `patTick`); hired wingmen (Jobs → Hire pilots, a 30-minute contract paid to your faction's treasury). See the code comments at each for the full rules; the session that wrote them may add fuller notes.
+
+## Charge reticle (Oct 2026)
+Players couldn't tell where a mining charge would go: the gun reticle sits at screen centre, but a charge fired at a rock 150-300 m away lands well below it (the chase camera looks down past the ship), and the landing mark was a small grey cross shown only while a scan was live, with nothing at all when the shot would miss. A mining hull in flight now always shows a **charge reticle** (a ring with four ticks) joined to the launcher by a dotted flight line, drawn where the charge will actually land (ship drift included):
+- on a scanned rock: green ON POINT · FIRE (F), amber NEAR / red OFF with the distance and a dashed line to the nearest fault point, grey OUT OF RANGE with the distance;
+- on a rock whose scan has faded: white ON ROCK · R TO SHOW FAULT POINTS;
+- a shot that would miss the targeted rock: red MISSES THE ROCK at the end of the charge's run;
+- no rock targeted: a small grey ring at the end of the run.
+`blFly`, `blReticle` in 10_combat.js.
