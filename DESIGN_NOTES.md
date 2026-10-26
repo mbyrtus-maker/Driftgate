@@ -1776,3 +1776,9 @@ Players couldn't tell where a mining charge would go: the gun reticle sits at sc
 - a shot that would miss the targeted rock: red MISSES THE ROCK at the end of the charge's run;
 - no rock targeted: a small grey ring at the end of the run.
 `blFly`, `blReticle` in 10_combat.js.
+
+## Guest check (Oct 2026)
+New test `tools/tests/mp_guest_faction.py`: a Halcyon guest hires a wingman, buys insurance and sponsors a project through the host, flies, docks, relaunches, loses an insured hull, and draws the charge reticle. Hiring, insurance (policy and the voucher after a loss), patronage and the reticle all worked for guests. Hired wingmen did not:
+- a guest who docked kept their wingman in space escorting a ship that no longer existed, and on launching again the wingman stayed with that old ship and never followed;
+- a guest who died or left the galaxy left their wingman loitering for good.
+The host now drops a guest's wingman (its kit goes home) when the guest isn't flying in that system, and a wingman whose pilot relaunched is pointed at the new ship. Wingmen also stand down while their pilot is docked (host included), as the design said. Ledger exact through all of it.

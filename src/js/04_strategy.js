@@ -149,15 +149,17 @@ function hireEnd(){const P=S.player;if(!P.hire)return;P.hire=null;hireDrop(pkey(
 function hireTick(){const P=S.player,p=W&&W.player,k=pkey();if(!p||NET.cl)return;
   if(!P.hire){if(HIRE_E[k])hireDrop(k);return}
   if(!hireLive(P)){P.hire=null;hireDrop(k);feed('Your hired wingman\'s contract is up. Renew it under Jobs → Hire pilots.','info');return}
-  if(P.docked||p.alive===false||(!CTX&&W===LW&&W.dead))return;const H=HIRE_E[k];
-  if(H&&H.e&&H.e.alive&&W.ents.includes(H.e))return;
+  if(P.docked){if(HIRE_E[k])hireDrop(k);return}if(p.alive===false||(!CTX&&W===LW&&W.dead))return;const H=HIRE_E[k];
+  if(H&&H.e&&H.e.alive&&W.ents.includes(H.e)){if(H.e.order&&H.e.order.tgt!==p){H.e.order.tgt=p;H.e.order.pid=curPid()}return}
   if(H&&H.e&&!H.e.alive){delete HIRE_E[k];P.hireT=S.T+HIRE.re;feed(`Your wingman is down. ${FACTIONS[P.hire.fac].short} is sending another in ${HIRE.re/60} minutes.`,'warn');return}
   if(H)hireDrop(k);if((P.hireT||0)>S.T)return;
   const f=P.hire.fac,K=hireKit(f,P.hire.cls);if(!K){P.hireT=S.T+60;feed(`${FACTIONS[f].short} can't kit your wingman right now; it will try again in a minute.`,'warn');return}
   if(!takeFrom(K.ld,K.srcs)){P.hireT=S.T+60;return}const e=makeNPC('patrol',f,P.hire.cls,K.t,K.ld,'stock:'+f);const o=rdir();e.x=p.x+o.x*300;e.y=p.y+o.y*120;e.z=p.z+o.z*300;
   e.order={kind:'escort',tgt:p,until:W.t+1e6,slot:0,by:true,pid:curPid()};e.hire=1;W.ents.push(e);HIRE_E[k]={e,sid:W.sid};feed(`Your hired ${FAC(f).hulls[P.hire.cls]} falls in on your wing.`,'good')}
 function hireWorld(){if(NET.cl||S.unb||!W)return;if(W===LW&&S.player)try{hireTick()}catch(e){frameErr('hire',e)}
-  if(NET.host)for(const e of W.ents.slice())if(e.rp&&e.alive&&S.pilots&&S.pilots[e.rp]&&e.rp!==NET.me)try{runAs(e.rp,()=>hireTick())}catch(er){frameErr('hire',er)}}
+  if(NET.host){for(const e of W.ents.slice())if(e.rp&&e.alive&&S.pilots&&S.pilots[e.rp]&&e.rp!==NET.me)try{runAs(e.rp,()=>hireTick())}catch(er){frameErr('hire',er)}
+    // a guest who docked, died or left keeps no wingman loitering here (it stands down and its kit goes home)
+    const me=pkey();for(const k of Object.keys(HIRE_E)){const H=HIRE_E[k];if(k===me||!H||H.sid!==W.sid)continue;const e=MP.rp[k];if(!(e&&e.alive&&W.ents.includes(e)))hireDrop(k)}}}
 function hireHtml(c,P){const f=P.faction,L=hireLive(P),HN=k=>esc(FAC(f).hulls[k]);
   let h=`<p class="note" style="margin:0 0 12px">Hire a ${FACTIONS[f].short} pilot to fly escort on you for ${HIRE.T/60} minutes, paid up front to the treasury. Your wingman joins you whenever you're in space, in every system you fly to. If it's shot down, its kit is lost as salvage and a replacement arrives after ${HIRE.re/60} minutes; the contract keeps running. Your wingman's kills don't pay bounties: only your own damage does. Its ship comes from ${FACTIONS[f].short}'s own stock, so a short warehouse can't kit every class.</p>`;
   if(L)h+=`<p class="note" style="color:var(--ok)">Under contract: ${art(FAC(f).hulls[L.cls]).toLowerCase()} ${HN(L.cls)} pilot, ${Math.ceil((L.until-S.T)/60)} min left${(P.hireT||0)>S.T?` · replacement arriving in ${fmtT(P.hireT-S.T)}`:''}.</p>`;

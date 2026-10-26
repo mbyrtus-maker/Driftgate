@@ -28,6 +28,7 @@ Set `DG_GAME` to test another file, and `DG_OUT` for where screenshots go (defau
 | mine_rates.py | mining pay model per miner hull at real market prices (relative check against an older build; optimistic in absolute terms) |
 | training.py | flies a training course end to end; `TRK=full\|combat\|mining\|hauling\|scouting` |
 | mp_loopback.py | two pages joined over a faked link: `python3 tools/tests/mp_loopback.py index.html shot.png` |
+| mp_guest_faction.py | a faction guest over the faked link: hired wingman follows, stands down when docked or dead, rejoins; insurance and a covered loss; patronage; charge reticle; ledger: `python3 tools/tests/mp_guest_faction.py $PWD/index.html` |
 
 Run them before publishing a change that touches what they cover; training.py after any change to lessons or the dock.
 `tools/old/` holds one-off patch scripts from before the source split: history only, not to be run again.
