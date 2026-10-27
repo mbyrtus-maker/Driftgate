@@ -165,6 +165,7 @@ def build_carrier():
     C.add('hangar_largeA',(0,0,-.2),0,1.0);C.add('hangar_largeA',(0,0,-.2),0,1.0,True)
     for k in range(4):
         z=1.0-k*.8;C.add('corridor_detailed' if k in (1,2) else 'corridor',(0,1.0,z),0,.8);C.add('corridor_roof',(0,1.8,z),0,.8)
+    C.add('machine_generatorLarge',(0,1.99,.55),0,1.0);C.add('pipe_ring',(0,1.99,.55),0,1.25)   # shield generator in its emitter ring, on the spine roof ahead of the tower (a sub-target)
     for sd in (-1,1):
         for z in (.9,.1,-.7):C.add('corridor',(1.2*sd,-.4,z),0,.8)
         C.add('turret_single',(1.2*sd,.4,.1),0,.6)
@@ -349,6 +350,8 @@ def build_escort():
         for z in (.4,-1.1,-2.5):
             C.add('corridor',(sd*.9,-.4,z),0,.6)
             C.add('turret_single',(sd*.9,.22,z),0,.66)
+    # shield generator on the spine, forward of the bridge (a sub-target)
+    C.add('machine_generatorLarge',(0,.74,.7),0,.8);C.add('pipe_ring',(0,.74,.7),0,1.0)
     # small bridge aft and a sensor dish
     C.add('hangar_roundGlass',(0,.75,-1.8),H,.38);C.add('satelliteDish',(0,1.2,-1.3),0,.7)
     # one ventral bay for its assault ship

@@ -1642,6 +1642,20 @@ It was hard to tell where your own faction's capital ships were: on the galaxy m
 - **Ties to capture:** a depot's garrison (`garrison(R)`: +1 for Defence platform 2+, +1 for hangar 2+) counts only working modules, so stripping the turrets and hangar first means fewer assault loads to take it. Unbound depot raids (`raidOdds`, `RAID.stnCut`) get better odds against a depot whose guns are down.
 - **Core stations** can't be captured, so disabling their systems is a temporary blow (guns, shields, market, production) rather than a step toward taking them. **Freeports** stay neutral: exempt for players (only the Brood attacks them). **Scrapheart Haven** gets the same treatment from the factions. **Brood hives** get their own versions (spawning chambers instead of hangar bays) or are left out at first.
 
+**Every sub-target is a part of the model (decided Oct 2026).** The marker sits on that part and you hit that part; a disabled part looks it (dark, sparking, smoking); no system becomes a target until its model has a part for it.
+
+| System | Carrier | Escort | Station | Depot |
+|---|---|---|---|---|
+| Point defence / turret mounts | turrets on the bow deck edges, the waist sponsons and behind the tower | 3 turrets on each flank sponson | the double turret on each of the four hangars | the 3 single turrets |
+| Engines | 3 main drives (one over two) and the 2 nacelle drives | 1 main drive and 2 auxiliaries | — | — |
+| Torpedo bays (the escort's main gun) | — | the twin forward torpedo tubes | — | — |
+| Launch / hangar bays | the open fronts of the twin bow hangar bays | the ventral assault-ship bay | the 4 docking hangars | the 3 small hangars |
+| Docking ring / market | — | — | the corridor spokes to the hangars | the corridors to the hangars |
+| Shield generator | ringed generator on the spine roof ahead of the tower (added Oct 2026) | ringed generator on the spine, forward of the bridge (added Oct 2026) | the large generator under the central tower | ringed generator under the lower dome (added Oct 2026) |
+| Production and other modules | — | — | the station's works buildings | same |
+
+The escort's only visible weapons are its torpedo tubes, so the separate "main gun (lance)" entry is dropped for escorts.
+
 **Rules for both:**
 - Sub-targets are real points on the model (turret positions already exist for capitals, `turMount`, and for stations, placed on the surface in `addStationEnt`). With a capital or station targeted, a key cycles its systems (Shift+T is a candidate; check it's free); the HUD shows a lead marker on the point.
 - **Every sub-target, turrets included, can only be hit once the shields are down** (decided Oct 2026; an earlier draft left turrets hittable through the shield). Shields first (torpedoes, sustained fire), then systems: the first torpedo wave meets full point defence, and fighters strip the turrets for the waves after.
@@ -1852,3 +1866,6 @@ Preview renders in `tools/previews/signature_hulls.png`. **Gannet:** hand-built 
 
 ## Stations keep firing when their shield breaks (Oct 2026)
 Before, a station whose shield broke went dark for 20 s: turrets and missile battery offline, hull exposed, then shield and turrets back at 30%. Now the shield takes 20 s to reboot (no recharge, hull exposed) but the turrets and missile battery keep firing; the shield comes back at 30% ("…'s shield is back up"). A broken hull still cripples the station: dark for 40 s, as before. Tested on Lumen Exchange with a Varkesh heavy 500 m out: in the 5 s after the shield broke, 58 hits on it now against 0 before; shield back at 30% after 20 s; a broken hull still blacked it out. Live sieges get harder for attackers; off-screen sieges are unchanged.
+
+## Shield generators on the carrier, escort and depot models (Oct 2026)
+For sub-targets, every system has to be a visible part. The carrier, escort and depot had no part that read as a shield generator; each now has one in the station's style (the same generator part as under a station's tower) inside an emitter ring: on the carrier's spine roof ahead of the tower, on the escort's spine forward of the bridge, and under the depot's lower dome. Model-only change (tools/capitals.py, the depot entry in tools/build_models.py); renders compared before and after.
