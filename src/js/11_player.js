@@ -327,8 +327,9 @@ function structUpdate(dt){
   const SE=W.stationEnt;hgLive(dt);
   if(SE&&SE.rec){SE.rec.shield=SE.shield;if(!SE.offline&&W.t-SE.lastHit>8)SE.rec.hull=Math.min(SE.rec.hMax,SE.rec.hull+SE.rec.hMax*.004*dt)}
   if(SE){const storm=S.sectors[W.sid].storm>S.T;
-    if(SE.offline&&W.t>SE.offline){SE.offline=0;SE.shield=SE.sMax*.3;feed(`${SE.name} has restored its shield and turrets.`,'news')}
-    if(!SE.offline&&W.t-SE.lastHit>6&&!storm)SE.shield=Math.min(SE.sMax,SE.shield+SE.sMax*.03*dt);
+    if(SE.offline&&W.t>SE.offline){SE.offline=0;SE.shReboot=0;SE.shield=SE.sMax*.3;feed(`${SE.name} has restored its shield and turrets.`,'news')}
+    if(SE.shReboot&&W.t>SE.shReboot){SE.shReboot=0;if(!SE.offline){SE.shield=Math.max(SE.shield,SE.sMax*.3);feed(`${SE.name}'s shield is back up.`,'news')}}
+    if(!SE.offline&&!SE.shReboot&&W.t-SE.lastHit>6&&!storm)SE.shield=Math.min(SE.sMax,SE.shield+SE.sMax*.03*dt);
     if(!SE.offline)for(const[ti,tu]of SE.turrets.entries()){tu.cool-=dt;if(tu.cool>0)continue;if(tu.mod&&SE.rec&&starving(SE.rec)){tu.cool=1;continue}qRot(SE.q,tu.p[0],tu.p[1],tu.p[2],_u);const wp={x:SE.x+_u.x,y:SE.y+_u.y,z:SE.z+_u.z};let t=null,bd=SE.range;
       if(ti%2===0)for(const m of W.missiles)if(m.kind==='torpedo'&&(m.tgt===SE||(m.tgt&&m.tgt.type==='works'&&m.tgt.fac===SE.fac))&&hostile(SE.fac,m.side)){const d=d3(m,wp);if(d<Math.min(bd,700)){bd=d;t=m}}
       if(!t)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!hostE(SE.fac,e))continue;const d=d3(e,wp);if(d<bd){bd=d;t=e}}

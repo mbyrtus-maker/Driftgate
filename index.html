@@ -4892,7 +4892,8 @@ function respawn(){if(W&&W.player){W.player.landed=null;W.player.stealth=false;W
 }
 function damageStation(E,dmg,by,kind,src){if(E&&E.fac==='brood'&&E.rec){const k=src&&src.rp?src.rp:by==='player'?'me':null;if(k){(E.rec.pHits=E.rec.pHits||{})[k]=S.T;E.rec.pHit=W.t}}if(by==='player'&&W.player&&d3(E,W.player)<3000)musHit(((E.shield||0)>0)||((E.rec&&E.rec.shield)||0)>0);if(NET.cl||(E.fac==='neutral'&&by!=='brood'))return;if(by&&E.fac&&hostile(by==='player'?S.player.faction:by,E.fac))distressCall(W.sid,E.name,E.fac,by==='player'?S.player.faction:by);if(kind!=='torpedo'&&kind!=='capital'){dmg*=capChip(kind);if(by==='player'&&W.t-(W.immT||-99)>8){W.immT=W.t;flash('Guns and missiles only chip station armour. It takes a lot of them; torpedoes do the real damage.',true)}}
   dmg*=limpetK(E.rec,by);E.lastHit=W.t;if(by)E.lastHitBy=by;const R=E.rec;
-  if(!E.offline){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.offline=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! Its turrets are offline and the hull is exposed.`:`${E.name}'s shield collapsed. Its turrets are offline and the hull is exposed.`,mine?'bad':'warn')}
+  // a broken shield takes 20 s to reboot (the hull is exposed meanwhile) but the station keeps firing; it only goes dark when its hull breaks
+  if(!E.offline&&E.shield>0){E.shield-=dmg;if(E.shield>0)return;dmg=-E.shield;E.shield=0;E.shReboot=W.t+20;fxBoom(E,150,'#8fc8ff');const mine=friendSide(E.fac);feed(mine?`${E.name}'s shield is down! The hull is exposed while the shield reboots (20 s); its guns are still firing.`:`${E.name}'s shield collapsed. The hull is exposed for 20 s while it reboots; its guns are still firing.`,mine?'bad':'warn')}
   if(!R||dmg<=0)return;R.hull-=dmg;if(Math.random()<.3)fxSpark({x:E.x+rnd(-60,60),y:E.y+rnd(-60,60),z:E.z+rnd(-60,60)},'#ffcf8a',3);
   if(R.hull<=0&&R.kind==='depot'&&R.owner!=='brood'&&E.lastHitBy&&E.lastHitBy!=='brood'&&FACTIONS[sideNorm(E.lastHitBy)]){const sd=sideNorm(E.lastHitBy),g=garrison(R),md=sortieMode(R.sid,sd),n=capLoads(R.sid,sd);if(md==='cap'&&n<g&&!siegeAssault(R.sid,sd,g)){R.hull=1;return}if(md!=='raze'&&n>=g){useLoads(R.sid,sd,g,R);captureDepot(R.sid,sd);return}if(md!=='raze'&&siegeAssault(R.sid,sd,g,true)){captureDepot(R.sid,sd);return}if(md!=='raze'&&n>0){R.hull=1;return}}
   if(R.hull<=0&&R.kind==='free'){razeStation(R.sid,'brood');return}
@@ -5465,8 +5466,9 @@ function structUpdate(dt){
   const SE=W.stationEnt;hgLive(dt);
   if(SE&&SE.rec){SE.rec.shield=SE.shield;if(!SE.offline&&W.t-SE.lastHit>8)SE.rec.hull=Math.min(SE.rec.hMax,SE.rec.hull+SE.rec.hMax*.004*dt)}
   if(SE){const storm=S.sectors[W.sid].storm>S.T;
-    if(SE.offline&&W.t>SE.offline){SE.offline=0;SE.shield=SE.sMax*.3;feed(`${SE.name} has restored its shield and turrets.`,'news')}
-    if(!SE.offline&&W.t-SE.lastHit>6&&!storm)SE.shield=Math.min(SE.sMax,SE.shield+SE.sMax*.03*dt);
+    if(SE.offline&&W.t>SE.offline){SE.offline=0;SE.shReboot=0;SE.shield=SE.sMax*.3;feed(`${SE.name} has restored its shield and turrets.`,'news')}
+    if(SE.shReboot&&W.t>SE.shReboot){SE.shReboot=0;if(!SE.offline){SE.shield=Math.max(SE.shield,SE.sMax*.3);feed(`${SE.name}'s shield is back up.`,'news')}}
+    if(!SE.offline&&!SE.shReboot&&W.t-SE.lastHit>6&&!storm)SE.shield=Math.min(SE.sMax,SE.shield+SE.sMax*.03*dt);
     if(!SE.offline)for(const[ti,tu]of SE.turrets.entries()){tu.cool-=dt;if(tu.cool>0)continue;if(tu.mod&&SE.rec&&starving(SE.rec)){tu.cool=1;continue}qRot(SE.q,tu.p[0],tu.p[1],tu.p[2],_u);const wp={x:SE.x+_u.x,y:SE.y+_u.y,z:SE.z+_u.z};let t=null,bd=SE.range;
       if(ti%2===0)for(const m of W.missiles)if(m.kind==='torpedo'&&(m.tgt===SE||(m.tgt&&m.tgt.type==='works'&&m.tgt.fac===SE.fac))&&hostile(SE.fac,m.side)){const d=d3(m,wp);if(d<Math.min(bd,700)){bd=d;t=m}}
       if(!t)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!hostE(SE.fac,e))continue;const d=d3(e,wp);if(d<bd){bd=d;t=e}}
