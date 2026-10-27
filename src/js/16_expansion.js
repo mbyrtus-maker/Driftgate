@@ -768,3 +768,30 @@ function broodTakeover(sid){const R=S.stations[sid];if(R&&R.owner!=='brood'&&R.k
 {const o=capture;capture=function(ob,side){const prev=ob&&ob.owner,burn=prev==='brood'&&side!=='brood';let r;if(burn){const m0=MUTE;MUTE=true;try{r=o.apply(this,arguments)}finally{MUTE=m0}}else r=o.apply(this,arguments);try{if(!ob)return r;
     if(side==='brood'&&ob.owner==='brood')broodTakeover(ob.sector);
     else if(prev==='brood'&&ob.owner&&ob.owner!=='brood'){const by=ob.owner;ob.owner=null;if(ob.cap)ob.cap.p=0;if(by==='player'||friendSide(sideNorm(by))||covered(ob.sector))feed(`🔥 The Bloom has been burned off ${ob.name}: it stands empty. Claim it with a beacon (or let an assault take it) to hold it.`,friendSide(sideNorm(by))||by==='player'?'good':'news')}}catch(e){frameErr('brood takeover',e)}return r}}
+
+// ---- Brood hunting packs: salvage left floating near Brood space draws a pack through the gate, live, while a pilot is in
+// the system. It hunts the most damaged ships first (haulers and miners next), eats the salvage crates, and leaves after a
+// few minutes. What it ate spills again if it's shot down, and goes home to Brood stores if it gets away: nothing is made.
+const BPACK={min:50,per:60,max:5,hops:3,delay:[20,30,45,60],life:180,cd:480,eatR:90,seekR:6000};
+function bpScent(s){let t=0;for(const c of s.crates||[])t+=invMass(c.inv||{});return t}
+function bpHuman(){return(W===LW&&W.player&&W.player.alive!==false&&S.player&&!S.player.docked&&!W.dead)||W.ents.some(e=>e.rp&&e.alive)}
+function bpSay(msg,kind){if(W===LW&&S.player)feed(msg,kind);if(NET.host)for(const pid in S.pilots||{}){if(pid===NET.me)continue;const R=S.pilots[pid];if(R&&R.sector===W.sid)feedTo(pid,msg,kind)}}
+function bpPrey(e){let b=null,bs=1e18;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o.side==='brood'||o.side==='pirate'||o.role==='limpet'||o.role==='drone'||!hostile('brood',o.side)||mHid(o,e))continue;
+    if(o.isPlayer&&(S.player.docked||W.dead))continue;const d=d3(o,e);if(d>20000)continue;const k=(o.role==='trader'||o.role==='hauler'||o.role==='miner'||HEAVY_CLS.has(o.cls)?.6:1)*bloodScent(o);if(d*k<bs){bs=d*k;b=o}}return b}
+function bpSeek(e,dt){const s=S.sectors[W.sid];let b=null,bd=BPACK.seekR;for(const c of s.crates||[]){const d=d3(c,e);if(d<bd){bd=d;b=c}}if(!b)return false;steer(e,b.x,b.y,b.z,dt,bd<300,1);faceTo(e,b,dt);return true}
+function bpSpawn(s,d,P){const g=GATES[W.sid].slice().sort((a,b)=>broodHops(a.to)-broodHops(b.to))[0];if(!g)return;
+  const sc=Math.max(P.sc||0,bpScent(s)),n=clamp(2+Math.floor((sc-BPACK.min)/BPACK.per)+((controlCounts().brood||0)>=4?1:0),2,BPACK.max),grp={id:'g'+(RID++),side:'brood',role:'patrol',members:[],n0:0};
+  for(let i=0;i<n;i++){const e=spawnNPC('patrol','brood');if(!e)break;const o=rdir();e.x=g.x*.92+o.x*120;e.y=g.y*.92+o.y*60;e.z=g.z*.92+o.z*120;e.vx=e.vy=e.vz=0;
+    e.bpack=1;e.grp=grp;grp.members.push(e);e.ai.huntUntil=W.t+BPACK.life;e.ai.hunt=bpPrey(e);fxWarp(e,sideCol('brood'))}
+  grp.n0=grp.members.length;if(!grp.n0){s.bpNext=S.T+BPACK.cd;return}W.groups[grp.id]=grp;P.m=grp.members;P.until=W.t+BPACK.life;P.ate=0;
+  if(W===LW&&!MUTE)SFX.alarm();bpSay(`⚠ A Brood hunting pack (${grp.n0}) has come through the ${DEF[g.to]?DEF[g.to].name+' ':''}gate for the salvage. It goes for the wounded first.`,'bad')}
+function bpackWorld(dt){if(NET.cl||!W||S.training)return;const s=S.sectors[W.sid],d=DEF[W.sid];if(!s||!d)return;const P=W.bpack=W.bpack||{};
+  if(P.m){P.m=P.m.filter(e=>e.alive&&W.ents.includes(e));
+    if(!P.m.length||W.t>P.until){for(const e of P.m){e.role='leave';e.bpack=0;e.ai.hunt=null}if(P.m.length)bpSay(`The Brood hunting pack is leaving ${d.name}${P.ate>=1?` with ${Math.round(P.ate)} t of salvage in its bellies`:''}.`,'info');P.m=null;s.bpNext=S.T+BPACK.cd;return}
+    for(const e of P.m){for(const c of(s.crates||[]).slice())if(d3(c,e)<BPACK.eatR){P.ate+=invMass(c.inv||{});inv.addAll(e.cargo,c.inv||{});c.inv={};s.crates=s.crates.filter(x=>x!==c);if(!MUTE)fxSpark(c,'#b9e05a',4)}
+      if(W.t>=(e.bpT||0)){e.bpT=W.t+3;const h=e.ai.hunt;if(!(h&&h.alive&&W.ents.includes(h)))e.ai.hunt=bpPrey(e)}}
+    return}
+  if(broodHeld(W.sid)||d.kind==='core'||d.kind==='den'||d.kind==='hive'||W.sid==='wr'||(s.bpNext||0)>S.T)return;
+  if(P.at){if(S.T>=P.at){P.at=0;bpSpawn(s,d,P)}return}
+  if(!bpHuman())return;const sc=bpScent(s);if(sc<BPACK.min)return;const bh=broodHops(W.sid);if(bh>BPACK.hops)return;
+  P.at=S.T+BPACK.delay[bh]+rnd(0,8);P.sc=sc;bpSay(`⚠ The Brood have caught the scent of ${Math.round(sc)} t of salvage in ${d.name}. A hunting pack is on its way.`,'warn')}

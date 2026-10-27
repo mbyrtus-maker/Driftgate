@@ -78,7 +78,7 @@ function updateEvents(){
   for(const k in S.gateDown)if(T>S.gateDown[k])delete S.gateDown[k];
   for(let i=S.contracts.length-1;i>=0;i--)if(T>S.contracts[i].until)S.contracts.splice(i,1);
 }
-const CONSTR_LD={plate:6,wire:4,coil:2},BROOD_SEED={plate:2},   // Bloom nodes are grown from a frame, not assembled by a constructor
+const SEED_GUARDS=2,CONSTR_LD={plate:6,wire:4,coil:2},BROOD_SEED={plate:2},   // Bloom nodes are grown from a frame, not assembled by a constructor
  SCOUT_LD={plate:1,wire:2},SCOUT2_LD={plate:2,wire:3,coil:1};
 function scoutsTick(){S.scouts=S.scouts||[];const pf=S.player.faction;
   for(const f of FAC_IDS){const mine=S.scouts.filter(x=>x.side===f).length,want=1+((S.frigates||[]).some(c=>c.scoutReq&&!c.scoutReq.sc&&sideNorm(c.side)===f)?1:0);
@@ -247,6 +247,7 @@ function planBuild(f){if(FACTIONS[f]&&campBusy(f))return;const terr=territory(f)
   if(!c.length)return;const st=S.econ.stock[f],fl=S.econ.fleet[f],srcs=[fl,st],CL=f==='brood'?BROOD_SEED:CONSTR_LD;const DC=f==='brood'?DEPOT_COST:FWD_COST;if(!haveIn(DC,[st])||!haveIn(CL,srcs))return;if(f!=='brood'&&!S.yards[f]&&(st.frame||0)-DC.frame<YARD_COST.frame)return;
   const sid=wpickArr(c),force={};takeFrom(DC,[st]);inv.addAll(force,DC);takeFrom(CL,srcs);inv.addAll(force,CL);
   const tier=factionTier(f),cls=[];for(let i=0;i<3;i++){const cl=pickFighter('patrol'),ld=loadout('patrol',tier,cl);if(takeFrom(ld,srcs)){inv.addAll(force,ld);cls.push(cl)}}
+  if(f==='brood'&&cls.length<SEED_GUARDS){inv.addAll(st,force);return}   // a Seeder never flies unguarded: everything goes back to stores until two guards can be kitted
   const ev={id:S.nextId++,type:'build',att:f,sector:sid,eta:S.T+80,stage:'inbound',force,n:cls.length,tier,cls,site:stationSite(sid),prog:0};S.events.push(ev);
   announce(ev)}
 function buildRisk(sid,f){let r=.08;const oid=OUT_BY_SECTOR[sid];if(oid){const ow=S.outposts[oid].owner;if(ow&&hostile(f,ow))r+=.35}if(f!=='brood'&&broodNear(sid))r+=.15;if(DEF[sid].kind==='deep')r+=.07;return r}

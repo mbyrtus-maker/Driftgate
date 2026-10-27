@@ -509,6 +509,7 @@ function npcThink(e,dt){
   if(isBmb(e.cls)&&ai.tgt&&ai.tgt.role==='frigate'&&ai.tgt.alive&&W.ents.includes(ai.tgt)&&(e.load.torpedo||0)>0){if(ai.stand&&d3(ai.stand,ai.tgt)>2300)ai.stand=null;bomberRun(e,ai.tgt,dt);return}
   if(e.role==='strike'&&ai.siege&&ai.tgt){const T=W.stationEnt;if(isBmb(e.cls)||(T&&d3(ai.tgt,T)>2600))ai.tgt=null}
   if(combat&&ai.tgt){fight(e,ai.tgt,dt);return}
+  if(e.bpack&&bpSeek(e,dt))return;
   if((e.role==='pirate'||(e.role==='miner'&&e.side==='brood'))&&!ai.tgt&&cloudSeek(e,dt))return;
   const OE=W.outpostEnt,SE=W.stationEnt;
   switch(e.role){
