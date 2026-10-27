@@ -1838,6 +1838,9 @@ Bonuses are paid by the faction's treasury and shown on the job card and in the 
 - **Vesper:** keeps most of the scout's speed, the scout radar, beacon flipping and limpets; no missiles or swarm pods. A railgun: hold about 2 s to charge, a near-instant slug (about 6,000 m/s), about 4 km range; a full charge kills a Light Fighter in one shot and a Heavy Fighter in two or three. Targets found by your own scouting (found, limpeted, or in a covered system) can be hit beyond radar range; shots from an unseen position hit harder; firing reveals you. The railgun damages capitals and stations; the counter is that each shot puts the Vesper on the map and a carrier launches fighters at it. Later, with sub-targets: rail shots knock out a capital's weak points. About 5,000 cr.
 - Weakness: fragile and dependent; kill its scouts and burn its relays and it fights blind; the Vesper is helpless up close.
 
+### Models (approved, Oct 2026)
+Preview renders in `tools/previews/signature_hulls.png`. **Gannet:** hand-built in code like the Heavy Bomber, a hauler from the future: long streamlined hull and pointed nose with a glass canopy, a raised cargo spine with a light strip, flush missile pods on both flanks (six glowing cells a side, 12 in all), swept stern fins, twin drives and a small centre drive (`tools/previews/gannet_mesh.js`). **Bombard:** the turned-about Heavy Miner with twin shell cannons on its flanks where the side barrels were, each with a breech and muzzle ring. **Vesper:** the scout hull without missile pods or swarm box, a twin-rail gun slung under the belly past the nose with accelerator coils, a capacitor block aft, the Oracle's sensor dish kept. Bombard and Vesper builders: `tools/previews/signature_models.py` (not in the model pack yet).
+
 ### Matchups
 | Ship | Strong against | Weak against |
 |---|---|---|
