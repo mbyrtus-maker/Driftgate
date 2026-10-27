@@ -1814,9 +1814,11 @@ The Unbound ambush and the Brood swarm; the three factions only differed in ±12
 | Varkesh | Mining | +20% on Aurorite mining jobs | Ward Drones on Varkesh mining hulls: +40% hull, +25% damage | Bombard (converted Heavy Miner) |
 | Ostrova | Scouting | +40% on all scouting pay (beacon flips and missions, recon, Seeder spotting, limpet pings) | Seer and Oracle shields: +40% capacity, recharge 40% slower | Vesper (converted Advanced Scout) |
 
-**Players only:** the signature hulls, the job bonuses and the survival perks (Varkesh's stronger Ward Drones, Ostrova's deep scout shields and the drive peek) are for human pilots. AI factions never field the Gannet, Bombard or Vesper, and AI ships get none of the bonuses or perks (AI hauling, mining and scouting is unchanged).
-
-**One AI exception, off-screen only:** Halcyon AI convoys running to or from a Freeport count Freeport escorts as extra defensive strength when a raid on them is resolved off-screen. No escort ships are spawned; it is a strength term in that calculation only. Needs a war check when built.
+**Who gets what:**
+- **Players only:** the signature hulls (AI factions never field the Gannet, Bombard or Vesper), the job bonuses, and Ostrova's drive peek.
+- **AI too:** Varkesh AI miners carry the stronger Ward Drones, and Ostrova AI scouts have the deep shields (+40% capacity, 40% slower recharge), live and wherever scout survival is calculated off-screen.
+- **Halcyon AI, off-screen only:** AI convoys running to or from a Freeport count Freeport escorts as extra defensive strength when a raid on them is resolved off-screen. No escort ships are spawned; it is a strength term in that calculation only.
+- All three AI effects move faction strength, so they need a war check when built.
 
 Bonuses are paid by the faction's treasury and shown on the job card and in the completion message. Percentages differ because scouting sits lowest on the pay ladder: +40% of 3.5–7k an hour is about +1.4–2.8k, near the other two in credits, and keeps top scouts under mining's 12k floor.
 
