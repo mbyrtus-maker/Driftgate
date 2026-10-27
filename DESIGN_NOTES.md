@@ -1631,9 +1631,10 @@ It was hard to tell where your own faction's capital ships were: on the galaxy m
 - **Engines.** Damaged: slower, turns slower, and the jump drive spins up slower (it already scales with engine power). Disabled: no jump at all (capitals don't use gates; they spin up their own drive and jump from anywhere), so a capital can be pinned in the system for the fleet to catch; an engine knocked out mid spin-up aborts the jump.
 - **Shield generator.** Damaged: slower recharge; disabled: no recharge and a lower maximum.
 - **Main gun (escort, the lance) / launch bay (carrier).** The gun goes quiet; the carrier can't launch or recover its wing.
+- **Torpedo bays** (escorts, which fire torpedoes at capitals and stations). Disabled: no torpedoes, so a stripped escort can't threaten a capital or a station.
 
 **Station sub-systems** (tied to the station modules, `DEV_KEYS`, so a better-built station has more to strip):
-- **Turret mounts and the missile battery** (Defence platform). Each mount its own target, outside the shield like a capital's PD. Fewer guns: easier for bombers, constructors' escorts and raiders.
+- **Turret mounts and the missile battery** (Defence platform). Each mount its own target. Fewer guns: easier for bombers, constructors' escorts and raiders.
 - **Shield generator** (Hull & shield works). As on a capital.
 - **Fighter hangar bays** (depots). A disabled bay launches nothing when the depot is attacked.
 - **Docking ring / market.** Disabled: no docking or trade there for its own side until repaired (supply convoys wait outside), so a raid can cut a depot off from the economy for a while without taking it.
@@ -1643,7 +1644,7 @@ It was hard to tell where your own faction's capital ships were: on the galaxy m
 
 **Rules for both:**
 - Sub-targets are real points on the model (turret positions already exist for capitals, `turMount`, and for stations, placed on the surface in `addStationEnt`). With a capital or station targeted, a key cycles its systems (Shift+T is a candidate; check it's free); the HUD shows a lead marker on the point.
-- Turrets sit outside the shield and can be hit at any time; engines, shield generators, guns, bays, docking ring and production only once the shields are down. Shields first (torpedoes, sustained fire), then systems.
+- **Every sub-target, turrets included, can only be hit once the shields are down** (decided Oct 2026; an earlier draft left turrets hittable through the shield). Shields first (torpedoes, sustained fire), then systems: the first torpedo wave meets full point defence, and fighters strip the turrets for the waves after.
 - Hits on a sub-target do full fighter damage instead of the 10% chip; hull still only falls to torpedoes (and, for stations, assaults and sieges). Fighters disable, bombers kill.
 - Systems are disabled, not destroyed. They repair slowly out of combat. A capital repairs fully at its base or from a supply run (`csup`); **a station repairs from its own stores, spending Alloy Plate and Conduit**, so the ledger stays exact and a raided, starved depot stays crippled longer.
 - The target panel lists the systems with health bars; the galaxy map's fleet panel and a station's map detail show disabled systems ("engines out", "2 of 4 turrets down", "docking ring out").
