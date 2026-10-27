@@ -24,6 +24,7 @@ function forgesOwned(f){let n=0;for(const id in S.outposts){const o=S.outposts[i
 function factionTier(f){return 1+Math.min(2,forgesOwned(f))}
 function pirateTier(){return S.outposts.wrack.owner==='pirate'?2:1}
 function loadout(role,t,cls){
+  if(cls==='mite')return{...MITE.kit};   // a Mite is grown from a little ore, not fitted out
   if(role==='miner')return{plate:cls==='dredger'?4:2,wire:2,drone:(CLASSES[cls]||{}).drones||2};if(role==='hauler')return{plate:cls==='bulker'?6:4,wire:1,drone:(CLASSES[cls]||{}).drones||2};
   const o=role==='pirate'?(t>=2?{plate:3,wire:2,coil:1,missile:1}:{plate:2,wire:2}):(t>=3?{plate:3,wire:2,coil:2,lattice:1,missile:2}:t===2?{plate:3,wire:2,coil:2,missile:1}:{plate:3,wire:2});
   if(cls==='interceptor'){o.plate=Math.max(1,o.plate-1);if(o.missile)o.missile=1}

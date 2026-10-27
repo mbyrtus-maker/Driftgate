@@ -784,7 +784,7 @@ function bpSpawn(s,d,P){const g=GATES[W.sid].slice().sort((a,b)=>broodHops(a.to)
   for(let i=0;i<n;i++){const e=spawnNPC('patrol','brood');if(!e)break;const o=rdir();e.x=g.x*.92+o.x*120;e.y=g.y*.92+o.y*60;e.z=g.z*.92+o.z*120;e.vx=e.vy=e.vz=0;
     e.bpack=1;e.grp=grp;grp.members.push(e);e.ai.huntUntil=W.t+BPACK.life;e.ai.hunt=bpPrey(e);fxWarp(e,sideCol('brood'))}
   grp.n0=grp.members.length;if(!grp.n0){s.bpNext=S.T+BPACK.cd;return}W.groups[grp.id]=grp;P.m=grp.members;P.until=W.t+BPACK.life;P.ate=0;
-  if(W===LW&&!MUTE)SFX.alarm();bpSay(`⚠ A Brood hunting pack (${grp.n0}) has come through the ${DEF[g.to]?DEF[g.to].name+' ':''}gate for the salvage. It goes for the wounded first.`,'bad')}
+  if(W===LW&&!MUTE)SFX.alarm();const nm=W.ents.filter(m=>m.alive&&m.cls==='mite'&&m.miteSnap&&grp.members.includes(m.miteLead)).length;bpSay(`⚠ A Brood hunting pack (${grp.n0}${nm?` and ${nm} Mites`:''}) has come through the ${DEF[g.to]?DEF[g.to].name+' ':''}gate for the salvage. It goes for the wounded first.`,'bad')}
 function bpackWorld(dt){if(NET.cl||!W||S.training)return;const s=S.sectors[W.sid],d=DEF[W.sid];if(!s||!d)return;const P=W.bpack=W.bpack||{};
   if(P.m){P.m=P.m.filter(e=>e.alive&&W.ents.includes(e));
     if(!P.m.length||W.t>P.until){for(const e of P.m){e.role='leave';e.bpack=0;e.ai.hunt=null}if(P.m.length)bpSay(`The Brood hunting pack is leaving ${d.name}${P.ate>=1?` with ${Math.round(P.ate)} t of salvage in its bellies`:''}.`,'info');P.m=null;s.bpNext=S.T+BPACK.cd;return}
@@ -795,3 +795,27 @@ function bpackWorld(dt){if(NET.cl||!W||S.training)return;const s=S.sectors[W.sid
   if(P.at){if(S.T>=P.at){P.at=0;bpSpawn(s,d,P)}return}
   if(!bpHuman())return;const sc=bpScent(s);if(sc<BPACK.min)return;const bh=broodHops(W.sid);if(bh>BPACK.hops)return;
   P.at=S.T+BPACK.delay[bh]+rnd(0,8);P.sc=sc;bpSay(`⚠ The Brood have caught the scent of ${Math.round(sc)} t of salvage in ${d.name}. A hunting pack is on its way.`,'warn')}
+
+// ---- Mites (prototype): the Brood's swarm. Grown from a little ore (MITE.kit, from Brood stores), fast, fragile, unshielded,
+// with the Brood's hull bonus. Live systems only: most Brood fighters that appear bring a cluster of Mites, Seeders bring a
+// screen of them, and hunting packs fill out with them. A Mite kill drops salvage only sometimes (otherwise its ore breaks up
+// into the system's debris), is worth a third of a War effort point, and only some Mite hits leave a spore.
+const MITE={kit:{fe:2,cu:1},share:.7,per:[3,5],seed:[4,6],cap:18,drop:1/3,spore:1/3,life:420};
+function miteN(){let n=0;for(const e of W.ents)if(e.alive&&e.cls==='mite')n++;return n}
+function miteMake(role,lead,i){if(miteN()>=MITE.cap)return null;const st=S.econ.stock.brood;if(!st||!takeFrom(MITE.kit,[st]))return null;
+  const m=makeNPC(role,'brood','mite',1,{...MITE.kit},'stock:brood');m.miteLead=lead;m.miteSnap=1;m.slot=i;m.ai.retireAt=W.t+MITE.life;m.x=lead.x;m.y=lead.y;m.z=lead.z;W.ents.push(m);return m}
+{const o=spawnNPC;spawnNPC=function(role,side,initial,lead){const e=o.apply(this,arguments);
+  if(e&&side==='brood'&&W&&!NET.cl&&(role==='patrol'||role==='raider'||role==='escort'||role==='strike')&&e.cls!=='mite'&&Math.random()<MITE.share){const k=ri(MITE.per[0],MITE.per[1]);for(let i=0;i<k;i++)if(!miteMake('patrol',e,i))break}
+  return e}}
+{const o=engageBuild;engageBuild=function(ev){o.apply(this,arguments);if(ev.att!=='brood'||!W||NET.cl)return;
+  const C=W.ents.find(x=>x.alive&&x.evId===ev.id&&x.role==='builder');if(!C||!C.escortG)return;const g=C.escortG,k=ri(MITE.seed[0],MITE.seed[1]);let n=0;
+  for(let i=0;i<k;i++){const m=miteMake('escort',C,g.members.length+i);if(!m)break;m.grp=g;m.evId=ev.id;m.miteSnap=0;const r=rdir();m.x=C.x+r.x*110;m.y=C.y+r.y*60;m.z=C.z+r.z*110;qCopy(m.q,C.q);g.members.push(m);n++}
+  if(n)g.n0=g.members.length}}
+// a Mite's kit is salvage only sometimes: otherwise its ore breaks up into the system's debris (what it ate always spills)
+{const o=killShip;killShip=function(e,src,at){if(e&&e.cls==='mite'&&e.alive&&e.load&&Math.random()>=MITE.drop&&W){const s=S.sectors[W.sid];if(s){toDebris(s,e.load);e.load={}}}return o.apply(this,arguments)}}
+// every frame in a live world (host and single player): a new cluster takes up its lead's position, group and quarry
+function miteWorld(){if(NET.cl||!W)return;for(const m of W.ents){if(m.cls!=='mite'||!m.alive)continue;const L=m.miteLead;
+  if(m.miteSnap&&L){m.miteSnap=0;const r=rdir();m.x=L.x+r.x*140;m.y=L.y+r.y*70;m.z=L.z+r.z*140;qCopy(m.q,L.q);m.vx=L.vx||0;m.vy=L.vy||0;m.vz=L.vz||0;
+    if(L.grp&&!m.grp){m.grp=L.grp;if(!L.grp.members.includes(m))L.grp.members.push(m)}if(L.ai){m.ai.hunt=L.ai.hunt;m.ai.huntUntil=L.ai.huntUntil;m.ai.tgt=L.ai.tgt}
+    if(L.bpack&&W.bpack&&W.bpack.m){m.bpack=1;if(!W.bpack.m.includes(m))W.bpack.m.push(m)}}
+  if(L&&(!L.alive||!W.ents.includes(L))&&!(m.ai.retireAt<W.t+30))m.ai.retireAt=W.t+30}}

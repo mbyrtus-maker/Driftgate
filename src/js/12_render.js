@@ -289,7 +289,7 @@ function gturretMesh(fac){const key='gt'+fac;if(MESH[key])return MESH[key];const
   for(const s of[-1,1]){g.set(.085*s,.03,.32).box(.045,.045,.48,M);g.set(.085*s,.03,.57).box(.06,.06,.04,fc,1);L.seg([.085*s,.03,.1],[.085*s,.03,.56],fc)}
   return MESH[key]={hull:g.upload(),rim:L.upload(true)}}
 // Brood hulls are grown models of their own in the model pack
-const BROOD_MDL={interceptor:'b_skitter',picket:'b_mite',drone:'b_mite',striker:'b_thresher',gunboat:'b_thresher',heavy:'b_carapace',bomber:'b_sporemaw',skiff:'b_grazer',prospector:'b_grazer',dredger:'b_grazer',courier:'b_gorger',freighter:'b_gorger',bulker:'b_gorger',constructor:'b_weaver',scout:'b_watcher',scout2:'b_watcher',frigate:'b_hive',escort:'b_prowler',carrier:'b_hive'};
+const BROOD_MDL={mite:'b_mite',interceptor:'b_skitter',picket:'b_mite',drone:'b_mite',striker:'b_thresher',gunboat:'b_thresher',heavy:'b_carapace',bomber:'b_sporemaw',skiff:'b_grazer',prospector:'b_grazer',dredger:'b_grazer',courier:'b_gorger',freighter:'b_gorger',bulker:'b_gorger',constructor:'b_weaver',scout:'b_watcher',scout2:'b_watcher',frigate:'b_hive',escort:'b_prowler',carrier:'b_hive'};
 // the fleet carrier: a long armoured flight deck over a heavy hull, a bow hangar mouth, side bays, an island bridge to
 // starboard and four big drives. Built in model space (bow at +z, about 2 units long) in the faction's colours.
 function carrierMesh(fac){const pal=mdlPal(fac),C=pal.c,LT=C[0],MD=C[1],DK=C[2],AC=C[3],GL=C[4],FG=C[5],WN=C[6],g=new GB(),L=new GB(),eng=[];
@@ -763,7 +763,7 @@ function drawCockpit(c,p,t){const P=S.player,F=CK_FAC[P.faction]||CK_FAC.halcyon
       if(!T){lab('NO TARGET · T NEAREST',x+9,ty+shh*.55)}
       else{const r=T.ref,d=Math.round(d3(r,p));
         if(T.kind==='ship'){lab((r.tok?r.tok.name:shipLabel(r)).toUpperCase().slice(0,18),x+9,ty+24,hostile('player',r.side)?'#ffb3aa':'#ece4cf');lab(fmt(d)+' M',x+ww-9,ty+24,null,'right');
-          bar(x+9,ty+33,ww-18,r.shield/r.st.sCap,'#6fb7ff');bar(x+9,ty+40,ww-18,r.hull/r.st.hull,'#ece4cf');
+          bar(x+9,ty+33,ww-18,r.shield/(r.st.sCap||1),'#6fb7ff');bar(x+9,ty+40,ww-18,r.hull/r.st.hull,'#ece4cf');
           const L=r.load||{},it=[['torpedo','TRP'],['missile','MSL'],['swarm','SWM'],['drone','DRN']].filter(([k])=>L[k]).map(([k,n])=>n+' '+L[k]);lab(it.length?it.join(' · '):(r.role||'').toUpperCase(),x+9,ty+shh-9,'rgba(236,228,207,.75)')}
         else if(T.kind==='ast'){lab((r.seam?'XENOCRYSTAL SEAM':r.comet?'COMET':'ASTEROID'),x+9,ty+24,'#ece4cf');lab(fmt(d)+' M',x+ww-9,ty+24,null,'right');lab(Object.keys(r.ore).map(k=>ITEMS[k].name.slice(0,9)+' '+r.ore[k]).join(' · ').slice(0,26),x+9,ty+shh*.62,'rgba(236,228,207,.8)')}
         else{lab((T.kind==='station'||T.kind==='works'?r.name:T.kind==='outpost'?r.o.name:T.kind).toUpperCase().slice(0,18),x+9,ty+24,'#ece4cf');lab(fmt(d)+' M',x+ww-9,ty+24,null,'right');if(T.kind==='works'){bar(x+9,ty+40,ww-18,wkHp(r)/wkMax(r),'#ece4cf')}else if(T.kind==='station'||T.kind==='outpost'){const[bs,bh]=tgtBars(r);bar(x+9,ty+36,ww-18,bs,'#6fb7ff');bar(x+9,ty+43,ww-18,bh,'#ece4cf')}}}

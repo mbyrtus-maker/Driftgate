@@ -762,10 +762,11 @@ const FACTIONS={
   ostrova:{name:'Ostrova Collective',short:'Ostrova',col:'#b893ff',fill:'#1b1430',trait:{energy:1.12,shield:.88},traitText:'Reactor +12% · Shields −12%',blurb:'Archivists and drive-mystics. Deep reactors, patient pilots.',hulls:{gunboat:'Sentinel',interceptor:'Mote',striker:'Wisp',heavy:'Vigil',bomber:'Obelisk',prospector:'Lumen',freighter:'Cairn',drone:'Halo Drone',skiff:'Glim',frigate:'Cathedral',picket:'Glint',dredger:'Delve',courier:'Drift',bulker:'Monolith',constructor:'Loom',scout:'Seer',scout2:'Oracle',wraith:'Wraith'},station:'Spire Archive',depot:'Veil Depot',shot:'lance'},
 };
 FACTIONS.brood={name:'The Vael Brood',short:'Brood',col:'#9be35a',fill:'#14200c',trait:{hull:1.5,shield:.6,energy:1.1},traitText:'Hull +50% and regrows · Shields −40%',blurb:'Something grown, not built. It eats ore, and it eats stations.',
-  hulls:{interceptor:'Skitter',striker:'Thresher',heavy:'Carapace',bomber:'Sporemaw',prospector:'Grazer',freighter:'Gorger',drone:'Mite',skiff:'Nibbler',frigate:'Leviathan',escort:'Prowler',picket:'Spawnling',dredger:'Devourer',courier:'Crawler',bulker:'Bloater',constructor:'Seeder',scout:'Watcher',scout2:'Stalker'},station:'Bloom Heart',depot:'Bloom Node',shot:'spore',bio:true};
+  hulls:{mite:'Mite',interceptor:'Skitter',striker:'Thresher',heavy:'Carapace',bomber:'Sporemaw',prospector:'Grazer',freighter:'Gorger',drone:'Mite',skiff:'Nibbler',frigate:'Leviathan',escort:'Prowler',picket:'Spawnling',dredger:'Devourer',courier:'Crawler',bulker:'Bloater',constructor:'Seeder',scout:'Watcher',scout2:'Stalker'},station:'Bloom Heart',depot:'Bloom Node',shot:'spore',bio:true};
 const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',shot:'scrap',hulls:{raider:'Raider',corsair:'Corsair',plunderer:'Plunderer',uskiff:'Skiff',gunboat:'Raker',interceptor:'Dart',striker:'Cutter',heavy:'Brute',bomber:'Wrecker',prospector:'Gouger',freighter:'Scow',drone:'Junk Drone',skiff:'Scrounger',frigate:'Destroyer',picket:'Gnat',dredger:'Grinder',courier:'Smuggler',bulker:'Hulk',constructor:'Rigger',scout:'Sneak',scout2:'Ghost'}};
 const PLAYER_COL='#f0b24a';
 const CLASSES={
+  mite:{name:'Mite',hull:12,shield:0,speed:1.45,turn:4,weapon:.5,cargo:0,drill:0,radius:7,rack:0,boost:1.2,agile:1.6,acc:1.55,bcost:.6,desc:'Brood swarm fighter: grown from ore, fast, fragile, no shields.'},
   interceptor:{name:'Light Fighter',hull:86,shield:.85,speed:1.32,turn:3.45,weapon:1.05,cargo:14,drill:0,radius:12,rack:.75,boost:1.25,agile:1.45,acc:1.38,bcost:.7,desc:'Fastest and most agile: quickest acceleration, cheap afterburner, best at shaking missiles. Light armour.'},
   gunboat:{name:'Heavy Bomber',turK:2,turOwnE:1,swarm:2,torp:true,hull:210,shield:1,speed:.9,turn:1.75,weapon:1.3,cargo:30,drill:0,radius:20,rack:1,boost:.95,agile:.82,acc:.85,bcost:1.05,seats:2,desc:'Two seats. The pilot flies on twin forward cannons and a siege torpedo bay that cracks stations, outposts and their works; a gunner works the rear dorsal turret with its own cannons. An AI gunner mans the turret when no pilot is in it. Swarm launcher (2 pods). Tougher and slower than a fighter, quicker than a Bomber.'},
   striker:{name:'Medium Fighter',hull:120,shield:1.08,speed:1.17,turn:2.95,weapon:1.25,cargo:24,drill:0,radius:15,rack:1,boost:1.12,agile:1.18,acc:1.2,bcost:.85,desc:'All-rounder: quick off the mark and nimble enough to out-turn heavies and bombers.'},
@@ -1627,6 +1628,7 @@ function forgesOwned(f){let n=0;for(const id in S.outposts){const o=S.outposts[i
 function factionTier(f){return 1+Math.min(2,forgesOwned(f))}
 function pirateTier(){return S.outposts.wrack.owner==='pirate'?2:1}
 function loadout(role,t,cls){
+  if(cls==='mite')return{...MITE.kit};   // a Mite is grown from a little ore, not fitted out
   if(role==='miner')return{plate:cls==='dredger'?4:2,wire:2,drone:(CLASSES[cls]||{}).drones||2};if(role==='hauler')return{plate:cls==='bulker'?6:4,wire:1,drone:(CLASSES[cls]||{}).drones||2};
   const o=role==='pirate'?(t>=2?{plate:3,wire:2,coil:1,missile:1}:{plate:2,wire:2}):(t>=3?{plate:3,wire:2,coil:2,lattice:1,missile:2}:t===2?{plate:3,wire:2,coil:2,missile:1}:{plate:3,wire:2});
   if(cls==='interceptor'){o.plate=Math.max(1,o.plate-1);if(o.missile)o.missile=1}
@@ -2242,14 +2244,14 @@ function loseInv(src,frac,s){const lost={};for(const k in src){const m=Math.min(
 // ---- war effort: what human pilots do for their faction. Orders, supply-drive deliveries, campaign moves, beacon flips and
 // enemy ships shot down earn the faction points; the points fade (about 20 minutes to lose two thirds) and, while they last,
 // make the faction's fleets fight harder in the battles fought out of sight: outpost assaults, station sieges, hunter groups.
-const WE={tau:1200,max:.8,scale:10,order:2,drive:.04,camp:4,beacon:2,bmission:3,kill:{fighter:1,heavy:1.5,builder:3,hauler:1,miner:.5,drone:.1,escort:6,frigate:12}};
+const WE={tau:1200,max:.8,scale:10,order:2,drive:.04,camp:4,beacon:2,bmission:3,kill:{mite:1/3,fighter:1,heavy:1.5,builder:3,hauler:1,miner:.5,drone:.1,escort:6,frigate:12}};
 function weFac(f){f=sideNorm(f);return FAC_IDS.includes(f)?f:null}
 function weAdd(f,pts){f=weFac(f);if(!f||!(pts>0)||!S)return;S.we=S.we||{};S.we[f]=(S.we[f]||0)+pts}
 function wePts(f){const g=weFac(f);return g&&S.we?(S.we[g]||0):0}
 function weBonus(f){return WE.max*(1-Math.exp(-wePts(f)/WE.scale))}
 function weMul(f){return 1+weBonus(f)}
 function weTick(){if(!S.we)return;const k=Math.exp(-10/WE.tau);for(const f in S.we){S.we[f]*=k;if(S.we[f]<.01)delete S.we[f]}}
-function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'||e.role==='limpet'?K.drone:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
+function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'||e.role==='limpet'?K.drone:e.cls==='mite'?K.mite:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
 // ---- kill credit. Every pilot who damaged a ship is paid their share of its bounty (and War effort) by damage dealt, so the
 // kill shot isn't needed. AI damage counts in the total but pays no one; the kill shot only adds to the kill count.
 // Bounties grow with the size of the ship.
@@ -4206,7 +4208,7 @@ function tgtLive(g){if(!g)return false;if(g.type==='works')return!!(W.works&&W.w
 function batteryTgt(F){const C=fctl(F.tok);if(C.lanceMode==='hold')return null;if(C.lanceMode==='target')return tgtLive(C.tgt)?C.tgt:null;if(F.lanceT!==undefined&&!NET.cl)return tgtLive(F.lanceT)?F.lanceT:null;
   let T=null;const SE=W.stationEnt;if(SE&&hostile(F.side,SE.fac))T=SE;let bd=2600;for(const o of W.ents)if(o.role==='frigate'&&o.alive&&o!==F&&hostile(F.side,o.side)){const d=d3(o,F);if(d<bd){bd=d;T=o}}if(!T){const OE=W.outpostEnt;if(OE&&OE.o.owner&&hostile(F.side,OE.o.owner)&&!OE.o.breached&&d3(OE,F)<2600)T=OE}return T}
 function tgtKind(e){return e.type==='works'?'Station works':e.type==='station'?(e.rec&&e.rec.kind==='depot'?'Depot':'Station'):e.type==='outpost'?'Outpost':e.role==='frigate'?'Frigate':e.role==='limpet'?'Limpet':CLASSES[e.cls].name}
-function tgtBars(e){if(e.type==='works')return[0,wkHp(e)/wkMax(e)];if(e.type==='station')return[e.shield/(e.sMax||1),e.rec?e.rec.hull/e.rec.hMax:1];if(e.type==='outpost'){const os=oStats(e.o);return[e.o.shield/os.sMax,e.o.hull/os.hMax]}return[e.shield/e.st.sCap,e.hull/e.st.hull]}
+function tgtBars(e){if(e.type==='works')return[0,wkHp(e)/wkMax(e)];if(e.type==='station')return[e.shield/(e.sMax||1),e.rec?e.rec.hull/e.rec.hMax:1];if(e.type==='outpost'){const os=oStats(e.o);return[e.o.shield/os.sMax,e.o.hull/os.hMax]}return[e.shield/(e.st.sCap||1),e.hull/e.st.hull]}
 function wingTgt(F){const C=fctl(F.tok);return C.tgt&&tgtLive(C.tgt)?C.tgt:null}
 function drawWingCard(c,F,C){const T=wingTgt(F),w=380,x=VW/2-w/2,y=100,h=T?58:44,m=(WING_MIS[C.pickets]||[C.pickets])[0];
   c.fillStyle='rgba(4,8,15,.78)';c.fillRect(x,y,w,h);c.strokeStyle=T?'rgba(255,93,79,.7)':'rgba(207,214,228,.25)';c.lineWidth=1;c.strokeRect(x+.5,y+.5,w-1,h-1);
@@ -4652,7 +4654,7 @@ function damageShip(e,dmg,srcSide,at,kind){
   if(e.shield>0){const eff=dmg*sf,a=Math.min(e.shield,eff);e.shield-=a;dmg=(eff-a)/sf;
     if(a>0){e.shHitT=W.t;e.shHitA=Math.min(1,a/(e.st.sCap*.25)+.35);e.hitPt=at?{x:at.x-e.x,y:at.y-e.y,z:at.z-e.z}:null;fxSpark(at||e,'#8fc8ff',4);if(e.isPlayer){W.shHit=.35;SFX.shield()}}
     if(e.shield<=0){e.shield=0;e.shBreakT=W.t;e.shDown=true;fxShieldBreak(e);if(e.isPlayer){flash('Shields down! Hold Shift to boost away.',true);SFX.shieldDown()}}}
-  if(dmg>0&&srcSide==='brood'&&e.side!=='brood'){const cap=e.st.sporeCap||3;e.spores=(e.spores||[]).filter(t=>t>W.t);if(e.isPlayer)SFX.spore();if(e.spores.length<cap)e.spores.push(W.t+4);else{e.spores.sort((x,y)=>x-y);e.spores[0]=W.t+4}}
+  if(dmg>0&&srcSide==='brood'&&e.side!=='brood'&&!(at&&at.src&&at.src.cls==='mite'&&Math.random()>=MITE.spore)){const cap=e.st.sporeCap||3;e.spores=(e.spores||[]).filter(t=>t>W.t);if(e.isPlayer)SFX.spore();if(e.spores.length<cap)e.spores.push(W.t+4);else{e.spores.sort((x,y)=>x-y);e.spores[0]=W.t+4}}
   if(dmg>0){e.hull-=dmg*hf*(1-e.st.dr)*vsHullK(e,at,kind);fxSpark(at||e,'#ffd9a0',4);if(e.isPlayer){W.hurt=.25;W.shake=Math.max(W.shake||0,.45);SFX.hull()}}
   rec();if(e.hull<=0)killShip(e,srcSide,at);
 }
@@ -5524,7 +5526,7 @@ function worldUpdate(dt){
   if(NET.host)netWorld(dt);
   groupsUpdate();limpetSync(dt);
   for(const e of W.ents.slice()){if(e.npc&&e.alive)npcThink(e,dt)}
-  beaconWorld(dt);wreckWorld(dt);try{bpackWorld(dt)}catch(e){frameErr('brood pack',e)}blkHunt();if(W===LW||!LW)for(const Q of allPilots())if(Q&&Q.convoy&&S.T>Q.convoy.until){const k=Q===S.player?null:Object.keys(S.pilots||{}).find(id=>S.pilots[id]===Q);runAs(k,()=>convoyEnd(false,'it ran out of time'))}
+  beaconWorld(dt);wreckWorld(dt);try{bpackWorld(dt);miteWorld()}catch(e){frameErr('brood pack',e)}blkHunt();if(W===LW||!LW)for(const Q of allPilots())if(Q&&Q.convoy&&S.T>Q.convoy.until){const k=Q===S.player?null:Object.keys(S.pilots||{}).find(id=>S.pilots[id]===Q);runAs(k,()=>convoyEnd(false,'it ran out of time'))}
   for(const e of gunboatsIn())tickTurret(e,dt);
   for(const e of W.ents.slice()){if(e.type==='ship'&&e.alive&&!(e.isPlayer&&(S.player.docked||W.dead||W.docking)))physics(e,dt)}
   structUpdate(dt);shotsUpdate(dt);missilesUpdate(dt);blWorld(dt);
@@ -5832,7 +5834,7 @@ function gturretMesh(fac){const key='gt'+fac;if(MESH[key])return MESH[key];const
   for(const s of[-1,1]){g.set(.085*s,.03,.32).box(.045,.045,.48,M);g.set(.085*s,.03,.57).box(.06,.06,.04,fc,1);L.seg([.085*s,.03,.1],[.085*s,.03,.56],fc)}
   return MESH[key]={hull:g.upload(),rim:L.upload(true)}}
 // Brood hulls are grown models of their own in the model pack
-const BROOD_MDL={interceptor:'b_skitter',picket:'b_mite',drone:'b_mite',striker:'b_thresher',gunboat:'b_thresher',heavy:'b_carapace',bomber:'b_sporemaw',skiff:'b_grazer',prospector:'b_grazer',dredger:'b_grazer',courier:'b_gorger',freighter:'b_gorger',bulker:'b_gorger',constructor:'b_weaver',scout:'b_watcher',scout2:'b_watcher',frigate:'b_hive',escort:'b_prowler',carrier:'b_hive'};
+const BROOD_MDL={mite:'b_mite',interceptor:'b_skitter',picket:'b_mite',drone:'b_mite',striker:'b_thresher',gunboat:'b_thresher',heavy:'b_carapace',bomber:'b_sporemaw',skiff:'b_grazer',prospector:'b_grazer',dredger:'b_grazer',courier:'b_gorger',freighter:'b_gorger',bulker:'b_gorger',constructor:'b_weaver',scout:'b_watcher',scout2:'b_watcher',frigate:'b_hive',escort:'b_prowler',carrier:'b_hive'};
 // the fleet carrier: a long armoured flight deck over a heavy hull, a bow hangar mouth, side bays, an island bridge to
 // starboard and four big drives. Built in model space (bow at +z, about 2 units long) in the faction's colours.
 function carrierMesh(fac){const pal=mdlPal(fac),C=pal.c,LT=C[0],MD=C[1],DK=C[2],AC=C[3],GL=C[4],FG=C[5],WN=C[6],g=new GB(),L=new GB(),eng=[];
@@ -6306,7 +6308,7 @@ function drawCockpit(c,p,t){const P=S.player,F=CK_FAC[P.faction]||CK_FAC.halcyon
       if(!T){lab('NO TARGET · T NEAREST',x+9,ty+shh*.55)}
       else{const r=T.ref,d=Math.round(d3(r,p));
         if(T.kind==='ship'){lab((r.tok?r.tok.name:shipLabel(r)).toUpperCase().slice(0,18),x+9,ty+24,hostile('player',r.side)?'#ffb3aa':'#ece4cf');lab(fmt(d)+' M',x+ww-9,ty+24,null,'right');
-          bar(x+9,ty+33,ww-18,r.shield/r.st.sCap,'#6fb7ff');bar(x+9,ty+40,ww-18,r.hull/r.st.hull,'#ece4cf');
+          bar(x+9,ty+33,ww-18,r.shield/(r.st.sCap||1),'#6fb7ff');bar(x+9,ty+40,ww-18,r.hull/r.st.hull,'#ece4cf');
           const L=r.load||{},it=[['torpedo','TRP'],['missile','MSL'],['swarm','SWM'],['drone','DRN']].filter(([k])=>L[k]).map(([k,n])=>n+' '+L[k]);lab(it.length?it.join(' · '):(r.role||'').toUpperCase(),x+9,ty+shh-9,'rgba(236,228,207,.75)')}
         else if(T.kind==='ast'){lab((r.seam?'XENOCRYSTAL SEAM':r.comet?'COMET':'ASTEROID'),x+9,ty+24,'#ece4cf');lab(fmt(d)+' M',x+ww-9,ty+24,null,'right');lab(Object.keys(r.ore).map(k=>ITEMS[k].name.slice(0,9)+' '+r.ore[k]).join(' · ').slice(0,26),x+9,ty+shh*.62,'rgba(236,228,207,.8)')}
         else{lab((T.kind==='station'||T.kind==='works'?r.name:T.kind==='outpost'?r.o.name:T.kind).toUpperCase().slice(0,18),x+9,ty+24,'#ece4cf');lab(fmt(d)+' M',x+ww-9,ty+24,null,'right');if(T.kind==='works'){bar(x+9,ty+40,ww-18,wkHp(r)/wkMax(r),'#ece4cf')}else if(T.kind==='station'||T.kind==='outpost'){const[bs,bh]=tgtBars(r);bar(x+9,ty+36,ww-18,bs,'#6fb7ff');bar(x+9,ty+43,ww-18,bh,'#ece4cf')}}}
@@ -6407,7 +6409,7 @@ function hudUpdate(){hudFit();
 }
   let th='';if(W.tgt&&validTgt(W.tgt)){const T=W.tgt.ref,dist=Math.round(d3(T,p));
     if(W.tgt.kind==='ship'){const col=sideCol(T.side);th=`<div class="tp"><div class="tn" style="color:${col}">${esc(T.role==='limpet'?'Limpet':aceOfEnt(T)&&T.pname?T.pname:T.tok?T.tok.name:hullName(T.side==="player"?S.player.faction:T.side,T.cls))}</div>${aceTgtLine(T)}<div class="ts">${esc(sideName(T.side))} · ${T.role==='limpet'?'limpet on '+esc(lpName(T.lh))+' · fighters can shoot it off · ':`${CLASSES[T.cls].name} · ${T.role==='strike'?'strike group':T.role==='frigate'?'capital ship':T.role} · Mk ${ROMAN[T.tier]} · ${T.wpn==='laser'?'lasers':'kinetic'} · `}${hostile('player',T.side)?'hostile':'friendly'}${T.tuned?' · <span style="color:#6ff2cf">Aurora-tuned ✦</span>':''}</div>${S.unb&&T.role==='frigate'?`<div class="ts" style="color:#b7c6ff">${jamDark(T)?`JAMMED DARK · ${Math.max(0,Math.ceil(T.jamOff-W.t))} s · hold ${kb('act')} to hook its store`:`Capital jam ${Math.round((T.cjam||0)*100)}% · turrets jammed ${(T.turrets||[]).filter(x=>(x.jamOff||0)>W.t).length}/${(T.turrets||[]).length}`}</div>`:''}${S.unb&&T.role!=='frigate'&&(T.jam>0||jamDark(T))?`<div class="ts" style="color:#b7c6ff">${jamDark(T)?`JAMMED DARK · ${Math.max(0,Math.ceil(T.jamOff-W.t))} s · hold ${kb('act')} within ${hookReach(T)} m to hook`:`Jam bar ${Math.round(jamFrac(T)*100)}%`}${T.teth&&T.teth.until>W.t?' · tethered':''}</div>`:''}${T.vr?`<div class="ts" style="color:#9fe0c8">Fitted: ${Object.values(T.vr).map(id=>esc(VARIANTS[id].name)+' ('+esc(VARIANTS[id].cost)+')').join(', ')}</div>`:''}${T.side==='brood'&&T.role==='miner'&&invMass(T.cargo||{})>0?`<div class="ts" style="color:#9be35a">Belly: ${fmt(invMass(T.cargo))} t of ore. It spills when the Grazer dies.</div>`:''}${T.role==='frigate'?(T.cls==='escort'?'<div class="ts" style="color:var(--amber)">Light capital: guns and missiles wear it down; a torpedo that hits guts it</div>':'<div class="ts" style="color:var(--amber)">Capital ship: guns drain its shield; only torpedoes and capital guns hurt its hull</div>'):''}
-      <div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.st.sCap*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(T.hull)}</b></div><div class="mini"><i style="width:${T.hull/T.st.hull*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
+      <div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/(T.st.sCap||1)*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(T.hull)}</b></div><div class="mini"><i style="width:${T.hull/T.st.hull*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
     else if(W.tgt.kind==='ast')th=`<div class="tp"><div class="tn">${T.comet?'Comet':T.seam?'Xenocrystal Seam':'Asteroid'}</div><div class="ts">${Object.keys(T.ore).map(k=>`${ITEMS[k].name} ${T.ore[k]} t`).join(' · ')}</div>${T.seam?'<div class="ts" style="color:#d9bbff">Protected home vein: a limited supply that refills slowly. Turn it into Crystal Lattice and Resonance Cores at your home station.</div>':''}<div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Fire charges at its fault points with F (rings turn green on point), back off 120 m and press ${kb('det')}. Fly into the chunks that come off to scoop them.</div></div>`;
     else if(W.tgt.kind==='beacon'){const own=T.owner,mine=T.by&&isMe(T.by),sc=isScoutCls(S.player.cls);th=`<div class="tp"><div class="tn" style="color:${own?sideCol(own):'var(--ivory)'}">Sector beacon</div><div class="ts">${own?'Held by '+FAC(own).name+(T.by?' · flipped '+fmtT(S.T-T.T)+' ago':''):'Unclaimed'}${mine?' · <b>yours</b>, paying '+BCN_RES+' cr/min':''}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">${own===S.player.faction?'Scanning this system for your side.':sc?`Hold within ${BCN_R} m for ${BCN_T} s to flip it: +${BCN_FLIP} cr, then ${BCN_RES} cr a minute (for ${BCN_RES_T/60} min after your last flip or re-secure) and a constant scan here.`:'Only a Scout or Advanced Scout can flip it.'}</div></div>`}
     else if(W.tgt.kind==='anom'){th=anomPanel(T,dist)}
@@ -8600,7 +8602,7 @@ function bpSpawn(s,d,P){const g=GATES[W.sid].slice().sort((a,b)=>broodHops(a.to)
   for(let i=0;i<n;i++){const e=spawnNPC('patrol','brood');if(!e)break;const o=rdir();e.x=g.x*.92+o.x*120;e.y=g.y*.92+o.y*60;e.z=g.z*.92+o.z*120;e.vx=e.vy=e.vz=0;
     e.bpack=1;e.grp=grp;grp.members.push(e);e.ai.huntUntil=W.t+BPACK.life;e.ai.hunt=bpPrey(e);fxWarp(e,sideCol('brood'))}
   grp.n0=grp.members.length;if(!grp.n0){s.bpNext=S.T+BPACK.cd;return}W.groups[grp.id]=grp;P.m=grp.members;P.until=W.t+BPACK.life;P.ate=0;
-  if(W===LW&&!MUTE)SFX.alarm();bpSay(`⚠ A Brood hunting pack (${grp.n0}) has come through the ${DEF[g.to]?DEF[g.to].name+' ':''}gate for the salvage. It goes for the wounded first.`,'bad')}
+  if(W===LW&&!MUTE)SFX.alarm();const nm=W.ents.filter(m=>m.alive&&m.cls==='mite'&&m.miteSnap&&grp.members.includes(m.miteLead)).length;bpSay(`⚠ A Brood hunting pack (${grp.n0}${nm?` and ${nm} Mites`:''}) has come through the ${DEF[g.to]?DEF[g.to].name+' ':''}gate for the salvage. It goes for the wounded first.`,'bad')}
 function bpackWorld(dt){if(NET.cl||!W||S.training)return;const s=S.sectors[W.sid],d=DEF[W.sid];if(!s||!d)return;const P=W.bpack=W.bpack||{};
   if(P.m){P.m=P.m.filter(e=>e.alive&&W.ents.includes(e));
     if(!P.m.length||W.t>P.until){for(const e of P.m){e.role='leave';e.bpack=0;e.ai.hunt=null}if(P.m.length)bpSay(`The Brood hunting pack is leaving ${d.name}${P.ate>=1?` with ${Math.round(P.ate)} t of salvage in its bellies`:''}.`,'info');P.m=null;s.bpNext=S.T+BPACK.cd;return}
@@ -8611,6 +8613,30 @@ function bpackWorld(dt){if(NET.cl||!W||S.training)return;const s=S.sectors[W.sid
   if(P.at){if(S.T>=P.at){P.at=0;bpSpawn(s,d,P)}return}
   if(!bpHuman())return;const sc=bpScent(s);if(sc<BPACK.min)return;const bh=broodHops(W.sid);if(bh>BPACK.hops)return;
   P.at=S.T+BPACK.delay[bh]+rnd(0,8);P.sc=sc;bpSay(`⚠ The Brood have caught the scent of ${Math.round(sc)} t of salvage in ${d.name}. A hunting pack is on its way.`,'warn')}
+
+// ---- Mites (prototype): the Brood's swarm. Grown from a little ore (MITE.kit, from Brood stores), fast, fragile, unshielded,
+// with the Brood's hull bonus. Live systems only: most Brood fighters that appear bring a cluster of Mites, Seeders bring a
+// screen of them, and hunting packs fill out with them. A Mite kill drops salvage only sometimes (otherwise its ore breaks up
+// into the system's debris), is worth a third of a War effort point, and only some Mite hits leave a spore.
+const MITE={kit:{fe:2,cu:1},share:.7,per:[3,5],seed:[4,6],cap:18,drop:1/3,spore:1/3,life:420};
+function miteN(){let n=0;for(const e of W.ents)if(e.alive&&e.cls==='mite')n++;return n}
+function miteMake(role,lead,i){if(miteN()>=MITE.cap)return null;const st=S.econ.stock.brood;if(!st||!takeFrom(MITE.kit,[st]))return null;
+  const m=makeNPC(role,'brood','mite',1,{...MITE.kit},'stock:brood');m.miteLead=lead;m.miteSnap=1;m.slot=i;m.ai.retireAt=W.t+MITE.life;m.x=lead.x;m.y=lead.y;m.z=lead.z;W.ents.push(m);return m}
+{const o=spawnNPC;spawnNPC=function(role,side,initial,lead){const e=o.apply(this,arguments);
+  if(e&&side==='brood'&&W&&!NET.cl&&(role==='patrol'||role==='raider'||role==='escort'||role==='strike')&&e.cls!=='mite'&&Math.random()<MITE.share){const k=ri(MITE.per[0],MITE.per[1]);for(let i=0;i<k;i++)if(!miteMake('patrol',e,i))break}
+  return e}}
+{const o=engageBuild;engageBuild=function(ev){o.apply(this,arguments);if(ev.att!=='brood'||!W||NET.cl)return;
+  const C=W.ents.find(x=>x.alive&&x.evId===ev.id&&x.role==='builder');if(!C||!C.escortG)return;const g=C.escortG,k=ri(MITE.seed[0],MITE.seed[1]);let n=0;
+  for(let i=0;i<k;i++){const m=miteMake('escort',C,g.members.length+i);if(!m)break;m.grp=g;m.evId=ev.id;m.miteSnap=0;const r=rdir();m.x=C.x+r.x*110;m.y=C.y+r.y*60;m.z=C.z+r.z*110;qCopy(m.q,C.q);g.members.push(m);n++}
+  if(n)g.n0=g.members.length}}
+// a Mite's kit is salvage only sometimes: otherwise its ore breaks up into the system's debris (what it ate always spills)
+{const o=killShip;killShip=function(e,src,at){if(e&&e.cls==='mite'&&e.alive&&e.load&&Math.random()>=MITE.drop&&W){const s=S.sectors[W.sid];if(s){toDebris(s,e.load);e.load={}}}return o.apply(this,arguments)}}
+// every frame in a live world (host and single player): a new cluster takes up its lead's position, group and quarry
+function miteWorld(){if(NET.cl||!W)return;for(const m of W.ents){if(m.cls!=='mite'||!m.alive)continue;const L=m.miteLead;
+  if(m.miteSnap&&L){m.miteSnap=0;const r=rdir();m.x=L.x+r.x*140;m.y=L.y+r.y*70;m.z=L.z+r.z*140;qCopy(m.q,L.q);m.vx=L.vx||0;m.vy=L.vy||0;m.vz=L.vz||0;
+    if(L.grp&&!m.grp){m.grp=L.grp;if(!L.grp.members.includes(m))L.grp.members.push(m)}if(L.ai){m.ai.hunt=L.ai.hunt;m.ai.huntUntil=L.ai.huntUntil;m.ai.tgt=L.ai.tgt}
+    if(L.bpack&&W.bpack&&W.bpack.m){m.bpack=1;if(!W.bpack.m.includes(m))W.bpack.m.push(m)}}
+  if(L&&(!L.alive||!W.ents.includes(L))&&!(m.ai.retireAt<W.t+30))m.ai.retireAt=W.t+30}}
 
 //@src 17_main.js
 // ============================================================ main loop

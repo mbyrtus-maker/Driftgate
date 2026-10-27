@@ -92,7 +92,7 @@ function damageShip(e,dmg,srcSide,at,kind){
   if(e.shield>0){const eff=dmg*sf,a=Math.min(e.shield,eff);e.shield-=a;dmg=(eff-a)/sf;
     if(a>0){e.shHitT=W.t;e.shHitA=Math.min(1,a/(e.st.sCap*.25)+.35);e.hitPt=at?{x:at.x-e.x,y:at.y-e.y,z:at.z-e.z}:null;fxSpark(at||e,'#8fc8ff',4);if(e.isPlayer){W.shHit=.35;SFX.shield()}}
     if(e.shield<=0){e.shield=0;e.shBreakT=W.t;e.shDown=true;fxShieldBreak(e);if(e.isPlayer){flash('Shields down! Hold Shift to boost away.',true);SFX.shieldDown()}}}
-  if(dmg>0&&srcSide==='brood'&&e.side!=='brood'){const cap=e.st.sporeCap||3;e.spores=(e.spores||[]).filter(t=>t>W.t);if(e.isPlayer)SFX.spore();if(e.spores.length<cap)e.spores.push(W.t+4);else{e.spores.sort((x,y)=>x-y);e.spores[0]=W.t+4}}
+  if(dmg>0&&srcSide==='brood'&&e.side!=='brood'&&!(at&&at.src&&at.src.cls==='mite'&&Math.random()>=MITE.spore)){const cap=e.st.sporeCap||3;e.spores=(e.spores||[]).filter(t=>t>W.t);if(e.isPlayer)SFX.spore();if(e.spores.length<cap)e.spores.push(W.t+4);else{e.spores.sort((x,y)=>x-y);e.spores[0]=W.t+4}}
   if(dmg>0){e.hull-=dmg*hf*(1-e.st.dr)*vsHullK(e,at,kind);fxSpark(at||e,'#ffd9a0',4);if(e.isPlayer){W.hurt=.25;W.shake=Math.max(W.shake||0,.45);SFX.hull()}}
   rec();if(e.hull<=0)killShip(e,srcSide,at);
 }
