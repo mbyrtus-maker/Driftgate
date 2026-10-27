@@ -1802,4 +1802,5 @@ Asked for: a swarm of light, easily destroyed Brood fighters alongside a few hea
 - **Spores:** only a third of Mite hits leave a spore, so a swarm doesn't keep three spores on a target nonstop.
 - **Unchanged:** off-screen battles (strength is the value of the materials, and Mites only exist live), so the war checks are unaffected. Ship panels guard against a zero shield capacity.
 - **Tested:** 4 Brood spawns brought 13 Mites; 60 Mite kills dropped salvage 30% of the time at 0.333 War effort each; a live Seeder arrived with 2 Strikers and 5–6 Mites; a hunting pack of 5 fighters and 10 Mites ate 196 t and left together; ledger exact throughout; both multiplayer tests pass.
-- **Open questions for play:** the contacts list fills with Mites and can push the heavier threats off it; the Hive Ship doesn't launch Mite waves yet; whether 18 a system is the right cap for frame rate and multiplayer bandwidth.
+- **Contacts list:** Mites are listed below every other ship (your current target stays where it is), so the swarm can't push heavier threats off the list.
+- **Open questions for play:** the Hive Ship doesn't launch Mite waves yet; whether 18 a system is the right cap for frame rate and multiplayer bandwidth.
