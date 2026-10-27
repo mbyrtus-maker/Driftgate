@@ -1804,3 +1804,37 @@ Asked for: a swarm of light, easily destroyed Brood fighters alongside a few hea
 - **Tested:** 4 Brood spawns brought 13 Mites; 60 Mite kills dropped salvage 30% of the time at 0.333 War effort each; a live Seeder arrived with 2 Strikers and 5–6 Mites; a hunting pack of 5 fighters and 10 Mites ate 196 t and left together; ledger exact throughout; both multiplayer tests pass.
 - **Contacts list:** Mites are listed below every other ship (your current target stays where it is), so the swarm can't push heavier threats off the list.
 - **Open questions for play:** the Hive Ship doesn't launch Mite waves yet; whether 18 a system is the right cap for frame rate and multiplayer bandwidth.
+
+## Faction identities (design, not built, Oct 2026)
+The Unbound ambush and the Brood swarm; the three factions only differed in ±12% stat trades. Each faction now owns one career, gets one bonus for the riskiest work in it and one survival perk, and fields a signature combat ship converted from its career hull (sold only at its own shipyard, for owners of the base hull). Rejected along the way: invisible bonuses (a supply bonus at freshly supplied fronts, an off-screen coverage bonus), depots as trading posts, Freeport trade privileges, bigger holds and extra charges for Varkesh, flat shield boosts.
+
+| | Career | Job bonus | Survival perk | Signature ship |
+|---|---|---|---|---|
+| Halcyon | Hauling | +20% on Jobs-board hauling jobs to or from a Freeport | Freeport escorts on those runs | Gannet (converted Medium Hauler) |
+| Varkesh | Mining | +20% on Aurorite mining jobs | Ward Drones on Varkesh mining hulls: +40% hull, +25% damage | Bombard (converted Heavy Miner) |
+| Ostrova | Scouting | +40% on all scouting pay (beacon flips and missions, recon, Seeder spotting, limpet pings) | Seer and Oracle shields: +40% capacity, recharge 40% slower | Vesper (converted Advanced Scout) |
+
+Bonuses are paid by the faction's treasury and shown on the job card and in the completion message. Percentages differ because scouting sits lowest on the pay ladder: +40% of 3.5–7k an hour is about +1.4–2.8k, near the other two in credits, and keeps top scouts under mining's 12k floor.
+
+### Halcyon Accord: hauling
+- Faction behaviour: runs more convoys than anyone, escorted, and hires Freeport escorts on dangerous routes.
+- **Gannet:** keeps the hauler frame, good shields and half the hold (freight only). The other half becomes launch cells for a 12-missile barrage; each missile does about a quarter of a normal missile's damage; a salvo spreads across every locked target. Cells recharge one missile every 2.5 s (a full salvo about every 30 s); partial salvos can be fired early. Hauler handling: fights at range. About 4,000 cr.
+- Weakness: convoy raiding; the barrage's weak missiles bounce off heavy armour.
+
+### Varkesh Dominion: the brutality of mining
+- Faction behaviour: mines contested and enemy fields by force with armoured, armed miners; strip-mines (cracks cores, empties fields, moves on), leaving scarred, barren systems.
+- **Bombard:** keeps the miner's armour, Ward Drones and part of the hold. The charge launchers become a slow shell cannon: about 450 m/s, one shell every 2 s, roughly ten times a cannon bolt per hit; shots must be led. Shells still crack rock, so a Bombard can mine by artillery (less yield per rock, from range and under fire). Miner speed and turning. About 6,000 cr.
+- Weakness: slow, heavy ships and exhausted fields; agile fighters dodge the shells.
+
+### Ostrova Collective: scouting
+- Faction behaviour: flies more scouts than anyone; relay outposts are the eyes of the Archive. What one Ostrova pilot sees, every Ostrova pilot sees on the shared map.
+- **Drive peek (Seer and Oracle):** pick a neighbouring system on the map and spool about 8 s (visible glow; damage breaks the spool; Unbound tethers and interdiction block it). The scout jumps straight in, gate-free like a capital, arriving at least 3 km from any gate or station, with an arrival flash and drive signature visible to anyone there. It arrives drained for 20 s: no weapons, no boost, shields at zero and not recharging, engines at a crawl (a drive capacitor on its own timer). Then it jumps back automatically to exactly where it left. Any neighbouring system, including enemy homes and The Bloom; information only (no limpets or recon credit from inside a peek); the system shows on every Ostrova pilot's map on arrival; a cooldown of a few minutes. Can't be used to travel or escape. Why 20 s: with boost a scout crosses about 740 m/s and a Light Fighter 550 m/s, and gates sit about 4.6 km out, so a defender reaches a 3 km arrival point in 5–7 s and a drained scout (about 120 hull, no shields) dies in about 3 s to one fighter. If defenders always win, arrive farther out rather than shorten the drain.
+- **Vesper:** keeps most of the scout's speed, the scout radar, beacon flipping and limpets; no missiles or swarm pods. A railgun: hold about 2 s to charge, a near-instant slug (about 6,000 m/s), about 4 km range; a full charge kills a Light Fighter in one shot and a Heavy Fighter in two or three. Targets found by your own scouting (found, limpeted, or in a covered system) can be hit beyond radar range; shots from an unseen position hit harder; firing reveals you. The railgun damages capitals and stations; the counter is that each shot puts the Vesper on the map and a carrier launches fighters at it. Later, with sub-targets: rail shots knock out a capital's weak points. About 5,000 cr.
+- Weakness: fragile and dependent; kill its scouts and burn its relays and it fights blind; the Vesper is helpless up close.
+
+### Matchups
+| Ship | Strong against | Weak against |
+|---|---|---|
+| Vesper | the slow Bombard, single big targets | swarms, fast ships, close range |
+| Bombard | the Gannet, armour, capitals, convoys | agile fighters that dodge its shells |
+| Gannet | a found Vesper, swarms (Brood Mites) | heavy armour |
