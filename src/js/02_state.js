@@ -133,6 +133,8 @@ const STN={fdepot:{sMax:1200,hMax:2500,tur:2,dmg:11,range:1200},free:{sMax:3600,
 // balance levers, tuned by simulation so each of the four powers (the Brood included) wins about a quarter of galaxies
 // (tuned for the 2-hour deadline and the 20-minute hold over 18 rounds of simulated galaxies)
 const BAL={carFab:14,carAsk:30,hiveRegrow:240,aiEff:.7,brBuild:1.15,brOff:.9,brLevT:3300,brN:2,brHive:4,antiBrood:2.8,halProsp:.5,halImp:.08,brGraze:2.7,coal:.35,devGap:1,ext:{halcyon:.715,varkesh:1.22,ostrova:.89}};   // ext: each faction's station mining rate
+const CAP_GATE=2700;   // faction carriers and escorts launch from minute 45 at the earliest (a build may start once it would finish by then)
+function capGateOK(f,dur){return f==='brood'||f==='pirate'||S.T+(dur||0)>=CAP_GATE}
 const CAP_SEAL={yard:2,carrier:3,escort:1},sealed=f=>f!=='brood'&&f!=='pirate',withSeal=(C,f,n)=>sealed(f)?{...C,seal:n}:C;
 const yardCost=f=>withSeal(YARD_COST,f,CAP_SEAL.yard),escCost=f=>withSeal(ESCORT_COST,f,CAP_SEAL.escort);
 const DEPOT_COST={frame:2},YARD_COST={frame:4,keel:4,lattice:4,plate:40},YARD_FEE=5000,YARD_TIME=180,FRIGATE_TIME=150;   // FRIGATE_TIME: a carrier's time in the slip (the 'frigbuild' event name is kept for old saves)

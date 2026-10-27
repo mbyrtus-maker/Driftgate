@@ -1782,3 +1782,7 @@ New test `tools/tests/mp_guest_faction.py`: a Halcyon guest hires a wingman, buy
 - a guest who docked kept their wingman in space escorting a ship that no longer existed, and on launching again the wingman stayed with that old ship and never followed;
 - a guest who died or left the galaxy left their wingman loitering for good.
 The host now drops a guest's wingman (its kit goes home) when the guest isn't flying in that system, and a wingman whose pilot relaunched is pointed at the new ship. Wingmen also stand down while their pilot is docked (host included), as the design said. Ledger exact through all of it.
+
+## Capital ships from minute 45 (Oct 2026)
+Asked for: capitals arrive at 45 minutes instead of about 30. Faction carriers and escorts can't launch before minute 45 (`CAP_GATE` 2700 s in 02_state.js: a build may start once it would finish by then; AI builds and a pilot's own yard builds both, with a dock message giving the wait). A feed line three minutes before says the slips are cleared. The Unbound haven's schedule moves 15 minutes later to match (first escort 45 min, second 60, carrier 80: `PIR_E1/E2/C`). The Brood keeps its own gate (`brLevT`, 55 min).
+Pacing simulation, 80 galaxies each: first capital in a galaxy p10/median/p90 27/34/41 → 45/45/50 minutes; first win clock median 33 → 40; galaxies ending on the 2-hour deadline unchanged (38 of 80). Winners in that sample: Halcyon 19, Ostrova 21, Varkesh 20, Brood 20 (Brood up from 8 of 80) — full war check pending before publishing.
