@@ -844,3 +844,65 @@ function drAlarm(M,att){if(!M||M.type!=='ship'||!att||att===M)return;M._alarm=W.
   if(v&&W.t<v.until&&v.from&&v.from.alive&&!e.gj&&!e.inJump&&!jamDark(e)&&(e.role==='hauler'||e.role==='trader'||e.role==='miner')){const dx=e.x-v.from.x,dy=e.y-v.from.y,dz=e.z-v.from.z,l=hyp(dx,dy,dz)||1;
     e.ai.t-=dt;e.mining=null;steer(e,e.x+dx/l*1500,e.y+dy/l*500,e.z+dz/l*1500,dt,false,1.3);faceDir(e,dx,dy,dz,dt);e.boosting=true;e.thrusting=true;return}
   if(v&&W.t>=v.until)e.ai.evade=null;return o.apply(this,arguments)}}
+
+// ---- Brood Overgrowth: a living mass grown over a jump gate on the edge of Brood space. Seeding (90 s, 25% health, gate
+// still open), then grown (the gate is sealed both ways), mature after 10 min (grows Mites to guard it, up to 4). At most 2
+// at once (3 when the Brood holds 6+ systems), one every 8–12 min, never before minute 20, and never one that would leave the
+// far system without an open gate. Made of Brood stores (OG.cost), which fall as debris when it dies. Capital ships ignore
+// it (they don't use gates). Live it is a stationary Brood target; torpedoes are the tool (x4.5), capital guns do 75%,
+// missiles 40%, fighter guns 15%; left alone 20 s it regrows 1% a second; its tendrils catch 30% of torpedoes. Off-screen the
+// faction holding the far system sends bomber strikes at it.
+const OG={hp:6000,seed:90,mature:600,cost:{fe:40,cu:20,plate:4},start:1200,gap:[480,720],regrowT:20,regrow:.01,catch:.3,bounty:1500,mites:4,miteT:30,
+  dmg:{torpedo:4.5,cap:.75,missile:.4,gun:.15},strike:[240,420]};
+function ogAt(a,b){if(!a||!b)return null;const k=gateKey(a,b);return(S.og||[]).find(O=>O.key===k)||null}
+function ogSealed(a,b){const O=ogAt(a,b);return O&&O.stage!=='seed'?O:null}
+function ogTxt(sid,to){const O=ogSealed(sid,to);if(!O)return null;return O.a===sid?'This gate is sealed by Brood Overgrowth. Burn it off to open it (torpedoes work best).':`This gate is sealed by Brood Overgrowth on the far side, in ${DEF[O.a].name}. It has to be cleared from there.`}
+// the shortest way from a to b avoiding sealed gates, or null
+function ogRoute(a,b){const prev={[a]:null},q=[a];while(q.length){const c=q.shift();if(c===b)break;for(const n of NEIGH[c]||[]){if(n in prev||ogSealed(c,n))continue;prev[n]=c;q.push(n)}}if(!(b in prev))return null;const out=[];for(let c=b;c!=null;c=prev[c])out.unshift(c);return out}
+// who clears it off-screen: the faction holding the far system, else the one holding most systems around it
+function ogStriker(O){const ob=sideNorm(sectorOwner(O.b));if(FAC_IDS.includes(ob))return ob;const n={};for(const x of[...(NEIGH[O.b]||[]),...(NEIGH[O.a]||[])]){const o=sideNorm(sectorOwner(x));if(FAC_IDS.includes(o))n[o]=(n[o]||0)+1}let best=null;for(const f in n)if(!best||n[f]>n[best])best=f;return best}
+function ogName(O){return`the gate between ${DEF[O.a].name} and ${DEF[O.b].name}`}
+function ogSay(O,msg,kind){if(covered(O.a)||covered(O.b)||S.player.sector===O.a||S.player.sector===O.b)feed(msg,kind);if(NET.host)for(const pid in S.pilots||{}){const R=S.pilots[pid];if(pid!==NET.me&&R&&(R.sector===O.a||R.sector===O.b))feedTo(pid,msg,kind)}}
+function ogOpenGates(sid,skip){let n=0;for(const n2 of NEIGH[sid]||[]){const k=gateKey(sid,n2);if(k===skip)continue;if(!(S.gateDown&&S.gateDown[k]))n++}return n}
+function ogPlant(){const st=S.econ.stock.brood;if(!st||!haveIn(OG.cost,[st]))return false;const c=[];
+  for(const[x,y]of LINKS)for(const[a,b]of[[x,y],[y,x]]){if(!broodHeld(a)||broodHeld(b)||ogAt(a,b))continue;const k=gateKey(a,b);if(S.gateDown[k])continue;if(ogOpenGates(b,k)<1)continue;
+    const ob=sideNorm(sectorOwner(b));let w=1;if(DEF[a].kind==='hive')w*=2;if(FAC_IDS.includes(ob)){const n=controlCounts();w*=1+(n[ob]||0)/7}c.push([[a,b],w])}
+  if(!c.length)return false;const[a,b]=wpickArr(c),load={};takeFrom(OG.cost,[st]);inv.addAll(load,OG.cost);
+  const O={id:S.nextId++,a,b,key:gateKey(a,b),stage:'seed',t0:S.T,hp:OG.hp*.25,hitT:-1e9,load,strikeT:S.T+rnd(OG.strike[0],OG.strike[1])};(S.og=S.og||[]).push(O);
+  ogSay(O,`⚠ Brood spores on ${ogName(O)}. Burn them off in the next ${OG.seed} s or the gate will be sealed.`,'warn');return true}
+function ogKill(O,by){S.og=(S.og||[]).filter(x=>x!==O);if(O.stage!=='seed'&&S.gateDown&&S.gateDown[O.key]>S.T+1e8)delete S.gateDown[O.key];const s=S.sectors[O.a];if(s)toDebris(s,O.load);O.load={};
+  ogSay(O,`✔ The Brood Overgrowth on ${ogName(O)} has been burned off${by&&FACTIONS[by]?` by ${FACTIONS[by].short}`:''}.${O.stage!=='seed'?' The gate is open again.':''}`,'good')}
+function ogTick(){if(NET.cl)return;S.og=S.og||[];const T=S.T,bc=(controlCounts().brood||0);
+  for(const O of S.og.slice()){
+    if(O.stage==='seed'&&T-O.t0>=OG.seed){O.stage='grown';O.hp=Math.min(OG.hp,O.hp+OG.hp*.75);S.gateDown[O.key]=T+1e9;ogSay(O,`⚠ ${ogName(O)[0].toUpperCase()+ogName(O).slice(1)} is sealed by Brood Overgrowth. Nothing passes until it's burned off.`,'bad')}
+    if(O.stage==='grown'&&T-O.t0>=OG.mature)O.stage='mature';
+    if(O.stage!=='seed'&&!(S.gateDown[O.key]>T+1e8))S.gateDown[O.key]=T+1e9;
+    const live=WORLDS[O.a]&&WORLDS[O.a].ents.some(e=>e.alive&&e.ogId===O.id);
+    if(!live&&T-O.hitT>OG.regrowT)O.hp=Math.min(O.stage==='seed'?OG.hp*.25:OG.hp,O.hp+OG.hp*OG.regrow*10);
+    // off-screen: the faction holding the far system sends a bomber strike now and then
+    if(!live&&O.stage!=='seed'&&T>=O.strikeT){O.strikeT=T+rnd(OG.strike[0],OG.strike[1]);const f=ogStriker(O);if(!f)continue;
+      const srcs=[S.econ.fleet[f],S.econ.stock[f]].filter(Boolean),tier=factionTier(f),force={};for(let i=0;i<2;i++){const ld=loadout('patrol',tier,'bomber');if(takeFrom(ld,srcs))inv.addAll(force,ld)}
+      if(!Object.keys(force).length)continue;const capNear=(S.frigates||[]).some(t=>t.side===f&&t.hull>0&&(t.sector===O.a||t.sector===O.b));
+      const p=clamp(.25+.1*tier+(capNear?.3:0)-(O.stage==='mature'?.1:0),.1,.85),win=Math.random()<p,s=S.sectors[O.a];
+      loseInv(force,win?rnd(.1,.3):rnd(.3,.6),s);inv.addAll(S.econ.fleet[f]||S.econ.stock[f],force);
+      if(win)ogKill(O,f);else{O.hp=Math.max(OG.hp*.2,O.hp-OG.hp*rnd(.2,.4));O.hitT=T;if(f===S.player.faction)ogSay(O,`${FACTIONS[f].short} bombers hit the Overgrowth on ${ogName(O)} but couldn't burn it off.`,'info')}}}
+  if(T<OG.start||T<(S.ogNext||0))return;if(S.og.length>=(bc>=6?3:2))return;if(ogPlant())S.ogNext=T+rnd(OG.gap[0],OG.gap[1]);else S.ogNext=T+60}
+{const o=strategicTick;strategicTick=function(){o.apply(this,arguments);try{ogTick()}catch(e){frameErr('overgrowth',e)}}}
+// live: the growth sits on its gate as a Brood target
+function ogEnt(O){const g=(GATES[W.sid]||[]).find(x=>x.to===O.b);if(!g)return null;const e=makeNPC('og','brood','overgrowth',1,{},'og:'+O.id);e.ogId=O.id;e.x=g.x*.985;e.y=g.y*.985;e.z=g.z*.985;e.vx=e.vy=e.vz=0;
+  qLook(-g.x,-g.y,-g.z,0,1,0,e.q);e.hull=O.hp;e.shield=0;e.noRegen=1e12;W.ents.push(e);return e}
+function ogWorld(dt){if(NET.cl||!W)return;for(const O of S.og||[]){if(O.a!==W.sid)continue;let e=W.ents.find(x=>x.alive&&x.ogId===O.id);if(!e)e=ogEnt(O);if(!e)continue;
+  e.vx=e.vy=e.vz=0;const max=O.stage==='seed'?OG.hp*.25:OG.hp;if(e.st.hull!==OG.hp)e.st={...e.st,hull:OG.hp};
+  if(W.t-(e.lastHit||-1e9)>OG.regrowT)e.hull=Math.min(max,e.hull+OG.hp*OG.regrow*dt);else O.hitT=S.T;if(e.hull>max)e.hull=max;O.hp=e.hull;
+  for(const m of W.missiles.slice())if(m.tgt===e&&m.kind==='torpedo'&&!m.ogR&&d3(m,e)<800){m.ogR=1;if(Math.random()<OG.catch){if(!MUTE)fxSpark(m,'#b9e05a',6);killTorp(m,'brood')}}
+  if(O.stage==='mature'&&S.T>=(O.miteT||0)){O.miteT=S.T+OG.miteT;const n=W.ents.filter(x=>x.alive&&x.cls==='mite'&&x.miteLead===e).length;for(let i=n;i<Math.min(OG.mites,n+1);i++)miteMake('patrol',e,i)}}}
+{const o=npcThink;npcThink=function(e,dt){if(e.role==='og'){e.vx=e.vy=e.vz=0;e.thrusting=false;e.boosting=false;return}return o.apply(this,arguments)}}
+{const o=damageShip;damageShip=function(e,dmg,srcSide,at,kind){if(e&&e.role==='og'){const k=kind||(at&&at.kind)||'';const capSrc=at&&at.src&&(at.src.role==='frigate'||at.cap);
+    dmg*=k==='torpedo'?OG.dmg.torpedo:capSrc||k==='capital'?OG.dmg.cap:(k==='missile'||k==='swarm'||(at&&at.kind==='missile'))?OG.dmg.missile:OG.dmg.gun}return o.call(this,e,dmg,srcSide,at,kind)}}
+{const o=killShip;killShip=function(e,src,at){if(e&&e.role==='og'&&e.alive){const O=(S.og||[]).find(x=>x.id===e.ogId);e.load={};e.cargo={};if(O)ogKill(O,sideNorm(src))}return o.apply(this,arguments)}}
+// its look: a bulbous Brood mass ringing the gate, with glowing spore sacs
+{const o=shipMesh;shipMesh=function(fac,cls){if(cls!=='overgrowth')return o.apply(this,arguments);if(MESH.overgrowth)return MESH.overgrowth;
+  const F=hexRGB(FACTIONS.brood.col),B=[.24,.3,.17],D=[.12,.15,.09],g=new GB(),L=new GB(),R=mulberry(77);
+  g.set(0,0,-.1).sphere(.42,8,12,B,0);for(let i=0;i<14;i++){const a=i/14*TAU,r=.62+R()*.12;g.set(Math.cos(a)*r,Math.sin(a)*r,(R()-.5)*.25).sphere(.16+R()*.12,6,8,i%2?B:D,0)}
+  for(let i=0;i<9;i++){const a=R()*TAU,r=.3+R()*.5;g.set(Math.cos(a)*r,Math.sin(a)*r,.12+R()*.15).sphere(.06+R()*.05,5,6,F,.9)}
+  L.seg([0,0,0],[0,0,0],[0,0,0]);return MESH.overgrowth={hull:g.upload(),rim:L.upload(true),eng:[]}}}

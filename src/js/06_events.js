@@ -17,7 +17,7 @@ function scheduleEvent(){
     const sid=pick(nonCore);S.sectors[sid].storm=S.T+150;S.events.push({id:S.nextId++,type:'storm',sector:sid,until:S.T+150});
     feed(`Ion storm over ${DEF[sid].name}. Shields will not recharge there and radar is blind.`,'warn');
   }else if(t==='gate'){
-    const[a,b]=pick(LINKS);S.gateDown[gateKey(a,b)]=S.T+120;S.events.push({id:S.nextId++,type:'gate',sector:a,sector2:b,until:S.T+120});
+    const[a,b]=pick(LINKS);if(ogAt(a,b)||S.gateDown[gateKey(a,b)])return;S.gateDown[gateKey(a,b)]=S.T+120;S.events.push({id:S.nextId++,type:'gate',sector:a,sector2:b,until:S.T+120});
     feed(`The gate between ${DEF[a].name} and ${DEF[b].name} has collapsed for two minutes.`,'warn');
   }else if(t==='derelict'){
     const f=pick(FAC_IDS),st=S.econ.stock[f],c={};

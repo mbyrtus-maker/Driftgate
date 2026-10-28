@@ -123,7 +123,7 @@ function pickupAndGates(p,P,st){const sec=S.sectors[W.sid];
   for(let i=sec.crates.length-1;i>=0;i--){const cr=sec.crates[i];if(!NET.cl&&d3(cr,p)<st.radius+30){let room=st.cargo-invMass(P.cargo),took=0;for(const k of Object.keys(cr.inv)){const m=mass(k);while(cr.inv[k]&&room>=m){inv.take(cr.inv,k,1);inv.add(P.cargo,k,1);room-=m;took+=m}}
     if(took)feed(`Recovered ${took} t of salvage.`,'good');if(!Object.keys(cr.inv).length){sec.crates.splice(i,1);if(W.tgt&&W.tgt.ref===cr)W.tgt=null}else if(W.t-(W.fullMsg||0)>3){flash('Hold is full; some salvage is still in the crate.');W.fullMsg=W.t}}}
   if(!W.jump)for(const g of GATES[W.sid]){if(d3(g,p)<95){
-    if(S.gateDown[gateKey(W.sid,g.to)]){if(W.t-(W.gateMsg||0)>2){flash('This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}const dx=p.x-g.x,dy=p.y-g.y,dz=p.z-g.z,l=hyp(dx,dy,dz)||1;p.vx=dx/l*200;p.vy=dy/l*200;p.vz=dz/l*200;break}
+    if(S.gateDown[gateKey(W.sid,g.to)]){if(W.t-(W.gateMsg||0)>2){flash(ogTxt(W.sid,g.to)||'This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}const dx=p.x-g.x,dy=p.y-g.y,dz=p.z-g.z,l=hyp(dx,dy,dz)||1;p.vx=dx/l*200;p.vy=dy/l*200;p.vz=dz/l*200;break}
     }}
   if(!W.jump)gateCountdown(p);
 }
@@ -138,7 +138,7 @@ function gateZone(g,p){const d=gateAxis(g),rx=p.x-g.x,ry=p.y-g.y,rz=p.z-g.z,alon
 function gateCountdown(p){const dt=W.fdt||1/60;let best=null;for(const g of GATES[W.sid]){const z=gateZone(g,p);if(z.inZone&&(!best||Math.abs(z.along)<Math.abs(best.z.along)))best={g,z}}
   if(!best){if(W.gc){W.gc=null;if(!W.gcDone)flash('Left the gate approach. Countdown cancelled.')}W.gate=null;return}
   const{g,z}=best;W.gate={g,z};
-  if(S.gateDown[gateKey(W.sid,g.to)]){W.gc=null;if(W.t-(W.gateMsg||0)>3){flash('This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}return}
+  if(S.gateDown[gateKey(W.sid,g.to)]){W.gc=null;if(W.t-(W.gateMsg||0)>3){flash(ogTxt(W.sid,g.to)||'This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}return}
   if(z.cos<.94){if(W.gc){W.gc=null;SFX.beep(140);flash('Alignment lost. Line up with the gate again.',true)}return}
   if(gateLocked(p)){if(W.gc){W.gc=null}if(W.t-(W.gateLockMsg||0)>3){W.gateLockMsg=W.t;flash('Jammed or tethered: the gate field won\u2019t take you until the bar drains or the line breaks.',true)}return}
   if(!W.gc||W.gc.g!==g){W.gc={g,t:0,last:6}}
@@ -149,7 +149,7 @@ function gateCountdown(p){const dt=W.fdt||1/60;let best=null;for(const g of GATE
   if(C.t>=unbGateHold()){W.gc=null;W.gate=null;W.jump={to:g.to,t:0,g};p.inJump=true;W.tgt=null;SFX.jump();flash(`Jumping to ${DEF[g.to].name}.`)}}
 function drawGateCountdown(c,t){if(W.jump||!W.gate||S.player.docked||W.dead)return;const cx=VW/2,cy=VH*.36,G=W.gate,C=W.gc,col=FAC(S.player.faction).col,to=DEF[G.g.to].name;
   c.save();c.textAlign='center';c.textBaseline='middle';
-  if(S.gateDown[gateKey(W.sid,G.g.to)]){c.font='600 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#ff5d4f';c.fillText(`GATE TO ${to.toUpperCase()} HAS COLLAPSED`,cx,cy);c.restore();return}
+  if(S.gateDown[gateKey(W.sid,G.g.to)]){c.font='600 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#ff5d4f';c.fillText(ogSealed(W.sid,G.g.to)?`GATE TO ${to.toUpperCase()} SEALED BY BROOD OVERGROWTH`:`GATE TO ${to.toUpperCase()} HAS COLLAPSED`,cx,cy);c.restore();return}
   if(!C){const err=Math.round(Math.acos(clamp(G.z.cos,-1,1))*180/Math.PI);c.font='700 15px "Saira Semi Condensed",sans-serif';c.fillStyle='#f0b24a';c.fillText(`LINE UP WITH THE GATE TO ${to.toUpperCase()}`,cx,cy-8);
     c.font='500 12px "JetBrains Mono",monospace';c.fillStyle='rgba(236,228,207,.8)';c.fillText(`point straight through the ring · off by ${err}° (need under 20°)`,cx,cy+14);
     const P=proj(G.g.x+G.z.d.x*2500,G.g.y+G.z.d.y*2500,G.g.z+G.z.d.z*2500);const off=P.behind||P.x<40||P.x>VW-40||P.y<40||P.y>VH-40;if(off){let ax=P.x-VW/2,ay=P.y-VH/2;const l=hyp(ax,ay)||1;ax/=l;ay/=l;const ex=VW/2+ax*Math.min(VW*.4,VH*.38),ey=VH/2+ay*Math.min(VW*.4,VH*.38);c.fillStyle='#f0b24a';c.beginPath();c.moveTo(ex+ax*16,ey+ay*16);c.lineTo(ex-ay*9-ax*4,ey+ax*9-ay*4);c.lineTo(ex+ay*9-ax*4,ey-ax*9-ay*4);c.closePath();c.fill()}if(!off){c.strokeStyle='#f0b24a';c.lineWidth=2;c.beginPath();c.arc(P.x,P.y,16+3*Math.sin(t*6),0,TAU);c.stroke();c.beginPath();c.moveTo(P.x-24,P.y);c.lineTo(P.x-10,P.y);c.moveTo(P.x+10,P.y);c.lineTo(P.x+24,P.y);c.moveTo(P.x,P.y-24);c.lineTo(P.x,P.y-10);c.moveTo(P.x,P.y+10);c.lineTo(P.x,P.y+24);c.stroke()}
@@ -389,7 +389,7 @@ function worldUpdate(dt){
   if(NET.host)netWorld(dt);
   groupsUpdate();limpetSync(dt);
   for(const e of W.ents.slice()){if(e.npc&&e.alive)npcThink(e,dt)}
-  beaconWorld(dt);wreckWorld(dt);try{bpackWorld(dt);miteWorld()}catch(e){frameErr('brood pack',e)}blkHunt();if(W===LW||!LW)for(const Q of allPilots())if(Q&&Q.convoy&&S.T>Q.convoy.until){const k=Q===S.player?null:Object.keys(S.pilots||{}).find(id=>S.pilots[id]===Q);runAs(k,()=>convoyEnd(false,'it ran out of time'))}
+  beaconWorld(dt);wreckWorld(dt);try{bpackWorld(dt);miteWorld()}catch(e){frameErr('brood pack',e)}try{ogWorld(dt)}catch(e){frameErr('overgrowth',e)}blkHunt();if(W===LW||!LW)for(const Q of allPilots())if(Q&&Q.convoy&&S.T>Q.convoy.until){const k=Q===S.player?null:Object.keys(S.pilots||{}).find(id=>S.pilots[id]===Q);runAs(k,()=>convoyEnd(false,'it ran out of time'))}
   for(const e of gunboatsIn())tickTurret(e,dt);
   for(const e of W.ents.slice()){if(e.type==='ship'&&e.alive&&!(e.isPlayer&&(S.player.docked||W.dead||W.docking)))physics(e,dt)}
   structUpdate(dt);shotsUpdate(dt);missilesUpdate(dt);blWorld(dt);

@@ -387,20 +387,20 @@ function loseInv(src,frac,s){const lost={};for(const k in src){const m=Math.min(
 // ---- war effort: what human pilots do for their faction. Orders, supply-drive deliveries, campaign moves, beacon flips and
 // enemy ships shot down earn the faction points; the points fade (about 20 minutes to lose two thirds) and, while they last,
 // make the faction's fleets fight harder in the battles fought out of sight: outpost assaults, station sieges, hunter groups.
-const WE={tau:1200,max:.8,scale:10,order:2,drive:.04,camp:4,beacon:2,bmission:3,kill:{mite:1/3,fighter:1,heavy:1.5,builder:3,hauler:1,miner:.5,drone:.1,escort:6,frigate:12}};
+const WE={tau:1200,max:.8,scale:10,order:2,drive:.04,camp:4,beacon:2,bmission:3,kill:{og:6,mite:1/3,fighter:1,heavy:1.5,builder:3,hauler:1,miner:.5,drone:.1,escort:6,frigate:12}};
 function weFac(f){f=sideNorm(f);return FAC_IDS.includes(f)?f:null}
 function weAdd(f,pts){f=weFac(f);if(!f||!(pts>0)||!S)return;S.we=S.we||{};S.we[f]=(S.we[f]||0)+pts}
 function wePts(f){const g=weFac(f);return g&&S.we?(S.we[g]||0):0}
 function weBonus(f){return WE.max*(1-Math.exp(-wePts(f)/WE.scale))}
 function weMul(f){return 1+weBonus(f)}
 function weTick(){if(!S.we)return;const k=Math.exp(-10/WE.tau);for(const f in S.we){S.we[f]*=k;if(S.we[f]<.01)delete S.we[f]}}
-function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'||e.role==='limpet'?K.drone:e.cls==='mite'?K.mite:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
+function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'||e.role==='limpet'?K.drone:e.role==='og'?K.og:e.cls==='mite'?K.mite:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
 // ---- kill credit. Every pilot who damaged a ship is paid their share of its bounty (and War effort) by damage dealt, so the
 // kill shot isn't needed. AI damage counts in the total but pays no one; the kill shot only adds to the kill count.
 // Bounties grow with the size of the ship.
 const BOUNTY_MUL=8;   // the pay ladder: hauling, then mining, then combat, then beacon running
 const PIRATE_MUL=1.2; // the Unbound prey on everyone: their ships (and captains) carry a fifth more bounty than a rival faction's
-function bountyOf(e){if(e.role==='drone')return 40;if(e.role==='limpet')return 60;if(e.role==='frigate')return e.cls==='escort'?1400:2800;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
+function bountyOf(e){if(e.role==='og')return OG.bounty;if(e.role==='drone')return 40;if(e.role==='limpet')return 60;if(e.role==='frigate')return e.cls==='escort'?1400:2800;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
   return Math.max(40,Math.round(BOUNTY_MUL*(e.side==='pirate'?PIRATE_MUL:1)*(25+20*(e.tier||1))*Math.pow(Math.max(.3,r),.6)/5)*5)}
 function dmgRec(e,src,at,d){if(!(d>0)||e.isPlayer)return;const k=at&&at.gk?at.gk:at&&at.src&&at.src.rp?at.src.rp:src==='player'?'me':'_ai';(e.dmg=e.dmg||{})[k]=(e.dmg[k]||0)+d}
 function killNoun(e){return e.role==='miner'?'miner':e.role==='hauler'?'hauler':e.role==='trader'?(e.tradeT&&e.tradeT.kind==='haul'?'supply freighter':'trader'):e.role==='builder'?'constructor':e.role==='drone'?'drone':e.role==='frigate'?(e.tok?capName(e.tok):'capital ship'):CLASSES[e.cls]?CLASSES[e.cls].name.toLowerCase():'fighter'}

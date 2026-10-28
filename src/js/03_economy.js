@@ -186,6 +186,7 @@ function tradersTick(){if(NET.cl)return;S.traders=S.traders||[];for(const f of F
     if(S.T<t.next)continue;
     if(t.kind==='haul'&&t.car){const C=S.frigates.find(x=>x.id===t.car);if(C&&C.sector!==t.to){t.to=C.sector;t.path=trPath(t.sector,t.to);t.leg=0}}
     if(t.leg>=t.path.length-1){traderArrive(t);S.traders.splice(i,1);continue}
+    if(ogSealed(t.sector,t.path[t.leg+1])){const alt=ogRoute(t.sector,t.path[t.path.length-1]);if(alt){t.path=alt;t.leg=0}else{t.next=S.T+30;continue}}   // a gate sealed by Brood Overgrowth: go round it, or wait
     const prev=t.sector;t.leg++;t.sector=t.path[t.leg];t.next=S.T+TRADER_HOP;
     if(t.kind==='haul'){cvStep(t,prev);if(raidMeet(t,prev)){S.traders.splice(i,1);continue}}
     if(WORLDS[t.sector])inW(WORLDS[t.sector],()=>spawnTrader(t,true))}

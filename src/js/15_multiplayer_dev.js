@@ -291,7 +291,7 @@ function hMissile(pid,m){const e=MP.rp[pid],P=S.pilots[pid];if(!e)return;inW(wor
   if(m.k==='s'){if((P.swarm||0)>0&&CLASSES[P.cls].swarm&&T.type==='ship'){P.swarm--;launchSwarm(e,T,P.tiers.weapon)}}
   else if(P.rack>0){const n=CLASSES[P.cls].twin?Math.min(2,P.rack,m.n|0||1):1;P.rack-=n;for(let i=0;i<n;i++)launchMissile(e,T,P.tiers.weapon,CLASSES[P.cls].torp?'torpedo':'missile',n>1?(i?1:-1):0);if(S.unb){if(e.jamMode)for(let i=n0;i<W.missiles.length;i++){const mm=W.missiles[i];if(mm.src===e){mm.harp=1;mm.col='#b7c6ff'}}runAs(pid,()=>unbShot())}}})}
 function poseFrom(P,m){for(const k of['x','y','z','vx','vy','vz'])if(typeof m[k]==='number'&&isFinite(m[k]))P[k]=m[k];if(Array.isArray(m.q)&&m.q.length===4)P.q=m.q}
-function hJump(pid,m){const P=S.pilots[pid],from=P.sector,to=String(m.to);if(P.docked||!GATES[from]||!GATES[from].some(g=>g.to===to))return;if(P.convoy&&MP.rp[pid])runAs(pid,()=>convoyJump());
+function hJump(pid,m){const P=S.pilots[pid],from=P.sector,to=String(m.to);if(S.gateDown&&S.gateDown[gateKey(from,to)])return;if(P.docked||!GATES[from]||!GATES[from].some(g=>g.to===to))return;if(P.convoy&&MP.rp[pid])runAs(pid,()=>convoyJump());
   runAs(pid,()=>{const h=S.outposts.hollow;if((from==='ho'||to==='ho')&&h.owner&&h.owner!=='player'&&h.owner!==S.player.faction){const n=transfer('player',h.owner,40);if(n)feed(`Paid ${n} cr gate toll to ${sideName(h.owner)} at Hollow Relay.`,'news')}});
   despawnRP(pid);P.sector=to;poseFrom(P,m);delete MP.inp[pid];if(!WORLDS[to])openWorld(to);if(!P.docked)spawnRP(pid);netRoster()}
 function hDock(c,m){const pid=c.pid,P=S.pilots[pid],e=MP.rp[pid];if(!e)return;const w=worldOf(e);let ok=false;

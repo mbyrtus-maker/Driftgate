@@ -400,7 +400,7 @@ hidden. A tab with several views shows them as a second row; each tab remembers 
 
 ---
 
-## Brood Overgrowth (design, not built)
+## Brood Overgrowth (built Oct 2026; see "Brood Overgrowth: as built" below)
 
 ### The idea
 The Brood can grow a living mass over a jump gate. While it stands, that gate is sealed in both directions: no pilots, fighter wings, freighters, miners or scouts can pass until someone destroys it. Capital ships (frigates and escorts) are not stopped, because they jump on their own drives without using gates. That makes capitals the natural answer to an Overgrowth: one can jump in beside it when nothing else can get through. Torpedoes are the right tool, and everything else helps more slowly.
@@ -1882,3 +1882,13 @@ For sub-targets, every system has to be a visible part. The carrier, escort and 
 
 ## Guard drones react in time (built, Oct 2026)
 Built as designed (`droneGuard`, `drAlarm`, `DRG` in 16_expansion.js), for every small guard drone (a hauler's, trader's or miner's, and pilots' own); a carrier's pickets keep their rules. A drone engages any hostile that has its ship targeted (including a pilot's target lock) or missile-locked, has fired on it in the last 8 s from within 1.5 km, or comes within 600 m; it re-checks five times a second, boosts at a new attacker for 3 s, and stays within 1.5 km of its ship. When the ship is fired on or a missile is launched at it, its drones re-pick at once and a guarded hauler, trader or miner turns away and boosts for 4 s (not mid-jump or while jammed dark). Tested: a pilot targeting a Varkesh freighter from 1.2 km drew all three of its drones within 0.6 s (the old drones ignored anyone beyond 900 m who wasn't an AI targeting the freighter); a freighter fired on from 800 m turned away at 233 m/s against 170 before.
+
+## Brood Overgrowth: as built (Oct 2026)
+Built from the design above (`OG`, `ogTick`, `ogWorld` in 16_expansion.js), with these choices:
+- **Planting:** on a link between a Brood-held system and one it doesn't hold (gates into The Bloom weighted double, gates into big factions weighted up), never before minute 20, one every 8–12 min, at most 2 at once (3 when the Brood holds 6+), never one that would leave the far system without an open gate. Each takes 40 ferrite, 20 cuprite and 4 Alloy Plate from Brood stores; they stay in the growth (counted in the ledger) and fall as debris in its system when it dies.
+- **Stages:** spores (90 s, 25% health, gate open, a warning to pilots who can see either side), grown (the gate is sealed both ways through the existing closed-gate state `S.gateDown`), mature after 10 min (grows a Mite every 30 s, up to 4, from Brood stores).
+- **Live:** a stationary Brood target on the gate in its own system (6,000 hp, no shield, regrowth off). Damage: torpedoes x4.5 (a torpedo does 160–224, so about 700–1,000 each), capital guns 75%, missiles 40%, fighter guns 15%. Left alone 20 s it regrows 1% a second; its tendrils catch 30% of torpedoes within 800 m. Bombers torpedo it as they would a capital ship. Burning it off pays a 1,500 cr bounty (shared by damage) and 6 War effort, and reopens the gate.
+- **Messages:** the gate says "sealed by Brood Overgrowth" (or "on the far side, in X: it has to be cleared from there"), the HUD chip and gate target panel say sealed by the Brood, and sealed links show in Brood green on the galaxy map and the gate marker.
+- **Off-screen:** every 4–7 min the faction holding the far system (or, if nobody does, the one holding most systems around it) sends two bombers' worth of kit at it: success chance 25% + 10% per faction tier, +30% with its capital ship next door or in the system, −10% once mature; losses go to debris, a failed strike knocks 20–40% off the growth.
+- **Routing:** supply convoys and traders reroute around a sealed gate, or wait when there's no other way; the host refuses a guest's jump through one; the random gate-collapse event leaves overgrown links alone. Capital ships ignore it (they don't use gates).
+- **Tested:** strategic runs (5 galaxies) planted from minute 20, sealed 2 min later, cleared by strikes after 4–50 min, ledger exact throughout; live: 6,000 hp at the gate, damage 17/40/86/450 per 100 for guns/missiles/capital guns/torpedoes, regrowth 60 hp/s after 20 s quiet, tendrils caught 23–25% of 40 torpedoes, a mature growth grew 3 Mites in 70 s, burning it off reopened the gate and paid 1,500 cr, ledger exact. Look: `tools/previews/overgrowth.png`.

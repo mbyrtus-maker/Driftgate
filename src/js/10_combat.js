@@ -508,7 +508,7 @@ function npcThink(e,dt){
     if(isBmb(e.cls)&&e.role==='strike'&&e.ai.siege){const SEb=W.stationEnt;if(SEb&&hostile(e.side,SEb.fac)&&(e.load.torpedo||0)>0){const bt=(W.works&&W.works.length&&wkPickFor(e,true,.45))||SEb;if(e.ai.btT!==bt){e.ai.btT=bt;e.ai.stand=null}bomberRun(e,bt,dt);return}}
     if(isBmb(e.cls)&&e.role==='strike'&&!e.ai.siege&&!e.ai.hunter&&OEb&&OEb.o.owner&&hostile(e.side,OEb.o.owner)&&!OEb.o.breached&&(e.load.torpedo||0)>0){bomberRun(e,OEb,dt);return}
     if(combat&&OEb&&OEb.o.owner===e.side&&!(ai.tgt&&isBmb(ai.tgt.cls))){let bb=null,bd=2600;for(const o of W.ents)if(o.type==='ship'&&o.alive&&isBmb(o.cls)&&hostile(e.side,o.side)&&((o.load&&o.load.torpedo)||0)>0&&!(o.isPlayer&&(S.player.docked||W.dead))){const d=d3(o,OEb);if(d<bd){bd=d;bb=o}}if(bb)ai.tgt=bb}}
-  if(isBmb(e.cls)&&ai.tgt&&ai.tgt.role==='frigate'&&ai.tgt.alive&&W.ents.includes(ai.tgt)&&(e.load.torpedo||0)>0){if(ai.stand&&d3(ai.stand,ai.tgt)>2300)ai.stand=null;bomberRun(e,ai.tgt,dt);return}
+  if(isBmb(e.cls)&&ai.tgt&&(ai.tgt.role==='frigate'||ai.tgt.role==='og')&&ai.tgt.alive&&W.ents.includes(ai.tgt)&&(e.load.torpedo||0)>0){if(ai.stand&&d3(ai.stand,ai.tgt)>2300)ai.stand=null;bomberRun(e,ai.tgt,dt);return}
   if(e.role==='strike'&&ai.siege&&ai.tgt){const T=W.stationEnt;if(isBmb(e.cls)||(T&&d3(ai.tgt,T)>2600))ai.tgt=null}
   if(combat&&ai.tgt){fight(e,ai.tgt,dt);return}
   if(e.bpack&&bpSeek(e,dt))return;

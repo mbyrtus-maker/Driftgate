@@ -762,10 +762,11 @@ const FACTIONS={
   ostrova:{name:'Ostrova Collective',short:'Ostrova',col:'#b893ff',fill:'#1b1430',trait:{energy:1.12,shield:.88},traitText:'Reactor +12% · Shields −12%',blurb:'Archivists and drive-mystics. Deep reactors, patient pilots.',hulls:{gunboat:'Sentinel',interceptor:'Mote',striker:'Wisp',heavy:'Vigil',bomber:'Obelisk',prospector:'Lumen',freighter:'Cairn',drone:'Halo Drone',skiff:'Glim',frigate:'Cathedral',picket:'Glint',dredger:'Delve',courier:'Drift',bulker:'Monolith',constructor:'Loom',scout:'Seer',scout2:'Oracle',wraith:'Wraith'},station:'Spire Archive',depot:'Veil Depot',shot:'lance'},
 };
 FACTIONS.brood={name:'The Vael Brood',short:'Brood',col:'#9be35a',fill:'#14200c',trait:{hull:1.5,shield:.6,energy:1.1},traitText:'Hull +50% and regrows · Shields −40%',blurb:'Something grown, not built. It eats ore, and it eats stations.',
-  hulls:{mite:'Mite',interceptor:'Skitter',striker:'Thresher',heavy:'Carapace',bomber:'Sporemaw',prospector:'Grazer',freighter:'Gorger',drone:'Mite',skiff:'Nibbler',frigate:'Leviathan',escort:'Prowler',picket:'Spawnling',dredger:'Devourer',courier:'Crawler',bulker:'Bloater',constructor:'Seeder',scout:'Watcher',scout2:'Stalker'},station:'Bloom Heart',depot:'Bloom Node',shot:'spore',bio:true};
+  hulls:{overgrowth:'Overgrowth',mite:'Mite',interceptor:'Skitter',striker:'Thresher',heavy:'Carapace',bomber:'Sporemaw',prospector:'Grazer',freighter:'Gorger',drone:'Mite',skiff:'Nibbler',frigate:'Leviathan',escort:'Prowler',picket:'Spawnling',dredger:'Devourer',courier:'Crawler',bulker:'Bloater',constructor:'Seeder',scout:'Watcher',scout2:'Stalker'},station:'Bloom Heart',depot:'Bloom Node',shot:'spore',bio:true};
 const PIRATE={name:'The Unbound',short:'Unbound',col:'#d8cd98',fill:'#221f15',shot:'scrap',hulls:{raider:'Raider',corsair:'Corsair',plunderer:'Plunderer',uskiff:'Skiff',gunboat:'Raker',interceptor:'Dart',striker:'Cutter',heavy:'Brute',bomber:'Wrecker',prospector:'Gouger',freighter:'Scow',drone:'Junk Drone',skiff:'Scrounger',frigate:'Destroyer',picket:'Gnat',dredger:'Grinder',courier:'Smuggler',bulker:'Hulk',constructor:'Rigger',scout:'Sneak',scout2:'Ghost'}};
 const PLAYER_COL='#f0b24a';
 const CLASSES={
+  overgrowth:{name:'Brood Overgrowth',hull:2000,shield:0,speed:.01,turn:.01,weapon:0,cargo:0,drill:0,radius:150,rack:0,boost:1,agile:.1,acc:.01,desc:'A living mass sealing a jump gate.'},
   mite:{name:'Mite',hull:12,shield:0,speed:1.45,turn:4,weapon:.5,cargo:0,drill:0,radius:7,rack:0,boost:1.2,agile:1.6,acc:1.55,bcost:.6,desc:'Brood swarm fighter: grown from ore, fast, fragile, no shields.'},
   interceptor:{name:'Light Fighter',hull:86,shield:.85,speed:1.32,turn:3.45,weapon:1.05,cargo:14,drill:0,radius:12,rack:.75,boost:1.25,agile:1.45,acc:1.38,bcost:.7,desc:'Fastest and most agile: quickest acceleration, cheap afterburner, best at shaking missiles. Light armour.'},
   gunboat:{name:'Heavy Bomber',turK:2,turOwnE:1,swarm:2,torp:true,hull:210,shield:1,speed:.9,turn:1.75,weapon:1.3,cargo:30,drill:0,radius:20,rack:1,boost:.95,agile:.82,acc:.85,bcost:1.05,seats:2,desc:'Two seats. The pilot flies on twin forward cannons and a siege torpedo bay that cracks stations, outposts and their works; a gunner works the rear dorsal turret with its own cannons. An AI gunner mans the turret when no pilot is in it. Swarm launcher (2 pods). Tougher and slower than a fighter, quicker than a Bomber.'},
@@ -1790,6 +1791,7 @@ function tradersTick(){if(NET.cl)return;S.traders=S.traders||[];for(const f of F
     if(S.T<t.next)continue;
     if(t.kind==='haul'&&t.car){const C=S.frigates.find(x=>x.id===t.car);if(C&&C.sector!==t.to){t.to=C.sector;t.path=trPath(t.sector,t.to);t.leg=0}}
     if(t.leg>=t.path.length-1){traderArrive(t);S.traders.splice(i,1);continue}
+    if(ogSealed(t.sector,t.path[t.leg+1])){const alt=ogRoute(t.sector,t.path[t.path.length-1]);if(alt){t.path=alt;t.leg=0}else{t.next=S.T+30;continue}}   // a gate sealed by Brood Overgrowth: go round it, or wait
     const prev=t.sector;t.leg++;t.sector=t.path[t.leg];t.next=S.T+TRADER_HOP;
     if(t.kind==='haul'){cvStep(t,prev);if(raidMeet(t,prev)){S.traders.splice(i,1);continue}}
     if(WORLDS[t.sector])inW(WORLDS[t.sector],()=>spawnTrader(t,true))}
@@ -2244,20 +2246,20 @@ function loseInv(src,frac,s){const lost={};for(const k in src){const m=Math.min(
 // ---- war effort: what human pilots do for their faction. Orders, supply-drive deliveries, campaign moves, beacon flips and
 // enemy ships shot down earn the faction points; the points fade (about 20 minutes to lose two thirds) and, while they last,
 // make the faction's fleets fight harder in the battles fought out of sight: outpost assaults, station sieges, hunter groups.
-const WE={tau:1200,max:.8,scale:10,order:2,drive:.04,camp:4,beacon:2,bmission:3,kill:{mite:1/3,fighter:1,heavy:1.5,builder:3,hauler:1,miner:.5,drone:.1,escort:6,frigate:12}};
+const WE={tau:1200,max:.8,scale:10,order:2,drive:.04,camp:4,beacon:2,bmission:3,kill:{og:6,mite:1/3,fighter:1,heavy:1.5,builder:3,hauler:1,miner:.5,drone:.1,escort:6,frigate:12}};
 function weFac(f){f=sideNorm(f);return FAC_IDS.includes(f)?f:null}
 function weAdd(f,pts){f=weFac(f);if(!f||!(pts>0)||!S)return;S.we=S.we||{};S.we[f]=(S.we[f]||0)+pts}
 function wePts(f){const g=weFac(f);return g&&S.we?(S.we[g]||0):0}
 function weBonus(f){return WE.max*(1-Math.exp(-wePts(f)/WE.scale))}
 function weMul(f){return 1+weBonus(f)}
 function weTick(){if(!S.we)return;const k=Math.exp(-10/WE.tau);for(const f in S.we){S.we[f]*=k;if(S.we[f]<.01)delete S.we[f]}}
-function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'||e.role==='limpet'?K.drone:e.cls==='mite'?K.mite:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
+function weKill(e,sh=1){if(!hostile(S.player.faction,e.side))return;const K=WE.kill;let p=e.role==='frigate'?(e.cls==='escort'?K.escort:K.frigate):e.role==='builder'?K.builder:e.role==='hauler'||e.role==='trader'?K.hauler:e.role==='miner'?K.miner:e.role==='drone'||e.role==='picket'||e.role==='limpet'?K.drone:e.role==='og'?K.og:e.cls==='mite'?K.mite:(e.cls==='heavy'||isBmb(e.cls)?K.heavy:K.fighter);if(e.side==='pirate')p*=.5;weAdd(S.player.faction,p*sh)}
 // ---- kill credit. Every pilot who damaged a ship is paid their share of its bounty (and War effort) by damage dealt, so the
 // kill shot isn't needed. AI damage counts in the total but pays no one; the kill shot only adds to the kill count.
 // Bounties grow with the size of the ship.
 const BOUNTY_MUL=8;   // the pay ladder: hauling, then mining, then combat, then beacon running
 const PIRATE_MUL=1.2; // the Unbound prey on everyone: their ships (and captains) carry a fifth more bounty than a rival faction's
-function bountyOf(e){if(e.role==='drone')return 40;if(e.role==='limpet')return 60;if(e.role==='frigate')return e.cls==='escort'?1400:2800;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
+function bountyOf(e){if(e.role==='og')return OG.bounty;if(e.role==='drone')return 40;if(e.role==='limpet')return 60;if(e.role==='frigate')return e.cls==='escort'?1400:2800;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
   return Math.max(40,Math.round(BOUNTY_MUL*(e.side==='pirate'?PIRATE_MUL:1)*(25+20*(e.tier||1))*Math.pow(Math.max(.3,r),.6)/5)*5)}
 function dmgRec(e,src,at,d){if(!(d>0)||e.isPlayer)return;const k=at&&at.gk?at.gk:at&&at.src&&at.src.rp?at.src.rp:src==='player'?'me':'_ai';(e.dmg=e.dmg||{})[k]=(e.dmg[k]||0)+d}
 function killNoun(e){return e.role==='miner'?'miner':e.role==='hauler'?'hauler':e.role==='trader'?(e.tradeT&&e.tradeT.kind==='haul'?'supply freighter':'trader'):e.role==='builder'?'constructor':e.role==='drone'?'drone':e.role==='frigate'?(e.tok?capName(e.tok):'capital ship'):CLASSES[e.cls]?CLASSES[e.cls].name.toLowerCase():'fighter'}
@@ -3179,7 +3181,7 @@ function scheduleEvent(){
     const sid=pick(nonCore);S.sectors[sid].storm=S.T+150;S.events.push({id:S.nextId++,type:'storm',sector:sid,until:S.T+150});
     feed(`Ion storm over ${DEF[sid].name}. Shields will not recharge there and radar is blind.`,'warn');
   }else if(t==='gate'){
-    const[a,b]=pick(LINKS);S.gateDown[gateKey(a,b)]=S.T+120;S.events.push({id:S.nextId++,type:'gate',sector:a,sector2:b,until:S.T+120});
+    const[a,b]=pick(LINKS);if(ogAt(a,b)||S.gateDown[gateKey(a,b)])return;S.gateDown[gateKey(a,b)]=S.T+120;S.events.push({id:S.nextId++,type:'gate',sector:a,sector2:b,until:S.T+120});
     feed(`The gate between ${DEF[a].name} and ${DEF[b].name} has collapsed for two minutes.`,'warn');
   }else if(t==='derelict'){
     const f=pick(FAC_IDS),st=S.econ.stock[f],c={};
@@ -5071,7 +5073,7 @@ function npcThink(e,dt){
     if(isBmb(e.cls)&&e.role==='strike'&&e.ai.siege){const SEb=W.stationEnt;if(SEb&&hostile(e.side,SEb.fac)&&(e.load.torpedo||0)>0){const bt=(W.works&&W.works.length&&wkPickFor(e,true,.45))||SEb;if(e.ai.btT!==bt){e.ai.btT=bt;e.ai.stand=null}bomberRun(e,bt,dt);return}}
     if(isBmb(e.cls)&&e.role==='strike'&&!e.ai.siege&&!e.ai.hunter&&OEb&&OEb.o.owner&&hostile(e.side,OEb.o.owner)&&!OEb.o.breached&&(e.load.torpedo||0)>0){bomberRun(e,OEb,dt);return}
     if(combat&&OEb&&OEb.o.owner===e.side&&!(ai.tgt&&isBmb(ai.tgt.cls))){let bb=null,bd=2600;for(const o of W.ents)if(o.type==='ship'&&o.alive&&isBmb(o.cls)&&hostile(e.side,o.side)&&((o.load&&o.load.torpedo)||0)>0&&!(o.isPlayer&&(S.player.docked||W.dead))){const d=d3(o,OEb);if(d<bd){bd=d;bb=o}}if(bb)ai.tgt=bb}}
-  if(isBmb(e.cls)&&ai.tgt&&ai.tgt.role==='frigate'&&ai.tgt.alive&&W.ents.includes(ai.tgt)&&(e.load.torpedo||0)>0){if(ai.stand&&d3(ai.stand,ai.tgt)>2300)ai.stand=null;bomberRun(e,ai.tgt,dt);return}
+  if(isBmb(e.cls)&&ai.tgt&&(ai.tgt.role==='frigate'||ai.tgt.role==='og')&&ai.tgt.alive&&W.ents.includes(ai.tgt)&&(e.load.torpedo||0)>0){if(ai.stand&&d3(ai.stand,ai.tgt)>2300)ai.stand=null;bomberRun(e,ai.tgt,dt);return}
   if(e.role==='strike'&&ai.siege&&ai.tgt){const T=W.stationEnt;if(isBmb(e.cls)||(T&&d3(ai.tgt,T)>2600))ai.tgt=null}
   if(combat&&ai.tgt){fight(e,ai.tgt,dt);return}
   if(e.bpack&&bpSeek(e,dt))return;
@@ -5264,7 +5266,7 @@ function pickupAndGates(p,P,st){const sec=S.sectors[W.sid];
   for(let i=sec.crates.length-1;i>=0;i--){const cr=sec.crates[i];if(!NET.cl&&d3(cr,p)<st.radius+30){let room=st.cargo-invMass(P.cargo),took=0;for(const k of Object.keys(cr.inv)){const m=mass(k);while(cr.inv[k]&&room>=m){inv.take(cr.inv,k,1);inv.add(P.cargo,k,1);room-=m;took+=m}}
     if(took)feed(`Recovered ${took} t of salvage.`,'good');if(!Object.keys(cr.inv).length){sec.crates.splice(i,1);if(W.tgt&&W.tgt.ref===cr)W.tgt=null}else if(W.t-(W.fullMsg||0)>3){flash('Hold is full; some salvage is still in the crate.');W.fullMsg=W.t}}}
   if(!W.jump)for(const g of GATES[W.sid]){if(d3(g,p)<95){
-    if(S.gateDown[gateKey(W.sid,g.to)]){if(W.t-(W.gateMsg||0)>2){flash('This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}const dx=p.x-g.x,dy=p.y-g.y,dz=p.z-g.z,l=hyp(dx,dy,dz)||1;p.vx=dx/l*200;p.vy=dy/l*200;p.vz=dz/l*200;break}
+    if(S.gateDown[gateKey(W.sid,g.to)]){if(W.t-(W.gateMsg||0)>2){flash(ogTxt(W.sid,g.to)||'This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}const dx=p.x-g.x,dy=p.y-g.y,dz=p.z-g.z,l=hyp(dx,dy,dz)||1;p.vx=dx/l*200;p.vy=dy/l*200;p.vz=dz/l*200;break}
     }}
   if(!W.jump)gateCountdown(p);
 }
@@ -5279,7 +5281,7 @@ function gateZone(g,p){const d=gateAxis(g),rx=p.x-g.x,ry=p.y-g.y,rz=p.z-g.z,alon
 function gateCountdown(p){const dt=W.fdt||1/60;let best=null;for(const g of GATES[W.sid]){const z=gateZone(g,p);if(z.inZone&&(!best||Math.abs(z.along)<Math.abs(best.z.along)))best={g,z}}
   if(!best){if(W.gc){W.gc=null;if(!W.gcDone)flash('Left the gate approach. Countdown cancelled.')}W.gate=null;return}
   const{g,z}=best;W.gate={g,z};
-  if(S.gateDown[gateKey(W.sid,g.to)]){W.gc=null;if(W.t-(W.gateMsg||0)>3){flash('This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}return}
+  if(S.gateDown[gateKey(W.sid,g.to)]){W.gc=null;if(W.t-(W.gateMsg||0)>3){flash(ogTxt(W.sid,g.to)||'This gate has collapsed. It will reopen shortly.',true);W.gateMsg=W.t}return}
   if(z.cos<.94){if(W.gc){W.gc=null;SFX.beep(140);flash('Alignment lost. Line up with the gate again.',true)}return}
   if(gateLocked(p)){if(W.gc){W.gc=null}if(W.t-(W.gateLockMsg||0)>3){W.gateLockMsg=W.t;flash('Jammed or tethered: the gate field won\u2019t take you until the bar drains or the line breaks.',true)}return}
   if(!W.gc||W.gc.g!==g){W.gc={g,t:0,last:6}}
@@ -5290,7 +5292,7 @@ function gateCountdown(p){const dt=W.fdt||1/60;let best=null;for(const g of GATE
   if(C.t>=unbGateHold()){W.gc=null;W.gate=null;W.jump={to:g.to,t:0,g};p.inJump=true;W.tgt=null;SFX.jump();flash(`Jumping to ${DEF[g.to].name}.`)}}
 function drawGateCountdown(c,t){if(W.jump||!W.gate||S.player.docked||W.dead)return;const cx=VW/2,cy=VH*.36,G=W.gate,C=W.gc,col=FAC(S.player.faction).col,to=DEF[G.g.to].name;
   c.save();c.textAlign='center';c.textBaseline='middle';
-  if(S.gateDown[gateKey(W.sid,G.g.to)]){c.font='600 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#ff5d4f';c.fillText(`GATE TO ${to.toUpperCase()} HAS COLLAPSED`,cx,cy);c.restore();return}
+  if(S.gateDown[gateKey(W.sid,G.g.to)]){c.font='600 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#ff5d4f';c.fillText(ogSealed(W.sid,G.g.to)?`GATE TO ${to.toUpperCase()} SEALED BY BROOD OVERGROWTH`:`GATE TO ${to.toUpperCase()} HAS COLLAPSED`,cx,cy);c.restore();return}
   if(!C){const err=Math.round(Math.acos(clamp(G.z.cos,-1,1))*180/Math.PI);c.font='700 15px "Saira Semi Condensed",sans-serif';c.fillStyle='#f0b24a';c.fillText(`LINE UP WITH THE GATE TO ${to.toUpperCase()}`,cx,cy-8);
     c.font='500 12px "JetBrains Mono",monospace';c.fillStyle='rgba(236,228,207,.8)';c.fillText(`point straight through the ring · off by ${err}° (need under 20°)`,cx,cy+14);
     const P=proj(G.g.x+G.z.d.x*2500,G.g.y+G.z.d.y*2500,G.g.z+G.z.d.z*2500);const off=P.behind||P.x<40||P.x>VW-40||P.y<40||P.y>VH-40;if(off){let ax=P.x-VW/2,ay=P.y-VH/2;const l=hyp(ax,ay)||1;ax/=l;ay/=l;const ex=VW/2+ax*Math.min(VW*.4,VH*.38),ey=VH/2+ay*Math.min(VW*.4,VH*.38);c.fillStyle='#f0b24a';c.beginPath();c.moveTo(ex+ax*16,ey+ay*16);c.lineTo(ex-ay*9-ax*4,ey+ax*9-ay*4);c.lineTo(ex+ay*9-ax*4,ey-ax*9-ay*4);c.closePath();c.fill()}if(!off){c.strokeStyle='#f0b24a';c.lineWidth=2;c.beginPath();c.arc(P.x,P.y,16+3*Math.sin(t*6),0,TAU);c.stroke();c.beginPath();c.moveTo(P.x-24,P.y);c.lineTo(P.x-10,P.y);c.moveTo(P.x+10,P.y);c.lineTo(P.x+24,P.y);c.moveTo(P.x,P.y-24);c.lineTo(P.x,P.y-10);c.moveTo(P.x,P.y+10);c.lineTo(P.x,P.y+24);c.stroke()}
@@ -5530,7 +5532,7 @@ function worldUpdate(dt){
   if(NET.host)netWorld(dt);
   groupsUpdate();limpetSync(dt);
   for(const e of W.ents.slice()){if(e.npc&&e.alive)npcThink(e,dt)}
-  beaconWorld(dt);wreckWorld(dt);try{bpackWorld(dt);miteWorld()}catch(e){frameErr('brood pack',e)}blkHunt();if(W===LW||!LW)for(const Q of allPilots())if(Q&&Q.convoy&&S.T>Q.convoy.until){const k=Q===S.player?null:Object.keys(S.pilots||{}).find(id=>S.pilots[id]===Q);runAs(k,()=>convoyEnd(false,'it ran out of time'))}
+  beaconWorld(dt);wreckWorld(dt);try{bpackWorld(dt);miteWorld()}catch(e){frameErr('brood pack',e)}try{ogWorld(dt)}catch(e){frameErr('overgrowth',e)}blkHunt();if(W===LW||!LW)for(const Q of allPilots())if(Q&&Q.convoy&&S.T>Q.convoy.until){const k=Q===S.player?null:Object.keys(S.pilots||{}).find(id=>S.pilots[id]===Q);runAs(k,()=>convoyEnd(false,'it ran out of time'))}
   for(const e of gunboatsIn())tickTurret(e,dt);
   for(const e of W.ents.slice()){if(e.type==='ship'&&e.alive&&!(e.isPlayer&&(S.player.docked||W.dead||W.docking)))physics(e,dt)}
   structUpdate(dt);shotsUpdate(dt);missilesUpdate(dt);blWorld(dt);
@@ -6105,7 +6107,7 @@ function drawOverlay(){
       if(uf){const pr=r+6+3*Math.sin(t*10);c.strokeStyle='rgba(255,93,79,.85)';c.beginPath();c.arc(P.x,P.y,pr,0,TAU);c.stroke();c.textAlign='center';c.fillStyle='#ff8a7e';c.fillText('UNDER FIRE',P.x,P.y-pr-6)}
       else if(e.role==='flee'){c.textAlign='center';c.fillStyle='rgba(240,178,74,.85)';c.fillText('RETREATING',P.x,P.y-r-12)}}
     c.strokeStyle=hexA(col,h?.85:.45);c.beginPath();if(h){c.moveTo(P.x-r,P.y-r+4);c.lineTo(P.x-r,P.y-r);c.lineTo(P.x-r+4,P.y-r);c.moveTo(P.x+r-4,P.y-r);c.lineTo(P.x+r,P.y-r);c.lineTo(P.x+r,P.y-r+4);c.moveTo(P.x-r,P.y+r-4);c.lineTo(P.x-r,P.y+r);c.lineTo(P.x-r+4,P.y+r);c.moveTo(P.x+r-4,P.y+r);c.lineTo(P.x+r,P.y+r);c.lineTo(P.x+r,P.y+r-4)}else{c.moveTo(P.x,P.y-r-2);c.lineTo(P.x+4,P.y-r-7);c.lineTo(P.x-4,P.y-r-7);c.closePath()}c.stroke()}
-  const marks=[],nxg=routeNext();for(const g of GATES[W.sid]){const nx=nxg&&nxg.to===g.to;marks.push({o:g,l:(nx?'NEXT JUMP ':'')+'→ '+DEF[g.to].name,c:S.gateDown[gateKey(W.sid,g.to)]?'#ff5d4f':nx?'#f0b24a':'#dfe8ff',r:120})}
+  const marks=[],nxg=routeNext();for(const g of GATES[W.sid]){const nx=nxg&&nxg.to===g.to;marks.push({o:g,l:(nx?'NEXT JUMP ':'')+'→ '+DEF[g.to].name,c:S.gateDown[gateKey(W.sid,g.to)]?(ogSealed(W.sid,g.to)?FACTIONS.brood.col:'#ff5d4f'):nx?'#f0b24a':'#dfe8ff',r:120})}
   const SE=W.stationEnt,OE=W.outpostEnt,blk=Math.floor(t*4)%2===0;if(SE){const ua=friendSide(SE.fac)&&W.t-SE.lastHit<4;marks.push({o:SE,l:SE.name,c:ua&&blk?'#ff5d4f':sideCol(SE.fac),r:130,sub:ua?'UNDER ATTACK':''})}if(OE){const ua=friendSide(OE.o.owner)&&W.t-OE.lastHit<4;marks.push({o:OE,l:OE.o.name,c:ua&&blk?'#ff5d4f':sideCol(OE.o.owner),r:140,sub:(ua?'UNDER ATTACK · ':'')+(OE.o.breached?'BREACHED · ':'')+(OE.o.owner?sideName(OE.o.owner).toUpperCase():'UNCLAIMED')+' · LEVEL '+OE.o.level})}
   for(const e of W.ents)if(e.pname&&e.alive&&e!==p&&e.type==='ship'&&!(hostile('player',e.side)&&mHid(e,p)))marks.push({o:e,l:e.pname,c:/\(Legendary Ace\)/.test(e.pname)?'#ffd27a':sideCol(e.side),r:e.st.radius*1.25,sub:(e.aceId?(e.side==='pirate'?'UNBOUND CAPTAIN · ':'ACE · '):hostile('player',e.side)?'HOSTILE PILOT · ':'PILOT · ')+hullName(e.fac,e.cls).toUpperCase()});
   for(const a of sec.ast)if(a.comet)marks.push({o:a,l:'Comet',c:'#c99cff',r:astR(a)});
@@ -6383,7 +6385,7 @@ function hudUpdate(){hudFit();
   $('hSec').textContent=d.name;
   {const Rs=S.stations[W.sid];$('hSub').textContent=(d.home?`${FACTIONS[d.home].short} ${d.kind==='core'?'core space':'frontier'}`:d.kind==='den'?'Unbound territory':d.kind==='hub'?'Junction':d.kind==='hive'?'Brood hive':d.kind==='deep'?'Deep space':d.kind==='void'?'Quiet space':'Contested')+(Rs?` · ${Rs.name}`:'')+(o?` · ${o.name}: ${o.owner?sideName(o.owner):'unclaimed'}`:'')+(!Rs&&!o?' · no station':'')}
   const chips=[],sc=[];if(S.coal)chips.push([`Truce vs ${S.coal.lead==='brood'?'the Brood':FACTIONS[S.coal.lead].short}`,S.coal.lead===S.player.faction?'bad':'warn']);if(S.ffa)chips.push([`Free-for-all · ${sideName(S.ffa.hold)} on the clock`,'warn']);{const nb=controlCounts().brood||0;if(nb>=4&&!(S.victory&&S.victory.side==='brood'))chips.push([`Brood ${nb}/${VIC_NEED} systems${nb>=5?` · ${VIC_NEED-nb} from the win clock`:''}`,nb>=6?'bad':nb>=5?'warn':''])}if(S.victory){const n=controlCounts()[S.victory.side]||0;chips.push([`${S.victory.side==='brood'?'Brood':sideName(S.victory.side)} holds ${n}/${SECTOR_DEFS.length} systems · galaxy falls in ${fmtT(Math.max(0,WIN_TIME-(S.T-S.victory.since)))}`,S.victory.side===S.player.faction?'good':'bad'])}if(!S.won&&S.T>TIE_T-1800){const L=tieLead();chips.push([`Deadline in ${fmtT(Math.max(0,TIE_T-S.T))} · ${L?(L[0]==='brood'?'Brood':sideName(L[0]))+' leads with '+L[1]:'no leader'}`,L&&L[0]===S.player.faction?'good':'warn'])}if(W.pbuild)sc.push([`Building depot ${Math.round(W.pbuild.prog*100)}%${d3(W.pbuild,p)>350?' · return to the site':''}`,'good']);if(W.scaffold)chips.push([`${sideName(W.scaffold.owner)} construction ${Math.round(W.scaffold.prog*100)}%`,friendSide(W.scaffold.owner)?'good':'bad']);if(apOn)sc.push(['Autopilot · J to cancel','good']);if(S.player.route)sc.push([`Course: ${DEF[S.player.route].name}`,'warn']);if(S.player.level===false)sc.push(['Auto-level off','warn']);if(S.sectors[W.sid].storm>S.T)chips.push(['Ion storm','warn']);
-  for(const g of GATES[W.sid])if(S.gateDown[gateKey(W.sid,g.to)])chips.push(['Gate to '+DEF[g.to].name+' down','bad']);
+  for(const g of GATES[W.sid])if(S.gateDown[gateKey(W.sid,g.to)])chips.push(['Gate to '+DEF[g.to].name+(ogSealed(W.sid,g.to)?' sealed by the Brood':' down'),'bad']);
   for(const ev of S.events){if(ev.sector!==W.sid)continue;if(ev.type==='comet')chips.push(['Comet in sector','good']);if(ev.type==='derelict')chips.push(['Derelict cargo','good']);if(ev.type==='offensive'){if(ev.stage==='engaged')chips.push([`${sideName(ev.att)} assault in progress`,'bad']);else if(evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'swarm':'strike'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,'warn'])}if(ev.type==='build'&&ev.stage==='inbound'&&evKnown(ev))chips.push([`${sideName(ev.att)} ${ev.att==='brood'?'Seeder':'constructor'} ETA ${Math.max(0,Math.round(ev.eta-S.T))}s`,friendSide(ev.att)?'good':'warn'])}
   if(o&&o.cap.p>0)sc.push([`${o.name}: ${sideName(o.cap.side)} claiming ${Math.round(o.cap.p*100)}%`,o.cap.side==='player'?'good':'warn']);
   {const bc=beaconChip();if(bc)sc.push(bc)}{const pc=limpetChip();if(pc)sc.push(pc)}{const sp=spotChip();if(sp)sc.push(sp)}{const cc=convoyChip();if(cc)sc.push(cc)}
@@ -6422,7 +6424,7 @@ function hudUpdate(){hudFit();
     else if(W.tgt.kind==='crate')th=`<div class="tp"><div class="tn">${T.derelict?'Derelict cargo':'Salvage'}</div><div class="ts">${Object.keys(T.inv).map(k=>`${T.inv[k]} ${ITEMS[k].name}`).join(' · ')}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">Fly into it to scoop.</div></div>`;
     else if(W.tgt.kind==='outpost'){const o2=T.o,os=oStats(o2);th=`<div class="tp"><div class="tn" style="color:${sideCol(o2.owner)}">${esc(o2.name)}</div><div class="ts">${o2.owner?sideName(o2.owner):'Unclaimed'} · Level ${o2.level}${o2.breached?' · BREACHED':''}</div><div class="ts">${TYPE_TEXT[o2.type]}</div>
       <div class="row">Shield<b>${Math.round(o2.shield)}</b></div><div class="mini"><i style="width:${o2.shield/os.sMax*100}%;background:#6fb7ff"></i></div><div class="row">Hull<b>${Math.round(o2.hull)}</b></div><div class="mini"><i style="width:${o2.hull/os.hMax*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
-    else if(W.tgt.kind==='gate'){const down=S.gateDown[gateKey(W.sid,T.to)],nx=routeNext();th=`<div class="tp"><div class="tn">Jumpgate</div><div class="ts">To ${esc(DEF[T.to].name)}${down?' · COLLAPSED':''}${nx&&nx.to===T.to?' · next jump on your course':''}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">J autopilot · hold Z to face it</div></div>`}
+    else if(W.tgt.kind==='gate'){const down=S.gateDown[gateKey(W.sid,T.to)],nx=routeNext();th=`<div class="tp"><div class="tn">Jumpgate</div><div class="ts">To ${esc(DEF[T.to].name)}${down?(ogSealed(W.sid,T.to)?' · SEALED BY BROOD OVERGROWTH':' · COLLAPSED'):''}${nx&&nx.to===T.to?' · next jump on your course':''}</div><div class="row">Range<b>${fmt(dist)} m</b></div><div class="ts">J autopilot · hold Z to face it</div></div>`}
     else if(W.tgt.kind==='works'){const fr=wkHp(T)/wkMax(T);th=`<div class="tp"><div class="tn" style="color:${sideCol(T.fac)}">${esc(T.name)}</div>${hostile('player',T.fac)?'<div class="ts" style="color:var(--amber)">Armoured: only torpedoes and capital guns damage it</div>':''}<div class="ts">${T.fac==='player'?'Your':FACTIONS[T.fac]?FACTIONS[T.fac].short:'Freeport'} ${T.k==='yard'||T.k==='yardb'?'capital shipyard':'station module'+(T.lvl>1?' · level '+T.lvl:'')}${T.k==='yardb'?' · '+Math.round(wkProg(T)*100)+'% built':''}</div><div class="row">Structure<b>${Math.round(fr*100)}%</b></div><div class="mini"><i style="width:${fr*100}%;background:var(--ivory)"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
     else if(W.tgt.kind==='station')th=`<div class="tp"><div class="tn" style="color:${sideCol(T.fac)}">${esc(T.name)}</div>${hostile('player',T.fac)?'<div class="ts" style="color:var(--amber)">Armoured: only torpedoes damage it</div>':''}<div class="ts">${T.fac==='player'?'Your':FACTIONS[T.fac]?FACTIONS[T.fac].name:sideName(T.fac)} ${T.kind==='hive'?'hive':T.core?'station':'depot'}${T.rec?` · hull ${Math.round(T.rec.hull/T.rec.hMax*100)}%`:''} · ${T.turrets.length} turrets${T.offline?' · OFFLINE':''}</div>${T.rec&&T.rec.owner==='brood'&&T.rec.kind==='depot'?`<div class="ts" style="color:#9be35a">${T.rec.built!=null&&S.T-T.rec.built<CONTAIN.youngT?`Rooting: burn it in ${fmtT(CONTAIN.youngT-(S.T-T.rec.built))} for ${fmt(CONTAIN.young)} cr · `:''}Gut: ${fmt(invMass(T.rec.gut||{}))} t of ore</div>`:''}<div class="row">Shield<b>${Math.round(T.shield)}</b></div><div class="mini"><i style="width:${T.shield/T.sMax*100}%;background:#6fb7ff"></i></div><div class="row">Range<b>${fmt(dist)} m</b></div></div>`}
   if(th&&W.lock.ref&&W.tgt&&W.lock.ref===W.tgt.ref){const L=W.lock;th=th.slice(0,-6)+`<div class="row">Missile lock<b style="color:${L.locked?'var(--danger)':'var(--amber)'}">${L.locked?'LOCKED · press C':Math.round(L.p*100)+'%'}</b></div><div class="mini"><i style="width:${L.p*100}%;background:${L.locked?'var(--danger)':'var(--amber)'}"></i></div></div>`}
@@ -6808,7 +6810,7 @@ function drawMap(){
   c.fillStyle='#070b16';c.fillRect(0,0,w,h);
   c.strokeStyle='rgba(54,67,95,.35)';c.lineWidth=1;for(let x=0;x<w;x+=40){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke()}for(let y=0;y<h;y+=40){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
   const onRoute=new Set();if(S.player.route){let cur=S.player.sector;for(let k=0;k<12&&cur!==S.player.route;k++){let nx=null,bh=1e9;for(const n of NEIGH[cur])if(HOP[S.player.route][n]<bh){bh=HOP[S.player.route][n];nx=n}onRoute.add(gateKey(cur,nx));cur=nx}}
-  for(const[a,b]of LINKS){const[x1,y1]=mapXY(DEF[a],w,h),[x2,y2]=mapXY(DEF[b],w,h),down=S.gateDown[gateKey(a,b)];if(onRoute.has(gateKey(a,b))){c.strokeStyle='rgba(240,178,74,.9)';c.lineWidth=5;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()}c.strokeStyle=down?'#ff5d4f':'#5a647c';c.setLineDash(down?[5,5]:[]);c.lineWidth=2;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();c.setLineDash([])}
+  for(const[a,b]of LINKS){const[x1,y1]=mapXY(DEF[a],w,h),[x2,y2]=mapXY(DEF[b],w,h),down=S.gateDown[gateKey(a,b)];if(onRoute.has(gateKey(a,b))){c.strokeStyle='rgba(240,178,74,.9)';c.lineWidth=5;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()}c.strokeStyle=down?(ogSealed(a,b)?FACTIONS.brood.col:'#ff5d4f'):'#5a647c';c.setLineDash(down?[5,5]:[]);c.lineWidth=2;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();c.setLineDash([])}
   const t=performance.now()/1000;
   for(const d of SECTOR_DEFS){const[x,y]=mapXY(d,w,h),own=sectorOwner(d.id),col=sideCol(own),r=d.kind==='core'?22:d.kind==='void'?13:18;
     c.fillStyle='#0c1222';c.beginPath();if(d.kind==='core'||d.kind==='frontier'||d.kind==='void')c.arc(x,y,r,0,TAU);else{for(let i=0;i<6;i++){const a=i/6*TAU+Math.PI/6;c[i?'lineTo':'moveTo'](x+Math.cos(a)*r,y+Math.sin(a)*r)}c.closePath()}c.fill();c.strokeStyle=col;c.lineWidth=mapSel===d.id?4:2;c.stroke();
@@ -6911,7 +6913,7 @@ function ledger(){
   const z=()=>({fe:0,cu:0,ir:0,xc:0,au:0,nu:0});
   const L={'Asteroid fields':z(),'Drifting debris':z(),'Salvage crates':z(),'Capital wrecks':z(),'Faction & Unbound stores':z(),'Fleets in muster':z(),'Outposts':z(),'Stations':z(),'Outer drift (recycling)':z(),'Ships in this sector':z(),'Your ship, hold, vault':z()};
   for(const id in S.sectors){const s=S.sectors[id];for(const a of s.ast)invVec(a.ore,L['Asteroid fields']);for(const e of RAWS)L['Drifting debris'][e]+=s.debris[e];for(const c of s.crates)invVec(c.inv,L['Salvage crates']);for(const c of s.clouds||[])invVec(c.ore,L['Salvage crates']);for(const w of s.wrecks||[])for(const p of w.pts)invVec(p.ore,L['Capital wrecks'])}
-  for(const k in S.econ.stock)invVec(S.econ.stock[k],L['Faction & Unbound stores']);
+  for(const k in S.econ.stock)invVec(S.econ.stock[k],L['Faction & Unbound stores']);for(const O of S.og||[])invVec(O.load,L['Faction & Unbound stores']);
   for(const k in S.econ.fleet)invVec(S.econ.fleet[k],L['Fleets in muster']);for(const k in S.plans||{})invVec(S.plans[k].res||{},L['Fleets in muster']);for(const ev of S.events)if(ev.force)invVec(ev.force,L['Fleets in muster']);for(const r of S.raids||[]){invVec(r.kit,L['Fleets in muster']);invVec(r.loot,L['Fleets in muster'])}for(const f in S.ai||{})if(S.ai[f]&&S.ai[f].hm)invVec(S.ai[f].hm.force,L['Fleets in muster']);for(const t of S.scouts||[])invVec(t.load,L['Fleets in muster']);for(const t of S.traders||[])invVec(t.load,L['Fleets in muster']);for(const t of S.frigates||[]){invVec(t.load,L['Fleets in muster']);invVec(t.store||{},L['Fleets in muster']);if(t.fab)invVec(t.fab.kit,L['Fleets in muster'])}
   for(const id in S.outposts){const o=S.outposts[id];invVec(o.stock,L.Outposts);invVec(o.fort,L.Outposts)}
   for(const id in(S.stations||{})){const R=S.stations[id];invVec(R.fort,L.Stations);invVec(R.stock,L.Stations);invVec(R.store||{},L.Stations);invVec(R.ustock||{},L.Stations);invVec(R.gut||{},L.Stations);for(const h of R.hg||[])invVec(h.load,L.Stations)}
@@ -7542,7 +7544,7 @@ function hMissile(pid,m){const e=MP.rp[pid],P=S.pilots[pid];if(!e)return;inW(wor
   if(m.k==='s'){if((P.swarm||0)>0&&CLASSES[P.cls].swarm&&T.type==='ship'){P.swarm--;launchSwarm(e,T,P.tiers.weapon)}}
   else if(P.rack>0){const n=CLASSES[P.cls].twin?Math.min(2,P.rack,m.n|0||1):1;P.rack-=n;for(let i=0;i<n;i++)launchMissile(e,T,P.tiers.weapon,CLASSES[P.cls].torp?'torpedo':'missile',n>1?(i?1:-1):0);if(S.unb){if(e.jamMode)for(let i=n0;i<W.missiles.length;i++){const mm=W.missiles[i];if(mm.src===e){mm.harp=1;mm.col='#b7c6ff'}}runAs(pid,()=>unbShot())}}})}
 function poseFrom(P,m){for(const k of['x','y','z','vx','vy','vz'])if(typeof m[k]==='number'&&isFinite(m[k]))P[k]=m[k];if(Array.isArray(m.q)&&m.q.length===4)P.q=m.q}
-function hJump(pid,m){const P=S.pilots[pid],from=P.sector,to=String(m.to);if(P.docked||!GATES[from]||!GATES[from].some(g=>g.to===to))return;if(P.convoy&&MP.rp[pid])runAs(pid,()=>convoyJump());
+function hJump(pid,m){const P=S.pilots[pid],from=P.sector,to=String(m.to);if(S.gateDown&&S.gateDown[gateKey(from,to)])return;if(P.docked||!GATES[from]||!GATES[from].some(g=>g.to===to))return;if(P.convoy&&MP.rp[pid])runAs(pid,()=>convoyJump());
   runAs(pid,()=>{const h=S.outposts.hollow;if((from==='ho'||to==='ho')&&h.owner&&h.owner!=='player'&&h.owner!==S.player.faction){const n=transfer('player',h.owner,40);if(n)feed(`Paid ${n} cr gate toll to ${sideName(h.owner)} at Hollow Relay.`,'news')}});
   despawnRP(pid);P.sector=to;poseFrom(P,m);delete MP.inp[pid];if(!WORLDS[to])openWorld(to);if(!P.docked)spawnRP(pid);netRoster()}
 function hDock(c,m){const pid=c.pid,P=S.pilots[pid],e=MP.rp[pid];if(!e)return;const w=worldOf(e);let ok=false;
@@ -8668,6 +8670,68 @@ function drAlarm(M,att){if(!M||M.type!=='ship'||!att||att===M)return;M._alarm=W.
   if(v&&W.t<v.until&&v.from&&v.from.alive&&!e.gj&&!e.inJump&&!jamDark(e)&&(e.role==='hauler'||e.role==='trader'||e.role==='miner')){const dx=e.x-v.from.x,dy=e.y-v.from.y,dz=e.z-v.from.z,l=hyp(dx,dy,dz)||1;
     e.ai.t-=dt;e.mining=null;steer(e,e.x+dx/l*1500,e.y+dy/l*500,e.z+dz/l*1500,dt,false,1.3);faceDir(e,dx,dy,dz,dt);e.boosting=true;e.thrusting=true;return}
   if(v&&W.t>=v.until)e.ai.evade=null;return o.apply(this,arguments)}}
+
+// ---- Brood Overgrowth: a living mass grown over a jump gate on the edge of Brood space. Seeding (90 s, 25% health, gate
+// still open), then grown (the gate is sealed both ways), mature after 10 min (grows Mites to guard it, up to 4). At most 2
+// at once (3 when the Brood holds 6+ systems), one every 8–12 min, never before minute 20, and never one that would leave the
+// far system without an open gate. Made of Brood stores (OG.cost), which fall as debris when it dies. Capital ships ignore
+// it (they don't use gates). Live it is a stationary Brood target; torpedoes are the tool (x4.5), capital guns do 75%,
+// missiles 40%, fighter guns 15%; left alone 20 s it regrows 1% a second; its tendrils catch 30% of torpedoes. Off-screen the
+// faction holding the far system sends bomber strikes at it.
+const OG={hp:6000,seed:90,mature:600,cost:{fe:40,cu:20,plate:4},start:1200,gap:[480,720],regrowT:20,regrow:.01,catch:.3,bounty:1500,mites:4,miteT:30,
+  dmg:{torpedo:4.5,cap:.75,missile:.4,gun:.15},strike:[240,420]};
+function ogAt(a,b){if(!a||!b)return null;const k=gateKey(a,b);return(S.og||[]).find(O=>O.key===k)||null}
+function ogSealed(a,b){const O=ogAt(a,b);return O&&O.stage!=='seed'?O:null}
+function ogTxt(sid,to){const O=ogSealed(sid,to);if(!O)return null;return O.a===sid?'This gate is sealed by Brood Overgrowth. Burn it off to open it (torpedoes work best).':`This gate is sealed by Brood Overgrowth on the far side, in ${DEF[O.a].name}. It has to be cleared from there.`}
+// the shortest way from a to b avoiding sealed gates, or null
+function ogRoute(a,b){const prev={[a]:null},q=[a];while(q.length){const c=q.shift();if(c===b)break;for(const n of NEIGH[c]||[]){if(n in prev||ogSealed(c,n))continue;prev[n]=c;q.push(n)}}if(!(b in prev))return null;const out=[];for(let c=b;c!=null;c=prev[c])out.unshift(c);return out}
+// who clears it off-screen: the faction holding the far system, else the one holding most systems around it
+function ogStriker(O){const ob=sideNorm(sectorOwner(O.b));if(FAC_IDS.includes(ob))return ob;const n={};for(const x of[...(NEIGH[O.b]||[]),...(NEIGH[O.a]||[])]){const o=sideNorm(sectorOwner(x));if(FAC_IDS.includes(o))n[o]=(n[o]||0)+1}let best=null;for(const f in n)if(!best||n[f]>n[best])best=f;return best}
+function ogName(O){return`the gate between ${DEF[O.a].name} and ${DEF[O.b].name}`}
+function ogSay(O,msg,kind){if(covered(O.a)||covered(O.b)||S.player.sector===O.a||S.player.sector===O.b)feed(msg,kind);if(NET.host)for(const pid in S.pilots||{}){const R=S.pilots[pid];if(pid!==NET.me&&R&&(R.sector===O.a||R.sector===O.b))feedTo(pid,msg,kind)}}
+function ogOpenGates(sid,skip){let n=0;for(const n2 of NEIGH[sid]||[]){const k=gateKey(sid,n2);if(k===skip)continue;if(!(S.gateDown&&S.gateDown[k]))n++}return n}
+function ogPlant(){const st=S.econ.stock.brood;if(!st||!haveIn(OG.cost,[st]))return false;const c=[];
+  for(const[x,y]of LINKS)for(const[a,b]of[[x,y],[y,x]]){if(!broodHeld(a)||broodHeld(b)||ogAt(a,b))continue;const k=gateKey(a,b);if(S.gateDown[k])continue;if(ogOpenGates(b,k)<1)continue;
+    const ob=sideNorm(sectorOwner(b));let w=1;if(DEF[a].kind==='hive')w*=2;if(FAC_IDS.includes(ob)){const n=controlCounts();w*=1+(n[ob]||0)/7}c.push([[a,b],w])}
+  if(!c.length)return false;const[a,b]=wpickArr(c),load={};takeFrom(OG.cost,[st]);inv.addAll(load,OG.cost);
+  const O={id:S.nextId++,a,b,key:gateKey(a,b),stage:'seed',t0:S.T,hp:OG.hp*.25,hitT:-1e9,load,strikeT:S.T+rnd(OG.strike[0],OG.strike[1])};(S.og=S.og||[]).push(O);
+  ogSay(O,`⚠ Brood spores on ${ogName(O)}. Burn them off in the next ${OG.seed} s or the gate will be sealed.`,'warn');return true}
+function ogKill(O,by){S.og=(S.og||[]).filter(x=>x!==O);if(O.stage!=='seed'&&S.gateDown&&S.gateDown[O.key]>S.T+1e8)delete S.gateDown[O.key];const s=S.sectors[O.a];if(s)toDebris(s,O.load);O.load={};
+  ogSay(O,`✔ The Brood Overgrowth on ${ogName(O)} has been burned off${by&&FACTIONS[by]?` by ${FACTIONS[by].short}`:''}.${O.stage!=='seed'?' The gate is open again.':''}`,'good')}
+function ogTick(){if(NET.cl)return;S.og=S.og||[];const T=S.T,bc=(controlCounts().brood||0);
+  for(const O of S.og.slice()){
+    if(O.stage==='seed'&&T-O.t0>=OG.seed){O.stage='grown';O.hp=Math.min(OG.hp,O.hp+OG.hp*.75);S.gateDown[O.key]=T+1e9;ogSay(O,`⚠ ${ogName(O)[0].toUpperCase()+ogName(O).slice(1)} is sealed by Brood Overgrowth. Nothing passes until it's burned off.`,'bad')}
+    if(O.stage==='grown'&&T-O.t0>=OG.mature)O.stage='mature';
+    if(O.stage!=='seed'&&!(S.gateDown[O.key]>T+1e8))S.gateDown[O.key]=T+1e9;
+    const live=WORLDS[O.a]&&WORLDS[O.a].ents.some(e=>e.alive&&e.ogId===O.id);
+    if(!live&&T-O.hitT>OG.regrowT)O.hp=Math.min(O.stage==='seed'?OG.hp*.25:OG.hp,O.hp+OG.hp*OG.regrow*10);
+    // off-screen: the faction holding the far system sends a bomber strike now and then
+    if(!live&&O.stage!=='seed'&&T>=O.strikeT){O.strikeT=T+rnd(OG.strike[0],OG.strike[1]);const f=ogStriker(O);if(!f)continue;
+      const srcs=[S.econ.fleet[f],S.econ.stock[f]].filter(Boolean),tier=factionTier(f),force={};for(let i=0;i<2;i++){const ld=loadout('patrol',tier,'bomber');if(takeFrom(ld,srcs))inv.addAll(force,ld)}
+      if(!Object.keys(force).length)continue;const capNear=(S.frigates||[]).some(t=>t.side===f&&t.hull>0&&(t.sector===O.a||t.sector===O.b));
+      const p=clamp(.25+.1*tier+(capNear?.3:0)-(O.stage==='mature'?.1:0),.1,.85),win=Math.random()<p,s=S.sectors[O.a];
+      loseInv(force,win?rnd(.1,.3):rnd(.3,.6),s);inv.addAll(S.econ.fleet[f]||S.econ.stock[f],force);
+      if(win)ogKill(O,f);else{O.hp=Math.max(OG.hp*.2,O.hp-OG.hp*rnd(.2,.4));O.hitT=T;if(f===S.player.faction)ogSay(O,`${FACTIONS[f].short} bombers hit the Overgrowth on ${ogName(O)} but couldn't burn it off.`,'info')}}}
+  if(T<OG.start||T<(S.ogNext||0))return;if(S.og.length>=(bc>=6?3:2))return;if(ogPlant())S.ogNext=T+rnd(OG.gap[0],OG.gap[1]);else S.ogNext=T+60}
+{const o=strategicTick;strategicTick=function(){o.apply(this,arguments);try{ogTick()}catch(e){frameErr('overgrowth',e)}}}
+// live: the growth sits on its gate as a Brood target
+function ogEnt(O){const g=(GATES[W.sid]||[]).find(x=>x.to===O.b);if(!g)return null;const e=makeNPC('og','brood','overgrowth',1,{},'og:'+O.id);e.ogId=O.id;e.x=g.x*.985;e.y=g.y*.985;e.z=g.z*.985;e.vx=e.vy=e.vz=0;
+  qLook(-g.x,-g.y,-g.z,0,1,0,e.q);e.hull=O.hp;e.shield=0;e.noRegen=1e12;W.ents.push(e);return e}
+function ogWorld(dt){if(NET.cl||!W)return;for(const O of S.og||[]){if(O.a!==W.sid)continue;let e=W.ents.find(x=>x.alive&&x.ogId===O.id);if(!e)e=ogEnt(O);if(!e)continue;
+  e.vx=e.vy=e.vz=0;const max=O.stage==='seed'?OG.hp*.25:OG.hp;if(e.st.hull!==OG.hp)e.st={...e.st,hull:OG.hp};
+  if(W.t-(e.lastHit||-1e9)>OG.regrowT)e.hull=Math.min(max,e.hull+OG.hp*OG.regrow*dt);else O.hitT=S.T;if(e.hull>max)e.hull=max;O.hp=e.hull;
+  for(const m of W.missiles.slice())if(m.tgt===e&&m.kind==='torpedo'&&!m.ogR&&d3(m,e)<800){m.ogR=1;if(Math.random()<OG.catch){if(!MUTE)fxSpark(m,'#b9e05a',6);killTorp(m,'brood')}}
+  if(O.stage==='mature'&&S.T>=(O.miteT||0)){O.miteT=S.T+OG.miteT;const n=W.ents.filter(x=>x.alive&&x.cls==='mite'&&x.miteLead===e).length;for(let i=n;i<Math.min(OG.mites,n+1);i++)miteMake('patrol',e,i)}}}
+{const o=npcThink;npcThink=function(e,dt){if(e.role==='og'){e.vx=e.vy=e.vz=0;e.thrusting=false;e.boosting=false;return}return o.apply(this,arguments)}}
+{const o=damageShip;damageShip=function(e,dmg,srcSide,at,kind){if(e&&e.role==='og'){const k=kind||(at&&at.kind)||'';const capSrc=at&&at.src&&(at.src.role==='frigate'||at.cap);
+    dmg*=k==='torpedo'?OG.dmg.torpedo:capSrc||k==='capital'?OG.dmg.cap:(k==='missile'||k==='swarm'||(at&&at.kind==='missile'))?OG.dmg.missile:OG.dmg.gun}return o.call(this,e,dmg,srcSide,at,kind)}}
+{const o=killShip;killShip=function(e,src,at){if(e&&e.role==='og'&&e.alive){const O=(S.og||[]).find(x=>x.id===e.ogId);e.load={};e.cargo={};if(O)ogKill(O,sideNorm(src))}return o.apply(this,arguments)}}
+// its look: a bulbous Brood mass ringing the gate, with glowing spore sacs
+{const o=shipMesh;shipMesh=function(fac,cls){if(cls!=='overgrowth')return o.apply(this,arguments);if(MESH.overgrowth)return MESH.overgrowth;
+  const F=hexRGB(FACTIONS.brood.col),B=[.24,.3,.17],D=[.12,.15,.09],g=new GB(),L=new GB(),R=mulberry(77);
+  g.set(0,0,-.1).sphere(.42,8,12,B,0);for(let i=0;i<14;i++){const a=i/14*TAU,r=.62+R()*.12;g.set(Math.cos(a)*r,Math.sin(a)*r,(R()-.5)*.25).sphere(.16+R()*.12,6,8,i%2?B:D,0)}
+  for(let i=0;i<9;i++){const a=R()*TAU,r=.3+R()*.5;g.set(Math.cos(a)*r,Math.sin(a)*r,.12+R()*.15).sphere(.06+R()*.05,5,6,F,.9)}
+  L.seg([0,0,0],[0,0,0],[0,0,0]);return MESH.overgrowth={hull:g.upload(),rim:L.upload(true),eng:[]}}}
 
 //@src 17_main.js
 // ============================================================ main loop
