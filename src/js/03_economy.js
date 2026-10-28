@@ -104,7 +104,7 @@ function mkTick(){if(NET.cl)return;const L=mkStations();if(L.length<2)return;
 function intelSectors(P){const s=new Set([P.sector]);for(const id in S.beacons||{})if(S.beacons[id].owner===P.faction)s.add(id);
   for(const t of S.scouts||[])if(t.side===P.faction)s.add(t.sector);
   for(const t of S.traders||[])if(t.side===P.faction)s.add(t.sector);   // your faction's freighters and traders read the markets they pass
-  for(const Q of allPilots())if(Q!==P&&Q.faction===P.faction&&isScoutCls(Q.cls))s.add(Q.sector);if(isScoutCls(P.cls)||P.cls==='wraith')for(const n of NEIGH[P.sector]||[])s.add(n);
+  for(const Q of allPilots())if(Q!==P&&!Q.off&&Q.faction===P.faction&&isScoutCls(Q.cls))s.add(Q.sector);if(isScoutCls(P.cls)||P.cls==='wraith')for(const n of NEIGH[P.sector]||[])s.add(n);
   if(S.outposts.hollow&&(S.outposts.hollow.owner===P.faction))for(const d of SECTOR_DEFS)s.add(d.id);return s}
 function intelTick(P){const first=!P.pintel;P.pintel=P.pintel||{};const live=intelSectors(P);if(first)for(const R of mkStations())if(R.owner===P.faction)live.add(R.sid);for(const R of mkStations()){if(!live.has(R.sid))continue;if(hostile(P.faction,R.owner)&&R.owner!=='neutral')continue;mkOf(R);
   const st=mkStock(R),b={},sl={},n={};for(const k of TRADE_ITEMS){const pr=stPrice(R,k);b[k]=Math.ceil(pr*(1+mFee(P.cls)));sl[k]=Math.max(1,Math.floor(pr*(1-mFee(P.cls))));n[k]=st[k]||0}P.pintel[R.sid]={T:first&&R.sid!==P.sector?S.T-600:S.T,b,s:sl,n}}}

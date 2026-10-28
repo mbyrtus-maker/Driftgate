@@ -167,6 +167,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'jam':{const e=MP.rp[pid];P.jamMode=!!m.on;if(e)e.jamMode=!!m.on;break}
     case 'xpdr':{if(S.unb)runAs(pid,()=>{const R=unbP();if((R.xpdrOut||0)>S.T)return;R.xpdr=!!m.on});break}
     case 'hook':{MP.hook=MP.hook||{};MP.hook[pid]={on:!!m.on,id:m.id};break}
+    case 'fg':{const sid=String(m.sid);if(DEF[sid]&&P.sector===sid&&!P.docked&&isScoutCls(P.cls)&&broodHeld(sid)){S.fgSeen=S.fgSeen||{};S.fgSeen[sid]=1}break}
     case 'spot':{const e0=MP.rp[pid];if(e0)inW(worldOf(e0),()=>{const e=W.ents.find(x=>x.id===m.id);if(e&&d3(e,e0)<SPOT.r*1.2)spotPay(e,pid)});break}
     case 'blast':{const e=MP.rp[pid];if(e)inW(worldOf(e),()=>{if(m.k==='fire')blFire(e,P);else if(m.k==='det')blDetReq(P,e);else if(m.k==='cancel')blCancel(P)});break}
     case 'flare':{const e=MP.rp[pid];if(e&&!(e.flareH>performance.now())){e.flareH=performance.now()+4000;inW(worldOf(e),()=>deployFlares(e))}break}
@@ -200,7 +201,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
   }}
 function hJoin(c){const P=S.pilots[c.pid];c.hello=true;
   if(!P){send(c.L,{t:'needpilot',r:MP.roster});return}
-  P.name=c.name||P.name;P.pid=c.pid;c.ready=true;c.known=new Set();
+  P.name=c.name||P.name;P.pid=c.pid;c.ready=true;c.known=new Set();delete P.off;
   if(P.docked==='bridge')P.docked='station';if(P.docked==='turret'){hSeatClear(c.pid);P.docked=null}
   if(P.docked==='station'&&!S.stations[P.sector])P.docked=null;
   if(!WORLDS[P.sector])openWorld(P.sector);
@@ -212,7 +213,7 @@ function hJoin(c){const P=S.pilots[c.pid];c.hello=true;
   netRoster()}
 function pilotLeft(c){const P=S.pilots[c.pid];delete MP.inp[c.pid];for(const t of S.frigates||[])if(t.cmd&&t.owner===c.pid){delete t.owner;delete t.cmd;t.ctl=null;t.dest=null;t.jumpTo=null}if(!P)return;const was=MP.rp[c.pid];c.ready=false;
   if(was)despawnRP(c.pid);else{const w=WORLDS[P.sector];if(w&&w!==LW&&!worldBusy(w))closeWorld(w)}
-  feed(`${P.name} left the galaxy.`,'info');netRoster()}
+  P.off=1;feed(`${P.name} left the galaxy.`,'info');netRoster()}   // off: no longer counts as a scout for live prices
 // a friend's newer save wins when this session has only just started (they played while we were away)
 function mpAdoptGalaxy(ck){const keep=S&&S.player?{faction:S.player.faction,cls:S.player.cls}:null;
   for(const c of Object.values(MP.cl))c.ready=false;MP.rp={};MP.inp={};

@@ -402,9 +402,9 @@ const BOUNTY_MUL=8;   // the pay ladder: hauling, then mining, then combat, then
 const PIRATE_MUL=1.2; // the Unbound prey on everyone: their ships (and captains) carry a fifth more bounty than a rival faction's
 function bountyOf(e){if(e.role==='drone')return 40;if(e.role==='limpet')return 60;if(e.role==='frigate')return e.cls==='escort'?1400:2800;const c=CLASSES[e.cls],r=c&&CLASSES.striker?c.hull/CLASSES.striker.hull:1;
   return Math.max(40,Math.round(BOUNTY_MUL*(e.side==='pirate'?PIRATE_MUL:1)*(25+20*(e.tier||1))*Math.pow(Math.max(.3,r),.6)/5)*5)}
-function dmgRec(e,src,at,d){if(!(d>0)||e.isPlayer)return;const k=at&&at.src&&at.src.rp?at.src.rp:src==='player'?'me':'_ai';(e.dmg=e.dmg||{})[k]=(e.dmg[k]||0)+d}
+function dmgRec(e,src,at,d){if(!(d>0)||e.isPlayer)return;const k=at&&at.gk?at.gk:at&&at.src&&at.src.rp?at.src.rp:src==='player'?'me':'_ai';(e.dmg=e.dmg||{})[k]=(e.dmg[k]||0)+d}
 function killNoun(e){return e.role==='miner'?'miner':e.role==='hauler'?'hauler':e.role==='trader'?(e.tradeT&&e.tradeT.kind==='haul'?'supply freighter':'trader'):e.role==='builder'?'constructor':e.role==='drone'?'drone':e.role==='frigate'?(e.tok?capName(e.tok):'capital ship'):CLASSES[e.cls]?CLASSES[e.cls].name.toLowerCase():'fighter'}
-function payKill(e,src,at){const D=e.dmg||{},kp=at&&at.src&&at.src.rp,killer=kp||(src==='player'?'me':null);let tot=0;for(const k in D)tot+=D[k];
+function payKill(e,src,at){const D=e.dmg||{},kp=at&&at.gk?at.gk:at&&at.src&&at.src.rp,killer=kp||(src==='player'?'me':null);let tot=0;for(const k in D)tot+=D[k];
   const sh={};for(const k in D)if(k!=='_ai'&&tot>0&&D[k]/tot>=.05)sh[k]=D[k]/tot;if(killer&&!(tot>0))sh[killer]=1;
   if(killer&&!sh[killer])runAs(isMe(killer)?null:killer,()=>{S.player.kills++});
   if(!NET.cl)sideKill(e,sh,killer);

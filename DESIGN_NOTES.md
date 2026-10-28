@@ -1869,3 +1869,13 @@ Before, a station whose shield broke went dark for 20 s: turrets and missile bat
 
 ## Shield generators on the carrier, escort and depot models (Oct 2026)
 For sub-targets, every system has to be a visible part. The carrier, escort and depot had no part that read as a shield generator; each now has one in the station's style (the same generator part as under a station's tower) inside an emitter ring: on the carrier's spine roof ahead of the tower, on the escort's spine forward of the bridge, and under the depot's lower dome. Model-only change (tools/capitals.py, the depot entry in tools/build_models.py); renders compared before and after.
+
+## Open bugs fixed (Oct 2026)
+- **Turret gunners get the credit for their shots.** A Heavy Bomber or Bomber turret shot fired by a pilot in the gunner seat (local or a multiplayer guest) is tagged with that pilot (`gk`), so damage shares, kill counts, bounties and War effort go to the gunner, not the bomber's pilot.
+- **Bomber turret range.** AI-run turrets aimed out to 1,200 m but their shots fade at about 1,035 m; they now only fire within 983 m.
+- **Guest feeding grounds are shared.** A guest scout who found a Brood feeding ground saw it only on their own screen (the host's next sync erased it); the find now goes to the host, which marks it for every pilot.
+- **Pilots who left no longer count as scouts.** A scout pilot who had left the galaxy still gave their faction live prices in the system they left from; a departed pilot is marked off until they rejoin.
+- **The Unbound Skiff's F key.** It ran the limpet code (limpets are faction kit), giving limpet prompts and even "Limpet planted" when nothing was planted; it now says the Skiff carries no limpets or blast rig.
+- **Fault points no longer jump.** A rock's fault points were laid out by their count (2, 3 or 4 by ore left), so when another miner shrank it past a threshold the whole set moved; each rock now has one fixed layout of four directions and a shrinking rock keeps the first three or two.
+- **Capital wrecks with worthless holds:** not reproducible on the current build (a destroyed carrier's six salvage points all held valuable goods); left as checked.
+- Escort contracts completing while docked mid-route stays as designed.

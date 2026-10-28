@@ -276,7 +276,7 @@ function spotPay(e,k){if(!e||!e.alive||e.side!=='brood'||e.role!=='builder'||e.s
 function spotChip(){const e=spotTarget();if(!e||!isScoutCls(S.player.cls)||S.player.docked)return null;if(e.spotted)return['📡 Seeder spotted: containment paid','good'];const d=d3(e,W.player),F=W.spotF||{};
   if(d>SPOT.r)return[`📡 Close to ${SPOT.r/1000} km to spot the Seeder (${fmt(Math.round(d))} m)`,'warn'];return[`📡 Spotting Seeder ${Math.round(clamp((F.id===e.id?F.t:0)/SPOT.t,0,1)*100)}% · keep it targeted`,'warn']}
 // ---- scouts find feeding grounds: flying a scout through Brood space marks its feeding ground on every pilot's map
-function fgScout(){if(!W||W!==LW||!W.haze||!W.player||S.player.docked||!isScoutCls(S.player.cls))return;S.fgSeen=S.fgSeen||{};if(S.fgSeen[W.sid])return;S.fgSeen[W.sid]=1;
+function fgScout(){if(!W||W!==LW||!W.haze||!W.player||S.player.docked||!isScoutCls(S.player.cls))return;S.fgSeen=S.fgSeen||{};if(S.fgSeen[W.sid])return;S.fgSeen[W.sid]=1;if(NET.cl)netSend({t:'fg',sid:W.sid});   // a guest's find goes to the host, which shares it with every pilot
   const t=fgMass(S.sectors[W.sid]);if(t>0)feed(`📡 Scout report: a Brood feeding ground in ${DEF[W.sid].name}, about ${fmt(t)} t of piled ore. It's marked on the galaxy map.`,'good')}
 // ---- containment supply: faction stations on the Bloom's border post orders for torpedoes, missiles and plate, paid at a
 // front-line bonus (about 2.5x value) and delivered in person, like a blockade run

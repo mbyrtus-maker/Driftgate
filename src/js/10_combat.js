@@ -16,14 +16,14 @@ function turretRack(e){if(e.isPlayer)return{get:()=>S.player.rack||0,take:()=>{S
 function turretPick(e,T,cone){const M=turretMount(e);turretQ(e,T,_gq3);qRot(_gq3,0,0,1,_f);let best=null,bs=1e9;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e||!hostile(e.side,o.side))continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;const dx=o.x-M.x,dy=o.y-M.y,dz=o.z-M.z,d=hyp(dx,dy,dz);if(d>2200)continue;const c=(dx*_f.x+dy*_f.y+dz*_f.z)/d;if(c<Math.cos(cone))continue;const sc=d*(2-c);if(sc<bs){bs=sc;best=o}}return best}
 function turretShoot(e,T){const st=e.st,TC=CLASSES[e.cls]||{};if(T.cool>0||(!TC.turOwnE&&e.energy<st.shotCost*.6)||turretBlocked(T))return;T.cool=1/(st.rof*.85);if(!TC.turOwnE)e.energy-=st.shotCost*.6;const M=turretMount(e);turretQ(e,T,_gq3);qRot(_gq3,0,0,1,_f);qRot(_gq3,1,0,0,_r);
   T.barrel=-(T.barrel||1);const r=st.radius*1.25,off=T.barrel*r*.085,sty=e.side==='pirate'?'scrap':FAC(e.fac).shot;
-  W.shots.push({x:M.x+_f.x*r*.5+_r.x*off,y:M.y+_f.y*r*.5+_r.y*off,z:M.z+_f.z*r*.5+_r.z*off,vx:e.vx+_f.x*SHOT_SPD,vy:e.vy+_f.y*SHOT_SPD,vz:e.vz+_f.z*SHOT_SPD,dmg:st.dmg*.85*(TC.turK||1),side:e.side,src:e,ttl:SHOT_TTL,col:e.isPlayer||e.rp?FAC(e.fac).col:sideCol(e.side),sty,tur:1});
+  W.shots.push({x:M.x+_f.x*r*.5+_r.x*off,y:M.y+_f.y*r*.5+_r.y*off,z:M.z+_f.z*r*.5+_r.z*off,vx:e.vx+_f.x*SHOT_SPD,vy:e.vy+_f.y*SHOT_SPD,vz:e.vz+_f.z*SHOT_SPD,dmg:st.dmg*.85*(TC.turK||1),side:e.side,src:e,ttl:SHOT_TTL,col:e.isPlayer||e.rp?FAC(e.fac).col:sideCol(e.side),sty,tur:1,gk:T.gunner==='local'?'me':T.gunner||undefined});   // gk: the pilot in the gunner seat gets the credit
   const mine=e===W.player||(W.gunseat&&gsEnt()===e);if(mine)SFX.kinetic(.8);else if(W.t-(T.sndT||0)>.3){T.sndT=W.t;SFX.kinetic(vAt(e)*.6)}}
 function turretMissile(e,T,tgt){const rk=turretRack(e);if(T.mcd>0||rk.get()<=0||!tgt)return false;T.mcd=1.2;rk.take();const tier=e.isPlayer?S.player.tiers.weapon:e.rp&&S.pilots[e.rp]?S.pilots[e.rp].tiers.weapon:e.tier||1;launchMissile(e,tgt,tier,'missile');return true}
 function turretAI(e,T,dt){const A=T.ai;A.t-=dt;const M=turretMount(e);
   if(A.t<=0||!(A.tgt&&A.tgt.alive&&W.ents.includes(A.tgt))||d3(A.tgt,M)>1500){A.t=.4;A.tgt=null;let bd=1300;for(const o of W.ents){if(o.type!=='ship'||!o.alive||o===e||!hostile(e.side,o.side))continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;const d=d3(o,M)*(o.ai&&o.ai.tgt===e?.6:1)*(isBmb(o.cls)?.7:1);if(d<bd){bd=d;A.tgt=o}}}
   let want={yaw:Math.PI,pitch:.12};if(A.tgt){const lp=leadPoint(M,A.tgt,SHOT_SPD);want=localAim(e,lp.x-M.x,lp.y-M.y,lp.z-M.z)}
   const rate=2.4*dt,dy=wrapA(want.yaw-T.yaw);T.yaw=wrapA(T.yaw+clamp(dy,-rate,rate));T.pitch=clamp(T.pitch+clamp(want.pitch-T.pitch,-rate,rate),GT_MINP,GT_MAXP);
-  if(A.tgt&&Math.abs(wrapA(want.yaw-T.yaw))<.07&&Math.abs(want.pitch-T.pitch)<.07&&d3(A.tgt,M)<1200)turretShoot(e,T);
+  if(A.tgt&&Math.abs(wrapA(want.yaw-T.yaw))<.07&&Math.abs(want.pitch-T.pitch)<.07&&d3(A.tgt,M)<SHOT_SPD*SHOT_TTL*.95)turretShoot(e,T);   // only at what the shot can reach (it fades at about 1,035 m)
   if(A.tgt&&(isBmb(A.tgt.cls)||A.tgt.cls==='heavy'||(A.tgt.ai&&A.tgt.ai.tgt===e))&&d3(A.tgt,M)<1500&&W.t-(T.aiM||-99)>15){if(turretMissile(e,T,A.tgt))T.aiM=W.t}}
 function tickTurret(e,dt){const T=turretOf(e);T.cool-=dt;T.mcd-=dt;if(jamDark(e)||e.landed||(e.boot&&W.t<e.boot))return;
   if(T.gunner==='local'&&W.gunseat&&gsEnt()===e){const G=W.gunseat;T.yaw=G.yaw;T.pitch=G.pitch;if(keys.Space||mouse.l||touch.fire)turretShoot(e,T);if(G.msl){G.msl=0;const tg=turretPick(e,T,.25);if(!turretMissile(e,T,tg))flash(tg?(turretRack(e).get()<=0?'Missile rack empty.':'Missiles cycling.'):'No hostile near the turret sight.',true)}return}
@@ -126,7 +126,8 @@ function blRng(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^t
 function blPts(a){if(a.wpt){const w=wreckOf(S.sectors[W.sid],a),R=WPT_R*.9;let dx=0,dy=1,dz=0;if(w){dx=a.x-w.x;dy=a.y-w.y;dz=a.z-w.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l}return[{x:a.x+dx*R,y:a.y+dy*R,z:a.z+dz*R}]}
   const tot=oreTotal(a),n=tot<=50?2:tot<=90?3:4,key=n+':'+(a.fpv||0)+':'+Math.round(a.x);if(a._fpk===key&&a._fp)return a._fp;
   const r=blRng((a.seed||a.id||1)+(a.fpv||0)*7919),R=astR(a),out=[],rot=r()*TAU,tilt=r()*2-1;
-  for(let i=0;i<n;i++){const y=1-(i+.5)*2/n*(.8+.2*r()),rr=Math.sqrt(Math.max(0,1-y*y)),th=rot+i*2.39996;let x=Math.cos(th)*rr,z=Math.sin(th)*rr,yy=y*.9+tilt*.1;const l=hyp(x,yy,z)||1;out.push({x:a.x+x/l*R,y:a.y+yy/l*R,z:a.z+z/l*R})}
+  // one fixed layout of four directions per rock; a shrinking rock keeps the first 3 or 2, so points don't jump when someone else mines it
+  for(let i=0;i<4;i++){const y=1-(i+.5)*2/4*(.8+.2*r()),rr=Math.sqrt(Math.max(0,1-y*y)),th=rot+i*2.39996;let x=Math.cos(th)*rr,z=Math.sin(th)*rr,yy=y*.9+tilt*.1;const l=hyp(x,yy,z)||1;if(i<n)out.push({x:a.x+x/l*R,y:a.y+yy/l*R,z:a.z+z/l*R})}
   a._fpk=key;a._fp=out;return out}
 function blRate(q,P){const r=BL_REL[q]||0,cap=vF(P,'blRelCap');return cap?Math.min(cap,r):r}
 function blTick(P,dt){const cap=blCap(P);if(!cap){P.blN=0;P.blT=0;return}if(P.blN==null)P.blN=cap;if(P.blN>cap)P.blN=cap;
@@ -203,7 +204,7 @@ function chunkAt(e,s){for(const c of s.clouds||[])if(c.chunk&&d3(c,e)<c.cr+e.st.
 function blCov(o,from){if(!from||!W||!o||o.type==='station')return false;const s=S.sectors[W.sid];if(!s||!s.clouds||!s.clouds.length)return false;for(const c of s.clouds)if(d3(o,c)<c.r&&d3(o,from)>300)return true;return false}
 // pilot controls (local pilot): F fires on press, holding F by a cloud collects it
 function blPilotUpdate(p,P,st,sec,dt){const hold=!!(keys.KeyF||mouse.r||touch.mine),press=hold&&!p.blHeld;p.blHeld=hold;p.mining=null;
-  if(!blHull(P.cls)){if(isScoutCls(P.cls)){limpetHold(hold,dt);return}if(press&&W.t-(W.drillMsg||0)>3){flash('No blast rig on this hull: only mining ships (Light, Medium and Heavy Miner) can mine. Switch at a core station Shipyard.');W.drillMsg=W.t}return}
+  if(!blHull(P.cls)){if(isScoutCls(P.cls)&&!FAC_IDS.includes(P.faction)){if(press&&W.t-(W.drillMsg||0)>3){W.drillMsg=W.t;flash('The Skiff carries no limpets and no blast rig: limpets are faction scout kit. It flips beacons and finds marks.')}return}if(isScoutCls(P.cls)){limpetHold(hold,dt);return}if(press&&W.t-(W.drillMsg||0)>3){flash('No blast rig on this hull: only mining ships (Light, Medium and Heavy Miner) can mine. Switch at a core station Shipyard.');W.drillMsg=W.t}return}
   {const ch=!NET.cl&&chunkAt(p,sec);if(ch){p.mining=ch;p.mining0=ch;blCollect(p,P,ch,dt,sec)}}
   const cl=hold?blCloudNear(p,sec):null;if(cl){p.mining=cl;if(!NET.cl&&cl!==p.mining0)blCollect(p,P,cl,dt,sec);p.mining0=null;return}p.mining0=null;
   if(press){if(NET.cl)netSend({t:'blast',k:'fire'});else blFire(p,P)}}
