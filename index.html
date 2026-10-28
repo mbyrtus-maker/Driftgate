@@ -4296,10 +4296,11 @@ function droneThink(e,dt){const ai=e.ai,M=e.mom;
     if(!T||ai.t<=0){ai.t=.6+rnd(.3);T=null;let bd=1e9;for(const o of W.ents)if(o.type==='ship'&&o.alive&&o.role!=='frigate'&&hostile(e.side,o.side)&&!((o.isPlayer&&(S.player.docked||W.dead))||mHid(o,e))){const d=d3(o,e)*(isBmb(o.cls)?.6:1);if(d<bd){bd=d;T=o}}ai.tgt=T}
     if(T){fight(e,T,dt);return}}
   if(PM==='attack'){const C=fctl(M.tok);let T=C.tgt&&C.tgt.type==='ship'&&C.tgt.alive&&W.ents.includes(C.tgt)?C.tgt:null;if(!T){let bd=2500;for(const o of W.ents)if(o.type==='ship'&&o.alive&&o.role!=='frigate'&&hostile(e.side,o.side)&&!((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))){const d=d3(o,M);if(d<bd){bd=d;T=o}}}if(T){fight(e,T,dt);return}}
-  if(ai.t<=0||!(ai.tgt&&ai.tgt.alive&&W.ents.includes(ai.tgt))||d3(ai.tgt,M)>(big?1700:1000)){ai.t=.4+rnd(.3);ai.tgt=null;let bd=1e9;const hurt=W.t-M.lastHit<5;
+  if(!big){if(droneGuard(e,M,dt))return}   // guard drones react in time (droneGuard); a carrier's pickets keep the rules below
+  else if(ai.t<=0||!(ai.tgt&&ai.tgt.alive&&W.ents.includes(ai.tgt))||d3(ai.tgt,M)>(big?1700:1000)){ai.t=.4+rnd(.3);ai.tgt=null;let bd=1e9;const hurt=W.t-M.lastHit<5;
     for(const o of W.ents){if(o.type!=='ship'||!o.alive||!hostile(e.side,o.side)||o.role==='frigate')continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;const dm=d3(o,M);if(dm>(big?1500:900))continue;
       const onM=(o.ai&&o.ai.tgt===M)||(hurt&&M.lastHitBy===o.side&&dm<(big?1200:700));if(!onM&&dm>(big?750:380))continue;const sc=dm-(onM?700:0);if(sc<bd){bd=sc;ai.tgt=o}}}
-  if(ai.tgt){fight(e,ai.tgt,dt);return}
+  if(big&&ai.tgt){fight(e,ai.tgt,dt);return}
   ai.orb=(ai.orb||0)+dt*(big?.35:.8);const R=M.st.radius+(big?170:55),a=ai.orb;holdSlot(e,M,M.x+Math.cos(a)*R,M.y+Math.sin(a*1.3)*24,M.z+Math.sin(a)*R,dt,2);
   const rv=hyp(e.vx,e.vy,e.vz);if(rv>15)faceDir(e,e.vx,e.vy,e.vz,dt)}
 function escortHauler(e){const g=e.grp;return g&&g.escort&&g.escort.alive&&W.ents.includes(g.escort)?g.escort:null}
@@ -8642,6 +8643,31 @@ function miteWorld(){if(NET.cl||!W)return;for(const m of W.ents){if(m.cls!=='mit
     if(L.grp&&!m.grp){m.grp=L.grp;if(!L.grp.members.includes(m))L.grp.members.push(m)}if(L.ai){m.ai.hunt=L.ai.hunt;m.ai.huntUntil=L.ai.huntUntil;m.ai.tgt=L.ai.tgt}
     if(L.bpack&&W.bpack&&W.bpack.m){m.bpack=1;if(!W.bpack.m.includes(m))W.bpack.m.push(m)}}
   if(L&&(!L.alive||!W.ents.includes(L))&&!(m.ai.retireAt<W.t+30))m.ai.retireAt=W.t+30}}
+
+// ---- guard drones that react in time. A guard drone engages any hostile that has its ship targeted or missile-locked, has
+// fired on it in the last 8 s from within 1.5 km, or comes within 600 m; it re-checks five times a second, boosts at a new
+// attacker for 3 s, and never strays more than 1.5 km from its ship. When the ship is fired on or locked, its drones break
+// formation at once, and a guarded hauler, trader or miner turns away and boosts for 4 s. Pilots' drones follow the same rules.
+const DRG={t:.2,fire:8,fireR:1500,near:600,leash:1500,boost:3,evade:4};
+function drGuarded(M){return!!(M&&M.drones&&M.drones.some(d=>d.alive))}
+function drThreat(o,M){if(o.ai&&o.ai.tgt===M)return 2;if(o.isPlayer&&W.tgt&&W.tgt.ref===M&&!S.player.docked)return 2;
+  for(const m of W.missiles)if(m.tgt===M&&m.src===o)return 2;
+  if(M._atk===o&&W.t-(M._atkT||-99)<DRG.fire&&d3(o,M)<=DRG.fireR)return 3;
+  return d3(o,M)<DRG.near?1:0}
+function droneGuard(e,M,dt){const ai=e.ai,keep=ai.tgt&&ai.tgt.alive&&W.ents.includes(ai.tgt)&&d3(ai.tgt,M)<=DRG.leash;
+  if(!keep||ai.t<=0||(M._alarm||0)>(ai.alarm||0)){ai.t=DRG.t;ai.alarm=M._alarm||0;const prev=ai.tgt;ai.tgt=null;let bs=1e18;
+    for(const o of W.ents){if(o.type!=='ship'||!o.alive||o.role==='frigate'||o.role==='limpet'||!hostile(e.side,o.side))continue;if((o.isPlayer&&(S.player.docked||W.dead))||mHid(o,e))continue;
+      const dm=d3(o,M);if(dm>DRG.leash)continue;const w=drThreat(o,M);if(!w)continue;if(dm/w<bs){bs=dm/w;ai.tgt=o}}
+    if(ai.tgt&&ai.tgt!==prev)ai.boostT=W.t+DRG.boost}
+  if(!ai.tgt)return false;fight(e,ai.tgt,dt);if(W.t<(ai.boostT||0))e.boosting=true;return true}
+function drAlarm(M,att){if(!M||M.type!=='ship'||!att||att===M)return;M._alarm=W.t;
+  if(!M.isPlayer&&M.ai&&(M.role==='hauler'||M.role==='trader'||M.role==='miner')&&drGuarded(M))M.ai.evade={from:att,until:W.t+DRG.evade}}
+{const o=damageShip;damageShip=function(e,dmg,srcSide,at,kind){if(W&&!NET.cl&&e&&e.alive&&at&&at.src&&at.src.type==='ship'&&at.src!==e&&hostile(at.src.side,e.side)){e._atk=at.src;e._atkT=W.t;drAlarm(e,at.src)}return o.apply(this,arguments)}}
+{const o=launchMissile;launchMissile=function(src,T){const r=o.apply(this,arguments);if(W&&!NET.cl&&T&&T.type==='ship'&&src&&hostile(src.side,T.side))drAlarm(T,src);return r}}
+{const o=npcThink;npcThink=function(e,dt){const v=e.ai&&e.ai.evade;
+  if(v&&W.t<v.until&&v.from&&v.from.alive&&!e.gj&&!e.inJump&&!jamDark(e)&&(e.role==='hauler'||e.role==='trader'||e.role==='miner')){const dx=e.x-v.from.x,dy=e.y-v.from.y,dz=e.z-v.from.z,l=hyp(dx,dy,dz)||1;
+    e.ai.t-=dt;e.mining=null;steer(e,e.x+dx/l*1500,e.y+dy/l*500,e.z+dz/l*1500,dt,false,1.3);faceDir(e,dx,dy,dz,dt);e.boosting=true;e.thrusting=true;return}
+  if(v&&W.t>=v.until)e.ai.evade=null;return o.apply(this,arguments)}}
 
 //@src 17_main.js
 // ============================================================ main loop

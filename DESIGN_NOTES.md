@@ -351,7 +351,7 @@ The Brood's version is a living carrier, the **Hive Ship**: a swollen, living ve
 - To make up for it, frigates gain 2 more point-defence turrets, so they still have some answer to fighters without the pickets.
 - Re-tune the Brood (its frigates carry Spawnling pickets) and each faction's capital strength with the fast simulator.
 
-## Guard drones that react in time (design, not built)
+## Guard drones that react in time (built Oct 2026)
 **Problem:** you can kill a hauler before its drones do anything. Today a drone engages only when an attacker is its own target, or the ship it guards was hit in the last 5 seconds and the attacker is within 700 m. So a pilot shooting from 800 m, or killing the hauler in a single pass, never gets engaged.
 
 **Changes:**
@@ -1879,3 +1879,6 @@ For sub-targets, every system has to be a visible part. The carrier, escort and 
 - **Fault points no longer jump.** A rock's fault points were laid out by their count (2, 3 or 4 by ore left), so when another miner shrank it past a threshold the whole set moved; each rock now has one fixed layout of four directions and a shrinking rock keeps the first three or two.
 - **Capital wrecks with worthless holds:** not reproducible on the current build (a destroyed carrier's six salvage points all held valuable goods); left as checked.
 - Escort contracts completing while docked mid-route stays as designed.
+
+## Guard drones react in time (built, Oct 2026)
+Built as designed (`droneGuard`, `drAlarm`, `DRG` in 16_expansion.js), for every small guard drone (a hauler's, trader's or miner's, and pilots' own); a carrier's pickets keep their rules. A drone engages any hostile that has its ship targeted (including a pilot's target lock) or missile-locked, has fired on it in the last 8 s from within 1.5 km, or comes within 600 m; it re-checks five times a second, boosts at a new attacker for 3 s, and stays within 1.5 km of its ship. When the ship is fired on or a missile is launched at it, its drones re-pick at once and a guarded hauler, trader or miner turns away and boosts for 4 s (not mid-jump or while jammed dark). Tested: a pilot targeting a Varkesh freighter from 1.2 km drew all three of its drones within 0.6 s (the old drones ignored anyone beyond 900 m who wasn't an AI targeting the freighter); a freighter fired on from 800 m turned away at 233 m/s against 170 before.

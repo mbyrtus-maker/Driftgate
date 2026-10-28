@@ -604,10 +604,11 @@ function droneThink(e,dt){const ai=e.ai,M=e.mom;
     if(!T||ai.t<=0){ai.t=.6+rnd(.3);T=null;let bd=1e9;for(const o of W.ents)if(o.type==='ship'&&o.alive&&o.role!=='frigate'&&hostile(e.side,o.side)&&!((o.isPlayer&&(S.player.docked||W.dead))||mHid(o,e))){const d=d3(o,e)*(isBmb(o.cls)?.6:1);if(d<bd){bd=d;T=o}}ai.tgt=T}
     if(T){fight(e,T,dt);return}}
   if(PM==='attack'){const C=fctl(M.tok);let T=C.tgt&&C.tgt.type==='ship'&&C.tgt.alive&&W.ents.includes(C.tgt)?C.tgt:null;if(!T){let bd=2500;for(const o of W.ents)if(o.type==='ship'&&o.alive&&o.role!=='frigate'&&hostile(e.side,o.side)&&!((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))){const d=d3(o,M);if(d<bd){bd=d;T=o}}}if(T){fight(e,T,dt);return}}
-  if(ai.t<=0||!(ai.tgt&&ai.tgt.alive&&W.ents.includes(ai.tgt))||d3(ai.tgt,M)>(big?1700:1000)){ai.t=.4+rnd(.3);ai.tgt=null;let bd=1e9;const hurt=W.t-M.lastHit<5;
+  if(!big){if(droneGuard(e,M,dt))return}   // guard drones react in time (droneGuard); a carrier's pickets keep the rules below
+  else if(ai.t<=0||!(ai.tgt&&ai.tgt.alive&&W.ents.includes(ai.tgt))||d3(ai.tgt,M)>(big?1700:1000)){ai.t=.4+rnd(.3);ai.tgt=null;let bd=1e9;const hurt=W.t-M.lastHit<5;
     for(const o of W.ents){if(o.type!=='ship'||!o.alive||!hostile(e.side,o.side)||o.role==='frigate')continue;if((o.isPlayer&&(S.player.docked||W.dead)||mHid(o,e)))continue;const dm=d3(o,M);if(dm>(big?1500:900))continue;
       const onM=(o.ai&&o.ai.tgt===M)||(hurt&&M.lastHitBy===o.side&&dm<(big?1200:700));if(!onM&&dm>(big?750:380))continue;const sc=dm-(onM?700:0);if(sc<bd){bd=sc;ai.tgt=o}}}
-  if(ai.tgt){fight(e,ai.tgt,dt);return}
+  if(big&&ai.tgt){fight(e,ai.tgt,dt);return}
   ai.orb=(ai.orb||0)+dt*(big?.35:.8);const R=M.st.radius+(big?170:55),a=ai.orb;holdSlot(e,M,M.x+Math.cos(a)*R,M.y+Math.sin(a*1.3)*24,M.z+Math.sin(a)*R,dt,2);
   const rv=hyp(e.vx,e.vy,e.vz);if(rv>15)faceDir(e,e.vx,e.vy,e.vz,dt)}
 function escortHauler(e){const g=e.grp;return g&&g.escort&&g.escort.alive&&W.ents.includes(g.escort)?g.escort:null}
