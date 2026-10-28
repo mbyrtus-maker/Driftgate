@@ -198,7 +198,9 @@ def build_carrier():
     # docking: ships set down on the bow flight deck (two spots fore, two aft) and lift off from it
     M=C.model();M['glow_n']=gn
     M['eng']=[(0,.72,-10.3,.48),(-.7,-.6,-10.3,.48),(.7,-.6,-10.3,.48),(-2.7,-.15,-8.86,.31),(2.7,-.15,-8.86,.31)]
-    M['pts']=[(0,1.1,5.2),(0,1.1,2.6),(0,1.1,3.9)];return M
+    M['pts']=[(0,1.1,5.2),(0,1.1,2.6),(0,1.1,3.9)]
+    # sub-targets on their parts: the drives, the ringed shield generator, and the launch mouths of the twin bow bays
+    M['subs']={'eng':[(0,.72,-8.9),(-.7,-.6,-8.9),(.7,-.6,-8.9),(-2.7,-.15,-7.5),(2.7,-.15,-7.5)],'shd':[(0,2.3,.55)],'bay':[(-1,.5,6.9),(1,.5,6.9)]};return M
 def build_carrier_smooth():
     # Fleet carrier after Wing Commander's Concordia, built clean: a broad, low flight-deck bow with the launch bay at its
     # nose, a narrow waist under a dorsal spine, a tall aft hull carrying a stepped tower up to a raised bridge, engine
@@ -356,4 +358,6 @@ def build_escort():
     C.add('hangar_roundGlass',(0,.75,-1.8),H,.38);C.add('satelliteDish',(0,1.2,-1.3),0,.7)
     # one ventral bay for its assault ship
     C.add('hangar_smallA',(0,-.5,-.6),H,.75,True)
-    M=C.model();M['glow_n']=gn;return M
+    M=C.model();M['glow_n']=gn
+    # sub-targets: the drives, the torpedo tubes' mouths, the ringed generator and the ventral bay
+    M['subs']={'eng':[(0,0,-3.6),(-.9,-.1,-2.95),(.9,-.1,-2.95)],'torp':[(-.78,-.3,2.0),(.78,-.3,2.0)],'shd':[(0,1.0,.7)],'bay':[(0,-.9,-.6)]};return M

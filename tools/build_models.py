@@ -21,6 +21,7 @@ MOUNTS={}
 def comp_model(build,name=None):
     M=build()
     if name:MOUNTS[name]=M.get('mounts',[])
+    if name and M.get('subs'):SUBS[name]=M['subs']
     return M['P'],M['N'],[kenney_role(c) for c in M['cols']]
 def glb_model(name):
     M=load_glb(KD+name+'.glb');return M['P'],M['N'],[kenney_role(c) for c in tri_colors(M)]
@@ -37,6 +38,7 @@ def cap_model(build,name):
     M=build();MOUNTS[name]=M.get('mounts',[]);GLOW_N[name]=M['glow_n']
     if M.get('pts'):PTS[name]=M['pts']
     if M.get('eng'):ENGX[name]=M['eng']
+    if M.get('subs'):SUBS[name]=M['subs']
     R=[kenney_role(c) for c in M['cols']]
     for k in M.get('win',[]):R[k]=(WIN,1.0)   # lit gallery panels
     return M['P'],M['N'],R
@@ -46,6 +48,9 @@ def comp(parts,name=None):
         for p in parts:S.add(*p)
         return S.model()
     return comp_model(b,name)
+SUBS={}  # sub-target points (model space) by system: 'eng','shd','torp','bay','ring'
+# the depot's sub-targets: the ringed generator under the lower dome, its three small hangars and the corridors to them
+SUBS['depot']={'shd':[(0,-2.4,0)],'bay':[(math.sin(i*2.094)*4.0,0,math.cos(i*2.094)*4.0) for i in range(3)],'ring':[(math.sin(i*2.094)*2.4,0,math.cos(i*2.094)*2.4) for i in range(3)]}
 PTS={}  # explicit docking ports (model space) for models whose arm tips can't be found from the silhouette
 def rockbase():
     M=build_rockbase();MOUNTS['rockbase']=M['mounts'];PTS['rockbase']=M['ports']
@@ -125,7 +130,8 @@ def pack():
         if name in ENGX:eng=[[round(float(v),3) for v in list((np.array(m[:3])-c)/half)+[m[3]/half]] for m in ENGX[name]]
         tp=[[round(float(x),3) for x in (np.array(m)-c)/half] for m in MOUNTS.get(name,[])]
         pt=[[round(float(x),3) for x in (np.array(m)-c)/half] for m in PTS.get(name,[])]
-        idx[name]={'o':off,'n':len(T),'k':kind,'s':FIT.get(name,1),'e':eng,'tp':tp,'top':round(float(T[:,:,1].max()),3),**({'pt':pt} if pt else {})}
+        sb={k:[[round(float(x),3) for x in (np.array(m)-c)/half] for m in v] for k,v in SUBS.get(name,{}).items()}
+        idx[name]={'o':off,'n':len(T),'k':kind,'s':FIT.get(name,1),'e':eng,'tp':tp,'top':round(float(T[:,:,1].max()),3),**({'pt':pt} if pt else {}),**({'sub':sb} if sb else {})}
         print(name.ljust(12),kind,len(T),'tris',('eng %d'%len(eng)) if eng else '')
     return idx,bytes(blob)
 idx,blob=pack()

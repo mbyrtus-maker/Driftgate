@@ -10,13 +10,14 @@ def piece(name):
 def ry(a):c,s=math.cos(a),math.sin(a);return np.array([[c,0,s],[0,1,0],[-s,0,c]])
 def rx(a):c,s=math.cos(a),math.sin(a);return np.array([[1,0,0],[0,c,-s],[0,s,c]])
 class Comp:
-    def __init__(s):s.P=[];s.C=[];s.N=[];s.mounts=[]
+    def __init__(s):s.P=[];s.C=[];s.N=[];s.mounts=[];s.subs={}
+    def sub(s,k,pos):s.subs.setdefault(k,[]).append(np.array(pos,dtype=float))   # a sub-target point on a part (model space)
     def add(s,name,pos=(0,0,0),rot=0,sc=1,flip=False,tilt=0):
         P,C,N,_=piece(name);R=ry(rot)@rx(tilt)
         if name.startswith('turret'):s.mounts.append(np.array(pos,dtype=float)+np.array([0,(-.45 if flip else .45)*sc,0]))
         if flip:R=R@rx(math.pi)
         Pw=(P.reshape(-1,3)*sc)@R.T+np.array(pos);s.P+=list(Pw.reshape(-1,3,3));s.C+=list(C);s.N+=[(R@n if n is not None else None) for n in N]
-    def model(s):return dict(P=np.array(s.P),N=s.N,C=[list(c)+['flat'] for c in s.C],cols=np.array(s.C),U=None,tex=None,mounts=s.mounts)
+    def model(s):return dict(P=np.array(s.P),N=s.N,C=[list(c)+['flat'] for c in s.C],cols=np.array(s.C),U=None,tex=None,mounts=s.mounts,subs=s.subs)
 def build_station():
     S=Comp();T=1.7
     # central tower, mirrored above and below the ring
@@ -26,13 +27,14 @@ def build_station():
         for k in range(2):S.add('rocket_fuelA',(0,y,0),k*.5,T,f);y+=.5*T*sg
         S.add('rocket_sidesA',(0,y,0),0,T,f);y+=1*T*sg
         if not f:S.add('rocket_topA',(0,y,0),0,T,f);S.add('satelliteDish_large',(0,y+.8*T,0),0,1.6)
-        else:S.add('machine_generatorLarge',(0,y,0),0,T,True)
+        else:S.add('machine_generatorLarge',(0,y,0),0,T,True);S.sub('shd',(0,y-.4*T,0))   # the shield generator under the tower
     # four spokes of windowed corridor out to docking hangars
     for i in range(4):
         a=i*math.pi/2;d=np.array([math.sin(a),0,math.cos(a)])
         for k in range(3):
             r=1.9+k*1.0;S.add('corridor_window' if k%2==0 else 'corridor',tuple(d*r+np.array([0,-.5,0])),a,1)
-        S.add('hangar_largeA',tuple(d*6.6+np.array([0,-.5,0])),a+math.pi,1.2)
+        S.add('hangar_largeA',tuple(d*6.6+np.array([0,-.5,0])),a+math.pi,1.2);S.sub('bay',d*6.6+np.array([0,0,0]))
+        S.sub('ring',d*2.9+np.array([0,0,0]))   # the corridor spoke: the docking ring
         S.add('turret_double',tuple(d*6.6+np.array([0,.72,0])),a,1.1)
         S.add('pipe_ring',tuple(d*4.4+np.array([0,.55,0])),a,.9)
     # an outer frame of girders between the hangars

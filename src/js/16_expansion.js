@@ -906,3 +906,130 @@ function ogWorld(dt){if(NET.cl||!W)return;for(const O of S.og||[]){if(O.a!==W.si
   g.set(0,0,-.1).sphere(.42,8,12,B,0);for(let i=0;i<14;i++){const a=i/14*TAU,r=.62+R()*.12;g.set(Math.cos(a)*r,Math.sin(a)*r,(R()-.5)*.25).sphere(.16+R()*.12,6,8,i%2?B:D,0)}
   for(let i=0;i<9;i++){const a=R()*TAU,r=.3+R()*.5;g.set(Math.cos(a)*r,Math.sin(a)*r,.12+R()*.15).sphere(.06+R()*.05,5,6,F,.9)}
   L.seg([0,0,0],[0,0,0],[0,0,0]);return MESH.overgrowth={hull:g.upload(),rim:L.upload(true),eng:[]}}}
+// ==== Sub-targets (Oct 2026): a capital's or station's systems are parts of its model, hit once its shield is down ====
+// Fighters disable, bombers and assault loads finish. Each system has its own health on the capital token (t.sub) or the
+// station record (R.sub), kept only while something is damaged; below half it works at half, at zero it is disabled.
+// Point defence turrets (capitals) and turret mounts (stations) are each their own target; the rest are one system with
+// one or more points on the model (a carrier's five drives are all "Engines"). Hits do the shot's full damage to the
+// system and nothing to the hull. Capitals repair out of combat (fully at their base); stations repair from their own
+// stores, spending Alloy Plate and Conduit, which go back into the drift so the ledger stays exact.
+const SUBT={cap:{pd:300,eng:1200,shd:1500,torp:800,bay:1500},st:{tur:500,shd:2000,bay:1500,ring:2000},
+  nm:{pd:'Point defence turret',tur:'Turret mount',eng:'Engines',shd:'Shield generator',torp:'Torpedo bays',bay:'Launch bay',ring:'Docking ring'},
+  hit:{pd:1,tur:1,eng:1.2,shd:1.3,torp:1.1,bay:1.6,ring:1.2},calm:30,capRep:.05,stRep:.1,stCost:{plate:1,wire:1},pdN:6};
+function subIsCap(t){return!!t&&(isCar(t)||isEsc(t))&&t.side!=='brood'&&!t.dummy}
+function subIsSt(R){return!!R&&!!R.kind&&R.owner!=='brood'&&R.owner!=='neutral'&&!!R.owner}
+function subRecOf(E){if(!E)return null;if(E.type==='station')return subIsSt(E.rec)?E.rec:null;return E.role==='frigate'&&subIsCap(E.tok)?E.tok:null}
+function subCapOf(rec){return rec&&rec.cls!==undefined&&!rec.kind}
+function subMax(rec,k){return(subCapOf(rec)?SUBT.cap:SUBT.st)[k]||0}
+function subTurN(rec){if(subCapOf(rec))return SUBT.pdN;const SE=W&&W.stationEnt;if(SE&&SE.rec===rec&&SE.turrets)return SE.turrets.length;if(rec.sub&&rec.sub.tur)return rec.sub.tur.length;const k=rec.fwd?STN.fdepot:STN[rec.kind];return k?k.tur:0}
+// the systems a capital or station has, in panel order
+function subKeys(rec){if(subCapOf(rec))return isEsc(rec)?['pd','eng','torp','shd','bay']:['pd','eng','shd','bay'];return rec.kind==='depot'&&hgLvl(rec)>0?['tur','shd','bay','ring']:['tur','shd','ring']}
+function subHp(rec,k,i){const s=rec&&rec.sub,mx=subMax(rec,k);if(!s||s[k]===undefined)return mx;const v=s[k];return Array.isArray(v)?(v[i||0]===undefined?mx:v[i||0]):v}
+// a pooled system's effect: 1 working, .5 damaged (below half), 0 disabled
+function subF(rec,k){if(!rec||!rec.sub)return 1;const h=subHp(rec,k),mx=subMax(rec,k);return h<=0?0:h<mx*.5?.5:1}
+function subOff(rec,k,i){return!!(rec&&rec.sub)&&subHp(rec,k,i)<=0}
+function subTurDown(rec){const k=subCapOf(rec)?'pd':'tur',n=subTurN(rec);if(!n||!rec||!rec.sub)return 0;let d=0;for(let i=0;i<n;i++)if(subHp(rec,k,i)<=0)d++;return d}
+function subInit(rec){if(rec.sub)return rec.sub;const s={},cap=subCapOf(rec);for(const k of subKeys(rec)){const mx=subMax(rec,k);s[k]=k==='pd'||k==='tur'?Array.from({length:cap?SUBT.pdN:subTurN(rec)},()=>mx):mx}return rec.sub=s}
+function subClean(rec){const s=rec.sub;if(!s)return;for(const k in s){const mx=subMax(rec,k),v=s[k];if(Array.isArray(v)?v.some(x=>x<mx):v<mx)return}delete rec.sub;delete rec.subHit}
+// shields down? (the only time systems can be hit)
+function subOpen(E){if(!E)return false;if(E.type==='station')return E.offline||E.shield<=0;return E.alive&&E.shield<=0}
+// a system's points in model space, cached on the entity: [{k,i,p:[x,y,z] local metres, r}]
+function subLocal(E){if(E._subL&&E._subL.ok===MDL.ready)return E._subL.a;if(E.type==='station'&&typeof mdlStationTurrets==='function')mdlStationTurrets(E);const a=[],rec=subRecOf(E);if(!rec)return a;
+  if(E.type==='station'){const M=MDL.ready&&MDL.i[E.kind==='depot'?'depot':'station'];(E.turrets||[]).forEach((tu,i)=>a.push({k:'tur',i,p:tu.p.slice(),r:16}));
+    if(M&&M.sub)for(const k of subKeys(rec))if(k!=='tur'&&M.sub[k])M.sub[k].forEach(m=>a.push({k,i:0,p:[m[0]*M.s,m[1]*M.s+3,m[2]*M.s],r:16*SUBT.hit[k]}))}
+  else{const M=MDL.ready&&MDL.i[E.cls],R=E.st.radius*1.25,r=Math.max(13,E.st.radius*.15);
+    if(M&&M.tp&&M.tp.length)for(let i=0;i<SUBT.pdN;i++){const m=M.tp[i%M.tp.length];a.push({k:'pd',i,p:[m[0]*R,m[1]*R,m[2]*R],r})}
+    if(M&&M.sub)for(const k of subKeys(rec))if(k!=='pd'&&M.sub[k])M.sub[k].forEach(m=>a.push({k,i:0,p:[m[0]*R,m[1]*R,m[2]*R],r:r*SUBT.hit[k]}))}
+  E._subL={ok:MDL.ready,a};return a}
+function subWorldPts(E){const out=[];for(const s of subLocal(E)){qRot(E.q,s.p[0],s.p[1],s.p[2],_u);out.push({k:s.k,i:s.i,r:s.r,x:E.x+_u.x,y:E.y+_u.y,z:E.z+_u.z})}return out}
+// the first working system a ray passes through (from o along unit d, up to L); parts on the far side of the hull are
+// screened by it, so a point well out from the centre has to face the shooter
+function subRay(E,ox,oy,oz,dx,dy,dz,L){const rec=subRecOf(E);if(!rec)return null;let best=null,bt=L;const cr=E.type==='station'?60:E.st.radius*.35;
+  for(const s of subWorldPts(E)){if(subHp(rec,s.k,s.i)<=0)continue;const lx=s.x-ox,ly=s.y-oy,lz=s.z-oz,t=lx*dx+ly*dy+lz*dz;if(t<0||t>=bt)continue;const d2=lx*lx+ly*ly+lz*lz-t*t;if(d2>s.r*s.r)continue;
+    const cx=s.x-E.x,cy=s.y-E.y,cz=s.z-E.z,cl=hyp(cx,cy,cz);if(cl>cr&&(cx*dx+cy*dy+cz*dz)/cl>.25)continue;bt=t;best=s}
+  return best?Object.assign(best,{t:bt}):null}
+// kinetic shots: tested before the hull, against the systems of shield-down hostile capitals and the station
+function subShot(b,ox,oy,oz){if(b.cap||b.jam||!b.src)return false;const sx=b.x-ox,sy=b.y-oy,sz=b.z-oz,sl=hyp(sx,sy,sz)||1,dx=sx/sl,dy=sy/sl,dz=sz/sl;
+  const tryE=(E,R)=>{if(!segHit(ox,oy,oz,b.x,b.y,b.z,E,R))return false;const s=subRay(E,ox,oy,oz,dx,dy,dz,R*2.2);if(!s)return false;subDamage(E,s,b.dmg,b.side,b.src);return true};
+  if(W._sfT!==W.t){W._sfT=W.t;W._sfL=W.ents.filter(e=>e.role==='frigate'&&e.alive&&subOpen(e)&&subRecOf(e))}   // the open capitals, once a frame
+  for(const e of W._sfL){if(!e.alive||e===b.src||!subOpen(e)||!hostile(b.side,e.side))continue;if(tryE(e,e.st.radius*1.35+25))return true}
+  const SE=W.stationEnt;if(SE&&subOpen(SE)&&subRecOf(SE)&&hostile(b.side,SE.fac)&&tryE(SE,175))return true;return false}
+function subName(rec,k,i){return k==='pd'||k==='tur'?`${SUBT.nm[k]} ${(i||0)+1}`:k==='bay'&&!subCapOf(rec)?'Hangar bays':SUBT.nm[k]}
+function subOwner(rec){return subCapOf(rec)?rec.side:rec.owner}
+function subTell(src,msg){if(!src)return;if(src.isPlayer)flash(msg);else if(src.rp&&NET.host)netMsg(src.rp,'flash',msg)}
+function subDamage(E,s,dmg,side,src){const rec=subRecOf(E);if(!rec||!(dmg>0))return;subInit(rec);const S2=rec.sub,mx=subMax(rec,s.k);if(S2[s.k]===undefined)S2[s.k]=s.k==='pd'||s.k==='tur'?Array.from({length:subTurN(rec)},()=>subMax(rec,s.k)):mx;
+  const arr=Array.isArray(S2[s.k]),was=arr?(S2[s.k][s.i]===undefined?mx:S2[s.k][s.i]):S2[s.k],v=Math.max(0,was-dmg);if(arr)S2[s.k][s.i]=v;else S2[s.k]=v;rec.subHit=S.T;E.lastHit=W.t;
+  fxSpark(s,'#ffd9a0',2);const who=E.type==='station'?E.name:E.tok.name,nm=subName(rec,s.k,s.i);
+  if(was>0&&v<=0){fxBoom(s,28,'#ffb070');subTell(src,`${who}: ${nm} disabled.`);if(s.k==='eng'&&E.tok&&E.tok.spin)E.tok.spin.p=0;
+    const own=subOwner(rec);if(friendSide(own))feed(`⚠ ${who}: ${nm.toLowerCase()} disabled.`,'bad');else if(W===LW&&src&&friendSide(src.side)&&!src.isPlayer&&s.k!=='pd'&&s.k!=='tur')feed(`${who}: ${nm.toLowerCase()} disabled.`,'good')}
+  else if(was>=mx*.5&&v<mx*.5)subTell(src,`${who}: ${nm} damaged.`)}
+// lasers: the beam stops on the first system it crosses on a shield-down hostile, before the hull's bounding sphere
+{const o=laserRay;laserRay=function(e,range){const r=o.apply(this,arguments);e._lsub=null;if(!W)return r;qRot(e.q,0,0,1,_f);const fx=_f.x,fy=_f.y,fz=_f.z,R0=e.st.radius,ox=e.x+fx*R0,oy=e.y+fy*R0,oz=e.z+fz*R0;let best=null,bE=null;
+  const cand=[];for(const c of W.ents)if(c.role==='frigate'&&c.alive&&c!==e&&subOpen(c)&&subRecOf(c)&&hostile(e.side,c.side))cand.push(c);const SE=W.stationEnt;if(SE&&subOpen(SE)&&subRecOf(SE)&&hostile(e.side,SE.fac))cand.push(SE);
+  for(const c of cand){if(d3(c,{x:ox,y:oy,z:oz})>range+400)continue;const s=subRay(c,ox,oy,oz,fx,fy,fz,range);if(!s)continue;const own=r.hit&&r.hit.ref===c;if(!own&&r.hit&&s.t>r.d)continue;if(!best||s.t<best.t){best=s;bE=c}}
+  if(!best)return r;e._lsub={E:bE,s:best};return{hit:{kind:bE.type==='station'?'station':'ship',ref:bE},x:best.x,y:best.y,z:best.z,d:best.t,sub:best}}}
+{const o=damageShip;damageShip=function(e,dmg,srcSide,at,kind){if(kind==='laser'&&at&&at.src&&at.src._lsub&&at.src._lsub.E===e){const L=at.src._lsub;at.src._lsub=null;subDamage(e,L.s,dmg,srcSide,at.src);return}return o.apply(this,arguments)}}
+{const o=damageStation;damageStation=function(E,dmg,side,kind,src){if(kind==='laser'&&src&&src._lsub&&src._lsub.E===E){const L=src._lsub;src._lsub=null;subDamage(E,L.s,dmg,side,src);return}return o.apply(this,arguments)}}
+// ---- effects
+// engines (movement, turning, jump spin and off-screen travel), shield generator (recharge), torpedo bays (the escort's reload)
+{const o=pmul;pmul=function(t,k){const v=o.apply(this,arguments);if(!t||!t.sub)return v;return v*(k==='eng'?subF(t,'eng'):k==='shd'?subF(t,'shd'):k==='lance'&&isEsc(t)?subF(t,'torp'):1)}}
+{const o=handling;handling=function(e){const H=o.apply(this,arguments);if(!e||e.role!=='frigate'||!e.tok||!e.tok.sub||fOwn(e.tok))return H;const f=subF(e.tok,'eng');if(f>=1)return H;return Object.assign({},H,{spd:(H.spd||1)*f,thr:(H.thr||1)*f,turn:(H.turn||1)*Math.max(.25,f),ag:(H.ag||1)*Math.max(.25,f)})}}
+// launch bay: no launches, recoveries or assault ships; a craft finished by the fabricator waits in it
+function subBayOK(E,quiet){const t=E&&E.tok;if(!t||!subOff(t,'bay'))return true;if(!quiet&&E.tok&&fOwn(E.tok)&&W.t-(E._bayMsg||-9)>4){E._bayMsg=W.t;flash(`${t.name}'s launch bay is disabled: nothing can launch or land until it is repaired.`,true)}return false}
+{const o=carStow;carStow=function(M,p){if(M&&M.tok&&subOff(M.tok,'bay'))return;return o.apply(this,arguments)}}
+{const o=aAvail;aAvail=function(t){if(t&&subOff(t,'bay'))return 0;return o.apply(this,arguments)}}
+// station: the hangar bays scramble nothing, the missile battery needs half its mounts, the docking ring refuses docking
+{const o=hgLive;hgLive=function(dt){const SE=W&&W.stationEnt;if(SE&&SE.rec&&subOff(SE.rec,'bay'))return;return o.apply(this,arguments)}}
+{const o=stMissiles;stMissiles=function(SE,dt){if(SE&&SE.rec&&SE.rec.sub&&subTurDown(SE.rec)*2>=subTurN(SE.rec))return;return o.apply(this,arguments)}}
+{const o=canDock;canDock=function(E){if(E&&E.type==='station'&&E.rec&&subOff(E.rec,'ring')){if(W&&W.t-(W._ringMsg||-9)>4){W._ringMsg=W.t;flash(`${E.name}'s docking ring is disabled: no docking or trade here until it is repaired.`,true)}return false}return o.apply(this,arguments)}}
+// a depot's garrison counts only working modules
+{const o=garrison;garrison=function(R){const g=o.apply(this,arguments);if(!R||!R.sub||R.kind!=='depot'||R.fwd||g>=99)return g;const d=devOf(R);let m=0;if((d.def||0)>=2&&subTurDown(R)*2>=subTurN(R))m++;if((d.hangar||0)>=2&&subOff(R,'bay'))m++;return Math.max(1,g-m)}}
+// ---- repair, every strategic tick (10 s): out of combat for 30 s
+function subBurn(src,need){for(const k in need)if((src[k]||0)<need[k])return false;for(const k in need)inv.take(src,k,need[k]);const v=invVec(need);S.drift=S.drift||{fe:0,cu:0,ir:0,xc:0,au:0,nu:0};for(const k of RAWS)S.drift[k]=(S.drift[k]||0)+v[k];return true}
+function subRepTick(){
+  for(const t of S.frigates||[]){if(!t.sub)continue;if(!subIsCap(t)||t.hull<=0){delete t.sub;continue}if(isCar(t)&&subOff(t,'bay')&&t.fab&&!t.fab.assault)t.fab.until=Math.max(t.fab.until,S.T+11);
+    const E=t.live&&frigEnt(t),w=WORLDS[t.sector];if(S.T-(t.subHit||-99)<SUBT.calm||(E&&w&&E.lastHit!==undefined&&w.t-E.lastHit<SUBT.calm))continue;
+    if(t.sector===capBase(t)){delete t.sub;delete t.subHit;continue}
+    for(const k in t.sub){const mx=subMax(t,k),v=t.sub[k];if(Array.isArray(v))t.sub[k]=v.map(x=>Math.min(mx,x+mx*SUBT.capRep));else t.sub[k]=Math.min(mx,v+mx*SUBT.capRep)}subClean(t)}
+  for(const id in S.stations){const R=S.stations[id];if(!R||!R.sub)continue;if(!subIsSt(R)){delete R.sub;continue}if(S.T-(R.subHit||-99)<SUBT.calm)continue;
+    const src=storeOf(R);let job=null,lo=2;for(const k in R.sub){const mx=subMax(R,k),v=R.sub[k];if(Array.isArray(v))v.forEach((x,i)=>{if(x<mx&&x/mx<lo){lo=x/mx;job={k,i,mx}}});else if(v<mx&&v/mx<lo){lo=v/mx;job={k,i:-1,mx}}}
+    if(!job||!src||!subBurn(src,SUBT.stCost))continue;const add=job.mx*SUBT.stRep;if(job.i>=0)R.sub[job.k][job.i]=Math.min(job.mx,R.sub[job.k][job.i]+add);else R.sub[job.k]=Math.min(job.mx,R.sub[job.k]+add);subClean(R)}}
+{const o=strategicTick;strategicTick=function(){try{subRepTick()}catch(e){frameErr('sub-target repair',e)}return o.apply(this,arguments)}}
+// ---- live: turrets follow their system's state; disabled parts spark and smoke; the station's generator holds the shield at 0
+function subWorld(dt){const SE=W.stationEnt,p=W.player;
+  for(const e of W.ents){if(e.role!=='frigate'||!e.alive||!e.turrets)continue;const t=e.tok;for(let i=0;i<e.turrets.length;i++)e.turrets[i].dead=!!(t&&t.sub)&&subHp(t,'pd',i)<=0}
+  if(SE&&SE.turrets){const R=SE.rec;SE.turrets.forEach((tu,i)=>tu.dead=!!(R&&R.sub)&&subRecOf(SE)===R&&subHp(R,'tur',i)<=0);if(R&&R.sub&&subOff(R,'shd')&&!SE.offline)SE.shield=0}
+  if(!p||Math.random()>dt*6)return;const list=W.ents.filter(e=>e.role==='frigate'&&e.alive&&e.tok&&e.tok.sub);if(SE&&SE.rec&&SE.rec.sub)list.push(SE);
+  for(const E of list){if(d3(E,p)>3500)continue;const rec=subRecOf(E);if(!rec)continue;for(const s of subWorldPts(E)){if(subHp(rec,s.k,s.i)>0)continue;if(Math.random()<.5)fxSpark(s,'#ffb060',2);const d=rdir();W.fx.push({x:s.x,y:s.y,z:s.z,vx:d.x*8+(E.vx||0),vy:d.y*8+14+(E.vy||0),vz:d.z*8+(E.vz||0),life:rnd(1,1.8),max:1.8,c:[.32,.31,.3],sz:rnd(9,16)})}}}
+// ---- the pilot's side: Shift+T (with T's key) cycles the target's systems; the HUD marks them; Z tracks the picked one
+function subEntries(E){const rec=subRecOf(E);if(!rec)return[];const seen=new Set(),out=[];for(const s of subLocal(E)){const id=s.k+':'+s.i;if(seen.has(id))continue;seen.add(id);out.push({k:s.k,i:s.i})}return out}
+function subPick(E){const S2=W&&W.tsub;if(!S2||S2.E!==E)return null;const rec=subRecOf(E);if(!rec||subHp(rec,S2.k,S2.i)<=0)return null;let b=null,bd=1e9;const p=W.player;for(const s of subWorldPts(E))if(s.k===S2.k&&s.i===S2.i){const d=p?d3(s,p):0;if(d<bd){bd=d;b=s}}return b}
+function subAim(){if(!W||!W.tgt||!validTgt(W.tgt))return null;const E=W.tgt.ref;if(!subOpen(E))return null;const s=subPick(E);return s?{x:s.x,y:s.y,z:s.z,vx:E.vx||0,vy:E.vy||0,vz:E.vz||0}:null}
+function subCycle(){const T=W&&W.tgt&&validTgt(W.tgt)?W.tgt.ref:null,rec=subRecOf(T);if(!rec){flash(`Target a capital ship or station first: Shift+${kb('tgtH')} picks its systems.`);return}
+  const L=subEntries(T).filter(x=>subHp(rec,x.k,x.i)>0);if(!L.length){W.tsub=null;flash('Every system on it is disabled.');return}
+  const cur=W.tsub&&W.tsub.E===T?L.findIndex(x=>x.k===W.tsub.k&&x.i===W.tsub.i):-1,n=L[(cur+1)%L.length];W.tsub={E:T,k:n.k,i:n.i};
+  flash(`${subName(rec,n.k,n.i)} · ${Math.round(subHp(rec,n.k,n.i))}/${subMax(rec,n.k)}${subOpen(T)?'':' · its shield is up: systems can be hit once it is down'}`)}
+function subHud(c,p){const T=W.tgt&&validTgt(W.tgt)?W.tgt.ref:null,rec=subRecOf(T);if(!rec||!hostile('player',T.type==='station'?T.fac:T.side)||d3(T,p)>3000)return;const open=subOpen(T),pk=subPick(T);
+  c.lineWidth=1.5;for(const s of subWorldPts(T)){const L=proj(s.x,s.y,s.z);if(L.behind)continue;const off=subHp(rec,s.k,s.i)<=0,sel=pk&&s.k===pk.k&&s.i===pk.i&&s===pk;
+    if(off){c.strokeStyle='rgba(150,150,150,.75)';c.beginPath();c.moveTo(L.x-4,L.y-4);c.lineTo(L.x+4,L.y+4);c.moveTo(L.x+4,L.y-4);c.lineTo(L.x-4,L.y+4);c.stroke();continue}
+    if(!open)continue;c.strokeStyle=sel?'#ffd27a':'rgba(255,120,100,.55)';c.beginPath();c.arc(L.x,L.y,sel?7:4,0,TAU);c.stroke()}
+  if(pk&&open){const L=proj(pk.x,pk.y,pk.z);if(!L.behind){c.fillStyle='#ffd27a';c.textAlign='center';c.fillText(subName(rec,pk.k,pk.i),L.x,L.y-12)}
+    if(S.player.wpn!=='laser'){const lp=leadPoint(p,{x:pk.x,y:pk.y,z:pk.z,vx:T.vx||0,vy:T.vy||0,vz:T.vz||0},p.st.shotSpd||SHOT_SPD),Q=proj(lp.x,lp.y,lp.z);if(!Q.behind){c.strokeStyle='#ffd27a';c.beginPath();c.moveTo(Q.x,Q.y-6);c.lineTo(Q.x+6,Q.y);c.lineTo(Q.x,Q.y+6);c.lineTo(Q.x-6,Q.y);c.closePath();c.stroke()}}}}
+// the target panel: each system with its health bar; the picked one marked
+function subPanel(T){const rec=subRecOf(T);if(!rec)return'';const open=subOpen(T),pk=W.tsub&&W.tsub.E===T?W.tsub:null,col=f=>f<=0?'#8a8a8a':f<.5?'var(--amber)':'#9fd28a',L=[];
+  for(const k of subKeys(rec)){const mx=subMax(rec,k);if(k==='pd'||k==='tur'){const n=subTurN(rec),d=subTurDown(rec);L.push(`<span style="color:${col(d>=n?0:d?.4:1)}">${k==='pd'?'PD':'Turrets'} ${n-d}/${n}</span>`);continue}
+    const v=subHp(rec,k);L.push(`<span style="color:${col(v/mx)}">${subName(rec,k).replace('Shield generator','Shield gen')} ${v<=0?'out':Math.round(v/mx*100)+'%'}</span>`)}
+  let h=`<div class="ts" style="margin-top:4px">${open?`<span style="color:#ffd27a">Systems open · Shift+${kb('tgtH')} picks one</span>`:'Systems · shielded'}<br>${L.join(' · ')}</div>`;
+  if(pk&&open)h+=`<div class="row" style="color:#ffd27a">${subName(rec,pk.k,pk.i)}<b>${Math.round(subHp(rec,pk.k,pk.i))}/${subMax(rec,pk.k)}</b></div>`;
+  return h}
+// a short line for the map and fleet panels: "engines out · 2/6 turrets down"
+function subSummary(rec){if(!rec||!rec.sub)return'';const out=[];for(const k of subKeys(rec)){if(k==='pd'||k==='tur'){const d=subTurDown(rec);if(d)out.push(`${d}/${subTurN(rec)} turrets down`);continue}const f=subF(rec,k);if(f<1)out.push(`${subName(rec,k).toLowerCase()} ${f<=0?'out':'damaged'}`)}return out.join(' · ')}
+// AI fighters on a shield-down capital or station go for its systems: turrets first (so the bombers' torpedoes land), then
+// the engines on a capital or the generator on a station; the most damaged first, so a wing works on one part together.
+// They hold fire until the nose is on the part. Bombers keep to the hull.
+{const o=fight;fight=function(e,t,dt){const ai=e.ai;if(!ai||!t||e.role==='frigate'||isBmb(e.cls)||e.isPlayer||!subOpen(t)||jamDark(t))return o.apply(this,arguments);const rec=subRecOf(t);if(!rec)return o.apply(this,arguments);
+  if(!ai.sub||ai.sub.E!==t||(!ai.sub.k&&W.t>ai.sub.until)||W.t>ai.sub.until+11||(ai.sub.k&&subHp(rec,ai.sub.k,ai.sub.i)<=0)){let b=null,bd=1e9;const pref=['pd','tur','eng','shd'];for(const k of pref){for(const s of subWorldPts(t)){const h=subHp(rec,s.k,s.i);if(s.k!==k||h<=0)continue;const d=h+d3(s,e)*.15;if(d<bd){bd=d;b=s}}if(b)break}
+    ai.sub=b?{E:t,k:b.k,i:b.i,until:W.t+4,px:ai.sub&&ai.sub.E===t&&ai.sub.px?ai.sub.px:Object.create(t)}:{E:t,k:null,until:W.t+4};if(ai.sub.px){ai.lt=ai.sub.px;ai.lead=rnd(.92,1.08)}}
+  if(!ai.sub.k)return o.apply(this,arguments);let s=null;for(const q of subWorldPts(t))if(q.k===ai.sub.k&&q.i===ai.sub.i&&(!s||d3(q,e)<d3(s,e)))s=q;if(!s)return o.apply(this,arguments);
+  // a held aim on a fixed part: the gunnery jitter of a dogfight shrinks (the part does not jink)
+  const px=ai.sub.px;px.x=s.x;px.y=s.y;px.z=s.z;const aT=e.aimT;e.aimT=Math.max(aT||e.tier||1,5);ai.fErr=Math.max(.02,12/(d3(s,e)||1));try{return o.call(this,e,px,dt)}finally{e.aimT=aT;ai.fErr=0}}}

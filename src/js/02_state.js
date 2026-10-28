@@ -248,7 +248,7 @@ function sortieTgtLive(ev){const sd=sortieSide(ev);if(ev.tgt==='st')return hosti
 function sortieStart(t,E,to,tgt,wg){if(sortiesOf(t).length>=SORTIE.max||!NEIGH[t.sector].includes(to))return 0;const gate=W.ents.find(x=>x.type==='gate'&&x.to===to);if(!gate)return 0;wg=WINGS.includes(wg)?wg:null;
   if(wg&&sortiesOf(t).some(v=>v.wg===wg))return 0;
   const free=()=>(E.pickets||[]).filter(p=>p.alive&&W.ents.includes(p)&&p.mis!=='escort'&&p.mis!=='sortie'&&(!wg||p.wg===wg));
-  while((E.bay||[]).length&&(!wg||wgCount(E,wg)<SORTIE.wing))carLaunch(E,E.bay.shift(),wg||undefined);
+  while((E.bay||[]).length&&subBayOK(E,true)&&(!wg||wgCount(E,wg)<SORTIE.wing))carLaunch(E,E.bay.shift(),wg||undefined);
   const go=free();if(!go.length)return 0;
   const ev={id:S.nextId++,type:'sortie',wg,car:t.id,side:t.side,from:t.sector,to,sector:to,tgt,craft:[],force:{},pending:go.length,stage:'gather',until:S.T+120,start:S.T,lost:0,dmg:0};S.events.push(ev);
   for(const p of go){p.mis='sortie';p.sortie=ev.id}return go.length}

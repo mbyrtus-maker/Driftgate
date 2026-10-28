@@ -576,6 +576,7 @@ function drawOverlay(){
     if(!blAim&&!P.behind&&P.x>0&&P.y>0&&P.x<VW&&P.y<VH){const r=Math.max(12,projR(P.d,tRad(W.tgt)))+6;c.strokeStyle=col;c.lineWidth=2;for(const[dx,dy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){c.beginPath();c.moveTo(P.x+dx*r,P.y+dy*r-dy*9);c.lineTo(P.x+dx*r,P.y+dy*r);c.lineTo(P.x+dx*r-dx*9,P.y+dy*r);c.stroke()}
       c.textAlign='left';c.fillStyle=col;c.fillText(fmt(Math.round(d3(T,p)))+' m',P.x+r+6,P.y-r+8)}
     if(W.tgt.kind==='ship'&&hostile('player',T.side)&&S.player.wpn!=='laser'){const lp=leadPoint(p,T,p.st.shotSpd||SHOT_SPD),L=proj(lp.x,lp.y,lp.z);if(!L.behind){c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();c.moveTo(L.x,L.y-8);c.lineTo(L.x+8,L.y);c.lineTo(L.x,L.y+8);c.lineTo(L.x-8,L.y);c.closePath();c.stroke()}}}
+  if(!blAim)try{subHud(c,p)}catch(e){}
   {const las=S.player.wpn==='laser',LRy=las?laserRay(p,LASER_RANGE):null,onH=!!(LRy&&LRy.hit&&(LRy.hit.kind==='ship'||LRy.hit.kind==='outpost'));
     qRot(p.q,0,0,1,_f);const A=proj(p.x+_f.x*900,p.y+_f.y*900,p.z+_f.z*900);
     if(!A.behind&&!blAim){const col=las?(onH?'#ff5d4f':'rgba(165,222,255,.95)'):'rgba(240,178,74,.9)';c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();
