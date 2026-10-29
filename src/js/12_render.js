@@ -811,13 +811,24 @@ function drawRadar(){
   c.strokeStyle='rgba(54,67,95,.7)';c.lineWidth=1;c.beginPath();c.ellipse(0,0,83,50,0,0,TAU);c.stroke();c.beginPath();c.moveTo(-166,0);c.lineTo(166,0);c.moveTo(0,-100);c.lineTo(0,100);c.stroke();
   if(S.sectors[W.sid].storm>S.T&&!CLASSES[S.player.cls].radar){c.fillStyle='#8c91a5';c.font='600 24px "Saira Semi Condensed",sans-serif';c.textAlign='center';c.fillText('ION STORM',0,8);for(let i=0;i<60;i++){c.fillStyle=`rgba(200,210,255,${Math.random()*.4})`;c.fillRect(rnd(-140,140),rnd(-80,80),2,2)}c.restore();return}
   const iq={x:-p.q.x,y:-p.q.y,z:-p.q.z,w:p.q.w},L={x:0,y:0,z:0};
-  const blip=(o,col,size,shape)=>{qRot(iq,o.x-p.x,o.y-p.y,o.z-p.z,L);let sx=-L.x*sc,sz=L.z*sc,sy=L.y*sc;const d=hyp(sx,sz);if(d>150){sx*=150/d;sz*=150/d;sy=0}const bx=sx*1.1,by=-sz*.66;
-    if(Math.abs(sy)>2){c.strokeStyle=hexA(col,.6);c.beginPath();c.moveTo(bx,by);c.lineTo(bx,by-sy*.66);c.stroke()}c.fillStyle=col;if(shape==='sq')c.fillRect(bx-size,by-sy*.66-size,size*2,size*2);else{c.beginPath();c.arc(bx,by-sy*.66,size,0,TAU);c.fill()}return[bx,by-sy*.66]};
+  // where a point sits on the radar: [x, y, base y, clamped to the rim]
+  const rpos=o=>{qRot(iq,o.x-p.x,o.y-p.y,o.z-p.z,L);let sx=-L.x*sc,sz=L.z*sc,sy=L.y*sc;const d=hyp(sx,sz),edge=d>150;if(edge){sx*=150/d;sz*=150/d;sy=0}const bx=sx*1.1,by=-sz*.66;return[bx,by-sy*.66,by,edge]};
+  const blip=(o,col,size,shape)=>{const[bx,y,by]=rpos(o),sy=by-y;
+    if(Math.abs(sy)>1.3){c.strokeStyle=hexA(col,.6);c.beginPath();c.moveTo(bx,by);c.lineTo(bx,y);c.stroke()}c.fillStyle=col;if(shape==='sq')c.fillRect(bx-size,y-size,size*2,size*2);
+    else if(shape==='dia'){c.beginPath();c.moveTo(bx,y-size*1.3);c.lineTo(bx+size,y);c.lineTo(bx,y+size*1.3);c.lineTo(bx-size,y);c.closePath();c.fill();c.strokeStyle='rgba(5,7,13,.9)';c.lineWidth=1;c.stroke()}
+    else{c.beginPath();c.arc(bx,y,size,0,TAU);c.fill()}return[bx,y]};
   const s=S.sectors[W.sid];for(const a of s.ast){qRot(iq,a.x-p.x,a.y-p.y,a.z-p.z,L);if(hyp(L.x,L.z)<R){c.fillStyle='rgba(140,145,165,.45)';c.fillRect(-L.x*sc*1.1-1.5,-L.z*sc*.66-L.y*sc*.66-1.5,3,3)}}
   for(const g of GATES[W.sid])blip(g,'#dfe8ff',5,'sq');
   for(const w of W.works||[])blip(w,sideCol(w.fac),w.k==='yard'||w.k==='yardb'?5:3,'sq');
   if(W.stationEnt)blip(W.stationEnt,sideCol(W.stationEnt.fac),6,'sq');if(W.outpostEnt)blip(W.outpostEnt,sideCol(W.outpostEnt.o.owner),6,'sq');
   for(const cr of s.crates)blip(cr,'#f0b24a',2.5,'sq');
-  for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.isPlayer||!seenShip(e))continue;const[x,y]=blip(e,sideCol(e.side),hostile('player',e.side)?4.5:3.5);if(W.tgt&&W.tgt.ref===e){c.strokeStyle='#f0b24a';c.lineWidth=2;c.beginPath();c.arc(x,y,8,0,TAU);c.stroke()}}
+  {const B=S.beacons&&S.beacons[W.sid];if(B)blip(B,B.owner?sideCol(B.owner):'#e8e2d0',4.5,'dia')}   // the sector beacon: a diamond in its holder's colour (ivory unclaimed)
+  for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.isPlayer||!seenShip(e))continue;blip(e,sideCol(e.side),hostile('player',e.side)?4.5:3.5)}
+  // the current target, whatever it is, drawn last so nothing covers it: a pulsing bright ring with ticks, and an arrow on the
+  // rim when it is beyond radar range
+  if(W.tgt&&validTgt(W.tgt)&&W.tgt.ref&&W.tgt.ref.x!==undefined){const[x,y,,edge]=rpos(W.tgt.ref),r=8+Math.sin(performance.now()/160)*1.5;
+    c.lineWidth=4;c.strokeStyle='rgba(5,7,13,.85)';c.beginPath();c.arc(x,y,r,0,TAU);c.stroke();c.lineWidth=2;c.strokeStyle='#fff1b8';c.beginPath();c.arc(x,y,r,0,TAU);c.stroke();
+    c.beginPath();for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){c.moveTo(x+dx*(r+2),y+dy*(r+2));c.lineTo(x+dx*(r+6),y+dy*(r+6))}c.stroke();
+    if(edge){const a=Math.atan2(y,x);c.fillStyle='#fff1b8';c.beginPath();c.moveTo(x+Math.cos(a)*(r+12),y+Math.sin(a)*(r+12));c.lineTo(x+Math.cos(a+2.5)*(r+5),y+Math.sin(a+2.5)*(r+5));c.lineTo(x+Math.cos(a-2.5)*(r+5),y+Math.sin(a-2.5)*(r+5));c.closePath();c.fill()}}
   c.fillStyle=PLAYER_COL;c.beginPath();c.moveTo(0,-9);c.lineTo(6,6);c.lineTo(0,3);c.lineTo(-6,6);c.fill();c.restore();
 }
