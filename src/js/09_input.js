@@ -15,7 +15,7 @@ const KEY_ACTS=[
   ['swarm','Digit3','Swarm pods: Heavy Fighter, Bombers, Advanced Scout, Wraith'],['jam','Digit4','Jam mode: Unbound only'],['flare','KeyB','Flares: spoof missiles tracking you (30 energy)'],['track','KeyZ','Hold: auto-turn onto the target\'s lead marker']]],
  ['Mining',[['mine','KeyF','Fire a blast charge at the targeted rock; hold on a chunk or cloud to scoop (or right-click). In a Scout: hold to plant a limpet'],['det','Digit5','Detonate your charges (back off 120 m first)'],['cancel','Digit6','Cancel set charges (they return to the magazine)']]],
  ['Targets',[['tgtH','KeyT','Nearest hostile (Shift: pick a system on the targeted capital or station; it can be hit once the shield is down)'],['cycleH','KeyQ','Cycle hostiles, nearest first'],['ahead','KeyG','The ship closest to your nose'],['ast','KeyR','Nearest rock (again: rescan it)'],['cycle','Tab','Cycle all targets, gates included (Shift+Tab: backwards)'],['assist','KeyY','Whoever is attacking a friendly']]],
- ['Command',[['comms','KeyI','Comms: Command, then the friendly ships nearby'],['distress','KeyU','Distress call'],['op','KeyO','Join the top friendly operation'],['orders','KeyP','Sign on to the picked order (Shift: pick the next)'],['stealth','KeyK','Wraith stealth, or Unbound false colours']]],
+ ['Command',[['comms','KeyI','Comms: Command, then the friendly ships nearby'],['distress','KeyU','Distress call'],['op','KeyO','Join the top friendly operation'],['orders','KeyP','Sign on to the picked order (Shift: pick the next)'],['ordDrop','Backspace','Drop the order or job you are on: sign off and clear its course'],['stealth','KeyK','Wraith stealth, or Unbound false colours']]],
  ['Screens',[['map','KeyM','Galaxy map'],['help','KeyH','This manual'],['cam','KeyV','Chase or cockpit camera'],['sound','KeyN','Sound: all on, music off, muted'],['touch','Backquote','Show or hide touch buttons']]]];
 const KEY_FIXED=[['Mouse','Steer: the further from the centre ring, the harder you turn'],['Arrows','Pitch and yaw without the mouse'],['Shift','Afterburner'],['Click','Target a ship, or a row in Contacts'],['Wheel','Chase camera distance'],['Esc','Close a screen; in flight, free the mouse cursor (the ship holds its heading). Esc again to steer'],['F11','Full screen']];
 const KEY_DEF={};for(const[,L]of KEY_ACTS)for(const[id,code]of L)KEY_DEF[id]=code;
@@ -68,6 +68,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(W&&W.bridge&&!W.bridge.panel&&(c==='KeyT'||c==='KeyQ')){bridgeTarget(c==='KeyQ');return}
   if(c==='KeyE'){actPress();return}
   if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey(e.shiftKey);return}
+  if(c==='Backspace'&&!(W&&W.bridge&&W.bridge.panel)){e.preventDefault();ordDrop();return}
   if(S.player.docked)return;
   if(c==='KeyT'&&e.shiftKey){subCycle();return}
   if(c==='KeyT')targetNearest('hostile');

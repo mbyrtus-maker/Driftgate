@@ -738,7 +738,7 @@ function commsUpdate(){const P=S.player,dl=Math.max(0,(P.distT||0)-S.T),fc=W.fla
   const ago=t=>{const d=Math.max(0,S.T-t);return d<60?Math.round(d)+'s':Math.round(d/60)+'m'};
   $('cEv').innerHTML=last.length?last.slice().reverse().map(f=>`<div class="${f.kind}" title="${esc(f.msg)}"><span>${esc(f.msg)}</span><em>${ago(f.t)}</em></div>`).join(''):'<div class="news"><span>Quiet on all channels.</span></div>';
   const K=(k,l,w)=>`<div${w?' class="wait"':''}><kbd>${k}</kbd>${l}</div>`;
-  $('cKeys').innerHTML=K('U',dl>0?`Distress ${Math.ceil(dl)}s`:'Distress',dl>0)+K('I','Comms menu')+K('Y','Assist friendly')+K('O','Join operation')+K('P','Take order')+K('⇧P','Next order')+K('B',fc>0?`Flares ${Math.ceil(fc)}s`:'Flares',fc>0)
+  $('cKeys').innerHTML=K('U',dl>0?`Distress ${Math.ceil(dl)}s`:'Distress',dl>0)+K('I','Comms menu')+K('Y','Assist friendly')+K('O','Join operation')+K('P','Take order')+K('⇧P','Next order')+K(kb('ordDrop')==='Backspace'?'⌫':kb('ordDrop'),'Drop order')+K('B',fc>0?`Flares ${Math.ceil(fc)}s`:'Flares',fc>0)
     +`<div class="sub"><kbd>I</kbd> opens Command (escort me, guard me, build, distress), then steps through the ships around you; <kbd>1</kbd>–<kbd>4</kbd> pick</div>`}
 function campHud(){const el=$('hOrd');if(!el)return;if(S.unb){ujobHud(el);return}const C=myCamp(),m=C&&C.mv,f=S.player.faction,L=orderList(),si=ordSel(L),pick=L[si],multi=L.length>1;el.hidden=false;
   const n=controlCounts()[f]||0,k=pkey(),cs=C&&(m||C.goal);let h=`<div class="ot" style="border-color:${sideCol(f)}"><span>${esc(FACTIONS[f].short)} ${cs?'· '+esc(DOCTRINE[f].name):'orders'}</span><b>${n}/${VIC_NEED} systems</b></div>`;

@@ -1033,3 +1033,23 @@ function subSummary(rec){if(!rec||!rec.sub)return'';const out=[];for(const k of 
   if(!ai.sub.k)return o.apply(this,arguments);let s=null;for(const q of subWorldPts(t))if(q.k===ai.sub.k&&q.i===ai.sub.i&&(!s||d3(q,e)<d3(s,e)))s=q;if(!s)return o.apply(this,arguments);
   // a held aim on a fixed part: the gunnery jitter of a dogfight shrinks (the part does not jink)
   const px=ai.sub.px;px.x=s.x;px.y=s.y;px.z=s.z;const aT=e.aimT;e.aimT=Math.max(aT||e.tier||1,5);ai.fErr=Math.max(.02,12/(d3(s,e)||1));try{return o.call(this,e,px,dt)}finally{e.aimT=aT;ai.fErr=0}}}
+
+// ---- dropping an order (Oct 2026): the Drop-order key (Backspace by default) signs you off the picked order (or the one you
+// are on) and clears the course it set. Your part so far stays on the record; a strike group stops holding for you.
+function ordUnsign(k,C,id){const m=C.mv;if(m&&m.id===id){const i=m.acc.indexOf(k);if(i>=0){m.acc.splice(i,1);return true}return false}
+  const o=sideOf(C).find(x=>x.id===id);if(o){const i=o.acc.indexOf(k);if(i>=0){o.acc.splice(i,1);return true}}return false}
+// remember the course an order set, so dropping it clears that course and not one the pilot set since
+function ordWrap(o){return function(){const P=S.player,r0=P&&P.route,r=o.apply(this,arguments);if(P&&P.route&&(P.route!==r0||!P.ordRoute))P.ordRoute=P.route;return r}}
+campCourse=ordWrap(campCourse);sideCourse=ordWrap(sideCourse);joinOp=ordWrap(joinOp);ujobCourse=ordWrap(ujobCourse);
+function ordClearCourse(){const P=S.player;if(P.ordRoute&&P.route===P.ordRoute){P.route=null;apOn=false;if(W&&W.tgt&&W.tgt.kind==='gate')W.tgt=null}P.ordRoute=null}
+function ujobDrop(id){const k=pkey(),J=ujobs(),j=J.find(x=>x.id===+id&&x.k===k&&x.on);if(!j)return false;J.splice(J.indexOf(j),1);feed(`Job dropped: ${j.title}.`,'warn');return true}
+function ordDrop(){if(!S||!S.player)return;const k=pkey();
+  if(S.unb){const L=ujList(),on=L.filter(j=>j.on);if(!on.length){flash('You have no haven job on.');return}const j=on.find(x=>x.id===ujPick)||on[0];
+    if(NET.cl){netSend({t:'ujdrop',id:j.id});const J=ujobs();if(J.includes(j))J.splice(J.indexOf(j),1);feed(`Job dropped: ${j.title}.`,'warn')}else ujobDrop(j.id);ordClearCourse();flash(`Dropped: ${j.title}.`);return}
+  const L=orderList(),signed=o=>o.t==='camp'?o.m.acc.includes(k):o.t==='side'?o.o.acc.includes(k):false,pick=L[ordSel(L)];
+  const o=pick&&(signed(pick)||pick.t==='op')?pick:L.find(signed);
+  if(!o){if(S.player.ordRoute&&S.player.route===S.player.ordRoute){ordClearCourse();flash('Order course cleared.');return}flash('You are not signed on to any order.');return}
+  const x=o.t==='camp'?o.m:o.t==='side'?o.o:null;
+  if(x){const C=myCamp();if(NET.cl){netSend({t:'unplan',id:x.id});const i=x.acc.indexOf(k);if(i>=0)x.acc.splice(i,1)}else if(C)ordUnsign(k,C,x.id);feed(`Signed off: ${x.title}.`,'warn');flash(`Signed off: ${x.title}. Your part so far still counts.`)}
+  else flash(`Left: ${o.label}.`);
+  ordClearCourse();if(!MUTE)SFX.ui&&SFX.ui()}

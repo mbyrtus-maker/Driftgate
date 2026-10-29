@@ -3138,7 +3138,7 @@ function commsUpdate(){const P=S.player,dl=Math.max(0,(P.distT||0)-S.T),fc=W.fla
   const ago=t=>{const d=Math.max(0,S.T-t);return d<60?Math.round(d)+'s':Math.round(d/60)+'m'};
   $('cEv').innerHTML=last.length?last.slice().reverse().map(f=>`<div class="${f.kind}" title="${esc(f.msg)}"><span>${esc(f.msg)}</span><em>${ago(f.t)}</em></div>`).join(''):'<div class="news"><span>Quiet on all channels.</span></div>';
   const K=(k,l,w)=>`<div${w?' class="wait"':''}><kbd>${k}</kbd>${l}</div>`;
-  $('cKeys').innerHTML=K('U',dl>0?`Distress ${Math.ceil(dl)}s`:'Distress',dl>0)+K('I','Comms menu')+K('Y','Assist friendly')+K('O','Join operation')+K('P','Take order')+K('⇧P','Next order')+K('B',fc>0?`Flares ${Math.ceil(fc)}s`:'Flares',fc>0)
+  $('cKeys').innerHTML=K('U',dl>0?`Distress ${Math.ceil(dl)}s`:'Distress',dl>0)+K('I','Comms menu')+K('Y','Assist friendly')+K('O','Join operation')+K('P','Take order')+K('⇧P','Next order')+K(kb('ordDrop')==='Backspace'?'⌫':kb('ordDrop'),'Drop order')+K('B',fc>0?`Flares ${Math.ceil(fc)}s`:'Flares',fc>0)
     +`<div class="sub"><kbd>I</kbd> opens Command (escort me, guard me, build, distress), then steps through the ships around you; <kbd>1</kbd>–<kbd>4</kbd> pick</div>`}
 function campHud(){const el=$('hOrd');if(!el)return;if(S.unb){ujobHud(el);return}const C=myCamp(),m=C&&C.mv,f=S.player.faction,L=orderList(),si=ordSel(L),pick=L[si],multi=L.length>1;el.hidden=false;
   const n=controlCounts()[f]||0,k=pkey(),cs=C&&(m||C.goal);let h=`<div class="ot" style="border-color:${sideCol(f)}"><span>${esc(FACTIONS[f].short)} ${cs?'· '+esc(DOCTRINE[f].name):'orders'}</span><b>${n}/${VIC_NEED} systems</b></div>`;
@@ -4330,7 +4330,7 @@ const KEY_ACTS=[
   ['swarm','Digit3','Swarm pods: Heavy Fighter, Bombers, Advanced Scout, Wraith'],['jam','Digit4','Jam mode: Unbound only'],['flare','KeyB','Flares: spoof missiles tracking you (30 energy)'],['track','KeyZ','Hold: auto-turn onto the target\'s lead marker']]],
  ['Mining',[['mine','KeyF','Fire a blast charge at the targeted rock; hold on a chunk or cloud to scoop (or right-click). In a Scout: hold to plant a limpet'],['det','Digit5','Detonate your charges (back off 120 m first)'],['cancel','Digit6','Cancel set charges (they return to the magazine)']]],
  ['Targets',[['tgtH','KeyT','Nearest hostile (Shift: pick a system on the targeted capital or station; it can be hit once the shield is down)'],['cycleH','KeyQ','Cycle hostiles, nearest first'],['ahead','KeyG','The ship closest to your nose'],['ast','KeyR','Nearest rock (again: rescan it)'],['cycle','Tab','Cycle all targets, gates included (Shift+Tab: backwards)'],['assist','KeyY','Whoever is attacking a friendly']]],
- ['Command',[['comms','KeyI','Comms: Command, then the friendly ships nearby'],['distress','KeyU','Distress call'],['op','KeyO','Join the top friendly operation'],['orders','KeyP','Sign on to the picked order (Shift: pick the next)'],['stealth','KeyK','Wraith stealth, or Unbound false colours']]],
+ ['Command',[['comms','KeyI','Comms: Command, then the friendly ships nearby'],['distress','KeyU','Distress call'],['op','KeyO','Join the top friendly operation'],['orders','KeyP','Sign on to the picked order (Shift: pick the next)'],['ordDrop','Backspace','Drop the order or job you are on: sign off and clear its course'],['stealth','KeyK','Wraith stealth, or Unbound false colours']]],
  ['Screens',[['map','KeyM','Galaxy map'],['help','KeyH','This manual'],['cam','KeyV','Chase or cockpit camera'],['sound','KeyN','Sound: all on, music off, muted'],['touch','Backquote','Show or hide touch buttons']]]];
 const KEY_FIXED=[['Mouse','Steer: the further from the centre ring, the harder you turn'],['Arrows','Pitch and yaw without the mouse'],['Shift','Afterburner'],['Click','Target a ship, or a row in Contacts'],['Wheel','Chase camera distance'],['Esc','Close a screen; in flight, free the mouse cursor (the ship holds its heading). Esc again to steer'],['F11','Full screen']];
 const KEY_DEF={};for(const[,L]of KEY_ACTS)for(const[id,code]of L)KEY_DEF[id]=code;
@@ -4383,6 +4383,7 @@ addEventListener('keydown',e=>{touchLast=false;if(e.code==='F11'){e.preventDefau
   if(W&&W.bridge&&!W.bridge.panel&&(c==='KeyT'||c==='KeyQ')){bridgeTarget(c==='KeyQ');return}
   if(c==='KeyE'){actPress();return}
   if(c==='KeyP'&&!(W&&W.bridge&&W.bridge.panel)){planKey(e.shiftKey);return}
+  if(c==='Backspace'&&!(W&&W.bridge&&W.bridge.panel)){e.preventDefault();ordDrop();return}
   if(S.player.docked)return;
   if(c==='KeyT'&&e.shiftKey){subCycle();return}
   if(c==='KeyT')targetNearest('hostile');
@@ -7462,6 +7463,8 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'build':{const e=MP.rp[pid];if(e)runAs(pid,()=>{const had=W.pbuild;startPlayerBuild();if(W.pbuild&&W.pbuild!==had)W.pbuild.pid=pid});break}
     case 'plan':{const C=S.plans&&S.plans[P.faction],mv=C&&C.mv;if(mv&&mv.id===+m.id)campAccept(pid,mv);else{const o=C&&sideOf(C).find(x=>x.id===+m.id&&x.stage==='active');if(o)sideAccept(pid,o)}break}
     case 'ujob':{if(S.unb)runAs(pid,()=>ujobTake(m.id));break}
+    case 'unplan':{const C=S.plans&&S.plans[P.faction];if(C)ordUnsign(pid,C,+m.id);break}
+    case 'ujdrop':{if(S.unb)runAs(pid,()=>ujobDrop(m.id));break}
     case 'hold':{const ev=S.events.find(v=>v.id===m.id);if(ev&&(ev.type==='offensive'||ev.type==='build')&&ev.stage==='inbound'&&sideNorm(ev.att)===P.faction&&!(ev.held||{})[pid]){(ev.held=ev.held||{})[pid]=1;ev.hold=Math.max(ev.hold||0,Math.min(+m.hold||0,S.T+220))}break}
     case 'chat':{const t=String(m.m||'').slice(0,160);if(t)netChat(P.name,t,pid);break}
     case 'bye':{if(!P.docked)poseFrom(P,m);delete MP.cl[L.peer];pilotLeft(c);setTimeout(()=>linkClose(L,true),200);break}
@@ -8873,6 +8876,26 @@ function subSummary(rec){if(!rec||!rec.sub)return'';const out=[];for(const k of 
   if(!ai.sub.k)return o.apply(this,arguments);let s=null;for(const q of subWorldPts(t))if(q.k===ai.sub.k&&q.i===ai.sub.i&&(!s||d3(q,e)<d3(s,e)))s=q;if(!s)return o.apply(this,arguments);
   // a held aim on a fixed part: the gunnery jitter of a dogfight shrinks (the part does not jink)
   const px=ai.sub.px;px.x=s.x;px.y=s.y;px.z=s.z;const aT=e.aimT;e.aimT=Math.max(aT||e.tier||1,5);ai.fErr=Math.max(.02,12/(d3(s,e)||1));try{return o.call(this,e,px,dt)}finally{e.aimT=aT;ai.fErr=0}}}
+
+// ---- dropping an order (Oct 2026): the Drop-order key (Backspace by default) signs you off the picked order (or the one you
+// are on) and clears the course it set. Your part so far stays on the record; a strike group stops holding for you.
+function ordUnsign(k,C,id){const m=C.mv;if(m&&m.id===id){const i=m.acc.indexOf(k);if(i>=0){m.acc.splice(i,1);return true}return false}
+  const o=sideOf(C).find(x=>x.id===id);if(o){const i=o.acc.indexOf(k);if(i>=0){o.acc.splice(i,1);return true}}return false}
+// remember the course an order set, so dropping it clears that course and not one the pilot set since
+function ordWrap(o){return function(){const P=S.player,r0=P&&P.route,r=o.apply(this,arguments);if(P&&P.route&&(P.route!==r0||!P.ordRoute))P.ordRoute=P.route;return r}}
+campCourse=ordWrap(campCourse);sideCourse=ordWrap(sideCourse);joinOp=ordWrap(joinOp);ujobCourse=ordWrap(ujobCourse);
+function ordClearCourse(){const P=S.player;if(P.ordRoute&&P.route===P.ordRoute){P.route=null;apOn=false;if(W&&W.tgt&&W.tgt.kind==='gate')W.tgt=null}P.ordRoute=null}
+function ujobDrop(id){const k=pkey(),J=ujobs(),j=J.find(x=>x.id===+id&&x.k===k&&x.on);if(!j)return false;J.splice(J.indexOf(j),1);feed(`Job dropped: ${j.title}.`,'warn');return true}
+function ordDrop(){if(!S||!S.player)return;const k=pkey();
+  if(S.unb){const L=ujList(),on=L.filter(j=>j.on);if(!on.length){flash('You have no haven job on.');return}const j=on.find(x=>x.id===ujPick)||on[0];
+    if(NET.cl){netSend({t:'ujdrop',id:j.id});const J=ujobs();if(J.includes(j))J.splice(J.indexOf(j),1);feed(`Job dropped: ${j.title}.`,'warn')}else ujobDrop(j.id);ordClearCourse();flash(`Dropped: ${j.title}.`);return}
+  const L=orderList(),signed=o=>o.t==='camp'?o.m.acc.includes(k):o.t==='side'?o.o.acc.includes(k):false,pick=L[ordSel(L)];
+  const o=pick&&(signed(pick)||pick.t==='op')?pick:L.find(signed);
+  if(!o){if(S.player.ordRoute&&S.player.route===S.player.ordRoute){ordClearCourse();flash('Order course cleared.');return}flash('You are not signed on to any order.');return}
+  const x=o.t==='camp'?o.m:o.t==='side'?o.o:null;
+  if(x){const C=myCamp();if(NET.cl){netSend({t:'unplan',id:x.id});const i=x.acc.indexOf(k);if(i>=0)x.acc.splice(i,1)}else if(C)ordUnsign(k,C,x.id);feed(`Signed off: ${x.title}.`,'warn');flash(`Signed off: ${x.title}. Your part so far still counts.`)}
+  else flash(`Left: ${o.label}.`);
+  ordClearCourse();if(!MUTE)SFX.ui&&SFX.ui()}
 
 //@src 17_main.js
 // ============================================================ main loop
