@@ -1053,3 +1053,41 @@ function ordDrop(){if(!S||!S.player)return;const k=pkey();
   if(x){const C=myCamp();if(NET.cl){netSend({t:'unplan',id:x.id});const i=x.acc.indexOf(k);if(i>=0)x.acc.splice(i,1)}else if(C)ordUnsign(k,C,x.id);feed(`Signed off: ${x.title}.`,'warn');flash(`Signed off: ${x.title}. Your part so far still counts.`)}
   else flash(`Left: ${o.label}.`);
   ordClearCourse();if(!MUTE)SFX.ui&&SFX.ui()}
+
+// ---- open jobs can be selected too (Oct 2026): contracts, Freeport requests, blockade runs, beacon bounties, carrier
+// resupply, operations, convoy raids and escorts. Selecting one doesn't change who is paid (whoever delivers or does it);
+// it puts the job on your HUD orders card, sets its course, and the Drop-order key or Drop job clears it. Kept on this
+// client only (not saved), one at a time.
+let JTRACK=null,JOBS_LAST=[];
+const JOB_OPEN=['k','b','r','s','bm','op','cv','ce'];
+function jobPre(id){return String(id).split(':')[0]}
+function jobIsMine(j){const k=pkey();if(j.id==='camp'){const C=myCamp();return!!(C&&C.mv&&C.mv.acc.includes(k))}if(jobPre(j.id)==='o'){const C=myCamp(),o=C&&sideOf(C).find(x=>'o:'+x.id===j.id);return!!(o&&o.acc.includes(k))}return!!(JTRACK&&JTRACK.id===j.id)}
+// the open job's buttons: Select job (doing its old course or sign-on action too), then its own action and Drop job
+function jobOpenBtns(j){if(!JOB_OPEN.includes(jobPre(j.id))||j._jb)return;j._jb=1;const own=j.btn;j._own=own;const mine=jobIsMine(j),act=own&&['deliver','hbuy'].includes(own[0]);
+  const far=j.sid&&j.sid!==S.player.sector&&DEF[j.sid]&&!(own&&['croute','cvint','opjoin'].includes(own[0]));
+  if(!mine){j.btn2=act?own:null;j.btn=['jtrack',j.id,'Select job']}else{j.btn=own&&!(own[0]==='cvesc')?own:null;if(far)j.btn3=['croute',j.sid,'Set course'];j.btn2=['jdrop','t:'+j.id,'Drop job']}}
+function jobLive(T){if(!T)return false;const pre=jobPre(T.id),id=T.id.slice(pre.length+1);
+  if(pre==='k'||pre==='b'||pre==='r')return(S.contracts||[]).some(x=>String(x.id)===id);
+  if(pre==='s'){const t=(S.frigates||[]).find(x=>String(x.id)===id);if(t)T.sid=t.sector;return!!t&&Object.keys(carNeed(t)).length>0}
+  if(pre==='bm'){const f=S.player.faction;return(S.bcnMis&&S.bcnMis[f]||[]).some(x=>String(x.id)===id&&S.T<x.until)}
+  if(pre==='cv'||pre==='ce'){const t=(S.traders||[]).find(x=>String(x.id)===id);if(t)T.sid=t.sector;return!!t}
+  if(pre==='op'){const ev=(S.events||[]).find(x=>String(x.id)===id);return ev?ev.stage!=='done'&&ev.stage!=='failed':friendlyOps().some(o=>o.sector===T.sid)}
+  return false}
+function jobTrack(id){const j=(JOBS_LAST||[]).find(x=>x.id===id);if(!j)return;
+  JTRACK={id:j.id,title:String(j.title).replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),sid:j.sid,ty:j.ty};
+  feed(`Job selected: ${JTRACK.title}.`,'good');return j}
+{const o=dockClick;dockClick=function(act,arg){
+  if(act==='jtrack'){const j=(JOBS_LAST||[]).find(x=>x.id===arg);if(!j){dockErr='That job is gone.';renderDock();return}
+    // the job's own course or sign-on action, if it had one
+    const own=j._own;
+    jobTrack(arg);if(own&&['croute','cvint','opjoin','cvesc'].includes(own[0]))o.call(this,own[0],String(own[1]));else if(j.sid&&j.sid!==S.player.sector&&DEF[j.sid])o.call(this,'croute',j.sid);
+    const P=S.player;if(P.route)P.ordRoute=P.route;if(!dockErr||!dockErr.startsWith('✓'))dockErr=P.route&&P.route!==P.sector?`✓ Job selected. Course set to ${DEF[P.route].name}. Launch and press J.`:'✓ Job selected.';renderDock();return}
+  if(act==='jdrop'&&String(arg).startsWith('t:')){if(JTRACK){feed(`Job dropped: ${JTRACK.title}.`,'warn');JTRACK=null;ordClearCourse()}dockErr='Job dropped.';renderDock();return}
+  return o.apply(this,arguments)}}
+// the Drop-order key: the picked signed order first, then the selected open job, then any signed order
+{const o=ordDrop;ordDrop=function(){if(JTRACK&&!S.unb){const L=orderList(),k=pkey(),pick=L[ordSel(L)],pickOn=pick&&(pick.t==='camp'?pick.m.acc.includes(k):pick.t==='side'?pick.o.acc.includes(k):false);
+  if(!pickOn){feed(`Job dropped: ${JTRACK.title}.`,'warn');flash(`Dropped: ${JTRACK.title}.`);JTRACK=null;ordClearCourse();return}}return o.apply(this,arguments)}}
+// the HUD orders card: the selected open job as its own row, cleared with a note when it is done or gone
+function jobHudRow(){if(!JTRACK)return'';if(!jobLive(JTRACK)){feed(`Job finished or gone: ${JTRACK.title}.`,'info');JTRACK=null;return''}
+  const T=JTRACK,P=S.player,hp=T.sid&&HOP[P.sector]&&HOP[P.sector][T.sid]!=null?HOP[P.sector][T.sid]:null,where=!T.sid?'':T.sid===P.sector?'here':`${DEF[T.sid].name} · ${hp} jump${hp===1?'':'s'}`;
+  return`<div class="oi sd"><div class="om"><i class="otg ${T.ty==='fight'?'cmb':T.ty==='scout'?'intel':'log'}">Job</i>${esc(T.title)}</div><div class="os"><span>${esc(where)}</span><span class="ok">✓ Selected · ${kb('ordDrop')==='Backspace'?'⌫':esc(kb('ordDrop'))} drop</span></div></div>`}

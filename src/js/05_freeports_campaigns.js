@@ -750,6 +750,7 @@ function campHud(){const el=$('hOrd');if(!el)return;if(S.unb){ujobHud(el);return
     h+=`<div class="os"><span>${st}</span><span class="${signed?'ok':'go'}">${signed?(on?'✓ Signed on · P course':'✓ Signed on'):on?'P · sign on':''}</span></div></div>`}
   for(const o of L){if(o.t!=='side')continue;const on=o===pick,x=o.o,sg=x.acc.includes(k);h+=`<div class="oi sd${on?' sel':''}" data-ord="${o.key}"><div class="om"><i class="otg ${x.lane}">${x.lane==='intel'?'Intel':'Combat'}</i>${esc(x.title)}</div><div class="os"><span>${esc(sideStat(x))} · ${fmtT(Math.max(0,x.until-S.T))} · ${fmt(x.pay)} cr · ${esc(SIDE[x.kind].suit)}</span><span class="${sg?'ok':'go'}">${sg?(on?'✓ P course':'✓'):on?'P · sign on':''}</span></div></div>`}
   for(const o of L){if(o.t!=='op')continue;const on=o===pick;h+=`<div class="oi op ${o.op.kind}${on?' sel':''}" data-ord="${o.key}"><div class="om">${esc(o.label)}</div><div class="os"><span>${esc(opWhen(o.op))}</span><span class="go">${on?(o.op.kind==='assist'?'P · join':'P · defend'):''}</span></div></div>`}
+  h+=jobHudRow();
   if(multi)h+=`<div class="onx"><kbd>⇧P</kbd> next order · ${si+1} of ${L.length}</div>`;
   if(el._h!==h){el._h=h;el.innerHTML=h}}
 // map: the next move of your faction, and of rivals where your sensors (or the Hollow Relay) can see it

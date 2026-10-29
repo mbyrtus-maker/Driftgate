@@ -36,6 +36,9 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .bayh{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}.bayh b{font-family:var(--f-display);font-size:16px;letter-spacing:.1em;text-transform:uppercase}.bayh em{font-style:normal;color:var(--dim);font-size:12px}
 .bays{font-size:12px;color:var(--dim)}.bayslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:8px}
 .bsl{display:flex;align-items:center;gap:6px;font-size:12px;border:1px solid rgba(255,255,255,.06);padding:4px 6px}.bsl span{flex:1;color:var(--dim)}.bsl b{font-family:var(--f-mono);font-weight:400}
+.lfeed{margin-top:10px;width:min(40vw,380px);background:rgba(5,7,13,.6);border:1px solid var(--line);padding:5px 8px 6px;font-size:12px;pointer-events:none}
+.lfeed .cmt{margin:0 0 4px}
+.sec-clock{margin-top:4px;font-family:var(--f-mono);font-size:13px;letter-spacing:.06em;color:var(--ivory);opacity:.9}.sec-clock.mid{color:var(--amber)}.sec-clock.lo{color:var(--danger)}
 #hML{left:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:min(36vw,340px)}#hML:empty{display:none}#hML .chip{font-size:12px;padding:4px 9px;letter-spacing:.06em;white-space:normal;line-height:1.35}
 .sec-bcn{font-size:13px;margin-top:5px;letter-spacing:.02em;color:var(--dim)}.sec-bcn b{font-weight:600}
 .schips{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}.schips .chip{font-size:6.5px;padding:1px 4px;letter-spacing:.08em}.schips:empty{display:none}
@@ -294,6 +297,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
   .bars{width:150px}.bar{grid-template-columns:44px 1fr 36px;font-size:10px}
   #hBR{width:180px;bottom:auto;top:calc(200px + env(safe-area-inset-top,0px))}
   #hComms .cev,#hComms .ckeys,#hComms .cmt{display:none}
+  .lfeed{display:none}
   #hComms,#hTgt{width:180px}
   #feed{top:calc(100px + env(safe-area-inset-top,0px));transform:none;width:calc(100% - 32px)}
   .fd{font-size:11.5px}
@@ -321,6 +325,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
 .jobs{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:18px;align-items:start}.jlist{border-top:1px solid rgba(236,228,207,.14)}
 .jrow{display:grid;grid-template-columns:70px minmax(0,1fr) auto 92px;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(236,228,207,.1);color:inherit;padding:9px 8px;cursor:pointer;font:inherit}
 .jrow:hover{background:rgba(255,255,255,.035)}.jrow.on{background:rgba(242,184,75,.08);box-shadow:inset 0 0 0 1px var(--amber)}.jrow.dim{opacity:.55}
+.jmine{font-style:normal;color:var(--ok);font-size:11px;letter-spacing:.04em;margin-left:6px;white-space:nowrap}
 .jty{font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase}.ty-haul,.ty-mine{color:#9ee6b8}.ty-fight{color:#ff9d7a}.ty-scout{color:#a9c6ff}.ty-camp{color:var(--amber)}
 .jt b{display:block;font-weight:600}.jt span{display:block;font-size:12px;opacity:.75}.jt .jok{color:#9ee6b8;opacity:1}.jw{font-size:12px;opacity:.7;white-space:nowrap}.jp{font-family:'JetBrains Mono',ui-monospace,monospace;color:var(--amber);white-space:nowrap;text-align:right}
 .jdet{border:1px solid rgba(236,228,207,.14);background:rgba(255,255,255,.025);padding:14px 16px}.jdt{font-size:1.15em;font-weight:600}
@@ -347,7 +352,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
   <div id="train" hidden></div>
   <div id="hud" hidden>
     <div class="hud" id="hML"></div>
-    <div class="hud" id="hTL"><div class="sec-name" id="hSec"></div><div class="sec-sub" id="hSub"></div><div class="sec-bcn" id="hBcn" hidden></div><div class="chips" id="hChips"></div><div class="netchip" id="netChip" hidden></div></div>
+    <div class="hud" id="hTL"><div class="sec-name" id="hSec"></div><div class="sec-sub" id="hSub"></div><div class="sec-clock" id="hClock" hidden></div><div class="sec-bcn" id="hBcn" hidden></div><div class="chips" id="hChips"></div><div class="netchip" id="netChip" hidden></div><div class="lfeed" id="hFeedL"><div class="cmt">Recent</div><div class="cev" id="cEv"></div></div></div>
     <div class="netban" id="netBanner" hidden></div><input id="chatIn" class="chatin" hidden maxlength="160" autocomplete="off" placeholder="Message everyone · Enter sends · Esc cancels">
     <div class="hud" id="hTR">
       <div class="cr"><small>CREDITS</small><span id="hCr">0</span></div>
@@ -370,7 +375,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       </div>
     </div>
     <div class="hud" id="contacts" aria-label="Contacts"></div>
-    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Command</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Under attack here · O targets the attacker</div><div class="cops" id="cOps"></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
+    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Command</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Under attack here · O targets the attacker</div><div class="cops" id="cOps"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
     <div class="hud" id="hPrompt"></div>
     <div class="hud" id="hKeysNow" aria-label="Keys you can use now"></div>
     <div class="hud" id="feed" aria-live="polite"></div>
@@ -3150,6 +3155,7 @@ function campHud(){const el=$('hOrd');if(!el)return;if(S.unb){ujobHud(el);return
     h+=`<div class="os"><span>${st}</span><span class="${signed?'ok':'go'}">${signed?(on?'✓ Signed on · P course':'✓ Signed on'):on?'P · sign on':''}</span></div></div>`}
   for(const o of L){if(o.t!=='side')continue;const on=o===pick,x=o.o,sg=x.acc.includes(k);h+=`<div class="oi sd${on?' sel':''}" data-ord="${o.key}"><div class="om"><i class="otg ${x.lane}">${x.lane==='intel'?'Intel':'Combat'}</i>${esc(x.title)}</div><div class="os"><span>${esc(sideStat(x))} · ${fmtT(Math.max(0,x.until-S.T))} · ${fmt(x.pay)} cr · ${esc(SIDE[x.kind].suit)}</span><span class="${sg?'ok':'go'}">${sg?(on?'✓ P course':'✓'):on?'P · sign on':''}</span></div></div>`}
   for(const o of L){if(o.t!=='op')continue;const on=o===pick;h+=`<div class="oi op ${o.op.kind}${on?' sel':''}" data-ord="${o.key}"><div class="om">${esc(o.label)}</div><div class="os"><span>${esc(opWhen(o.op))}</span><span class="go">${on?(o.op.kind==='assist'?'P · join':'P · defend'):''}</span></div></div>`}
+  h+=jobHudRow();
   if(multi)h+=`<div class="onx"><kbd>⇧P</kbd> next order · ${si+1} of ${L.length}</div>`;
   if(el._h!==h){el._h=h;el.innerHTML=h}}
 // map: the next move of your faction, and of rivals where your sensors (or the Hollow Relay) can see it
@@ -6410,6 +6416,7 @@ function hudUpdate(){hudFit();
   if(p.mining&&!P.docked){const k=mainOre(p.mining);sc.splice(1,0,[`Mining ${k?ITEMS[k].name:'rock'}${invMass(P.cargo)>=p.st.cargo-.5?' · hold full':''}`,invMass(P.cargo)>=p.st.cargo-.5?'bad':'good'])}
   {const H=handling(p);if(H.L>.2&&!P.docked)sc.push([`Laden ${Math.round(H.L*100)}% · ${HEAVY_CLS.has(P.cls)?'heavy':'slower'} handling −${Math.round((1-H.turn)*100)}% turn`,H.L>.65&&HEAVY_CLS.has(P.cls)?'bad':'warn'])}
   keysNowRender();try{firstTips()}catch(e){}
+  {const el=$('hClock');if(el){const left=TIE_T-S.T,show=!S.training&&!S.won&&left>-60;el.hidden=!show;if(show){const t=Math.max(0,Math.ceil(left)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),sc=t%60,txt=`⏱ ${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')} left`;if(el._t!==txt){el._t=txt;el.textContent=txt;el.className='sec-clock'+(t<=600?' lo':t<=1800?' mid':'');el.title='Time to the two-hour deadline: if no one has held 7 systems for 20 minutes by then, the faction holding the most systems wins.'}}}}
   $('hChips').innerHTML=chips.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');$('hSChips').innerHTML='';{const h=P.docked||W.bridge?'':sc.map(([t,k])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');if($('hML').innerHTML!==h)$('hML').innerHTML=h}
   {const el=$('hBcn'),B=S.beacons&&S.beacons[W.sid],on=!!B&&isScoutCls(P.cls)&&!P.docked;el.hidden=!on;if(on){const d=Math.round(d3(p,B)),F=W.bcnF||{},mine=B.owner===P.faction,col=B.owner?sideCol(B.owner):'#ece4cf',flip=F.side&&F.t>0?` · flipping ${Math.round(clamp(F.t/BCN_T,0,1)*100)}%`:'';
     const st=bcnState(B),left=fmtT(bcnLeft(B)),sts=st==='locked'?` · secured ${left}`:st==='fading'?(mine?` · <b style="color:var(--amber)">fading: re-secure within ${left}</b>`:` · fading: flip it now (${left})`):'';
@@ -6471,7 +6478,7 @@ function holdFree(p,P){return Math.max(0,((p&&p.st&&p.st.cargo)||0)-invMass(P.ca
 function csellQuote(P){const r=shipRec(P),parts={};shipStrip(JSON.parse(JSON.stringify(r)),parts);const hull=START_HULLS.includes(r.cls)?0:Math.floor(hullPrice(r.cls)*TRADE_IN),up=Math.floor(invValue(parts)*TRADE_IN);return{hull,up,tot:hull+up,parts,bare:shipBare(P)}}
 // the station screen: five task tabs on one row (keys 1–5, always the same tab for the same number), each with a few views.
 // Docking lands on Overview: what you can do right now. A tab with nothing at this dock is hidden; a dot marks one to act on.
-const DOCK_TOP=[['home','Overview',['home']],['trade','Trade',['market','fence','trade','storage']],['jobs','Jobs',['jobs','hire','marks','wanted']],['ship','Ship',['black','upg','refit','bay','ship']],['station','Station',['fab','works','patron','outpost']]];
+const DOCK_TOP=[['home','Overview',['home']],['trade','Trade',['market','fence','trade','storage']],['jobs','Jobs',['jobs','hire','marks','wanted']],['ship','Ship',['black','ship','bay','upg','refit']],['station','Station',['fab','works','patron','outpost']]];
 const dockTopOf=k=>(DOCK_TOP.find(g=>g[2].includes(k))||DOCK_TOP[0])[0];
 function dockTop(i){const T=DOCK_TOP[i];if(!T)return;const G=dockG.find(g=>g[0]===T[0]);if(!G)return;const m=dockSubMem[T[0]];dockTab=G[2].some(t=>t[0]===m)?m:G[2][0][0];dockErr='';renderDock()}
 // Claim Beacons sell for credits at your own faction's stations and depots (the treasury takes the money)
@@ -6520,39 +6527,40 @@ function jobsList(c,P,srcs,hasOrders,hasMis){const f=P.faction,out=[],hop=sid=>s
   if(m&&(hasOrders||hasMis)){const sid=m.sector||m.obj||m.to||null,ty=m.kind==='mine'?'mine':m.kind==='haul'?'haul':'fight';out.push({id:'camp',ty,pin:1,title:esc(m.title||'Campaign move'),sub:`${esc(FACTIONS[f].short)} campaign · ${controlCounts()[f]||0} of ${VIC_NEED} systems held`,hops:hop(sid),where:sid&&DEF[sid]?far(hop(sid)):'',pay:'bonus',payN:1e9,btn:m.acc.includes(pkey())?['campon','','Set course']:['campon','','Select job'],btn2:m.acc.includes(pkey())?['jdrop','c:'+m.id,'Drop job']:null,detail:()=>campDockHtml(c,P,srcs)})}
   if(c.contracts&&!S.unb){const fp=c.owner==='neutral',list=S.contracts.filter(k=>fp?k.st===P.sector&&!k.blk:k.fac===P.faction&&(!k.st||(k.blk&&k.st===P.sector))),reqs=S.contracts.filter(k=>k.st&&k.st!==P.sector&&!k.blk),blks=S.contracts.filter(k=>k.blk&&k.fac===P.faction&&k.st!==P.sector);
     for(const k of list){const have=k.st?fpDeliverable(P,k,srcs):deliverable(P,k.item,srcs),ok=have>=jobMin(k),n=Math.min(have,k.n);
-      out.push({id:'k:'+k.id,ty:RAWS.includes(k.item)?'mine':'haul',title:`${k.n} ${esc(ITEMS[k.item].name)} for ${esc(c.name)}`,sub:ok?`You can deliver ${n} now${n<k.n?' · partial delivery pays':''}`:`You have ${have} · ${Math.max(0,Math.round((k.until-S.T)/60))} min left`,ok,hops:0,where:'here',payN:k.reward,pay:`${fmt(k.reward)} cr`,btn:ok?['deliver',k.id,`Deliver ${n} · +${fmt(Math.round(k.reward*n/k.n))} cr`]:null,
+      out.push({id:'k:'+k.id,sid:P.sector,ty:RAWS.includes(k.item)?'mine':'haul',title:`${k.n} ${esc(ITEMS[k.item].name)} for ${esc(c.name)}`,sub:ok?`You can deliver ${n} now${n<k.n?' · partial delivery pays':''}`:`You have ${have} · ${Math.max(0,Math.round((k.until-S.T)/60))} min left`,ok,hops:0,where:'here',payN:k.reward,pay:`${fmt(k.reward)} cr`,btn:ok?['deliver',k.id,`Deliver ${n} · +${fmt(Math.round(k.reward*n/k.n))} cr`]:null,
         detail:()=>`<div style="margin-bottom:8px">${chip(k.item,k.n,have)}${jobLine(k)}${k.car?`<span class="mass">for the carrier ${esc(k.carName||'')} to build fighters</span>`:''}</div><p class="note" style="margin:0">${fp?'The Freeport Compact pays a premium for goods brought here in person.':`${esc(FAC(P.faction).name)} pays from its treasury.`} Only goods you mined, salvaged or made count: market purchases can't fill a contract. You can deliver part of a job (at least a quarter, or 10 units); the rest stays posted.</p>`})}
-    for(const k of blks){const R2=S.stations[k.st],j=hop(k.st);out.push({id:'b:'+k.id,ty:'haul',title:`Blockade run: ${k.n} ${esc(ITEMS[k.item].name)} to ${esc(R2?R2.name:DEF[k.st].name)}`,sub:`⚠ ${esc(k.why||'cut off')}${k.cont?' · containment supply':''}`,hops:j,where:far(j),payN:k.reward,pay:`${fmt(k.reward)} cr`,btn:['croute',k.st,'Set course'],
+    for(const k of blks){const R2=S.stations[k.st],j=hop(k.st);out.push({id:'b:'+k.id,sid:k.st,ty:'haul',title:`Blockade run: ${k.n} ${esc(ITEMS[k.item].name)} to ${esc(R2?R2.name:DEF[k.st].name)}`,sub:`⚠ ${esc(k.why||'cut off')}${k.cont?' · containment supply':''}`,hops:j,where:far(j),payN:k.reward,pay:`${fmt(k.reward)} cr`,btn:['croute',k.st,'Set course'],
       detail:()=>`<div style="margin-bottom:8px">${chip(k.item,k.n,countIn(k.item,[P.cargo,P.vault]))}${jobLine(k)}</div><p class="note" style="margin:0">This ${esc(FAC(P.faction).short)} station is ${esc(k.why||'cut off')}. Bring the goods in person: anything you own counts, even goods bought on a market. Carrying them through hostile space nearby draws enemy interceptors.</p>`})}
-    for(const k of reqs){const R2=S.stations[k.st],j=hop(k.st),b=fpBuyable(c,P,k);out.push({id:'r:'+k.id,ty:'haul',title:`Freeport request: ${k.n} ${esc(ITEMS[k.item].name)} to ${esc(R2?R2.name:DEF[k.st].name)}`,sub:`${covered(k.st)?'':'unscouted · '}${b?`${b.stock} in stock here · ${fmt(b.pr)} cr each`:'not sold here'}`,hops:j,where:far(j),payN:k.reward,pay:`${fmt(k.reward)} cr`,
+    for(const k of reqs){const R2=S.stations[k.st],j=hop(k.st),b=fpBuyable(c,P,k);out.push({id:'r:'+k.id,sid:k.st,ty:'haul',title:`Freeport request: ${k.n} ${esc(ITEMS[k.item].name)} to ${esc(R2?R2.name:DEF[k.st].name)}`,sub:`${covered(k.st)?'':'unscouted · '}${b?`${b.stock} in stock here · ${fmt(b.pr)} cr each`:'not sold here'}`,hops:j,where:far(j),payN:k.reward,pay:`${fmt(k.reward)} cr`,
       btn:b&&b.need>0&&b.n>0?['hbuy',k.id,`Buy ${b.n} to hold · ${fmt(Math.round(b.n*b.pr))} cr`]:['croute',k.st,'Set course'],detail:()=>`<div style="margin-bottom:8px">${chip(k.item,k.n,fpDeliverable(P,k,[P.cargo,P.vault]))}${jobLine(k)}</div><p class="note" style="margin:0">The Freeport Compact takes anything not bought at that freeport. ${b&&b.need>0?'Buy here, fly it there.':''}</p>`})}}
   if(hasOrders)for(const t of (S.frigates||[]).filter(t=>isCar(t)&&t.side!=='brood'&&(t.side===P.faction||(t.side==='player'&&P===S.player))&&Object.keys(carNeed(t)).length)){const n=carNeed(t),fm=frontMul(t),j=hop(t.sector),hv=Object.keys(n).filter(k=>(P.cargo[k]||0)>0);
-    out.push({id:'s:'+t.id,ty:'haul',title:`Front-line resupply: ${esc(t.name)}`,sub:`needs ${Object.keys(n).map(k=>`${n[k]} ${esc(ITEMS[k].name)}`).join(', ')}${hv.length?' · you carry some':''}`,hops:j,where:far(j),payN:Math.round(invValue(n)*fm),pay:fm>1.01?`market ×${fm.toFixed(1)}`:'market rate',btn:j?['croute',t.sector,'Set course']:null,
+    out.push({id:'s:'+t.id,sid:t.sector,ty:'haul',title:`Front-line resupply: ${esc(t.name)}`,sub:`needs ${Object.keys(n).map(k=>`${n[k]} ${esc(ITEMS[k].name)}`).join(', ')}${hv.length?' · you carry some':''}`,hops:j,where:far(j),payN:Math.round(invValue(n)*fm),pay:fm>1.01?`market ×${fm.toFixed(1)}`:'market rate',btn:j?['croute',t.sector,'Set course']:null,
       detail:()=>`<p class="note" style="margin:0">Fly these materials out and land on the carrier's flight deck: they unload straight into its store, so it can build fighters at once. Paid at the market rate times a front-line bonus (up to ×${RESUP_MAX}) when the carrier is outside friendly space, near hostiles or under fire.</p>`})}
   if(hasMis){const k=pkey();for(const o of (C?sideOf(C):[]).filter(o=>o.stage==='active')){const sd=SIDE[o.kind]||{},intel=sd.lane==='intel',j=hop(o.sector);
       out.push({id:'o:'+o.id,ty:intel?'scout':'fight',title:esc(o.title),sub:`${esc(sideStat(o))} · ${fmtT(Math.max(0,o.until-S.T))} left${o.acc.includes(k)?' · signed on':''}`,hops:j,where:o.sector?far(j):'',payN:o.pay,pay:`${fmt(o.pay)} cr`,need:intel&&!scout?'Needs a Scout or Advanced Scout (free at core shipyards)':'',fix:intel&&!scout?hullFix(c,P,isScoutCls,'scout'):null,
         btn:['sideon',o.id,o.acc.includes(k)?'Set course':'Select job'],btn2:o.acc.includes(k)?['jdrop','s:'+o.id,'Drop job']:null,detail:()=>`<p class="note" style="margin:0 0 6px">Suits: ${esc(sd.suit||'any ship')}.</p><p class="note" style="margin:0">${esc(sideHow(o))}</p>`})}
-    friendlyOps().forEach((o,i)=>{if(o.kind==='local')return;out.push({id:'op:'+i,ty:'fight',title:esc(o.label),sub:`${o.kind==='assist'?'Join the push':'Defend'}${o.eta?' · lands in '+o.eta+' s':o.ev&&o.ev.stage==='engaged'?' · fighting now':''}`,hops:o.hops||0,where:far(o.hops||0),payN:0,pay:'bounties',btn:['opjoin',i,o.hops?'Set course':'Join here'],detail:()=>`<p class="note" style="margin:0">A friendly operation: fly in with it. Kills pay their bounties, and damage earns a share.</p>`})});
+    friendlyOps().forEach((o,i)=>{if(o.kind==='local')return;out.push({id:'op:'+(o.ev&&o.ev.id!=null?o.ev.id:i),opi:i,sid:o.sector,ty:'fight',title:esc(o.label),sub:`${o.kind==='assist'?'Join the push':'Defend'}${o.eta?' · lands in '+o.eta+' s':o.ev&&o.ev.stage==='engaged'?' · fighting now':''}`,hops:o.hops||0,where:far(o.hops||0),payN:0,pay:'bounties',btn:['opjoin',i,o.hops?'Set course':'Join here'],detail:()=>`<p class="note" style="margin:0">A friendly operation: fly in with it. Kills pay their bounties, and damage earns a share.</p>`})});
     for(const t of (S.traders||[]).filter(t=>t.kind==='haul'&&hostile(f,t.side)&&t.side!=='pirate'&&hop(t.sector)<=3&&(covered(t.sector)||hop(t.sector)<=1))){const j=hop(t.sector);
-      out.push({id:'cv:'+t.id,ty:'fight',title:`Convoy raid: ${esc(FACTIONS[t.side]?FACTIONS[t.side].short:'Brood')} ${esc(t.why||'supplies')}`,sub:`${esc(haulWhat(t))} · bound for ${esc(DEF[t.to].name)}`,hops:j,where:far(j),payN:raidBounty(t),pay:`${fmt(raidBounty(t))} cr`,btn:t.sector===P.sector?null:['cvint',t.id,'Intercept'],
+      out.push({id:'cv:'+t.id,sid:t.sector,ty:'fight',title:`Convoy raid: ${esc(FACTIONS[t.side]?FACTIONS[t.side].short:'Brood')} ${esc(t.why||'supplies')}`,sub:`${esc(haulWhat(t))} · bound for ${esc(DEF[t.to].name)}`,hops:j,where:far(j),payN:raidBounty(t),pay:`${fmt(raidBounty(t))} cr`,btn:t.sector===P.sector?null:['cvint',t.id,'Intercept'],
         detail:()=>`<p class="note" style="margin:0">An enemy supply convoy. Destroy the freighter to cut their logistics: command pays the bounty, and half the hold spills as salvage.${t.sector===P.sector?' It is in this system: launch.':''}</p>`})}
     {const me=P.pid||'me';for(const t of (S.traders||[]).filter(t=>t.kind==='haul'&&t.side===f&&cvLeft(t)>=1&&hop(t.sector)<=3)){const E=t.esc,mine=E&&E.k===me,j=hop(t.sector),pay=cvPay(t,mine?Math.max(E.hops,E.need):Math.ceil(cvLeft(t)*ESC_CV.need));
-      out.push({id:'ce:'+t.id,ty:'fight',title:`Escort: ${esc(t.why||'supplies')} to ${esc(DEF[t.to].name)}`,sub:mine?`escorting · ${E.hops}/${E.need} jumps`:E?`escorted by ${esc(E.name||'another pilot')}`:`${cvLeft(t)} jumps left · now in ${esc(DEF[t.sector].name)}`,hops:j,where:far(j),payN:pay,pay:`${fmt(pay)} cr`,btn:mine||E?null:['cvesc',t.id,'Escort'],
+      out.push({id:'ce:'+t.id,sid:t.sector,ty:'fight',title:`Escort: ${esc(t.why||'supplies')} to ${esc(DEF[t.to].name)}`,sub:mine?`escorting · ${E.hops}/${E.need} jumps`:E?`escorted by ${esc(E.name||'another pilot')}`:`${cvLeft(t)} jumps left · now in ${esc(DEF[t.sector].name)}`,hops:j,where:far(j),payN:pay,pay:`${fmt(pay)} cr`,btn:mine||E?null:['cvesc',t.id,'Escort'],
         detail:()=>`<p class="note" style="margin:0">Fly with one of our supply convoys: each jump it makes with you in the system it leaves or enters counts. Raiders sent to intercept it meet you in the open. Command pays when it docks, if you were with it for at least ${Math.round(ESC_CV.need*100)}% of the jumps left when you signed on.</p>`})}}
     for(const x of (S.bcnMis&&S.bcnMis[f]||[]).filter(x=>S.T<x.until)){const B=S.beacons[x.sid],j=hop(x.sid);
-      out.push({id:'bm:'+x.id,ty:'scout',title:`Beacon: ${esc(DEF[x.sid].name)}`,sub:`${B&&B.owner?`held by ${esc(FAC(B.owner).short)}`:'unclaimed'} · ${Math.max(0,Math.round((x.until-S.T)/60))} min left`,hops:j,where:far(j),payN:x.reward,pay:`+${fmt(x.reward)} cr`,need:scout?'':'Needs a Scout or Advanced Scout (free at core shipyards)',fix:scout?null:hullFix(c,P,isScoutCls,'scout'),btn:x.sid===P.sector?null:['croute',x.sid,'Set course'],
+      out.push({id:'bm:'+x.id,sid:x.sid,ty:'scout',title:`Beacon: ${esc(DEF[x.sid].name)}`,sub:`${B&&B.owner?`held by ${esc(FAC(B.owner).short)}`:'unclaimed'} · ${Math.max(0,Math.round((x.until-S.T)/60))} min left`,hops:j,where:far(j),payN:x.reward,pay:`+${fmt(x.reward)} cr`,need:scout?'':'Needs a Scout or Advanced Scout (free at core shipyards)',fix:scout?null:hullFix(c,P,isScoutCls,'scout'),btn:x.sid===P.sector?null:['croute',x.sid,'Set course'],
         detail:()=>`<p class="note" style="margin:0">Command pays this bounty on top of the usual ${BCN_FLIP} cr flip bonus and ${BCN_RES} cr/min residual. Hold within ${BCN_R} m of the beacon for ${BCN_T} s in a scout.</p>`})}}
   return out}
 function jobsHtml(c,P,srcs,hasOrders,hasMis){const all=jobsList(c,P,srcs,hasOrders,hasMis),cnt=t=>t==='all'?all.length:all.filter(j=>j.ty===t).length;
   if(jobFilter!=='all'&&!JOB_TY[jobFilter])jobFilter='all';
   const L=all.filter(j=>jobFilter==='all'||j.ty===jobFilter).sort((a,b)=>(b.pin||0)-(a.pin||0)||(!!a.need-!!b.need)||(jobSort==='dist'?(a.hops-b.hops)||(b.payN-a.payN):((b.ok?1:0)-(a.ok?1:0))||(b.payN-a.payN)));
+  JOBS_LAST=all;for(const j of L)jobOpenBtns(j);
   if(!L.some(j=>j.id===jobSel))jobSel=L.length?L[0].id:null;const sel=L.find(j=>j.id===jobSel);
   let h=`<div class="jbar">${[['all','All'],...Object.entries(JOB_TY)].map(([k,n])=>`<button class="btn sm" type="button" data-act="jfil" data-arg="${k}" aria-pressed="${jobFilter===k}">${n} ${cnt(k)}</button>`).join('')}<span class="jsp">Sort</span><button class="btn sm" type="button" data-act="jsort" data-arg="pay" aria-pressed="${jobSort==='pay'}">Pay</button><button class="btn sm" type="button" data-act="jsort" data-arg="dist" aria-pressed="${jobSort==='dist'}">Distance</button></div>`;
   if(!L.length)h+=`<div class="empty">${all.length?'No jobs of this kind right now. Try All.':'No jobs posted here right now. Contracts come every minute or so, and command posts orders with each campaign move.'}</div>`;
   else{h+=`<div class="jobs"><div class="jlist">`;
-    for(const j of L)h+=`<button class="jrow${j.id===jobSel?' on':''}${j.need?' dim':''}" type="button" data-act="jsel" data-arg="${j.id}"><span class="jty ty-${j.pin?'camp':j.ty}">${j.pin?'Campaign':JOB_TY[j.ty]}</span><span class="jt"><b>${j.title}</b><span${j.ok?' class="jok"':''}>${j.need?esc(j.need):j.sub}</span></span><span class="jw">${j.where}</span><span class="jp">${j.pay}</span></button>`;
+    for(const j of L)h+=`<button class="jrow${j.id===jobSel?' on':''}${j.need?' dim':''}" type="button" data-act="jsel" data-arg="${j.id}"><span class="jty ty-${j.pin?'camp':j.ty}">${j.pin?'Campaign':JOB_TY[j.ty]}</span><span class="jt"><b>${j.title}</b>${jobIsMine(j)?' <i class="jmine">✓ yours</i>':''}<span${j.ok?' class="jok"':''}>${j.need?esc(j.need):j.sub}</span></span><span class="jw">${j.where}</span><span class="jp">${j.pay}</span></button>`;
     h+=`</div><div class="jdet">`;
-    if(sel){h+=`<div class="note" style="margin:0 0 4px;text-transform:uppercase;letter-spacing:.1em">${sel.pin?'Campaign':JOB_TY[sel.ty]}${sel.where?' · '+sel.where:''}</div><div class="jdt">${sel.title}</div><div class="kv" style="margin:8px 0"><span>Pays</span><b class="amber">${sel.pay}</b></div>${sel.need?`<p class="note" style="color:var(--amber);margin:0 0 8px">${esc(sel.need)}</p>`:''}${sel.detail?sel.detail():''}${sel.fix||sel.btn?`<div class="act" style="margin-top:12px;flex-wrap:wrap">${sel.fix?`<button class="btn pri" type="button" data-act="${sel.fix[0]}" data-arg="${sel.fix[1]}">${esc(sel.fix[2])}</button>`:''}${sel.btn?`<button class="btn${sel.fix?'':' pri'}" type="button" data-act="${sel.btn[0]}" data-arg="${sel.btn[1]}">${sel.btn[2]}</button>`:''}${sel.btn2?`<button class="btn" type="button" data-act="${sel.btn2[0]}" data-arg="${sel.btn2[1]}">${sel.btn2[2]}</button>`:''}</div>`:''}`}
+    if(sel){h+=`<div class="note" style="margin:0 0 4px;text-transform:uppercase;letter-spacing:.1em">${sel.pin?'Campaign':JOB_TY[sel.ty]}${sel.where?' · '+sel.where:''}</div><div class="jdt">${sel.title}</div><div class="kv" style="margin:8px 0"><span>Pays</span><b class="amber">${sel.pay}</b></div>${sel.need?`<p class="note" style="color:var(--amber);margin:0 0 8px">${esc(sel.need)}</p>`:''}${sel.detail?sel.detail():''}${sel.fix||sel.btn||sel.btn2?`<div class="act" style="margin-top:12px;flex-wrap:wrap">${sel.fix?`<button class="btn pri" type="button" data-act="${sel.fix[0]}" data-arg="${sel.fix[1]}">${esc(sel.fix[2])}</button>`:''}${sel.btn?`<button class="btn${sel.fix?'':' pri'}" type="button" data-act="${sel.btn[0]}" data-arg="${sel.btn[1]}">${sel.btn[2]}</button>`:''}${sel.btn3?`<button class="btn" type="button" data-act="${sel.btn3[0]}" data-arg="${sel.btn3[1]}">${sel.btn3[2]}</button>`:''}${sel.btn2?`<button class="btn" type="button" data-act="${sel.btn2[0]}" data-arg="${sel.btn2[1]}">${sel.btn2[2]}</button>`:''}</div>`:''}`}
     h+=`</div></div>`}
   if(hasOrders)h+=convoyHtml(c,P);
   return h}
@@ -6712,7 +6720,8 @@ function renderDock(){
   $('dBody').innerHTML=h;$('dErr').textContent=dockErr;$('dErr').className='err'+(dockErr.startsWith('✓')?' okmsg':'');
 }
 $('dock').addEventListener('click',e=>{
-  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;if(b.dataset.act==='patron'){const i=document.getElementById('patName'),v=i?i.value:'';if(S&&S.player)S.player.patName=v;b.dataset.arg=String(b.dataset.arg||'').split('|')[0]+'|'+v.replace(/[|<>]/g,'').slice(0,24)}const act=b.dataset.act,arg=b.dataset.arg||'';dockErr='';
+  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;if(b.dataset.act==='patron'){const i=document.getElementById('patName'),v=i?i.value:'';if(S&&S.player)S.player.patName=v;b.dataset.arg=String(b.dataset.arg||'').split('|')[0]+'|'+v.replace(/[|<>]/g,'').slice(0,24)}dockClick(b.dataset.act,b.dataset.arg||'')});
+function dockClick(act,arg){dockErr='';
   if(act==='launch'){undock();return}
   if(act==='quit'){quitGame();return}
   if(act==='invite'){$('bInvite').click();dockErr=`Invite link copied: ${inviteURL(MP.code)}`;renderDock();return}
@@ -6727,7 +6736,7 @@ $('dock').addEventListener('click',e=>{
   if(act==='opjoin'){joinOp(friendlyOps()[+arg]);dockErr=S.player.route?`✓ Course set to ${DEF[S.player.route].name}. Launch and press J.`:'';renderDock();return}
   if(NET.cl&&act==='csell'&&arg!=='yes'&&arg!=='no'){const q=csellQuote(P);if(!q.bare){csAsk=1;renderDock();return}}if(NET.cl&&act==='csell'&&arg==='no'){csAsk=0;renderDock();return}
   if(NET.cl){if(act==='csell')csAsk=0;netSend({t:'act',act,arg});dockErr='Working…';renderDock();return}
-  dockAction(act,arg);renderDock()});
+  dockAction(act,arg);renderDock()}
 function dockAction(act,arg){const c=dockCtx(),P=S.player,p=W.player,srcs=[P.cargo,c.storage];if(act==='fence'){unbFence(arg);return}if(act==='work'){unbBuildWork(arg);return}if(act==='launder'){unbLaunder();return}if(act==='unbvar'){unbBuyVar(arg);return}if(act==='callcap'){const[k,sid]=String(arg).split(':');callCap(k,sid);return}if(act==='unbhull'){unbHull(arg);return}if(act==='fixer'){unbFixer(arg);return}if(act==='hire'){hireBuy(c,arg);return}if(act==='hireend'){hireEnd();return}if(act==='patron'){patBuy(c,arg);return}if(act==='insure'){insBuy(c);return}
   if(act==='sell'&&S.unb&&c.owner==='neutral'){const k=String(arg).split(':')[0];if((P.stolen||{})[k]&&!(P.xpdr&&!((P.xpdrOut||0)>S.T))){dockErr='Stolen goods sell at a Freeport only under false colours (K).';return}}
   if(act==='sellhold'){let n=0,cr=0;const c0=P.credits;for(const k of holdSellable(c,P)){const q=P.cargo[k]||0;if(!q)continue;dockAction('sell',k+':'+q);n++}cr=P.credits-c0;if(!dockErr||dockErr.startsWith('✓'))dockErr=cr>0?`✓ Sold your hold for ${fmt(cr)} cr.`:'Nothing in your hold sells here.';return}
@@ -6903,9 +6912,6 @@ function renderMapSide(){
   for(const w of s.wrecks||[]){let m=0;h+=`<span>✕ Wreck</span><b style="color:#ffb066">${esc(w.name)} · breaks up in ${fmtT(Math.max(0,w.until-S.T))}</b>`}
   h+=`<span>Salvage crates</span><b>${s.crates.length}</b><span>Gates to</span><b>${NEIGH[mapSel].map(n=>DEF[n].name).join(', ')}</b></div>`;
   if(o)h+=`<p class="note" style="margin:8px 0 0">${TYPE_TEXT[o.type]}</p>`;h+=`</div>`;
-  h+=`<div><div class="h3">Powers</div><div class="tblw"><table class="t"><thead><tr><th></th><th class="r">Treasury</th><th class="r">Stores</th><th class="r">Outposts</th></tr></thead><tbody>`;
-  for(const f of[...FAC_IDS,'pirate','brood']){const n=Object.values(S.outposts).filter(x=>x.owner===f).length;h+=`<tr><td style="color:${sideCol(f)}">${sideName(f)}</td><td class="r num">${fmt(S.econ.treasury[f])}</td><td class="r num">${fmt(invMass(S.econ.stock[f])+invMass(S.econ.fleet[f]||{}))} t</td><td class="r num">${n}</td></tr>`}
-  h+=`<tr><td style="color:var(--amber)">You</td><td class="r num">${fmt(S.player.credits)}</td><td class="r num">${fmt(vaultList(S.player).reduce((a,v)=>a+v.m,0)+invMass(S.player.cargo))} t</td><td class="r num">${Object.values(S.outposts).filter(x=>x.owner==='player').length}</td></tr></tbody></table></div></div>`;
   {const V=vaultList(S.player).filter(v=>v.m>0);if(V.length)h+=`<div><div class="h3">Your vaults</div><div class="tblw"><table class="t"><thead><tr><th>Where</th><th class="r">Mass</th><th class="r">Value</th><th class="r">Jumps</th></tr></thead><tbody>${V.map(v=>`<tr${v.sid===mapSel?' style="background:rgba(255,190,90,.08)"':''}><td>${esc(vaultName(v.k))}<br><span class="mass" style="margin:0">${esc(v.sid&&DEF[v.sid]?DEF[v.sid].name:'')}${v.open?'':' · '+esc(vaultWhy(v.k,S.player))}</span></td><td class="r num">${fmt(v.m)} t</td><td class="r num">${fmt(v.val)} cr</td><td class="r num">${v.hops??'—'}</td></tr>`).join('')}</tbody></table></div></div>`}
   h+=`<div><div class="h3">Recent</div><div class="log">${FEED.slice(-30).reverse().map(f=>`<div><b>${fmtT(f.t)}</b>${esc(f.msg)}</div>`).join('')||'<div>Quiet so far.</div>'}</div></div>`;
   {const n=controlCounts(),need=VIC_NEED;h=`<div><div class="h3">Galaxy control · ${need} of ${SECTOR_DEFS.length} systems for ${Math.round(WIN_TIME/60)} min wins</div><div class="kv">${[...FAC_IDS,'brood'].map(k=>`<span style="color:${sideCol(k)}">${sideName(k)}</span><b>${n[k]||0}${S.victory&&S.victory.side===k?` · wins in ${fmtT(Math.max(0,WIN_TIME-(S.T-S.victory.since)))}`:''}</b>`).join('')}</div>${broodMeter(n.brood||0)}${S.coal?`<p class="note" style="margin-top:6px">${S.coal.lead==='brood'?'⚠ ':''}Truce: ${coalNames(S.coal.mem)} against ${S.coal.lead==='brood'?'the Brood':FACTIONS[S.coal.lead].short}. They hold fire on each other until it falls to ${VIC_NEED-2} systems.</p>`:''}</div>`+campMapHtml()+h}
@@ -8898,6 +8904,44 @@ function ordDrop(){if(!S||!S.player)return;const k=pkey();
   if(x){const C=myCamp();if(NET.cl){netSend({t:'unplan',id:x.id});const i=x.acc.indexOf(k);if(i>=0)x.acc.splice(i,1)}else if(C)ordUnsign(k,C,x.id);feed(`Signed off: ${x.title}.`,'warn');flash(`Signed off: ${x.title}. Your part so far still counts.`)}
   else flash(`Left: ${o.label}.`);
   ordClearCourse();if(!MUTE)SFX.ui&&SFX.ui()}
+
+// ---- open jobs can be selected too (Oct 2026): contracts, Freeport requests, blockade runs, beacon bounties, carrier
+// resupply, operations, convoy raids and escorts. Selecting one doesn't change who is paid (whoever delivers or does it);
+// it puts the job on your HUD orders card, sets its course, and the Drop-order key or Drop job clears it. Kept on this
+// client only (not saved), one at a time.
+let JTRACK=null,JOBS_LAST=[];
+const JOB_OPEN=['k','b','r','s','bm','op','cv','ce'];
+function jobPre(id){return String(id).split(':')[0]}
+function jobIsMine(j){const k=pkey();if(j.id==='camp'){const C=myCamp();return!!(C&&C.mv&&C.mv.acc.includes(k))}if(jobPre(j.id)==='o'){const C=myCamp(),o=C&&sideOf(C).find(x=>'o:'+x.id===j.id);return!!(o&&o.acc.includes(k))}return!!(JTRACK&&JTRACK.id===j.id)}
+// the open job's buttons: Select job (doing its old course or sign-on action too), then its own action and Drop job
+function jobOpenBtns(j){if(!JOB_OPEN.includes(jobPre(j.id))||j._jb)return;j._jb=1;const own=j.btn;j._own=own;const mine=jobIsMine(j),act=own&&['deliver','hbuy'].includes(own[0]);
+  const far=j.sid&&j.sid!==S.player.sector&&DEF[j.sid]&&!(own&&['croute','cvint','opjoin'].includes(own[0]));
+  if(!mine){j.btn2=act?own:null;j.btn=['jtrack',j.id,'Select job']}else{j.btn=own&&!(own[0]==='cvesc')?own:null;if(far)j.btn3=['croute',j.sid,'Set course'];j.btn2=['jdrop','t:'+j.id,'Drop job']}}
+function jobLive(T){if(!T)return false;const pre=jobPre(T.id),id=T.id.slice(pre.length+1);
+  if(pre==='k'||pre==='b'||pre==='r')return(S.contracts||[]).some(x=>String(x.id)===id);
+  if(pre==='s'){const t=(S.frigates||[]).find(x=>String(x.id)===id);if(t)T.sid=t.sector;return!!t&&Object.keys(carNeed(t)).length>0}
+  if(pre==='bm'){const f=S.player.faction;return(S.bcnMis&&S.bcnMis[f]||[]).some(x=>String(x.id)===id&&S.T<x.until)}
+  if(pre==='cv'||pre==='ce'){const t=(S.traders||[]).find(x=>String(x.id)===id);if(t)T.sid=t.sector;return!!t}
+  if(pre==='op'){const ev=(S.events||[]).find(x=>String(x.id)===id);return ev?ev.stage!=='done'&&ev.stage!=='failed':friendlyOps().some(o=>o.sector===T.sid)}
+  return false}
+function jobTrack(id){const j=(JOBS_LAST||[]).find(x=>x.id===id);if(!j)return;
+  JTRACK={id:j.id,title:String(j.title).replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),sid:j.sid,ty:j.ty};
+  feed(`Job selected: ${JTRACK.title}.`,'good');return j}
+{const o=dockClick;dockClick=function(act,arg){
+  if(act==='jtrack'){const j=(JOBS_LAST||[]).find(x=>x.id===arg);if(!j){dockErr='That job is gone.';renderDock();return}
+    // the job's own course or sign-on action, if it had one
+    const own=j._own;
+    jobTrack(arg);if(own&&['croute','cvint','opjoin','cvesc'].includes(own[0]))o.call(this,own[0],String(own[1]));else if(j.sid&&j.sid!==S.player.sector&&DEF[j.sid])o.call(this,'croute',j.sid);
+    const P=S.player;if(P.route)P.ordRoute=P.route;if(!dockErr||!dockErr.startsWith('✓'))dockErr=P.route&&P.route!==P.sector?`✓ Job selected. Course set to ${DEF[P.route].name}. Launch and press J.`:'✓ Job selected.';renderDock();return}
+  if(act==='jdrop'&&String(arg).startsWith('t:')){if(JTRACK){feed(`Job dropped: ${JTRACK.title}.`,'warn');JTRACK=null;ordClearCourse()}dockErr='Job dropped.';renderDock();return}
+  return o.apply(this,arguments)}}
+// the Drop-order key: the picked signed order first, then the selected open job, then any signed order
+{const o=ordDrop;ordDrop=function(){if(JTRACK&&!S.unb){const L=orderList(),k=pkey(),pick=L[ordSel(L)],pickOn=pick&&(pick.t==='camp'?pick.m.acc.includes(k):pick.t==='side'?pick.o.acc.includes(k):false);
+  if(!pickOn){feed(`Job dropped: ${JTRACK.title}.`,'warn');flash(`Dropped: ${JTRACK.title}.`);JTRACK=null;ordClearCourse();return}}return o.apply(this,arguments)}}
+// the HUD orders card: the selected open job as its own row, cleared with a note when it is done or gone
+function jobHudRow(){if(!JTRACK)return'';if(!jobLive(JTRACK)){feed(`Job finished or gone: ${JTRACK.title}.`,'info');JTRACK=null;return''}
+  const T=JTRACK,P=S.player,hp=T.sid&&HOP[P.sector]&&HOP[P.sector][T.sid]!=null?HOP[P.sector][T.sid]:null,where=!T.sid?'':T.sid===P.sector?'here':`${DEF[T.sid].name} · ${hp} jump${hp===1?'':'s'}`;
+  return`<div class="oi sd"><div class="om"><i class="otg ${T.ty==='fight'?'cmb':T.ty==='scout'?'intel':'log'}">Job</i>${esc(T.title)}</div><div class="os"><span>${esc(where)}</span><span class="ok">✓ Selected · ${kb('ordDrop')==='Backspace'?'⌫':esc(kb('ordDrop'))} drop</span></div></div>`}
 
 //@src 17_main.js
 // ============================================================ main loop

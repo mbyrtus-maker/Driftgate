@@ -36,6 +36,9 @@ kbd{font-family:var(--f-mono);font-size:10px;padding:1px 4px;border:1px solid va
 .bayh{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}.bayh b{font-family:var(--f-display);font-size:16px;letter-spacing:.1em;text-transform:uppercase}.bayh em{font-style:normal;color:var(--dim);font-size:12px}
 .bays{font-size:12px;color:var(--dim)}.bayslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:8px}
 .bsl{display:flex;align-items:center;gap:6px;font-size:12px;border:1px solid rgba(255,255,255,.06);padding:4px 6px}.bsl span{flex:1;color:var(--dim)}.bsl b{font-family:var(--f-mono);font-weight:400}
+.lfeed{margin-top:10px;width:min(40vw,380px);background:rgba(5,7,13,.6);border:1px solid var(--line);padding:5px 8px 6px;font-size:12px;pointer-events:none}
+.lfeed .cmt{margin:0 0 4px}
+.sec-clock{margin-top:4px;font-family:var(--f-mono);font-size:13px;letter-spacing:.06em;color:var(--ivory);opacity:.9}.sec-clock.mid{color:var(--amber)}.sec-clock.lo{color:var(--danger)}
 #hML{left:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:min(36vw,340px)}#hML:empty{display:none}#hML .chip{font-size:12px;padding:4px 9px;letter-spacing:.06em;white-space:normal;line-height:1.35}
 .sec-bcn{font-size:13px;margin-top:5px;letter-spacing:.02em;color:var(--dim)}.sec-bcn b{font-weight:600}
 .schips{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}.schips .chip{font-size:6.5px;padding:1px 4px;letter-spacing:.08em}.schips:empty{display:none}
@@ -294,6 +297,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
   .bars{width:150px}.bar{grid-template-columns:44px 1fr 36px;font-size:10px}
   #hBR{width:180px;bottom:auto;top:calc(200px + env(safe-area-inset-top,0px))}
   #hComms .cev,#hComms .ckeys,#hComms .cmt{display:none}
+  .lfeed{display:none}
   #hComms,#hTgt{width:180px}
   #feed{top:calc(100px + env(safe-area-inset-top,0px));transform:none;width:calc(100% - 32px)}
   .fd{font-size:11.5px}
@@ -321,6 +325,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
 .jobs{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:18px;align-items:start}.jlist{border-top:1px solid rgba(236,228,207,.14)}
 .jrow{display:grid;grid-template-columns:70px minmax(0,1fr) auto 92px;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(236,228,207,.1);color:inherit;padding:9px 8px;cursor:pointer;font:inherit}
 .jrow:hover{background:rgba(255,255,255,.035)}.jrow.on{background:rgba(242,184,75,.08);box-shadow:inset 0 0 0 1px var(--amber)}.jrow.dim{opacity:.55}
+.jmine{font-style:normal;color:var(--ok);font-size:11px;letter-spacing:.04em;margin-left:6px;white-space:nowrap}
 .jty{font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase}.ty-haul,.ty-mine{color:#9ee6b8}.ty-fight{color:#ff9d7a}.ty-scout{color:#a9c6ff}.ty-camp{color:var(--amber)}
 .jt b{display:block;font-weight:600}.jt span{display:block;font-size:12px;opacity:.75}.jt .jok{color:#9ee6b8;opacity:1}.jw{font-size:12px;opacity:.7;white-space:nowrap}.jp{font-family:'JetBrains Mono',ui-monospace,monospace;color:var(--amber);white-space:nowrap;text-align:right}
 .jdet{border:1px solid rgba(236,228,207,.14);background:rgba(255,255,255,.025);padding:14px 16px}.jdt{font-size:1.15em;font-weight:600}
@@ -347,7 +352,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
   <div id="train" hidden></div>
   <div id="hud" hidden>
     <div class="hud" id="hML"></div>
-    <div class="hud" id="hTL"><div class="sec-name" id="hSec"></div><div class="sec-sub" id="hSub"></div><div class="sec-bcn" id="hBcn" hidden></div><div class="chips" id="hChips"></div><div class="netchip" id="netChip" hidden></div></div>
+    <div class="hud" id="hTL"><div class="sec-name" id="hSec"></div><div class="sec-sub" id="hSub"></div><div class="sec-clock" id="hClock" hidden></div><div class="sec-bcn" id="hBcn" hidden></div><div class="chips" id="hChips"></div><div class="netchip" id="netChip" hidden></div><div class="lfeed" id="hFeedL"><div class="cmt">Recent</div><div class="cev" id="cEv"></div></div></div>
     <div class="netban" id="netBanner" hidden></div><input id="chatIn" class="chatin" hidden maxlength="160" autocomplete="off" placeholder="Message everyone · Enter sends · Esc cancels">
     <div class="hud" id="hTR">
       <div class="cr"><small>CREDITS</small><span id="hCr">0</span></div>
@@ -370,7 +375,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
       </div>
     </div>
     <div class="hud" id="contacts" aria-label="Contacts"></div>
-    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Command</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Under attack here · O targets the attacker</div><div class="cops" id="cOps"></div><div class="cmt">Recent</div><div class="cev" id="cEv"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
+    <div class="hud" id="hBR"><div id="hTgt"></div><div class="comms" id="hComms"><button type="button" class="cmh" id="cmHead" aria-expanded="true"><span>Command</span><em id="cmTog">hide</em></button><div class="cmb" id="cmBody"><div class="ordc" id="hOrd" hidden></div><div class="cmt" id="cOpsT" hidden>Under attack here · O targets the attacker</div><div class="cops" id="cOps"></div><div class="cmt">Quick keys</div><div class="ckeys" id="cKeys"></div></div></div></div>
     <div class="hud" id="hPrompt"></div>
     <div class="hud" id="hKeysNow" aria-label="Keys you can use now"></div>
     <div class="hud" id="feed" aria-live="polite"></div>
