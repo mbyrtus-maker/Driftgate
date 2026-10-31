@@ -39,7 +39,7 @@ function addStationEnt(R){const k=R.fwd?STN.fdepot:STN[R.kind],TUR=[[0,104,0],[0
   devEnt(e);W.ents.push(e);W.stationEnt=e;return e}
 function exitSector(){if(S&&S.unb&&S.player&&!CTX)try{takeEnd()}catch(e){}if(W&&W.player&&W.player.stealth){W.player.stealth=false;W.player.masked=false;W.player.maskR=0;if(NET.cl)netSend({t:'stealth',on:0})}if(W&&W.player&&W.player.landed){W.player.landed=null;W.player.masked=false;if(NET.cl)netSend({t:'land',on:0})}if(W&&W.docking){W.docking=null;dockHydStop()}
   if(!W)return;if(LW)W=LW;syncPlayer();if(S.player.convoy&&W.player&&!NET.cl){convoyJump();convoyPack()}const w=W;
-  if(w.player){for(const d of w.player.drones||[])if(d.alive&&w.ents.includes(d))despawn(d);const i=w.ents.indexOf(w.player);if(i>=0)w.ents.splice(i,1);w.player.alive=false;w.player=null}
+  if(w.player){for(const d of w.player.drones||[])if(d.alive&&w.ents.includes(d))try{despawn(d)}catch(e){frameErr('drone despawn',e);d.alive=false;const j=w.ents.indexOf(d);if(j>=0)w.ents.splice(j,1)}const i=w.ents.indexOf(w.player);if(i>=0)w.ents.splice(i,1);w.player.alive=false;w.player=null}
   w.bridge=null;w.gunseat=null;w.tgt=null;LW=null;
   if(!worldBusy(w))closeWorld(w);
   W=null;
