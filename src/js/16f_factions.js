@@ -224,3 +224,12 @@ function peekHostTick(){if(!NET.host||!W||typeof MP==='undefined'||!MP.inp)retur
   const b=$('bPeek');if(b)b.onclick=()=>{if(peekStart(mapSel)){$('map').hidden=true}}}}catch(x){}return r}}
 // ---- the start screen names each faction's career
 {const C={halcyon:'Hauling: +20% on Freeport jobs · the Gannet',varkesh:'Mining: +20% on Aurorite jobs · the Bombard',ostrova:'Scouting: +40% scout pay · peek · the Vesper'};for(const f in C)FACTIONS[f].traitText+=`<br>${C[f]}`}
+// ---- jobs and orders that fit the hull you fly come first (a scout sees intel work first, a miner mining work, a hauler
+// hauling, a fighter combat; the signature hulls also rank combat second); the rest follow in one fixed order: Haul, Mine,
+// Fight, Scout. Within a group the list keeps its own order (the campaign move first, then by pay or distance).
+const JOB_ORDER=['haul','mine','fight','scout'];
+function jobFit(cls){if(cls==='vesper')return['scout','fight'];if(cls==='bombard')return['mine','fight'];if(cls==='gannet')return['haul','fight'];
+  if(isScoutCls(cls))return['scout'];if(blHull(cls))return['mine'];if(isHaulCls(cls)||cls==='constructor')return['haul'];return['fight']}
+function jobRank(j,P){const F=jobFit(P&&P.cls),i=F.indexOf(j.ty);return i>=0?i:F.length+Math.max(0,JOB_ORDER.indexOf(j.ty))}
+{const o=orderList;orderList=function(){const L=o.apply(this,arguments);if(!L.length)return L;const F=jobFit(S.player.cls),r=x=>{const ty=x.t==='side'?(SIDE[x.o.kind]&&SIDE[x.o.kind].lane==='intel'?'scout':'fight'):null;if(!ty)return 0;const i=F.indexOf(ty);return i>=0?i:F.length+JOB_ORDER.indexOf(ty)};
+  const side=L.filter(x=>x.t==='side').map((x,i)=>[x,i]).sort((a,b)=>r(a[0])-r(b[0])||a[1]-b[1]).map(z=>z[0]);let k=0;return L.map(x=>x.t==='side'?side[k++]:x)}}

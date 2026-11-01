@@ -159,7 +159,7 @@ function jobsList(c,P,srcs,hasOrders,hasMis){const f=P.faction,out=[],hop=sid=>s
   return out}
 function jobsHtml(c,P,srcs,hasOrders,hasMis){const all=jobsList(c,P,srcs,hasOrders,hasMis),cnt=t=>t==='all'?all.length:all.filter(j=>j.ty===t).length;
   if(jobFilter!=='all'&&!JOB_TY[jobFilter])jobFilter='all';
-  const L=all.filter(j=>jobFilter==='all'||j.ty===jobFilter).sort((a,b)=>(b.pin||0)-(a.pin||0)||(!!a.need-!!b.need)||(jobSort==='dist'?(a.hops-b.hops)||(b.payN-a.payN):((b.ok?1:0)-(a.ok?1:0))||(b.payN-a.payN)));
+  const L=all.filter(j=>jobFilter==='all'||j.ty===jobFilter).sort((a,b)=>(jobRank(a,P)-jobRank(b,P))||(b.pin||0)-(a.pin||0)||(!!a.need-!!b.need)||(jobSort==='dist'?(a.hops-b.hops)||(b.payN-a.payN):((b.ok?1:0)-(a.ok?1:0))||(b.payN-a.payN)));
   JOBS_LAST=all;for(const j of L)jobOpenBtns(j);
   if(!L.some(j=>j.id===jobSel))jobSel=L.length?L[0].id:null;const sel=L.find(j=>j.id===jobSel);
   let h=`<div class="jbar">${[['all','All'],...Object.entries(JOB_TY)].map(([k,n])=>`<button class="btn sm" type="button" data-act="jfil" data-arg="${k}" aria-pressed="${jobFilter===k}">${n} ${cnt(k)}</button>`).join('')}<span class="jsp">Sort</span><button class="btn sm" type="button" data-act="jsort" data-arg="pay" aria-pressed="${jobSort==='pay'}">Pay</button><button class="btn sm" type="button" data-act="jsort" data-arg="dist" aria-pressed="${jobSort==='dist'}">Distance</button></div>`;
