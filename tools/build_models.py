@@ -75,7 +75,25 @@ def scout2():
 def aboutface(m):
     P,N,R=m;P=np.array(P,dtype=float).reshape(-1,3,3)*np.array([-1,1,-1])
     return P,[(None if n is None else np.array(n,dtype=float)*np.array([-1,1,-1])) for n in N],R
-DARK_GLOW={'skiff','prospector','dredger'}
+# the faction signature hulls (Nov 2026; approved previews in tools/previews): the Varkesh Bombard, a Heavy Miner with twin shell
+# cannons on its flanks (turned about like the miners), and the Ostrova Vesper, the scout hull with a twin-rail gun slung under it
+def bombard():
+    S=Comp();S.add('craft_miner',(0,0,0),0,1)
+    for x in (.75,-.75):S.add('pipe_straight',(x,.05,1.0),0,.6)
+    for sx in (-1,1):
+        S.add('machine_generator',(sx*1.0,.12,-.2),0,.55)
+        for k in range(3):S.add('pipe_straight',(sx*1.0,.18,-.45-k*.3),0,.3)
+        S.add('pipe_ring',(sx*1.0,.16,-1.33),0,.3)
+    return comp_model(lambda:S.model())
+def vesper():
+    P,N,R=ql_model(2);S=Comp()
+    for x in (-.17,.17):
+        for k in range(4):S.add('monorail_trackStraight',(x,-.42,-.6+k*1.15),0,1.15)
+    for z in (.2,1.1,2.0,2.9):S.add('pipe_ring',(0,-.5,z),0,.42)
+    S.add('machine_generator',(0,-.55,-.9),0,.8)
+    S.add('satelliteDish',(0,1.4,-1.05),math.pi,.95)
+    M=S.model();GLOW_N['vesper']=len(P);return np.concatenate([np.array(P).reshape(-1,3,3),M['P']]),list(N)+list(M['N']),list(R)+[kenney_role(c) for c in M['cols']]
+DARK_GLOW={'skiff','prospector','dredger','bombard'}
 H=math.pi
 MODELS={
  'interceptor':('ship',lambda:ql_model(4)),'striker':('ship',lambda:ql_model('')),'heavy':('ship',lambda:ql_model(5)),'bomber':('ship',lambda:ql_model(3)),'scout':('ship',lambda:ql_model(2)),'scout2':('ship',scout2),
@@ -83,6 +101,7 @@ MODELS={
  'skiff':('ship',lambda:aboutface(glb_model('craft_miner'))),
  'prospector':('ship',lambda:aboutface(comp([('craft_miner',(0,0,0),0,1),('machine_barrel',(.95,.15,-.2),0,.55),('machine_barrel',(-.95,.15,-.2),0,.55)]))),
  'dredger':('ship',lambda:aboutface(comp([('craft_miner',(0,0,0),0,1),('pipe_straight',(.75,.05,1.0),0,.6),('pipe_straight',(-.75,.05,1.0),0,.6),('machine_generator',(0,.62,-.5),0,.7),('machine_barrel',(1.05,.1,-.5),0,.6),('machine_barrel',(-1.05,.1,-.5),0,.6)]))),
+ 'bombard':('ship',lambda:aboutface(bombard())),'vesper':('ship',vesper),
  'courier':('ship',lambda:glb_model('craft_cargoA')),'freighter':('ship',lambda:glb_model('craft_cargoB')),
  'bulker':('ship',lambda:comp([('craft_cargoB',(0,0,0),0,1),('barrels_rail',(.95,.1,-.1),0,.8),('barrels_rail',(-.95,.1,-.1),0,.8),('barrels',(0,.85,-.4),0,.7)])),
  'constructor':('ship',lambda:comp([('craft_cargoA',(0,0,0),0,1.1),('structure',(0,.85,-.35),0,.8),('machine_wireless',(0,1.65,-.35),0,.7),('pipe_supportLow',(.9,.1,.4),0,.5),('pipe_supportLow',(-.9,.1,.4),0,.5)])),

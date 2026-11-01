@@ -577,6 +577,7 @@ function drawOverlay(){
       c.textAlign='left';c.fillStyle=col;c.fillText(fmt(Math.round(d3(T,p)))+' m',P.x+r+6,P.y-r+8)}
     if(W.tgt.kind==='ship'&&hostile('player',T.side)&&S.player.wpn!=='laser'){const lp=leadPoint(p,T,p.st.shotSpd||SHOT_SPD),L=proj(lp.x,lp.y,lp.z);if(!L.behind){c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();c.moveTo(L.x,L.y-8);c.lineTo(L.x+8,L.y);c.lineTo(L.x,L.y+8);c.lineTo(L.x-8,L.y);c.closePath();c.stroke()}}}
   if(!blAim)try{subHud(c,p)}catch(e){}
+  try{sigHud(c)}catch(e){}
   {const las=S.player.wpn==='laser',LRy=las?laserRay(p,LASER_RANGE):null,onH=!!(LRy&&LRy.hit&&(LRy.hit.kind==='ship'||LRy.hit.kind==='outpost'));
     qRot(p.q,0,0,1,_f);const A=proj(p.x+_f.x*900,p.y+_f.y*900,p.z+_f.z*900);
     if(!A.behind&&!blAim){const col=las?(onH?'#ff5d4f':'rgba(165,222,255,.95)'):'rgba(240,178,74,.9)';c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();
@@ -760,6 +761,7 @@ function drawCockpit(c,p,t){const P=S.player,F=CK_FAC[P.faction]||CK_FAC.halcyon
       ns.forEach((n,i)=>{const fr=(S.frigates||[]).filter(t=>t.sector===n&&hostile('player',t.side)),st=S.events.filter(e=>e.type==='offensive'&&e.sector===n&&e.stage!=='done'&&hostile('player',e.att)),br=fr.some(t=>t.side==='brood');
         const y=ty+22+rh*i+rh/2,txt=br?'⚠ LEVIATHAN':fr.length?`⚠ FRIGATE${fr.length>1?' ×'+fr.length:''}`:st.length?`STRIKE ×${st.reduce((a,e)=>a+e.n,0)}`:'CLEAR',col=fr.length?'#ff5d4f':st.length?'#f0b24a':'#7ad9a7';
         lab(DEF[n].name.toUpperCase().slice(0,Math.max(4,Math.floor((ww-18)/5.6)-txt.length-1)),x+9,y,'rgba(236,228,207,.8)');lab(txt,x+ww-9,y,col,'right')});c.font='600 10px "JetBrains Mono",monospace'}
+    else if(kd==='barrage'||kd==='shell'||kd==='rail')sigPanel(kd,{lab,bar,pip,x,sw,ty,sy,shh,P,p,fc});
     else if(kd==='scan'){lab('TARGET SCAN',x+9,ty+11,hexA(fc,.85));const T=W.tgt&&validTgt(W.tgt)?W.tgt:null;c.font='500 9px "JetBrains Mono",monospace';
       if(!T){lab('NO TARGET · T NEAREST',x+9,ty+shh*.55)}
       else{const r=T.ref,d=Math.round(d3(r,p));

@@ -1833,7 +1833,7 @@ Asked for: a swarm of light, easily destroyed Brood fighters alongside a few hea
 - **Contacts list:** Mites are listed below every other ship (your current target stays where it is), so the swarm can't push heavier threats off the list.
 - **Open questions for play:** the Hive Ship doesn't launch Mite waves yet; whether 18 a system is the right cap for frame rate and multiplayer bandwidth.
 
-## Faction identities (design, not built, Oct 2026)
+## Faction identities (designed Oct 2026, built Nov 2026: see "Faction identities: as built")
 The Unbound ambush and the Brood swarm; the three factions only differed in ±12% stat trades. Each faction now owns one career, gets one bonus for the riskiest work in it and one survival perk, and fields a signature combat ship converted from its career hull (sold only at its own shipyard, for owners of the base hull). Rejected along the way: invisible bonuses (a supply bonus at freshly supplied fronts, an off-screen coverage bonus), depots as trading posts, Freeport trade privileges, bigger holds and extra charges for Varkesh, flat shield boosts.
 
 | | Career | Job bonus | Survival perk | Signature ship |
@@ -1964,3 +1964,27 @@ A report of "Something went wrong (…): Converting circular structure to JSON" 
 
 **Off-screen (10–20 runs each):** escort 100% (45% left) / 100% (about 15% left) / 40% / 0%; one wing 100% / 60% / about 5% / 0%; two wings 100% / 100% / 90% / 40%. A bare core station: escorts and one wing never win, two wings 5/10; a core with one level each of Defence and Hull & shield: two wings 0/10.
 - **War check (480 games per side, 2.2 h):** as Halcyon H33 V31 O30 B6; as Varkesh O33 V30 H29 B8; as Ostrova H34 V30 O28 B8; as an Unbound captain H35 V33 O26 B6. Average Halcyon 32.75, Varkesh 31, Ostrova 29.25, Brood 7 (the build before: 31.75 / 29.5 / 31.5 / 8). Level 4 escort check after raising the guns: the depot won 6/6. A 2-hour game with a live system: ledger exact, no frame errors. Regression tests pass (dock, jobs, ship, stores, map, limpet, the four multiplayer tests, soak).
+
+## Faction identities: as built (Nov 2026)
+Built from the design above in `src/js/16f_factions.js` (constants `FPK`, `SIG`, `GAN`, `SHELL`, `RAIL`, `PEEK`). Where the build differs from the design, it says so.
+
+**Job bonuses (players), paid by the pilot's own treasury on top of the job's pay**, shown as "+20%" or "+40%" on the job card and named in the completion message:
+- **Halcyon +20%** on Freeport hauling jobs: contracts posted at a Freeport and Freeport requests.
+- **Varkesh +20%** on Aurorite mining jobs: Aurorite contracts and Aurorite supply drives.
+- **Ostrova +40%** on scouting pay: beacon flips, residuals and beacon missions, recon and beacon orders, Seeder spotting, limpet pings, lair finds and anomaly scans. Paid by raising what the faction pays, so its treasury pays it; payments with a bonus of 20 cr or more are followed by an "Archive scouting bonus" line.
+
+**Survival perks:**
+- **Halcyon (players):** a convoy called to or from a Freeport gets one extra escort (3, or 4 through hostile space), from the faction's stores like the others, and Halcyon haulers can call convoys while docked at a Freeport. The design's "Freeport escorts" would have had to come from nowhere or out of the Compact's stores; this keeps the ledger exact.
+- **Halcyon (AI, off-screen):** an AI convoy to or from a Freeport (Freeport imports included) is raided at x0.75 the odds.
+- **Varkesh (players and AI, live):** a guard drone launched by a Varkesh mining hull (Light, Medium or Heavy Miner, Bombard) has +40% hull and +25% damage.
+- **Ostrova (players and AI):** Seer, Oracle and Vesper shields hold 40% more and recharge at 0.6x the rate, and AI scouts are lost x0.75 as often off-screen.
+
+**Signature hulls (players only),** on the Shipyard tab under the hulls, at the faction's home shipyard (its core station): fly the career hull in and convert it. The conversion costs the difference in price (Gannet 4,000 − 2,100 = 1,900 cr; Bombard 6,000 − 4,600 = 1,400; Vesper 5,000 − 4,000 = 1,000); components, tunings and drones carry over, and trading it in later pays half its full price. AI factions never field them. Elsewhere the card says where to convert.
+- **Gannet** (Halcyon, from the Medium Hauler): 50 t hold, shields x1.3 (Medium Hauler x1.1), 3 drones. C fires every ready launch cell (12; one recharges every 2.5 s; full when docked) at the hostile ships within 2.4 km and 0.6 rad of the nose, your target first then nearest first, up to 6 targets, spread evenly. Each missile does a quarter of a missile's damage (20 at Mk I); AI pilots don't flare them (as with swarm micro-missiles). A full salvo at three Light Fighters landed 12 of 12. No lock needed; brackets on the HUD show who the salvo will go to.
+- **Bombard** (Varkesh, from the Heavy Miner): hull 215 (Heavy Miner 190), 45 t hold, 4 drones, a three-charge blast rig (so it still blasts and scoops chunks). Every gun key fires the shell cannon: a shell every 2 s at 450 m/s for 6 s (2.7 km), 10x the hull's bolt damage (about 43 at Mk I), costing three bolts' energy. Shells are capital rounds: full damage against capital ships and stations (no chip), and they don't shoot down torpedoes. A shell that hits a rock knocks loose 12% of it (up to 14 t): 60% of that becomes a chunk to scoop, the rest goes to debris.
+- **Vesper** (Ostrova, from the Advanced Scout): no missiles or swarm pods; scout radar, beacons, limpets and lairs like a scout. Hold fire to charge (2 s), release to fire a hitscan slug out to 4 km: 340 at full charge at Mk I (scales with Weapons Mk like guns), x1.25 on a target not fighting you, x0.5 against capital ships and stations, x1.5 into a capital's open sub-target. A full charge costs 45 energy and killed a Light Fighter outright.
+- **Models:** the Gannet is hand-built in code; the Bombard and Vesper are in the model pack (`bombard`, `vesper` in `tools/build_models.py`).
+
+**Drive peek (Ostrova Seer and Oracle):** open the map, select a neighbouring system and press "Drive peek". The drive spools 8 s (sparks around the ship; taking damage, a jam bar or a tether breaks it). The scout jumps in 3.2–5.2 km from the centre and at least 3 km from every gate, the station and the outpost, with an arrival flash. Drained for 20 s: no guns, missiles or afterburner, shields at zero and not recharging, speed capped at 60 m/s; no beacon flips or limpets, and docking is refused. Then it jumps back to exactly where it left, with the same speed and heading, and the drive cools for 3 minutes. Dying ends the peek; reloading during a peek sends you back at once. A guest's peek reaches the host through its flight updates, so the host drains the guest's ship too. While a scout is in a system its faction sees that system on the map (scouts already reveal the system they're in).
+
+**Tests:** `tools/tests/mp_signature.py` (a guest converts to a Bombard through the dock and its shells hit on the host; a guest Gannet's barrage and Vesper railgun are fired by the host).
