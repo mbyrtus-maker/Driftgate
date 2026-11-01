@@ -57,6 +57,7 @@ function hudUpdate(){hudFit();
   if(th&&W.lock.ref&&W.tgt&&W.lock.ref===W.tgt.ref){const L=W.lock;th=th.slice(0,-6)+`<div class="row">Missile lock<b style="color:${L.locked?'var(--danger)':'var(--amber)'}">${L.locked?'LOCKED · press C':Math.round(L.p*100)+'%'}</b></div><div class="mini"><i style="width:${L.p*100}%;background:${L.locked?'var(--danger)':'var(--amber)'}"></i></div></div>`}
   else if(th&&lockable(W.tgt)&&P.rack>0)th=th.slice(0,-6)+`<div class="ts">Keep it inside the dashed lock ring to lock missiles.</div></div>`;
   if(th&&W.tgt&&validTgt(W.tgt)&&(W.tgt.kind==='ship'||W.tgt.kind==='station')){const sp=subPanel(W.tgt.ref);if(sp)th=th.replace(/<\/div>$/,sp+'</div>')}
+  if(th&&W.tgt&&W.tgt.kind==='station'&&W.tgt.ref.rec&&W.tgt.ref.rec.kind==='depot'){const R=W.tgt.ref.rec;th=th.replace('</div>',`</div><div class="ts">Depot level ${depotLevel(R)} of 4 · ${garrison(R)} assault load${garrison(R)>1?'s':''} to capture</div>`)}
   $('hTgt').innerHTML=th;commsUpdate();
   let pr='',alert=false;
   if(flashMsg&&performance.now()-flashMsg.t<2600){pr=flashMsg.m;alert=flashMsg.alert}
@@ -511,7 +512,7 @@ function ctName(e){if(e.role==='limpet')return'Limpet';if(e.pname)return e.pname
 function renderMapSide(){
   const d=DEF[mapSel],s=S.sectors[mapSel],oid=OUT_BY_SECTOR[mapSel],o=oid&&S.outposts[oid];
   let h=`<div><div class="h3" style="color:${sideCol(sectorOwner(mapSel))}">${esc(d.name)}</div><div class="kv"><span>Held by</span><b style="color:${sideCol(sectorOwner(mapSel))}">${sectorOwner(mapSel)?sideName(sectorOwner(mapSel)):'Unclaimed'} · ${d.kind}</b>`+mapSectorNow(mapSel);
-  {const Rs=S.stations[mapSel];h+=Rs?`<span>${esc(Rs.name)}</span><b>${Rs.kind==='hive'?'hive':Rs.kind} · hull ${Math.round(Rs.hull/Rs.hMax*100)}%</b>${Rs.sub?`<span>Systems</span><b style="color:var(--amber)">${subSummary(Rs)}</b>`:''}`:`<span>Station</span><b>${d.kind==='hive'?'—':'none · a Constructor can build here'}</b>`}
+  {const Rs=S.stations[mapSel];h+=Rs?`<span>${esc(Rs.name)}</span><b>${Rs.kind==='hive'?'hive':Rs.kind==='depot'?'depot · level '+depotLevel(Rs):Rs.kind} · hull ${Math.round(Rs.hull/Rs.hMax*100)}%</b>${Rs.sub?`<span>Systems</span><b style="color:var(--amber)">${subSummary(Rs)}</b>`:''}`:`<span>Station</span><b>${d.kind==='hive'?'—':'none · a Constructor can build here'}</b>`}
   if(o)h+=`<span>${esc(o.name)}</span><b>Level ${o.level}${o.breached?' · breached':''}</b><span>Role</span><b>${o.type}</b>`;
   {const B=S.beacons&&S.beacons[mapSel];if(B)h+=`<span>Beacon</span><b style="color:${B.owner?sideCol(B.owner):'inherit'}">${B.owner?FAC(B.owner).short+(B.T?' · held '+fmtT(S.T-B.T):'')+(bcnState(B)==='locked'?' · secured '+fmtT(bcnLeft(B)):' · fading, neutral in '+fmtT(bcnLeft(B))):'unclaimed'}${B.by&&isMe(B.by)?' · yours, '+BCN_RES+' cr/min':''}</b>`}
   {const V=vaultList(S.player).filter(v=>v.sid===mapSel);for(const v of V)h+=`<span>Your vault${V.length>1?' · '+esc(vaultName(v.k)):''}</span><b>${fmt(v.m)} t · ${fmt(v.val)} cr${v.open?'':' · '+esc(vaultWhy(v.k,S.player))}</b>`}

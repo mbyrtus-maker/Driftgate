@@ -438,6 +438,7 @@ function renderConsole(full){const B=W&&W.bridge;if(!B||!B.panel)return;const F=
       ${fr.length?fr.map((e,i)=>`<div class="opr"><div><b>${esc(e===F?t.name+' (this ship)':shipLabel(e))}</b><br><span>${e===F?'your ship':fmt(Math.round(d3(e,F)))+' m'}</span></div><div class="fbtns"><button class="btn" data-fc="cmo:guard:${i}">Guard</button><button class="btn" data-fc="cmo:escort:${i}">Escort</button></div></div>`).join(''):'<p class="note">No friendlies nearby.</p>'}</div>
       <div><div class="h3">Construction</div><p class="note" style="margin-top:0">${home?`Ask ${esc(FAC(S.player.faction).short)} command to build a capital shipyard here in your home system.`:'Ask your faction to send a constructor and build a depot here.'} It draws on the faction's stores; the reply says what is missing.</p>
       <div class="fbtns"><button class="btn" data-fc="cmb">${home?'Request a shipyard here':'Request a depot here'}</button></div>
+      ${csupBridgeHtml(t)}
       <div class="h3" style="margin-top:14px">Orders in force</div>${busy.length?busy.map(e=>`<div class="kv"><span>${esc(shipLabel(e))}</span><b>${e.order?(e.order.kind==='guard'?'guarding ':'escorting ')+esc(e.order.tgt===F?t.name:e.order.tgt&&e.order.tgt.isPlayer?'you':e.order.tgt?shipLabel(e.order.tgt):'—')+' · '+Math.max(0,Math.ceil(e.order.until-W.t))+' s':esc(e.ord)}</b></div>`).join(''):'<p class="note">None.</p>'}</div></div>`}
   $('fcBody').innerHTML=h}
 function fTgtName(e){return e.type==='works'?e.name:e.type==='station'?e.name:e.type==='outpost'?e.o.name:shipLabel(e)}
@@ -483,6 +484,7 @@ function fconSend(t,a,ent){if(NET.on&&t.owner&&!String(a).startsWith('crew')&&a!
 function consoleAct(a){const B=W&&W.bridge;if(!B)return;const F=B.f,t=F.tok;const[k,v]=a.split(':');
   if(k==='close'){closeConsole();return}if(k==='tab'){B.panel=v;renderConsole(true);return}
   if(k==='cmo'){const T=(B.clist||[])[+a.split(':')[2]];if(T&&T.alive){if(NET.cl)netSend({t:'order',k:v==='guard'?'guard':'escort',id:T.id});else issueOrder(v==='guard'?'guard':'escort',T);$('fcErr').textContent='Order sent. Replies appear in the feed.'}renderConsole(false);return}
+  if(k==='csup'){const r=csupRequest();$('fcErr').textContent=typeof r==='string'?r:'Supply run sent: see the feed.';renderConsole(false);return}
   if(k==='cmb'){if(NET.cl)netSend({t:'order',k:'build'});else requestBuild();$('fcErr').textContent='Request sent. The reply appears in the feed.';return}
   if(k==='tgt'){const e=(B.wlist||[])[+v];if(e)fconSend(t,'tgt',e)}else if(k==='wtgt'){const e=(B.wlist||[])[+v];if(e){fconSend(t,'tgt',e);fconSend(t,'pk:attack',null);$('fcErr').textContent=`Wing striking ${fTgtName(e)}.`}}else fconSend(t,a,null);
   renderConsole(false)}
