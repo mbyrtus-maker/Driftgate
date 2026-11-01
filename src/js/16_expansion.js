@@ -1091,3 +1091,15 @@ function jobTrack(id){const j=(JOBS_LAST||[]).find(x=>x.id===id);if(!j)return;
 function jobHudRow(){if(!JTRACK)return'';if(!jobLive(JTRACK)){feed(`Job finished or gone: ${JTRACK.title}.`,'info');JTRACK=null;return''}
   const T=JTRACK,P=S.player,hp=T.sid&&HOP[P.sector]&&HOP[P.sector][T.sid]!=null?HOP[P.sector][T.sid]:null,where=!T.sid?'':T.sid===P.sector?'here':`${DEF[T.sid].name} · ${hp} jump${hp===1?'':'s'}`;
   return`<div class="oi sd"><div class="om"><i class="otg ${T.ty==='fight'?'cmb':T.ty==='scout'?'intel':'log'}">Job</i>${esc(T.title)}</div><div class="os"><span>${esc(where)}</span><span class="ok">✓ Selected · ${kb('ordDrop')==='Backspace'?'⌫':esc(kb('ordDrop'))} drop</span></div></div>`}
+
+// ---- a pilot's carrier keeps its Guard wing aboard (Oct 2026): craft on Guard sit in the bays and launch when something
+// threatens the carrier (a hostile ship within 4.5 km, a torpedo or missile on it, or a hit in the last 8 s), then land
+// again after 12 s with no threat. AI carriers keep their flying screen; Strike, Hunt and Land orders are unchanged.
+const CGUARD={r:4500,calm:12,gap:.5,hit:8};
+function carThreat(E){if(W.t-(E.lastHit||-99)<CGUARD.hit)return true;for(const m of W.missiles)if(m.tgt===E&&hostile(E.side,m.side))return true;
+  for(const o of W.ents)if(o.type==='ship'&&o.alive&&o.role!=='limpet'&&o!==E&&hostile(E.side,o.side)&&!mHid(o,E)&&d3(o,E)<CGUARD.r)return true;return false}
+function carGuardHome(M){return!!(M&&M.tok&&isCar(M.tok)&&fOwn(M.tok)&&M.tok.side!=='brood'&&W.t-(M.gThreat==null?-1e9:M.gThreat)>CGUARD.calm)}
+function carGuardWorld(){if(NET.cl||!W)return;for(const E of W.ents){if(E.role!=='frigate'||!E.alive||!E.tok||!isCar(E.tok)||!fOwn(E.tok)||E.tok.side==='brood')continue;
+  if(!carThreat(E))continue;E.gThreat=W.t;const t=E.tok;if(!(E.bay||[]).length||W.t<(E.gLaunch||0)||!subBayOK(E,true))continue;
+  for(const g of WINGS){if(wingMis(t,{wg:g})!=='escort'||wgCount(E,g)>=SORTIE.wing||!E.bay.length)continue;E.gLaunch=W.t+CGUARD.gap;const p=carLaunch(E,E.bay.shift(),g);if(p&&W.t-(E.gSaid||-99)>20){E.gSaid=W.t;if(fMine(t))flash(`${t.name}: Guard wing launching.`)}break}}}
+{const o=worldUpdate;worldUpdate=function(){const r=o.apply(this,arguments);try{carGuardWorld()}catch(e){frameErr('carrier guard',e)}return r}}

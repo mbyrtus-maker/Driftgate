@@ -4057,7 +4057,7 @@ function fcTabs(t){return t&&isCar(t)?FC_TABS.map(x=>x[0]==='wpn'?['wpn','Hangar
 function openConsole(id){if(!W||!W.bridge)return;freeLook();W.bridge.panel=id;$('fcon').hidden=false;$('fcErr').textContent='';renderConsole(true)}
 function closeConsole(){const B=W&&W.bridge;if(B&&NET.on){const t=B.f&&B.f.tok;if(t&&t.owner&&t.owner!==curPid()&&crewOf(t,curPid()).length)fconSend(t,'crewoff',null)}if(B)B.panel=null;const el=$('fcon');if(el)el.hidden=true;if(B&&B.seat)standChair()}
 function fcPip(n){return`<span class="pips">${[1,2,3,4,5,6].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>`}
-const WING_MIS={escort:['Guard','Stay with the carrier and fight off anything that comes for it.'],attack:['Strike','Attack the strike target (pick one below), or the nearest hostile to the carrier.'],hunt:['Hunt','Range across the system and attack any hostile craft, bombers first.'],recall:['Land','Return to the carrier and land. Landed craft wait safely in the hangar until you launch them.']};
+const WING_MIS={escort:['Guard','Waits aboard and launches when something threatens the carrier (within 4.5 km, or fire on it), then lands again once it is clear. AI carriers keep their Guard wing flying.'],attack:['Strike','Attack the strike target (pick one below), or the nearest hostile to the carrier.'],hunt:['Hunt','Range across the system and attack any hostile craft, bombers first.'],recall:['Land','Return to the carrier and land. Landed craft wait safely in the hangar until you launch them.']};
 function sortieHtml(t,f,tot){let x='';const sd=f,SV=sortiesOf(t),opts=[],C=fctl(t),E=W.ents.find(e=>e.tok===t),busy=g=>SV.some(v=>v.wg===g||!v.wg),frW=g=>E?(E.pickets||[]).filter(p=>p.alive&&W.ents.includes(p)&&p.mis!=='escort'&&p.mis!=='sortie'&&(!g||p.wg===g)).length:0,bayN=E?(E.bay||[]).length:0,sz=['A','B','all'].includes(C.sorSize)&&!(C.sorSize!=='all'&&busy(C.sorSize))?C.sorSize:(!busy('A')?'A':!busy('B')?'B':'all'),fr=frW(null)+bayN,nGo=sz==='all'?fr:Math.min(SORTIE.wing,frW(sz)+Math.min(bayN,Math.max(0,SORTIE.wing-(E?wgCount(E,sz):0))));for(const n of NEIGH[W.sid]){const Rn=S.stations[n];if(Rn&&hostileStationAt(n,sd))opts.push({n,tgt:'st',dep:Rn.kind==='depot'&&Rn.owner!=='brood'&&sd!=='brood',g:garrison(Rn),name:Rn.name,info:`${Rn.kind==='core'?'core station':Rn.kind==='hive'?'hive':Rn.kind==='free'?'freeport':'depot'} · shield ${Rn.shield>0?'up':'down'} · hull ${Math.round(Rn.hull/Rn.hMax*100)}%${Rn.kind==='depot'&&Rn.owner!=='brood'?' · garrison '+garrison(Rn):''}`});
       if(covered(n))for(const o of frigatesIn(n))if(hostile(sd,o.side))opts.push({n,tgt:'c'+o.id,name:o.name,info:`${o.side==='brood'?'Brood ':FACTIONS[o.side]?FACTIONS[o.side].short+' ':''}${capName(o)} · hull ${Math.round(o.hull/capHullMax(o)*100)}%`})}
     x+=`<div class="h3">Strike next door</div>`;if(sd!=='brood')x+=`<div class="kv" style="margin-bottom:6px"><span>Assault ships</span><b>${aAvail(t)} ready of ${t.aload||0} · ${CAR_ASSAULT} bays · they launch by themselves when a depot's hull breaks</b></div>`;
@@ -4299,6 +4299,7 @@ function droneThink(e,dt){const ai=e.ai,M=e.mom;
   if(!M||!M.alive||!W.ents.includes(M)){e.role='leave';e.mom=null;return}
   const big=e.role==='picket',PM=big&&M.tok&&fOwn(M.tok)?(e.mis&&e.mis!=='sortie'?e.mis:wingMis(M.tok,e)):big&&M.tok&&e.wg==='B'?'hunt':null;   // an AI carrier: Alpha guards it, Bravo hunts
   if(e.mis==='sortie'&&big){if(NET.cl)return;const ev=S.events.find(v=>v.id===e.sortie),g=ev&&W.ents.find(x=>x.type==='gate'&&x.to===ev.to);if(!g||ev.stage!=='gather'){e.mis=null;e.sortie=null}else{const d=steer(e,g.x,g.y,g.z,dt,false,1.1);faceTo(e,g,dt);e.thrusting=true;e.boosting=d>900;if(d<260)sortieDepart(M,e);return}}
+  if(PM==='escort'&&big&&!e.mis&&carGuardHome(M)){if(NET.cl)return;const d=d3(e,M);if(d<M.st.radius+110){carStow(M,e);return}steer(e,M.x,M.y,M.z,dt,true);faceTo(e,M,dt);e.thrusting=true;return}   // a pilot's Guard wing waits aboard
   if(PM==='recall'){if(NET.cl)return;const d=d3(e,M);if(d<M.st.radius+110){carStow(M,e);return}steer(e,M.x,M.y,M.z,dt,true);faceTo(e,M,dt);e.thrusting=true;return}
   if(PM==='hunt'){let T=ai.tgt&&ai.tgt.alive&&ai.tgt.type==='ship'&&W.ents.includes(ai.tgt)&&hostile(e.side,ai.tgt.side)?ai.tgt:null;
     if(!T||ai.t<=0){ai.t=.6+rnd(.3);T=null;let bd=1e9;for(const o of W.ents)if(o.type==='ship'&&o.alive&&o.role!=='frigate'&&hostile(e.side,o.side)&&!((o.isPlayer&&(S.player.docked||W.dead))||mHid(o,e))){const d=d3(o,e)*(isBmb(o.cls)?.6:1);if(d<bd){bd=d;T=o}}ai.tgt=T}
@@ -8943,6 +8944,18 @@ function jobHudRow(){if(!JTRACK)return'';if(!jobLive(JTRACK)){feed(`Job finished
   const T=JTRACK,P=S.player,hp=T.sid&&HOP[P.sector]&&HOP[P.sector][T.sid]!=null?HOP[P.sector][T.sid]:null,where=!T.sid?'':T.sid===P.sector?'here':`${DEF[T.sid].name} · ${hp} jump${hp===1?'':'s'}`;
   return`<div class="oi sd"><div class="om"><i class="otg ${T.ty==='fight'?'cmb':T.ty==='scout'?'intel':'log'}">Job</i>${esc(T.title)}</div><div class="os"><span>${esc(where)}</span><span class="ok">✓ Selected · ${kb('ordDrop')==='Backspace'?'⌫':esc(kb('ordDrop'))} drop</span></div></div>`}
 
+// ---- a pilot's carrier keeps its Guard wing aboard (Oct 2026): craft on Guard sit in the bays and launch when something
+// threatens the carrier (a hostile ship within 4.5 km, a torpedo or missile on it, or a hit in the last 8 s), then land
+// again after 12 s with no threat. AI carriers keep their flying screen; Strike, Hunt and Land orders are unchanged.
+const CGUARD={r:4500,calm:12,gap:.5,hit:8};
+function carThreat(E){if(W.t-(E.lastHit||-99)<CGUARD.hit)return true;for(const m of W.missiles)if(m.tgt===E&&hostile(E.side,m.side))return true;
+  for(const o of W.ents)if(o.type==='ship'&&o.alive&&o.role!=='limpet'&&o!==E&&hostile(E.side,o.side)&&!mHid(o,E)&&d3(o,E)<CGUARD.r)return true;return false}
+function carGuardHome(M){return!!(M&&M.tok&&isCar(M.tok)&&fOwn(M.tok)&&M.tok.side!=='brood'&&W.t-(M.gThreat==null?-1e9:M.gThreat)>CGUARD.calm)}
+function carGuardWorld(){if(NET.cl||!W)return;for(const E of W.ents){if(E.role!=='frigate'||!E.alive||!E.tok||!isCar(E.tok)||!fOwn(E.tok)||E.tok.side==='brood')continue;
+  if(!carThreat(E))continue;E.gThreat=W.t;const t=E.tok;if(!(E.bay||[]).length||W.t<(E.gLaunch||0)||!subBayOK(E,true))continue;
+  for(const g of WINGS){if(wingMis(t,{wg:g})!=='escort'||wgCount(E,g)>=SORTIE.wing||!E.bay.length)continue;E.gLaunch=W.t+CGUARD.gap;const p=carLaunch(E,E.bay.shift(),g);if(p&&W.t-(E.gSaid||-99)>20){E.gSaid=W.t;if(fMine(t))flash(`${t.name}: Guard wing launching.`)}break}}}
+{const o=worldUpdate;worldUpdate=function(){const r=o.apply(this,arguments);try{carGuardWorld()}catch(e){frameErr('carrier guard',e)}return r}}
+
 //@src 17_main.js
 // ============================================================ main loop
 let last=performance.now(),hudT=0,saveT=0,mapT=0;
@@ -8968,7 +8981,9 @@ addEventListener('resize',()=>{resize();if(!$('map').hidden)drawMap()});
 // bug reports) and the next frame still runs, so an error can't freeze the game
 let hidT=0;const FRAME_ERR={seen:new Set(),n:0};
 function frameErr(where,e){FRAME_ERR.n++;const k=where+':'+(e&&e.message);(window.__dgErr=window.__dgErr||[]).push({where,msg:String(e&&e.message||e),stack:String(e&&e.stack||'').split('\n').slice(0,4).join(' | '),T:S?Math.round(S.T):0});if(window.__dgErr.length>20)window.__dgErr.shift();
-  if(!FRAME_ERR.seen.has(k)){FRAME_ERR.seen.add(k);console.error('Driftgate '+where+':',e);try{flash(`Something went wrong (${where}): ${String(e&&e.message||e).slice(0,80)}. The game kept running; F12 → Console has details.`,true)}catch(_){}}}
+  if(!FRAME_ERR.seen.has(k)){FRAME_ERR.seen.add(k);console.error('Driftgate '+where+':',e);try{flash(`Something went wrong (${where}): ${errShort(e)}. The game kept running; F12 → Console has details.`,true)}catch(_){}}}
+// a circular-data error names the chain of properties that loops (Chrome puts it after the first line), so a report pins it
+function errShort(e){const m=String(e&&e.message||e);if(/circular/i.test(m)){const ps=[...m.matchAll(/property '([^']+)'/g)].map(x=>x[1]),st=(m.match(/constructor '([^']+)'/)||[])[1];return`circular data${st?' in '+st:''}: ${ps.join(' → ')||'?'}`.slice(0,140)}return m.slice(0,80)}
 function frameRun(where,fn){try{fn()}catch(e){frameErr(where,e)}}
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000);last=now;hidT=performance.now();
   frameRun('simulation',()=>{if(S&&running&&W){step(dt);if(S.training)trainTick()}});

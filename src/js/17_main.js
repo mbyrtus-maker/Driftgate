@@ -23,7 +23,9 @@ addEventListener('resize',()=>{resize();if(!$('map').hidden)drawMap()});
 // bug reports) and the next frame still runs, so an error can't freeze the game
 let hidT=0;const FRAME_ERR={seen:new Set(),n:0};
 function frameErr(where,e){FRAME_ERR.n++;const k=where+':'+(e&&e.message);(window.__dgErr=window.__dgErr||[]).push({where,msg:String(e&&e.message||e),stack:String(e&&e.stack||'').split('\n').slice(0,4).join(' | '),T:S?Math.round(S.T):0});if(window.__dgErr.length>20)window.__dgErr.shift();
-  if(!FRAME_ERR.seen.has(k)){FRAME_ERR.seen.add(k);console.error('Driftgate '+where+':',e);try{flash(`Something went wrong (${where}): ${String(e&&e.message||e).slice(0,80)}. The game kept running; F12 → Console has details.`,true)}catch(_){}}}
+  if(!FRAME_ERR.seen.has(k)){FRAME_ERR.seen.add(k);console.error('Driftgate '+where+':',e);try{flash(`Something went wrong (${where}): ${errShort(e)}. The game kept running; F12 → Console has details.`,true)}catch(_){}}}
+// a circular-data error names the chain of properties that loops (Chrome puts it after the first line), so a report pins it
+function errShort(e){const m=String(e&&e.message||e);if(/circular/i.test(m)){const ps=[...m.matchAll(/property '([^']+)'/g)].map(x=>x[1]),st=(m.match(/constructor '([^']+)'/)||[])[1];return`circular data${st?' in '+st:''}: ${ps.join(' → ')||'?'}`.slice(0,140)}return m.slice(0,80)}
 function frameRun(where,fn){try{fn()}catch(e){frameErr(where,e)}}
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000);last=now;hidT=performance.now();
   frameRun('simulation',()=>{if(S&&running&&W){step(dt);if(S.training)trainTick()}});
