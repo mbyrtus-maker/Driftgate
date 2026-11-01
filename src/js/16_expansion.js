@@ -859,10 +859,10 @@ function drAlarm(M,att){if(!M||M.type!=='ship'||!att||att===M)return;M._alarm=W.
 // missiles 40%, fighter guns 15%; left alone 20 s it regrows 1% a second; its tendrils catch 30% of torpedoes. Off-screen the
 // faction holding the far system sends bomber strikes at it.
 const OG={hp:6000,seed:90,mature:600,cost:{fe:40,cu:20,plate:4},start:1200,gap:[480,720],regrowT:20,regrow:.01,catch:.3,bounty:1500,mites:4,miteT:30,
-  dmg:{torpedo:4.5,cap:.75,missile:.4,gun:.15},strike:[240,420]};
+  dmg:{torpedo:4.5,cap:.75,missile:1,gun:.6},strike:[240,420]};
 function ogAt(a,b){if(!a||!b)return null;const k=gateKey(a,b);return(S.og||[]).find(O=>O.key===k)||null}
 function ogSealed(a,b){const O=ogAt(a,b);return O&&O.stage!=='seed'?O:null}
-function ogTxt(sid,to){const O=ogSealed(sid,to);if(!O)return null;return O.a===sid?'This gate is sealed by Brood Overgrowth. Burn it off to open it (torpedoes work best).':`This gate is sealed by Brood Overgrowth on the far side, in ${DEF[O.a].name}. It has to be cleared from there.`}
+function ogTxt(sid,to){const O=ogSealed(sid,to);if(!O)return null;return`This gate is sealed by Brood Overgrowth (${Math.round(O.hp)} of ${OG.hp} hull). Blow it off the gate to open it: guns and missiles wear it down, torpedoes work best.`}
 // the shortest way from a to b avoiding sealed gates, or null
 function ogRoute(a,b){const prev={[a]:null},q=[a];while(q.length){const c=q.shift();if(c===b)break;for(const n of NEIGH[c]||[]){if(n in prev||ogSealed(c,n))continue;prev[n]=c;q.push(n)}}if(!(b in prev))return null;const out=[];for(let c=b;c!=null;c=prev[c])out.unshift(c);return out}
 // who clears it off-screen: the faction holding the far system, else the one holding most systems around it
@@ -895,9 +895,9 @@ function ogTick(){if(NET.cl)return;S.og=S.og||[];const T=S.T,bc=(controlCounts()
   if(T<OG.start||T<(S.ogNext||0))return;if(S.og.length>=(bc>=6?3:2))return;if(ogPlant())S.ogNext=T+rnd(OG.gap[0],OG.gap[1]);else S.ogNext=T+60}
 {const o=strategicTick;strategicTick=function(){o.apply(this,arguments);try{ogTick()}catch(e){frameErr('overgrowth',e)}}}
 // live: the growth sits on its gate as a Brood target
-function ogEnt(O){const g=(GATES[W.sid]||[]).find(x=>x.to===O.b);if(!g)return null;const e=makeNPC('og','brood','overgrowth',1,{},'og:'+O.id);e.ogId=O.id;e.x=g.x*.985;e.y=g.y*.985;e.z=g.z*.985;e.vx=e.vy=e.vz=0;
+function ogEnt(O){const g=(GATES[W.sid]||[]).find(x=>x.to===(W.sid===O.a?O.b:O.a));if(!g)return null;const e=makeNPC('og','brood','overgrowth',1,{},'og:'+O.id);e.ogId=O.id;e.x=g.x*.985;e.y=g.y*.985;e.z=g.z*.985;e.vx=e.vy=e.vz=0;
   qLook(-g.x,-g.y,-g.z,0,1,0,e.q);e.hull=O.hp;e.shield=0;e.noRegen=1e12;W.ents.push(e);return e}
-function ogWorld(dt){if(NET.cl||!W)return;for(const O of S.og||[]){if(O.a!==W.sid)continue;let e=W.ents.find(x=>x.alive&&x.ogId===O.id);if(!e)e=ogEnt(O);if(!e)continue;
+function ogWorld(dt){if(NET.cl||!W)return;for(const O of S.og||[]){if(O.a!==W.sid&&O.b!==W.sid)continue;let e=W.ents.find(x=>x.alive&&x.ogId===O.id);if(!e)e=ogEnt(O);if(!e)continue;if(O.hp<e.hull-1)e.hull=O.hp;   // one growth through the gate: either side wears down the same hull
   e.vx=e.vy=e.vz=0;const max=O.stage==='seed'?OG.hp*.25:OG.hp;if(e.st.hull!==OG.hp)e.st={...e.st,hull:OG.hp};
   if(W.t-(e.lastHit||-1e9)>OG.regrowT)e.hull=Math.min(max,e.hull+OG.hp*OG.regrow*dt);else O.hitT=S.T;if(e.hull>max)e.hull=max;O.hp=e.hull;
   for(const m of W.missiles.slice())if(m.tgt===e&&m.kind==='torpedo'&&!m.ogR&&d3(m,e)<800){m.ogR=1;if(Math.random()<OG.catch){if(!MUTE)fxSpark(m,'#b9e05a',6);killTorp(m,'brood')}}
@@ -920,16 +920,17 @@ function ogWorld(dt){if(NET.cl||!W)return;for(const O of S.og||[]){if(O.a!==W.si
 // system and nothing to the hull. Capitals repair out of combat (fully at their base); stations repair from their own
 // stores, spending Alloy Plate and Conduit, which go back into the drift so the ledger stays exact.
 const SUBT={cap:{pd:300,eng:1200,shd:1500,torp:800,bay:1500},st:{tur:500,shd:2000,bay:1500,ring:2000},
+  bnm:{pd:'Spore gland',tur:'Spore polyp',eng:'Drive sacs',shd:'Membrane heart',torp:'Spore launchers',bay:'Birthing pores'},
   nm:{pd:'Point defence turret',tur:'Turret mount',eng:'Engines',shd:'Shield generator',torp:'Torpedo bays',bay:'Launch bay',ring:'Docking ring'},
   hit:{pd:1,tur:1,eng:1.2,shd:1.3,torp:1.1,bay:1.6,ring:1.2},calm:30,capRep:.05,stRep:.1,stCost:{plate:1,wire:1},pdN:6};
-function subIsCap(t){return!!t&&(isCar(t)||isEsc(t))&&t.side!=='brood'&&!t.dummy}
-function subIsSt(R){return!!R&&!!R.kind&&R.owner!=='brood'&&R.owner!=='neutral'&&!!R.owner}
+function subIsCap(t){return!!t&&(isCar(t)||isEsc(t))&&!t.dummy}
+function subIsSt(R){return!!R&&!!R.kind&&R.owner!=='neutral'&&!!R.owner}
 function subRecOf(E){if(!E)return null;if(E.type==='station')return subIsSt(E.rec)?E.rec:null;return E.role==='frigate'&&subIsCap(E.tok)?E.tok:null}
 function subCapOf(rec){return rec&&rec.cls!==undefined&&!rec.kind}
 function subMax(rec,k){return(subCapOf(rec)?SUBT.cap:SUBT.st)[k]||0}
 function subTurN(rec){if(subCapOf(rec))return SUBT.pdN;const SE=W&&W.stationEnt;if(SE&&SE.rec===rec&&SE.turrets)return SE.turrets.length;if(rec.sub&&rec.sub.tur)return rec.sub.tur.length;const k=rec.fwd?STN.fdepot:STN[rec.kind];return k?k.tur:0}
 // the systems a capital or station has, in panel order
-function subKeys(rec){if(subCapOf(rec))return isEsc(rec)?['pd','eng','torp','shd','bay']:['pd','eng','shd','bay'];return rec.kind==='depot'&&hgLvl(rec)>0?['tur','shd','bay','ring']:['tur','shd','ring']}
+function subKeys(rec){const br=subCapOf(rec)?rec.side==='brood':rec.owner==='brood';if(subCapOf(rec))return br?(isEsc(rec)?['pd','eng','torp']:['pd','eng','bay']):isEsc(rec)?['pd','eng','torp','shd','bay']:['pd','eng','shd','bay'];if(br)return['tur','shd'];return rec.kind==='depot'&&hgLvl(rec)>0?['tur','shd','bay','ring']:['tur','shd','ring']}
 function subHp(rec,k,i){const s=rec&&rec.sub,mx=subMax(rec,k);if(!s||s[k]===undefined)return mx;const v=s[k];return Array.isArray(v)?(v[i||0]===undefined?mx:v[i||0]):v}
 // a pooled system's effect: 1 working, .5 damaged (below half), 0 disabled
 function subF(rec,k){if(!rec||!rec.sub)return 1;const h=subHp(rec,k),mx=subMax(rec,k);return h<=0?0:h<mx*.5?.5:1}
@@ -942,9 +943,10 @@ function subOpen(E){if(!E)return false;if(E.type==='station')return E.offline||E
 // a system's points in model space, cached on the entity: [{k,i,p:[x,y,z] local metres, r}]
 function subLocal(E){if(E._subL&&E._subL.ok===MDL.ready)return E._subL.a;if(E.type==='station'&&typeof mdlStationTurrets==='function')mdlStationTurrets(E);const a=[],rec=subRecOf(E);if(!rec)return a;
   if(E.type==='station'){const M=MDL.ready&&MDL.i[E.kind==='depot'?'depot':'station'];(E.turrets||[]).forEach((tu,i)=>a.push({k:'tur',i,p:tu.p.slice(),r:16}));
-    if(M&&M.sub)for(const k of subKeys(rec))if(k!=='tur'&&M.sub[k])M.sub[k].forEach(m=>a.push({k,i:0,p:[m[0]*M.s,m[1]*M.s+3,m[2]*M.s],r:16*SUBT.hit[k]}))}
-  else{const M=MDL.ready&&MDL.i[E.cls],R=E.st.radius*1.25,r=Math.max(13,E.st.radius*.15);
-    if(M&&M.tp&&M.tp.length)for(let i=0;i<SUBT.pdN;i++){const m=M.tp[i%M.tp.length];a.push({k:'pd',i,p:[m[0]*R,m[1]*R,m[2]*R],r})}
+    if(M&&M.sub&&E.fac!=='brood')for(const k of subKeys(rec))if(k!=='tur'&&M.sub[k])M.sub[k].forEach(m=>a.push({k,i:0,p:[m[0]*M.s,m[1]*M.s+3,m[2]*M.s],r:16*SUBT.hit[k]}))
+    if(E.fac==='brood')a.push({k:'shd',i:0,p:BROOD_HEART.slice(),r:22})}
+  else{const M=MDL.ready&&MDL.i[E.side==='brood'?BROOD_MDL[E.cls]:E.cls],R=E.st.radius*1.25,r=Math.max(13,E.st.radius*.15),tp=M&&(E.side==='brood'?M.sub&&M.sub.pd:M.tp);
+    if(tp&&tp.length)for(let i=0;i<SUBT.pdN;i++){const m=tp[i%tp.length];a.push({k:'pd',i,p:[m[0]*R,m[1]*R,m[2]*R],r})}
     if(M&&M.sub)for(const k of subKeys(rec))if(k!=='pd'&&M.sub[k])M.sub[k].forEach(m=>a.push({k,i:0,p:[m[0]*R,m[1]*R,m[2]*R],r:r*SUBT.hit[k]}))}
   E._subL={ok:MDL.ready,a};return a}
 function subWorldPts(E){const out=[];for(const s of subLocal(E)){qRot(E.q,s.p[0],s.p[1],s.p[2],_u);out.push({k:s.k,i:s.i,r:s.r,x:E.x+_u.x,y:E.y+_u.y,z:E.z+_u.z})}return out}
@@ -960,7 +962,7 @@ function subShot(b,ox,oy,oz){if(b.cap||b.jam||!b.src)return false;const sx=b.x-o
   if(W._sfT!==W.t){W._sfT=W.t;W._sfL=W.ents.filter(e=>e.role==='frigate'&&e.alive&&subOpen(e)&&subRecOf(e))}   // the open capitals, once a frame
   for(const e of W._sfL){if(!e.alive||e===b.src||!subOpen(e)||!hostile(b.side,e.side))continue;if(tryE(e,e.st.radius*1.35+25))return true}
   const SE=W.stationEnt;if(SE&&subOpen(SE)&&subRecOf(SE)&&hostile(b.side,SE.fac)&&tryE(SE,175))return true;return false}
-function subName(rec,k,i){return k==='pd'||k==='tur'?`${SUBT.nm[k]} ${(i||0)+1}`:k==='bay'&&!subCapOf(rec)?'Hangar bays':SUBT.nm[k]}
+function subName(rec,k,i){const br=subCapOf(rec)?rec.side==='brood':rec.owner==='brood',nm=br?SUBT.bnm:SUBT.nm;return k==='pd'||k==='tur'?`${nm[k]} ${(i||0)+1}`:k==='bay'&&!subCapOf(rec)&&!br?'Hangar bays':nm[k]}
 function subOwner(rec){return subCapOf(rec)?rec.side:rec.owner}
 function subTell(src,msg){if(!src)return;if(src.isPlayer)flash(msg);else if(src.rp&&NET.host)netMsg(src.rp,'flash',msg)}
 function subDamage(E,s,dmg,side,src){const rec=subRecOf(E);if(!rec||!(dmg>0))return;subInit(rec);const S2=rec.sub,mx=subMax(rec,s.k);if(S2[s.k]===undefined)S2[s.k]=s.k==='pd'||s.k==='tur'?Array.from({length:subTurN(rec)},()=>subMax(rec,s.k)):mx;
@@ -1115,7 +1117,17 @@ function carGuardWorld(){if(NET.cl||!W)return;for(const E of W.ents){if(E.role!=
 // works and Fighter hangar, L3 two of each, L4 three of each (the average of the three, hangar counted up to 3).
 function depotLevel(R){if(!R||R.kind!=='depot')return 0;if(R.fwd)return 1;const d=devOf(R);return Math.min(4,1+Math.floor(((d.def||0)+(d.armor||0)+Math.min(3,d.hangar||0))/3))}
 // the capital-vs-depot rebalance is switched on as a whole once tuned (BAL2.on); until then the old rules apply
-const BAL2={on:false};
+const BAL2={on:false,escK:{},depHit:[[60,120],[70,140],[80,160],[100,200]],range:[1600,1650,1700,1800]};
+// off-screen, a broken shield comes back at 30% after 20 s, as it does live (the 20 s reboot)
+function offReboot(Rs){if(!BAL2.on||!Rs)return;if(Rs.shRb&&S.T>=Rs.shRb){Rs.shRb=0;if(Rs.shield<=0&&Rs.hull>1)Rs.shield=Rs.sMax*.3}else if(!Rs.shRb&&Rs.shield<=0&&Rs.hull>1&&Rs.shBrk!==true){Rs.shRb=S.T+20}}
+// live strikes: the strike's damage lands continuously (the same amount per 10 s as off-screen) rather than in one blow every
+// 10 s, so a station can't recover between blows
+function sortieLiveFlow(dt){if(!BAL2.on||NET.cl||!W)return;for(const ev of S.events||[]){if(ev.type!=='sortie'||ev.stage!=='strike'||!ev.spawned||WORLDS[ev.to]!==W||ev.tgt!=='st')continue;
+  const E=W.stationEnt,sd=sortieSide(ev);if(!E||!hostile(sd,E.fac))continue;const pw=ev.craft.reduce((a,c)=>a+crPow(c),0),k=pw/5;if(!pw)continue;
+  const d=(E.shield>0&&!E.offline?700:370)*k*dt/10;damageStation(E,d,sd,'capital');ev.dmg+=d;if(Math.random()<dt*1.5)fxBoom({x:E.x+rnd(-90,90),y:E.y+rnd(-90,90),z:E.z+rnd(-90,90)},50,'#ffcf8a')}}
+{const o=worldUpdate;worldUpdate=function(dt){const r=o.apply(this,arguments);try{sortieLiveFlow(dt)}catch(e){frameErr('live strike',e)}return r}}
+// depot guns reach further with each level (they used to be outranged by an escort's stand-off)
+{const o=addStationEnt;addStationEnt=function(R){const e=o.apply(this,arguments);if(BAL2.on&&e&&R.kind==='depot'&&!R.fwd)e.range=BAL2.range[depotLevel(R)-1];return e}}
 // off-screen strike losses per craft per 10 s against a depot, by level (calibrated to live fights)
 const DEPOT_PL=[.012,.03,.045,.06];
 // carriers strike a depot next door through the same strike as a pilot's (live or off-screen alike): one wing (6 craft)
@@ -1148,3 +1160,15 @@ function broodFeed(ld,sid){const st=S.econ.stock.brood;if(!st)return false;const
   // still nothing: a Mite flies instead (fed from the drift if it must be)
   if(!haveIn(MITE.kit,[S.econ.stock.brood]))broodFeed(MITE.kit,W.sid);if(!takeFrom(MITE.kit,[S.econ.stock.brood]))return null;
   const m=makeNPC(role,'brood','mite',1,{...MITE.kit},'stock:brood');const SE=W.stationEnt,a=rdir(),r=rnd(800,2600);if(lead){m.x=lead.x+rnd(-60,60);m.y=lead.y+rnd(-30,30);m.z=lead.z+rnd(-60,60)}else{m.x=(SE?SE.x:0)+a.x*r;m.y=(SE?SE.y:0)+a.y*r*.3;m.z=(SE?SE.z:0)+a.z*r}W.ents.push(m);return m}}
+
+// ---- Brood organs as sub-targets (Oct 2026): Hive Ships (spore glands, drive sacs, birthing pores), Prowlers (spitter polyps,
+// drive vents, spore launchers) and Brood depots and hives (spore polyps at their gun points, a membrane heart beneath).
+// Brood capitals carry no shield, so their organs can be hit at any time; a Brood station's only once its shield is down.
+const BROOD_HEART=[0,-78,0];
+{const o=mdlFrigTurrets;mdlFrigTurrets=function(e){if(e&&e.side==='brood'&&!e._mt&&MDL.ready&&e.turrets){const M=MDL.i[BROOD_MDL[e.cls]];if(M&&M.sub&&M.sub.pd){e._mt=1;const k=1.25/1.1,tp=M.sub.pd;e.turrets.forEach((tu,i)=>{const m=tp[i%tp.length];tu.p=[m[0]*k,m[1]*k,m[2]*k]})}return}return o.apply(this,arguments)}}
+// the organs on a Brood station: a fleshy stalk out to each gun point ending in a glowing polyp, and the heart beneath
+function broodOrgans(SE){const n=(SE.turrets||[]).length,key='bOrg'+n+':'+(SE.turrets||[]).map(t=>t.p.map(Math.round).join(',')).join(';');if(MESH[key])return MESH[key];
+  const fc=hexRGB(FACTIONS.brood.col),FL=[.42,.27,.31],g=new GB();
+  for(const tu of SE.turrets||[]){const p=tu.p,l=hyp(p[0],p[1],p[2])||1;for(let j=0;j<5;j++){const f=.42+j*.13;g.set(p[0]*f,p[1]*f,p[2]*f).sphere(9-j*1.2,5,7,FL,0)}g.set(p[0],p[1],p[2]).sphere(9,6,8,fc,1)}
+  const H=BROOD_HEART;for(let j=0;j<4;j++)g.set(0,H[1]*(.5+j*.12),0).sphere(14-j*2,6,8,FL,0);g.set(H[0],H[1],H[2]).sphere(18,8,10,[.75,.2,.3],.9);
+  return MESH[key]=g.upload()}

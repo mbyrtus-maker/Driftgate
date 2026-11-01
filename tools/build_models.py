@@ -51,6 +51,10 @@ def comp(parts,name=None):
 SUBS={}  # sub-target points (model space) by system: 'eng','shd','torp','bay','ring'
 # the depot's sub-targets: the ringed generator under the lower dome, its three small hangars and the corridors to them
 SUBS['depot']={'shd':[(0,-2.4,0)],'bay':[(math.sin(i*2.094)*4.0,0,math.cos(i*2.094)*4.0) for i in range(3)],'ring':[(math.sin(i*2.094)*2.4,0,math.cos(i*2.094)*2.4) for i in range(3)]}
+# the Brood capitals' organs (model space, from brood.py): spore sacs on the Hive Ship's back and spitter polyps on the Prowler's
+# flanks (point defence), drive vents, the Hive Ship's birthing pores (launch bay) and the Prowler's spore launchers (torpedo bays)
+SUBS['b_hive']={'pd': [(-0.22, 0.472, -0.36), (0.22, 0.472, -0.36), (-0.227, 0.488, -0.16), (0.227, 0.488, -0.16), (-0.22, 0.472, 0.04), (0.22, 0.472, 0.04)], 'eng': [(-0.06, 0, -1.0), (0.06, 0, -1.0)], 'bay': [(-0.521, -0.06, -0.6), (-0.591, -0.06, -0.4), (-0.618, -0.06, -0.2), (-0.606, -0.06, 0.0), (-0.55, -0.06, 0.2), (0.521, -0.06, -0.6), (0.591, -0.06, -0.4), (0.618, -0.06, -0.2), (0.606, -0.06, 0.0), (0.55, -0.06, 0.2)]}
+SUBS['b_prowler']={'pd': [(-0.252, 0.106, 0.395), (-0.252, 0.106, 0.035), (-0.219, 0.106, -0.325), (0.252, 0.106, 0.395), (0.252, 0.106, 0.035), (0.219, 0.106, -0.325)], 'eng': [(-0.05, 0, -0.98), (0.05, 0, -0.98)], 'torp': [(-0.27, -0.065, 0.84), (0.27, -0.065, 0.84)]}
 PTS={}  # explicit docking ports (model space) for models whose arm tips can't be found from the silhouette
 def rockbase():
     M=build_rockbase();MOUNTS['rockbase']=M['mounts'];PTS['rockbase']=M['ports']
