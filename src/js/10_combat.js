@@ -124,7 +124,7 @@ function blKey(P){return(P&&P.pid)||'me'}
 function blRng(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^t>>>15,1|t);r^=r+Math.imul(r^r>>>7,61|r);return((r^r>>>14)>>>0)/4294967296}}
 // a rock's fault points: fixed by its seed (and a new set each time it is partly cracked), spread over its surface
 function blPts(a){if(a.wpt){const w=wreckOf(S.sectors[W.sid],a),R=WPT_R*.9;let dx=0,dy=1,dz=0;if(w){dx=a.x-w.x;dy=a.y-w.y;dz=a.z-w.z;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l}return[{x:a.x+dx*R,y:a.y+dy*R,z:a.z+dz*R}]}
-  const tot=oreTotal(a),n=tot<=50?2:tot<=90?3:4,key=n+':'+(a.fpv||0)+':'+Math.round(a.x);if(a._fpk===key&&a._fp)return a._fp;
+  const tot=oreTotal(a),n=tot<=50?1:tot<=90?2:3,key=n+':'+(a.fpv||0)+':'+Math.round(a.x);if(a._fpk===key&&a._fp)return a._fp;
   const r=blRng((a.seed||a.id||1)+(a.fpv||0)*7919),R=astR(a),out=[],rot=r()*TAU,tilt=r()*2-1;
   // one fixed layout of four directions per rock; a shrinking rock keeps the first 3 or 2, so points don't jump when someone else mines it
   for(let i=0;i<4;i++){const y=1-(i+.5)*2/4*(.8+.2*r()),rr=Math.sqrt(Math.max(0,1-y*y)),th=rot+i*2.39996;let x=Math.cos(th)*rr,z=Math.sin(th)*rr,yy=y*.9+tilt*.1;const l=hyp(x,yy,z)||1;if(i<n)out.push({x:a.x+x/l*R,y:a.y+yy/l*R,z:a.z+z/l*R})}

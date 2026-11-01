@@ -27,7 +27,7 @@ SNAP=r"""(()=>{const P=S.player,f=P.faction,out={};const DOCK=40,JUMP=10,GATE=45
     let tFill;const mags=loadU/(n*y),tMag=n*AIM+DET+n*y/coll;tFill=mags*tMag+Math.max(0,Math.ceil(mags)-1)*Math.max(0,h.reload-n*y/coll);
     if(PERF){ // perfect blasts: line up every fault point of a rock (PERF.aim s a charge), each lands on point with chance PERF.p;
       // all on point cracks the whole rock, otherwise the blast pays like an ordinary one. Fill the hold rock by rock.
-      const rocks=s.ast.filter(a=>!a.comet&&oreTotal(a)>20).map(oreTotal);const avg=rocks.length?rocks.reduce((a,b)=>a+b,0)/rocks.length:60,np=avg<=50?2:avg<=90?3:4;
+      const rocks=s.ast.filter(a=>!a.comet&&oreTotal(a)>20).map(oreTotal);const avg=rocks.length?rocks.reduce((a,b)=>a+b,0)/rocks.length:60,np=avg<=50?1:avg<=90?2:3;
       let room=cap,t=0,chg=n;while(room>0&&t<36000){if(chg<np){t+=h.reload;chg=n}chg-=np;const ok=Math.pow(PERF.p,np),take=Math.min(room/mm,ok*avg+(1-ok)*np*h.k*BL_REL.on);t+=np*PERF.aim+DET+take/coll;room-=take*mm}
       tFill=t}
     const belt=(s.belts||[]).length?s.belts.reduce((a,b)=>a+Math.hypot(b.x,b.y,b.z),0)/s.belts.length:2500;
