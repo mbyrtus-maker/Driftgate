@@ -2000,3 +2000,18 @@ The Jobs list (All filter) and the faction orders on the Command card now put th
 
 ## Radar: the target in its own colour (Nov 2026)
 The current target's blip on the radar is now drawn magenta (#ff3df0), a colour no faction, side or radar mark uses, with its pulsing ring, ticks and rim arrow in the same magenta. It used to keep its side's colour inside a pale gold ring; the ring alone was easy to lose next to Unbound khaki and the ivory unclaimed beacon.
+
+## Drift by mass (Nov 2026)
+With Flight Assist on, the dampers that bleed off sideways slide (`lat` in `handling`) now weaken with the ship's mass, so heavier ships drift longer through turns. Mass is the hull class's base hull plus the tonnage in the hold; damping is (90 / mass)^0.75, capped at 1 (today's tight handling) and floored at 0.25 (`DRIFT` in 16f_factions.js). It replaces the old laden-only damping for the pilot's ship (laden ships still turn and accelerate slower as before); AI ships are unchanged, and Flight Assist off is full drift as always.
+
+| Ship | Damping | Sideways slide halves in (thrusting) |
+|---|---|---|
+| Light Fighter, Scouts, empty Light Miner | 1.00 | 0.6 s |
+| Medium Fighter | 0.81 | 0.75 s |
+| Heavy Fighter | 0.76 | 0.8 s |
+| Bomber / Heavy Bomber | 0.54 / 0.53 | 1.1 s |
+| Medium Hauler empty / full (100 t) | 0.62 / 0.44 | 1.0 / 1.4 s |
+| Heavy Miner empty / full | 0.57 / 0.44 | 1.1 / 1.4 s |
+| Heavy Hauler empty / full (230 t) | 0.45 / 0.28 | 1.3 / 2.2 s (the most in the game) |
+
+Measured in game (200 m/s sideways, thrusting forward for 1 s): Light Fighter keeps 63 m/s of slide, Heavy Fighter 83, empty Heavy Hauler 119, full Heavy Hauler 145.

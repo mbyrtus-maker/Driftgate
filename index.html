@@ -9287,6 +9287,15 @@ function jobFit(cls){if(cls==='vesper')return['scout','fight'];if(cls==='bombard
 function jobRank(j,P){const F=jobFit(P&&P.cls),i=F.indexOf(j.ty);return i>=0?i:F.length+Math.max(0,JOB_ORDER.indexOf(j.ty))}
 {const o=orderList;orderList=function(){const L=o.apply(this,arguments);if(!L.length)return L;const F=jobFit(S.player.cls),r=x=>{const ty=x.t==='side'?(SIDE[x.o.kind]&&SIDE[x.o.kind].lane==='intel'?'scout':'fight'):null;if(!ty)return 0;const i=F.indexOf(ty);return i>=0?i:F.length+JOB_ORDER.indexOf(ty)};
   const side=L.filter(x=>x.t==='side').map((x,i)=>[x,i]).sort((a,b)=>r(a[0])-r(b[0])||a[1]-b[1]).map(z=>z[0]);let k=0;return L.map(x=>x.t==='side'?side[k++]:x)}}
+// ---- drift by mass (Nov 2026): with Flight Assist on, the dampers that bleed off sideways slide are weaker the heavier the
+// ship, so a heavier ship drifts longer through a turn. Mass = the hull class's base hull plus the tonnage in the hold;
+// damping = (DRIFT.ref / mass)^DRIFT.exp, never above 1 (a Light Fighter, Scout or Light Miner keeps today's tight handling)
+// and never below DRIFT.min. This replaces the old laden-only damping (laden ships still turn and accelerate slower as before).
+// Light Fighter 86 → 1; Heavy Fighter 130 → 0.76; Bomber 205 → 0.54; Heavy Hauler with 230 t aboard (490) → 0.28, the most drift.
+const DRIFT={ref:90,exp:.75,min:.25};
+function shipDriftMass(e){const P=S.player,C=CLASSES[P.cls]||{};let m=0;for(const k in P.cargo||{})m+=mass(k)*P.cargo[k];return(C.hull||100)+m}
+function driftLat(e){return clamp(Math.pow(DRIFT.ref/shipDriftMass(e),DRIFT.exp),DRIFT.min,1)}
+{const o=handling;handling=function(e){const h=o.apply(this,arguments);if(!e||!e.isPlayer||!S||!S.player)return h;return Object.assign({},h,{lat:driftLat(e)})}}
 
 //@src 17_main.js
 // ============================================================ main loop
