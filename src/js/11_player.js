@@ -333,7 +333,7 @@ function structUpdate(dt){
     if(!SE.offline)for(const[ti,tu]of SE.turrets.entries()){if(tu.dead)continue;tu.cool-=dt;if(tu.cool>0)continue;if(tu.mod&&SE.rec&&starving(SE.rec)){tu.cool=1;continue}qRot(SE.q,tu.p[0],tu.p[1],tu.p[2],_u);const wp={x:SE.x+_u.x,y:SE.y+_u.y,z:SE.z+_u.z};let t=null,bd=SE.range;
       if(ti%2===0)for(const m of W.missiles)if(m.kind==='torpedo'&&(m.tgt===SE||(m.tgt&&m.tgt.type==='works'&&m.tgt.fac===SE.fac))&&hostile(SE.fac,m.side)){const d=d3(m,wp);if(d<Math.min(bd,700)){bd=d;t=m}}
       if(!t)for(const e of W.ents){if(e.type!=='ship'||!e.alive||e.role==='limpet'||((e.isPlayer&&(S.player.docked||W.dead)||mHid(e,SE))))continue;if(!hostE(SE.fac,e))continue;const d=d3(e,wp);if(d<bd){bd=d;t=e}}
-      if(t){tu.cool=SE.core?.45:.55;tu.aim=turretShot(wp,t,1300,STN[SE.kind||'core'].dmg*(1+.12*(SE.rec?devOf(SE.rec).def:0))*(t.role==='frigate'?3:1),SE.fac,22);if(t.role==='frigate')W.shots[W.shots.length-1].cap=true}else tu.cool=.3}}
+      if(t){tu.cool=SE.core?.45:.55;tu.aim=turretShot(wp,t,1300,STN[SE.kind||'core'].dmg*(1+.12*(SE.rec?devOf(SE.rec).def:0))*(t.role==='frigate'?3:1)*depGunK(SE,t),SE.fac,22);if(t.role==='frigate')W.shots[W.shots.length-1].cap=true}else tu.cool=.3}}
   if(SE)stMissiles(SE,dt);
   const OE=W.outpostEnt;if(!OE)return;const o=OE.o,os=oStats(o);
   if(o.breached){if(S.T>o.breached+90){o.breached=0;o.hull=os.hMax*.25;feed(`${o.name} rebooted its defenses.`,'news')}if(Math.random()<.3)fxSpark({x:OE.x+rnd(-60,60),y:OE.y+rnd(-30,30),z:OE.z+rnd(-60,60)},'#ffb35a',1)}

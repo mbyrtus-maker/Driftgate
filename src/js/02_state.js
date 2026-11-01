@@ -268,7 +268,7 @@ function sortieHome(ev){const t=(S.frigates||[]).find(x=>x.id===ev.car&&isCar(x)
 function sortieTick(){for(const ev of S.events){if(ev.type!=='sortie'||ev.stage==='done')continue;const t=(S.frigates||[]).find(x=>x.id===ev.car);
     if(ev.stage==='gather'){if(!t||!t.live||S.T>ev.until)ev.pending=0;if(ev.pending>0)continue;if(!ev.craft.length){ev.stage='done';continue}ev.stage='out';ev.until=S.T+SORTIE.transit;
       sortieFeed(ev,`${ev.craft.length} craft from ${t?t.name:'the carrier'} are through the gate, striking ${sortieTgtName(ev)} in ${DEF[ev.to].name}.`,'info');continue}
-    if(ev.stage==='out'){if(ev.recall){ev.stage='back';ev.until=S.T+SORTIE.transit;sortieFeed(ev,`The strike on ${DEF[ev.to].name} was called back before it arrived.`,'info');continue}if(S.T>=ev.until){ev.stage='strike';ev.until=S.T+SORTIE.time;ev.n0=ev.craft.length}continue}
+    if(ev.stage==='out'){if(ev.recall){ev.stage='back';ev.until=S.T+SORTIE.transit;sortieFeed(ev,`The strike on ${DEF[ev.to].name} was called back before it arrived.`,'info');continue}if(S.T>=ev.until){ev.stage='strike';ev.until=S.T+(BAL2.on?BAL2.sTime:SORTIE.time);ev.n0=ev.craft.length}continue}
     if(ev.stage==='back'){if(S.T>=ev.until)sortieHome(ev);continue}
     // strike
     const sd=sortieSide(ev),w=WORLDS[ev.to];if(!ev.craft.length){ev.stage='done';sortieFeed(ev,`The strike on ${DEF[ev.to].name} was wiped out.`,'bad');continue}
@@ -276,19 +276,19 @@ function sortieTick(){for(const ev of S.events){if(ev.type!=='sortie'||ev.stage=
         for(const c of ev.craft){const ld=carKit(c),got={};for(const k in ld){const m=Math.min(ld[k],ev.force[k]||0);if(m>0)got[k]=inv.take(ev.force,k,m)}const sg=ev.tgt==='st'&&!isBmb(c),e=makeNPC(sg?'strike':'raider',sd,c,factionTier(sd),got,'ev:'+ev.id);if(sg)e.ai.siege=1;e.fac=sd;e.sortieEv=ev.id;e.x=g.x*.93+rnd(-80,80);e.y=g.y*.93+rnd(-40,40);e.z=g.z*.93+rnd(-80,80);if(TE&&TE.type==='ship')e.ai.tgt=TE;fxWarp(e,sideCol(sd));W.ents.push(e)}})}}
     if(w&&ev.spawned){if(!BAL2.on)sortieLiveHit(ev,w,sd)}
     else{if(ev.spawned)ev.spawned=0;   // the system closed: the craft's kits are back in ev.force; survivors are what's left in ev.craft
-      const pw=ev.craft.reduce((a,c)=>a+crPow(c),0)*(t&&fOwn(t)||BAL2.on?1:WING_K),k=pw/5,Rs=S.stations[ev.to],caps=frigatesIn(ev.to).filter(o=>hostile(sd,o.side));
+      const pw=ev.craft.reduce((a,c)=>a+crPow(c),0)*(t&&fOwn(t)||BAL2.on?1:WING_K),k=strikeK(pw),Rs=S.stations[ev.to],caps=frigatesIn(ev.to).filter(o=>hostile(sd,o.side));
       if(ev.tgt==='st'&&Rs&&hostileStationAt(ev.to,sd)){distressCall(ev.to,Rs.name,Rs.owner,sd);offReboot(Rs);if(Rs.shield>0){const d=Math.min(Rs.shield,700*k);Rs.shield-=d;ev.dmg+=d}else{const d=rnd(320,420)*k;Rs.hull-=d;ev.dmg+=d;wkAbstractHit(ev.to,sd,.3)}
         if(Rs.hull<=0){if(Rs.kind==='depot'){if(Rs.owner!=='brood'&&sd!=='brood'&&ev.mode!=='raze'){const g=garrison(Rs);if(capLoads(ev.to,sd)>=g){useLoads(ev.to,sd,g,Rs);captureDepot(ev.to,sd)}else Rs.hull=1}else razeStation(ev.to,sd)}else if(Rs.kind==='free')razeStation(ev.to,'brood');else Rs.hull=1}}
       else if(ev.tgt!=='st'){const o=caps.find(x=>'c'+x.id===ev.tgt);if(o){const d=pw*rnd(40,70);o.hull-=d;ev.dmg+=d;if(o.hull<=0)killFrigateToken(o,`by ${t?t.name+"'s":'a carrier'} strike`)}}
       // the defences answer: station guns, hostile capitals' turrets and the local patrols
-      const pl=.008+(Rs&&hostileStationAt(ev.to,sd)?(Rs.kind==='core'?.03:Rs.kind==='hive'?.025:Rs.kind==='depot'&&BAL2.on?DEPOT_PL[depotLevel(Rs)-1]:.012):0)+.02*caps.length;
+      const pl=.008+(Rs&&hostileStationAt(ev.to,sd)?(Rs.kind==='core'?(BAL2.on?DEPOT_PL[3]*(1+.2*(devOf(Rs).def||0)):.03):Rs.kind==='hive'?.025:Rs.kind==='depot'&&BAL2.on?(stLvHit(Rs),DEPOT_PL[stLvRef(Rs)-1]):.012):0)+.02*caps.length;
       for(let i=ev.craft.length-1;i>=0;i--)if(Math.random()<pl){const c=ev.craft.splice(i,1)[0],ld=carKit(c),got={};for(const kk in ld){const m=Math.min(ld[kk],ev.force[kk]||0);if(m>0)got[kk]=inv.take(ev.force,kk,m)}toDebris(S.sectors[ev.to],got);ev.lost++}}
     sortieReport(ev,t);
-    const broken=ev.craft.length*2<=(ev.n0||1);
+    const broken=BAL2.on?ev.craft.length<=(ev.n0||1)*BAL2.brk:ev.craft.length*2<=(ev.n0||1);
     if(S.T>=ev.until||!sortieTgtLive(ev)||!t||broken){if(w&&ev.spawned)inW(w,()=>{for(const e of W.ents.slice())if(e.sortieEv===ev.id&&e.alive){fxWarp(e,sideCol(e.side));despawn(e)}});ev.spawned=0;ev.stage='back';ev.until=S.T+SORTIE.back;
       sortieFeed(ev,!sortieTgtLive(ev)?(ev.tgt==='st'&&!S.stations[ev.to]?`✔ Strike on ${DEF[ev.to].name}: the depot is destroyed. The craft are heading back.`:ev.tgt==='st'&&S.stations[ev.to]&&sideNorm(S.stations[ev.to].owner)===sd?`✔ Strike on ${DEF[ev.to].name}: ${S.stations[ev.to].name} captured. The craft are heading back.`:`✔ Strike on ${DEF[ev.to].name}: target down. The craft are heading back.`):broken?`Strike on ${DEF[ev.to].name}: half the craft are lost. The rest are breaking off.`:`Strike on ${DEF[ev.to].name} is over; the craft are heading back.`,broken?'warn':'info')}}}
 // live strike runs: the same damage per 10 s as off-screen, applied to the real station or capital, with hits shown on it
-function sortieLiveHit(ev,w,sd){const pw=ev.craft.reduce((a,c)=>a+crPow(c),0)*(t&&fOwn(t)||BAL2.on?1:WING_K),k=pw/5;if(!pw)return;inW(w,()=>{
+function sortieLiveHit(ev,w,sd){const pw=ev.craft.reduce((a,c)=>a+crPow(c),0)*(t&&fOwn(t)||BAL2.on?1:WING_K),k=strikeK(pw);if(!pw)return;inW(w,()=>{
   if(ev.tgt==='st'){const E=W.stationEnt;if(!E||!hostile(sd,E.fac))return;const d=E.shield>0&&!E.offline?700*k:rnd(320,420)*k;for(let i=0;i<3;i++)fxBoom({x:E.x+rnd(-90,90),y:E.y+rnd(-90,90),z:E.z+rnd(-90,90)},60,'#ffcf8a');damageStation(E,d,sd,'capital');ev.dmg+=d}
   else{const T=W.ents.find(x=>x.tok&&'c'+x.tok.id===ev.tgt&&x.alive);if(T){const d=pw*rnd(40,70);fxBoom({x:T.x+rnd(-60,60),y:T.y+rnd(-40,40),z:T.z+rnd(-60,60)},60,'#ffcf8a');damageShip(T,d,sd,T,'capital');ev.dmg+=d}}})}
 // progress reports to the carrier's commander: the start, shields down, every craft lost, every 30 s, a broken hull and what the assault ships can do

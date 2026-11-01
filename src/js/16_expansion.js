@@ -696,7 +696,7 @@ function aiCarSortie(){if(NET.cl||!S||S.training)return;for(const t of S.frigate
     if(!to)continue;
     inW(w,()=>{const E=W.ents.find(x=>x.tok===t&&x.alive);if(!E)return;if(W.ents.some(o=>o.type==='ship'&&o.alive&&o.role!=='frigate'&&hostile(sd,o.side)&&d3(o,E)<AICAR.threat))return;
       if((E.pickets||[]).filter(p=>p.alive&&p.wg==='B'&&W.ents.includes(p)).length+(E.bay||[]).length<AICAR.minCraft)return;
-      const both=BAL2.on&&tgt==='st'&&depotLevel(S.stations[to])>=3,n=sortieStart(t,E,to,tgt,both?null:'B');if(!n)return;const ev=sortiesOf(t).find(v=>both||v.wg==='B');if(ev&&tgt==='st')ev.mode=sd!=='brood'&&aAvail(t)>0?'cap':'raze';t.sorT=S.T+AICAR.cool})}}
+      const both=BAL2.on&&tgt==='st'&&stationLevel(S.stations[to])>=2,n=sortieStart(t,E,to,tgt,both?null:'B');if(!n)return;const ev=sortiesOf(t).find(v=>both||v.wg==='B');if(ev&&tgt==='st')ev.mode=sd!=='brood'&&aAvail(t)>0?'cap':'raze';t.sorT=S.T+AICAR.cool})}}
 {const o=strategicTick;strategicTick=function(){const r=o.apply(this,arguments);try{aiCarSortie()}catch(e){frameErr('carrier wings',e)}return r}}
 
 // a guest docked in a Lair that is destroyed or replaced goes back into space (on the host), so nothing is moved into a stash that's gone
@@ -1117,22 +1117,38 @@ function carGuardWorld(){if(NET.cl||!W)return;for(const E of W.ents){if(E.role!=
 // works and Fighter hangar, L3 two of each, L4 three of each (the average of the three, hangar counted up to 3).
 function depotLevel(R){if(!R||R.kind!=='depot')return 0;if(R.fwd)return 1;const d=devOf(R);return Math.min(4,1+Math.floor(((d.def||0)+(d.armor||0)+Math.min(3,d.hangar||0))/3))}
 // the capital-vs-depot rebalance is switched on as a whole once tuned (BAL2.on); until then the old rules apply
-const BAL2={on:false,escK:{},depHit:[[60,120],[70,140],[80,160],[100,200]],range:[1600,1650,1700,1800]};
+const BAL2={on:true,kExp:1,brk:.34,strikeK:2,coreGun:1.8,coreS:4100,coreH:8200,capK:[.2,.16,.123,.12],fK:[1,.4,.3,.5],sTime:240,mslK:1.5,
+  escK:{1:4,2:3.8,3:3.6,4:3.5},depHit:[[130,250],[112,292],[96,276],[300,600]],range:[1600,1650,1700,1800]};
+// a depot's guns against capital ships and against craft, by level
+// a station's level for these tables: depots 1–4; core stations count as level 4 and grow from there with their own modules
+function stationLevel(R){return!R?0:R.kind==='depot'?depotLevel(R):R.kind==='core'?4:0}
+// the level a station had when the fight began: knocking out its modules mid-fight weakens it, but the guns keep the
+// footing they had (60 s without being hit and it is measured again)
+function stLvRef(R){if(!R)return 0;if(R._lv==null||S.T-(R._lvT||-1e9)>60)R._lv=stationLevel(R);return R._lv}
+function stLvHit(R){if(R){stLvRef(R);R._lvT=S.T}}
+{const o=damageStation;damageStation=function(E){if(BAL2.on&&E&&E.rec)stLvHit(E.rec);return o.apply(this,arguments)}}
+function depGunK(SE,t){if(!BAL2.on||!SE.rec||SE.rec.fwd)return 1;const R=SE.rec,L=stLvRef(R)-1;R._lvT=S.T;if(L<0)return 1;const k=t.role==='frigate'?BAL2.capK[L]:BAL2.fK[L];return R.kind==='core'?k*BAL2.coreGun:k}
+// core stations start as strong as a level-4 depot: shields and hull at least that, guns as many shots as ten depot mounts,
+// and a missile battery from the start; their own Defence platform and Hull & shield works add to that
+{const o=applyDev;applyDev=function(R){const r=o.apply(this,arguments);if(BAL2.on&&R&&R.kind==='core'){const d=devOf(R),f=1+.25*(d.armor||0),sR=R.sMax?R.shield/R.sMax:1,hR=R.hMax?R.hull/R.hMax:1;R.sMax=Math.round(BAL2.coreS*f);R.hMax=Math.round(BAL2.coreH*f);R.shield=R.sMax*sR;R.hull=R.hMax*hR}return r}}
+{const o=stMissiles;stMissiles=function(SE,dt){if(BAL2.on&&SE&&SE.rec&&SE.rec.kind==='core'){const d=devOf(SE.rec);if((d.def||0)<2){const k=d.def;d.def=2;try{return o.apply(this,arguments)}finally{d.def=k}}}return o.apply(this,arguments)}}
+// a strike's weight: grows a little slower than its craft count (twelve craft are not twice six against a station's defences)
+function strikeK(pw){return BAL2.on?6*Math.pow(Math.max(0,pw)/6,BAL2.kExp)/5*BAL2.strikeK:pw/5}
 // off-screen, a broken shield comes back at 30% after 20 s, as it does live (the 20 s reboot)
 function offReboot(Rs){if(!BAL2.on||!Rs)return;if(Rs.shRb&&S.T>=Rs.shRb){Rs.shRb=0;if(Rs.shield<=0&&Rs.hull>1)Rs.shield=Rs.sMax*.3}else if(!Rs.shRb&&Rs.shield<=0&&Rs.hull>1&&Rs.shBrk!==true){Rs.shRb=S.T+20}}
 // live strikes: the strike's damage lands continuously (the same amount per 10 s as off-screen) rather than in one blow every
 // 10 s, so a station can't recover between blows
 function sortieLiveFlow(dt){if(!BAL2.on||NET.cl||!W)return;for(const ev of S.events||[]){if(ev.type!=='sortie'||ev.stage!=='strike'||!ev.spawned||WORLDS[ev.to]!==W||ev.tgt!=='st')continue;
-  const E=W.stationEnt,sd=sortieSide(ev);if(!E||!hostile(sd,E.fac))continue;const pw=ev.craft.reduce((a,c)=>a+crPow(c),0),k=pw/5;if(!pw)continue;
+  const E=W.stationEnt,sd=sortieSide(ev);if(!E||!hostile(sd,E.fac))continue;const pw=ev.craft.reduce((a,c)=>a+crPow(c),0),k=strikeK(pw);if(!pw)continue;
   const d=(E.shield>0&&!E.offline?700:370)*k*dt/10;damageStation(E,d,sd,'capital');ev.dmg+=d;if(Math.random()<dt*1.5)fxBoom({x:E.x+rnd(-90,90),y:E.y+rnd(-90,90),z:E.z+rnd(-90,90)},50,'#ffcf8a')}}
 {const o=worldUpdate;worldUpdate=function(dt){const r=o.apply(this,arguments);try{sortieLiveFlow(dt)}catch(e){frameErr('live strike',e)}return r}}
 // depot guns reach further with each level (they used to be outranged by an escort's stand-off)
 {const o=addStationEnt;addStationEnt=function(R){const e=o.apply(this,arguments);if(BAL2.on&&e&&R.kind==='depot'&&!R.fwd)e.range=BAL2.range[depotLevel(R)-1];return e}}
 // off-screen strike losses per craft per 10 s against a depot, by level (calibrated to live fights)
-const DEPOT_PL=[.012,.03,.045,.06];
+const DEPOT_PL=[.004,.035,.06,.11];
 // carriers strike a depot next door through the same strike as a pilot's (live or off-screen alike): one wing (6 craft)
 // against L1–L2, both wings against L3–L4; at most one strike at a time, 150 s apart
-function carWingsFor(R){return depotLevel(R)>=3?CAR_WING:SORTIE.wing}
+function carWingsFor(R){return stationLevel(R)>=2?CAR_WING:SORTIE.wing}
 function carStrikeOff(t,sid){if(t.live)return;const Rs=S.stations[sid];if(!Rs||!hostileStationAt(sid,t.side))return;
   if(sortiesOf(t).length||S.T<(t.sorT||0))return;const n=Math.min((t.wing||[]).length,carWingsFor(Rs));if(n<AICAR.minCraft)return;
   const craft=t.wing.splice(0,n),force={};for(const c of craft){const ld=carKit(c);for(const k in ld){const m=Math.min(ld[k],t.load[k]||0);if(m>0)inv.addAll(force,{[k]:inv.take(t.load,k,m)})}}
@@ -1172,3 +1188,6 @@ function broodOrgans(SE){const n=(SE.turrets||[]).length,key='bOrg'+n+':'+(SE.tu
   for(const tu of SE.turrets||[]){const p=tu.p,l=hyp(p[0],p[1],p[2])||1;for(let j=0;j<5;j++){const f=.42+j*.13;g.set(p[0]*f,p[1]*f,p[2]*f).sphere(9-j*1.2,5,7,FL,0)}g.set(p[0],p[1],p[2]).sphere(9,6,8,fc,1)}
   const H=BROOD_HEART;for(let j=0;j<4;j++)g.set(0,H[1]*(.5+j*.12),0).sphere(14-j*2,6,8,FL,0);g.set(H[0],H[1],H[2]).sphere(18,8,10,[.75,.2,.3],.9);
   return MESH[key]=g.upload()}
+
+// a depot's missile battery fires a third less often (it decided the craft fights on its own)
+{const o=stMissiles;stMissiles=function(SE,dt){const b=SE&&SE.mcd;const r=o.apply(this,arguments);if(BAL2.on&&SE&&SE.rec&&SE.rec.kind==='depot'&&SE.mcd>(b||0)+1)SE.mcd*=BAL2.mslK;return r}}
