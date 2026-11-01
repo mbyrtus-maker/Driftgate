@@ -1997,3 +1997,6 @@ Blast mining: small rocks (up to 50 units) now have 1 fault point, medium (51–
 
 ## Jobs that fit your hull come first (Nov 2026)
 The Jobs list (All filter) and the faction orders on the Command card now put the work that fits the hull you fly on top: a Scout or Advanced Scout sees Scout (intel) work first, a miner Mine, a hauler or Constructor Haul, a fighter or bomber Fight. The signature hulls rank a second fit too: Vesper Scout then Fight, Bombard Mine then Fight, Gannet Haul then Fight. Everything else follows in one fixed order: Haul, Mine, Fight, Scout. Within a group the list keeps its old order (the campaign move first, then the Pay or Distance sort), so the campaign move now sits at the head of its own group (a supply drive with Mine or Haul, a strike with Fight) instead of always at the very top. On the Command card the campaign move block stays at the top; the intel and combat orders under it are sorted by fit (`jobFit`, `jobRank` in 16f_factions.js).
+
+## Radar: the target in its own colour (Nov 2026)
+The current target's blip on the radar is now drawn magenta (#ff3df0), a colour no faction, side or radar mark uses, with its pulsing ring, ticks and rim arrow in the same magenta. It used to keep its side's colour inside a pale gold ring; the ring alone was easy to lose next to Unbound khaki and the ivory unclaimed beacon.
