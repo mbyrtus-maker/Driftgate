@@ -34,7 +34,7 @@ async def main():
     await H.wait_for_timeout(1500)
     await ev(C,"(()=>{NET.on=true;NET.cl=true;NET.host=false;MP.pid='clipid1';NET.me=MP.pid;MP.name='Clie';MP.code='crew';MP.roster=[];MP.host=__mk('host',s=>__toHost(s));window.MPHOST_READY=1;linkUp(MP.host);return 1})()")
     await C.wait_for_timeout(2500)
-    await ev(C,"(()=>{selFac='ostrova';mpLaunch('ostrova','scout2');return 1})()");await C.wait_for_timeout(4000)
+    await ev(C,"(()=>{selFac='ostrova';mpLaunch('ostrova','scout');return 1})()");await C.wait_for_function('__dg.ev("!!(S&&W&&W.player&&S.player&&S.player.faction===\\"ostrova\\")")',timeout=120000);await C.wait_for_timeout(2000)
     await ev(C,"(()=>{undock();return 1})()");await C.wait_for_timeout(4000)
     to=await ev(C,"NEIGH[S.player.sector][0]");frm=await ev(C,"S.player.sector")
     print('guest',await ev(C,"S.player.faction+' '+S.player.cls+' in '+S.player.sector+' docked '+S.player.docked"),'peek to',to)
