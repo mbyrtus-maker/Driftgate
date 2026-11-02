@@ -1310,7 +1310,8 @@ function mainOre(a){let b=null,m=0;for(const k in a.ore)if(a.ore[k]>m){m=a.ore[k
 // per hull, tuned so a Light Miner on a good field makes about 12k an hour, a Medium 15.5k and a Heavy 20k (a Heavy Hauler
 // on trade runs makes about 21.6k): the bigger the miner, the slower its lasers fill its hold.
 const MINE_RATE={skiff:.036,prospector:.0324,dredger:.0257},SALVAGE_RATE=.5;const mineP=cls=>MINE_RATE[cls]||.025,mineRate=(a,cls)=>a&&a.wpt?SALVAGE_RATE:mineP(cls);
-function astR(a){return a.wpt?WPT_R:14+Math.sqrt(oreTotal(a))*3.3}
+// an asteroid's radius (drawn and solid alike): AST_K scales every rock (1.5 since Nov 2026: rocks read too small on screen)
+const AST_K=1.5;function astR(a){return a.wpt?WPT_R:(14+Math.sqrt(oreTotal(a))*3.3)*AST_K}
 function newAstPos(s){const b=pick(s.belts),d=rdir(1),r=Math.cbrt(Math.random())*(b.r||440);return{x:Math.round(b.x+d.x*r),y:Math.round(b.y+d.y*r),z:Math.round(b.z+d.z*r)}}
 // Vantium lies in the three contested forge systems and the hub. Every power is one jump from two fields (each shared with one
 // rival) and two jumps from the hub, so no faction's geography gives it the better supply. Tuned by simulation.

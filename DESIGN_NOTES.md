@@ -2015,3 +2015,6 @@ With Flight Assist on, the dampers that bleed off sideways slide (`lat` in `hand
 | Heavy Hauler empty / full (230 t) | 0.45 / 0.28 | 1.3 / 2.2 s (the most in the game) |
 
 Measured in game (200 m/s sideways, thrusting forward for 1 s): Light Fighter keeps 63 m/s of slide, Heavy Fighter 83, empty Heavy Hauler 119, full Heavy Hauler 145.
+
+## Bigger asteroids (Nov 2026)
+Every rock is 1.5x the size it was (`AST_K` in `astR`): a 100-unit rock is about 70 m across in radius instead of 47, a 300-unit rock 107 instead of 71. The radius is used for drawing and for everything solid alike (shots, missiles, collisions, fault points on the surface, where chunks land), so what you see is what you hit. Ore amounts, mining pay and the number of fault points are unchanged; belts look denser and are a little harder to thread at speed. Salvage points on wrecks and loose chunks keep their sizes.
