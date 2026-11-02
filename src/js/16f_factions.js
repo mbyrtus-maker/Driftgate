@@ -242,3 +242,9 @@ const DRIFT={ref:90,exp:.75,min:.25};
 function shipDriftMass(e){const P=S.player,C=CLASSES[P.cls]||{};let m=0;for(const k in P.cargo||{})m+=mass(k)*P.cargo[k];return(C.hull||100)+m}
 function driftLat(e){return clamp(Math.pow(DRIFT.ref/shipDriftMass(e),DRIFT.exp),DRIFT.min,1)}
 {const o=handling;handling=function(e){const h=o.apply(this,arguments);if(!e||!e.isPlayer||!S||!S.player)return h;return Object.assign({},h,{lat:driftLat(e)})}}
+// ---- the training card on your faction's career (end of the Upgrades and variants lesson)
+function trCareer(){const f=S.player.faction;if(!FAC_IDS.includes(f))return'Each faction owns a career: Halcyon hauls, Varkesh mines, Ostrova scouts.';const hs=S.stations[FAC_HOME(f)],yard=hs?hs.name:DEF[FAC_HOME(f)].name,F=FAC(f);
+  const t={halcyon:`${F.short} hauls: +20% on Freeport hauling jobs (paid by your treasury), and a convoy to or from a Freeport flies with one extra escort. Your signature hull is the <b>Gannet</b>, converted from a Medium Hauler at ${yard}: <kbd>${kb('msl')}</kbd> fires up to 12 light missiles spread across every enemy ahead.`,
+    varkesh:`${F.short} mines: +20% on Aurorite mining jobs, and the Ward Drones on your mining hulls are 40% tougher and hit 25% harder. Your signature hull is the <b>Bombard</b>, converted from a Heavy Miner at ${yard}: a slow shell cannon, about ten bolts a hit, whose shells also crack rock.`,
+    ostrova:`${F.short} scouts: +40% on all scouting pay; Seers, Oracles and Vespers carry deeper shields that recharge slower; and Seers and Oracles carry the peek drive. Your signature hull is the <b>Vesper</b>, converted from an Advanced Scout at ${yard}: hold fire to charge its railgun, release to fire a slug out to 4 km.`}[f];
+  return t+' Convert on <b>Ship → Shipyard</b> while flying the base hull. The other careers: '+FAC_IDS.filter(x=>x!==f).map(x=>FAC(x).short+' '+{halcyon:'hauls',varkesh:'mines',ostrova:'scouts'}[x]).join(', ')+'.'}

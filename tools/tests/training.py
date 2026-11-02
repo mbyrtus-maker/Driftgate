@@ -101,24 +101,24 @@ LAUNCH="S.player.docked?H.key('KeyE'):'launched'"
 MAP_OPEN="$('map').hidden?H.key('KeyM'):'open'"
 MAP_CLOSE="$('map').hidden?'closed':H.key('KeyM')"
 ACTS=[
- # 0 Flight (7)
+ # 0 Flight (8)
  LAUNCH,"keys.KeyW=true","keys.ShiftLeft=true",
  "keys.KeyW=keys.ShiftLeft=false;H.tab('gate')==='gate'&&!apOn?H.key('KeyJ'):apOn","apOn?H.key('KeyJ'):'off'",
- "$('sndPop').hidden?($('bSnd').click(),'clicked Sound'):'open'","$('sndPop').hidden?'closed':H.key('Escape')",
- # 1 Weapons (6). Flares cost 30 energy (playerFlares), and the laser fire of the missile step drains it, so cease fire until it is back
+ "$('sndPop').hidden?($('bSnd').click(),'clicked Sound'):'open'","$('sndPop').hidden?'closed':H.key('Escape')",ACK,
+ # 1 Weapons (7). Flares cost 30 energy (playerFlares), and the laser fire of the missile step drains it, so cease fire until it is back
  "H.tgt()","H.drone()",
  "H.drone(1)+', lock '+Math.round(W.lock.p*100)+'%'","keys.KeyZ=keys.Space=keys.KeyW=false;W.flareCd>0?'flares out':W.player.energy<30?'guns cold, energy '+Math.round(W.player.energy):H.key('KeyB')","H.drone(1)",
- "keys.KeyZ=keys.Space=keys.KeyW=false;"+ACK,
+ "keys.KeyZ=keys.Space=keys.KeyW=false;"+ACK,ACK,
  # 2 Mining and trade (5)
  "S.player.docked?H.key('KeyE'):W.tgt&&W.tgt.kind==='ast'?'targeted':H.key('KeyR')","H.mine()","H.dock()",
  "H.tab2('market')+' '+TR_ORE.filter(k=>S.player.cargo[k]).map(k=>H.btn('sell',k+':all'))",ACK,
- # 3 The station (4)
- "S.player.docked?H.tab2('fab'):H.dock()",ACK,"H.tab2('ship')+' '+(S.player.cls==='scout'?'in a scout':H.btn('hull','scout'))","H.tab2('jobs')",
- # 4 Upgrades and variants (5)
- "H.tab2('upg')","(S.player.tune&&S.player.tune.vr&&S.player.tune.vr.weapon)==='rapid'?'rapid fitted':H.btn('vfit','weapon:rapid')",ACK,ACK,ACK,
- # 5 Scouts and beacons (7)
+ # 3 The station (5)
+ "S.player.docked?H.tab2('fab'):H.dock()",ACK,"H.tab2('ship')+' '+(S.player.cls==='scout'?'in a scout':H.btn('hull','scout'))","H.tab2('jobs')",ACK,
+ # 4 Upgrades and variants (6)
+ "H.tab2('upg')","(S.player.tune&&S.player.tune.vr&&S.player.tune.vr.weapon)==='rapid'?'rapid fitted':H.btn('vfit','weapon:rapid')",ACK,ACK,ACK,ACK,
+ # 5 Scouts and beacons (8)
  LAUNCH,"H.tab('beacon')",
- "H.hold()",ACK,"H.limpet()","keys.KeyF=false;"+ACK,ACK,
+ "H.hold()",ACK,"H.limpet()","keys.KeyF=false;"+ACK,ACK,ACK,
  # 6 Hugging a rock (3)
  "H.land()","H.landed()","W.player.landed?H.key('KeyE'):'lifted'",
  # 7 Salvage and wrecks (4)
@@ -127,12 +127,12 @@ ACTS=[
  "H.dock()","H.tab2('ship')+' '+(S.player.cls==='courier'?'in a hauler':H.btn('hull','courier'))","H.tab2('jobs')",ACK,ACK,ACK,ACK,
  # 9 Logistics and raiding (3)
  "H.tab2('jobs')",ACK,ACK,
- # 10 Comms and capital ships (10)
- LAUNCH,"commsOpen()?'open':H.key('KeyI')","H.board()","W.bridge&&fMine(W.bridge.f.tok)?'in command':H.fc('take')","H.fc('tab:wpn')","H.fc('tab:nav')",ACK,ACK,ACK,"H.walk()",
- # 11 Fighting for territory (9)
- ACK,ACK,"S.player.docked?(trBeacons()>(S.training.v.bc||0)?'bought':H.tab2('market')+' '+H.btn('buybeacon')):H.dock()","H.tab2('storage')+' '+H.btn('mv','beacon:out:1')","H.claim()",ACK,ACK,ACK,ACK,
- # 12 The Brood (7)
- MAP_OPEN,MAP_CLOSE,ACK,ACK,ACK,ACK,ACK,
+ # 10 Comms and capital ships (11)
+ LAUNCH,"commsOpen()?'open':H.key('KeyI')","H.board()","W.bridge&&fMine(W.bridge.f.tok)?'in command':H.fc('take')","H.fc('tab:wpn')","H.fc('tab:nav')",ACK,ACK,ACK,ACK,"H.walk()",
+ # 11 Fighting for territory (10)
+ ACK,ACK,"S.player.docked?(trBeacons()>(S.training.v.bc||0)?'bought':H.tab2('market')+' '+H.btn('buybeacon')):H.dock()","H.tab2('storage')+' '+H.btn('mv','beacon:out:1')","H.claim()",ACK,ACK,ACK,ACK,ACK,
+ # 12 The Brood (8)
+ MAP_OPEN,MAP_CLOSE,ACK,ACK,ACK,ACK,ACK,ACK,
  # 13 Jammers and the Unbound (3)
  ACK,ACK,ACK,
  # 14 Winning the war (7)
