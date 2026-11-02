@@ -44,5 +44,11 @@ async def main():
     print('host during peek:',await ev(H,f"(()=>{{const P=S.pilots.clipid1,e=MP.rp.clipid1;return JSON.stringify({{sector:P.sector,to:'{to}',rp:!!e,shield:e?Math.round(e.shield):null,drained:e?!!e.peek:null,boot:e&&e.boot?+(e.boot-worldOf(e).t).toFixed(1):null}})}})()"))
     await C.wait_for_function('__dg.ev("!S.player.peek")',timeout=240000);await C.wait_for_timeout(5000)
     print('back:',await ev(C,"S.player.sector+' cd '+Math.round(S.player.peekCd-S.T)"),'| host:',await ev(H,"(()=>{const e=MP.rp.clipid1;return S.pilots.clipid1.sector+' drained '+(e?!!e.peek:'-')})()"),'| from',frm)
+    # the guest drops mid-peek (a reload): the host remembers the peek and pulls the guest back on rejoin
+    await ev(C,"(()=>{S.player.peekCd=0;return 1})()")
+    await ev(C,f"(()=>{{toggleMap();mapSel='{to}';renderMapSide();const b=$('bPeek');if(b)b.click();return 1}})()")
+    await C.wait_for_function('__dg.ev("!!S.player.peek")',timeout=180000);await C.wait_for_timeout(4000)
+    print('host remembers:',await ev(H,"JSON.stringify(S.pilots.clipid1.peekH?{f:S.pilots.clipid1.peekH.f,t:S.pilots.clipid1.peekH.t}:null)"))
+    print('rejoin:',await ev(H,"(()=>{const c=Object.values(MP.cl).find(x=>x.pid==='clipid1');pilotLeft(c);hJoin(c);const P=S.pilots.clipid1;return JSON.stringify({sector:P.sector,peekH:!!P.peekH,cd:Math.round((P.peekCd||0)-S.T),rp:!!MP.rp.clipid1})})()"))
     print('errors',[e for e in errs if 'TUNNEL' not in e][:8]);await b.close()
 asyncio.run(main())

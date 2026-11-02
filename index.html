@@ -9279,8 +9279,15 @@ function peekTick(dt){const P=S.player,p=W&&W.player;if(!p||!S||CTX)return;
 {const o=bcnFlipper;bcnFlipper=function(e){if(e&&(e.peek||(e.isPlayer&&S.player.peek)))return null;return o.apply(this,arguments)}}
 {const o=limpetHold;limpetHold=function(hold,dt){if(S.player.peek){if(hold&&W.t-(W.pkMsg||0)>3){W.pkMsg=W.t;flash('No limpets from inside a peek.')}return}return o.apply(this,arguments)}}
 // guests: the update a client sends while drained carries pk, and the host drains the guest's ship there too
-{const o=netSend;netSend=function(m,fast){if(m&&m.t==='u'&&S&&S.player&&S.player.peek)m.pk=1;return o.apply(this,arguments)}}
-function peekHostTick(){if(!NET.host||!W||typeof MP==='undefined'||!MP.inp)return;const now=performance.now();for(const e of W.ents){if(!e.rp||!e.alive)continue;const u=MP.inp[e.rp];if(u&&u.pk&&now-u.at<1500)e.pkUntil=now+1500;if((e.pkUntil||0)>now){e.boot=Math.max(e.boot||0,W.t+.5);e.shield=0;e.peek=1}else if(e.peek)e.peek=0}}
+{const o=netSend;netSend=function(m,fast){const k=m&&m.t==='u'&&S&&S.player&&S.player.peek;if(k){m.pk=1;m.pkf={f:k.from,t:k.to,x:Math.round(k.x),y:Math.round(k.y),z:Math.round(k.z),vx:Math.round(k.vx),vy:Math.round(k.vy),vz:Math.round(k.vz),q:k.q}}return o.apply(this,arguments)}}
+function peekHostTick(){if(!NET.host||!W||typeof MP==='undefined'||!MP.inp)return;const now=performance.now();for(const e of W.ents){if(!e.rp||!e.alive)continue;const u=MP.inp[e.rp],P=S.pilots&&S.pilots[e.rp];
+  if(u&&u.pk&&now-u.at<1500){e.pkUntil=now+1500;if(P&&u.pkf&&typeof u.pkf==='object'&&DEF[u.pkf.f]&&u.pkf.t===P.sector)P.peekH=u.pkf}
+  if((e.pkUntil||0)>now){e.boot=Math.max(e.boot||0,W.t+.5);e.shield=0;e.peek=1}else if(e.peek)e.peek=0;
+  if(P&&P.peekH&&P.sector!==P.peekH.t)delete P.peekH}}
+// the host remembers a guest's peek (peekH: where it left and where it went, saved with the galaxy). A guest who reloads or
+// drops mid-peek rejoins where it left, with the cooldown running, instead of keeping a free jump into the peeked system.
+{const o=hJoin;hJoin=function(c){const P=c&&S.pilots&&S.pilots[c.pid],k=P&&P.peekH;if(k&&P.sector===k.t&&DEF[k.f]){if(MP.rp[c.pid])despawnRP(c.pid);P.sector=k.f;P.x=k.x;P.y=k.y;P.z=k.z;P.vx=k.vx;P.vy=k.vy;P.vz=k.vz;if(Array.isArray(k.q)&&k.q.length===4)P.q=k.q;P.docked=null;P.peekCd=S.T+PEEK.cd;delete P.peekH;
+  const r=o.apply(this,arguments);try{netMsg(c.pid,'feed',`👁 You dropped out mid-peek: the drive pulled you back to ${DEF[k.f].name}.`,'info')}catch(x){}return r}return o.apply(this,arguments)}}
 // a guest's own record is refreshed from the host, which knows nothing of the peek: keep the guest's peek and cooldown through it
 {const o=clientRecv;clientRecv=function(m){const P0=S&&S.player,pk=P0&&P0.peek,cd=P0&&P0.peekCd;const r=o.apply(this,arguments);const P=S&&S.player;if(P){if(pk&&!P.peek)P.peek=pk;if(cd&&!(P.peekCd>=cd))P.peekCd=cd}return r}}
 {const o=worldUpdate;worldUpdate=function(dt){const r=o.apply(this,arguments);try{peekHostTick()}catch(x){frameErr('peek host',x)}return r}}
