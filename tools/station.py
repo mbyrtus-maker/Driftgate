@@ -1,6 +1,6 @@
 import sys;sys.path.insert(0,'.')
 from mdl import *
-KD='/home/claude/kenney/sk/Models/GLTF format/'
+import os as _os;KD=_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),'kits','kenney-space-kit','GLTF')+'/'
 _cache={}
 def piece(name):
     if name not in _cache:

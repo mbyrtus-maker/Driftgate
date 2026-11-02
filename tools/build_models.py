@@ -8,7 +8,7 @@ from capitals import build_carrier,build_escort
 from rockbase import build_rockbase
 from brood import BROOD_MODELS
 from works import WORKS
-KD='/home/claude/kenney/sk/Models/GLTF format/';QD='/home/claude/qlp/OBJ/'
+import os as _os;_K=_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),'kits');KD=_os.path.join(_K,'kenney-space-kit','GLTF')+'/';QD=_os.path.join(_K,'quaternius-lowpoly-spaceships','OBJ')+'/'
 LIGHT,MID,DARK,ACC,GLASS,GLOW,WIN=0,1,2,3,4,5,6
 def kenney_role(c):
     c=np.array(c[:3],dtype=float);h,s,v=colorsys.rgb_to_hsv(*c)
