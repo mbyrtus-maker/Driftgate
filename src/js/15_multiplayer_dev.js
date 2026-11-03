@@ -169,7 +169,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
     case 'hook':{MP.hook=MP.hook||{};MP.hook[pid]={on:!!m.on,id:m.id};break}
     case 'fg':{const sid=String(m.sid);if(DEF[sid]&&P.sector===sid&&!P.docked&&isScoutCls(P.cls)&&broodHeld(sid)){S.fgSeen=S.fgSeen||{};S.fgSeen[sid]=1}break}
     case 'spot':{const e0=MP.rp[pid];if(e0)inW(worldOf(e0),()=>{const e=W.ents.find(x=>x.id===m.id);if(e&&d3(e,e0)<SPOT.r*1.2)spotPay(e,pid)});break}
-    case 'blast':{const e=MP.rp[pid];if(e)inW(worldOf(e),()=>{if(m.k==='fire')blFire(e,P);else if(m.k==='det')blDetReq(P,e);else if(m.k==='cancel')blCancel(P)});break}
+    case 'blast':{const e=MP.rp[pid];if(e)inW(worldOf(e),()=>{if(m.k==='fire')blFire(e,P,Array.isArray(m.d)&&m.d.length===3?{x:+m.d[0]||0,y:+m.d[1]||0,z:+m.d[2]||0}:null);else if(m.k==='det')blDetReq(P,e);else if(m.k==='cancel')blCancel(P)});break}
     case 'flare':{const e=MP.rp[pid];if(e&&!(e.flareH>performance.now())){e.flareH=performance.now()+4000;inW(worldOf(e),()=>deployFlares(e))}break}
     case 'jump':hJump(pid,m);break;
     case 'dock':hDock(c,m);break;

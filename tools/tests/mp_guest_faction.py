@@ -66,8 +66,8 @@ async def main():
     await C.wait_for_timeout(1500)
     print('wingman after loss:',await ev(H,"(()=>JSON.stringify({wing:!!HIRE_E.clipid1}))()"))
     print('guest after loss:',await ev(C,"(()=>JSON.stringify({cls:S.player.cls,voucher:S.player.voucher||null,feed:FEED.slice(-6).map(f=>f.msg).filter(m=>/insured|voucher|wingman/i.test(m))}))()"))
-    # the charge reticle on the guest's own screen
-    print('guest reticle:',await ev(C,"(()=>{const P=S.player,c0=P.cls;P.cls='skiff';const s=S.sectors[W.sid],a=s.ast[0];W.tgt={kind:'ast',ref:a};const p=W.player;let r;try{if(W.dead){W.dead=0;p.alive=true}p.x=a.x;p.y=a.y;p.z=a.z-(astR(a)+150);p.vx=p.vy=p.vz=0;qLook(0,0,1,0,1,0,p.q);const cv=document.getElementById('ov').getContext('2d');blDraw(cv);const pr=blPredict(p,P,a),F=blFly(p,P);r=JSON.stringify({hit:!!pr,inRange:pr&&pr.ok,flyEnd:!!F.end})}catch(x){r='THROW '+x.message}P.cls=c0;W.tgt=null;return r})()"))
+    # the charge status on the gun sight on the guest's own screen
+    print('guest reticle:',await ev(C,"(()=>{const P=S.player,c0=P.cls;P.cls='skiff';const s=S.sectors[W.sid],a=s.ast[0];W.tgt={kind:'ast',ref:a};const p=W.player;let r;try{if(W.dead){W.dead=0;p.alive=true}p.x=a.x;p.y=a.y;p.z=a.z-(astR(a)+150);p.vx=p.vy=p.vz=0;qLook(0,0,1,0,1,0,p.q);const cv=document.getElementById('ov').getContext('2d');blDraw(cv);const pr=blPredict(p,P,a);r=JSON.stringify({hit:!!pr,inRange:pr&&pr.ok,sight:W.blPip&&W.blPip.lab})}catch(x){r='THROW '+x.message}P.cls=c0;W.tgt=null;return r})()"))
     print('ledger:',await ev(H,"(()=>{const l=ledger();let bad=[];for(const e of RAWS)if(Math.abs(l.tot[e]-S.ledger0.tot[e])>1e-6)bad.push(e);return bad.length?'DRIFT '+bad:'exact'})()"))
     print('errors:',[e for e in errs if 'favicon' not in e][:6])
     await b.close()

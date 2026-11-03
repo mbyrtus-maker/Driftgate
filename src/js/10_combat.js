@@ -136,10 +136,24 @@ function blTick(P,dt){const cap=blCap(P);if(!cap){P.blN=0;P.blT=0;return}if(P.bl
 function blNearStation(e){if(W.stationEnt&&d3(W.stationEnt,e)<BL.stationR+(W.stationEnt.st?W.stationEnt.st.radius||0:0))return true;for(const g of GATES[W.sid]||[])if(d3(g,e)<BL.stationR)return true;return false}
 function blSay(P,t,bad){if(P===S.player||!P.pid||isMe(P.pid))flash(t,!!bad);else netMsg(P.pid,'flash',t,!!bad)}
 // fire one charge along the nose (host and single player)
-function blFire(e,P){const h=blHull(P.cls);if(!h)return;if((e.blCd||0)>W.t)return;if(!(P.blN>0)){blSay(P,`No charges left: the magazine reloads in ${Math.ceil(P.blT||0)} s.`);return}
+function blFire(e,P,dir){const h=blHull(P.cls);if(!h)return;if((e.blCd||0)>W.t)return;if(!(P.blN>0)){blSay(P,`No charges left: the magazine reloads in ${Math.ceil(P.blT||0)} s.`);return}
   if(blNearStation(e)){blSay(P,`Charges can't be fired within ${BL.stationR} m of a station or jumpgate.`,true);return}
-  qRot(e.q,0,0,1,_f);const r=e.st.radius;W.blShots=W.blShots||[];W.blShots.push({x:e.x+_f.x*r,y:e.y+_f.y*r,z:e.z+_f.z*r,vx:e.vx+_f.x*BL.spd*(vF(P,'blSpdK')||1),vy:e.vy+_f.y*BL.spd*(vF(P,'blSpdK')||1),vz:e.vz+_f.z*BL.spd*(vF(P,'blSpdK')||1),ttl:blRange(P)/(BL.spd*(vF(P,'blSpdK')||1)),o:blKey(P),side:e.side,P});
+  const A=blLaunch(e,P,dir);W.blShots=W.blShots||[];W.blShots.push({x:A.o.x,y:A.o.y,z:A.o.z,vx:A.d.x*A.vl,vy:A.d.y*A.vl,vz:A.d.z*A.vl,ttl:A.L/A.vl,o:blKey(P),side:e.side,P});
   P.blN--;e.blCd=W.t+h.cd;if(!MUTE&&(e===W.player))SFX.missile&&SFX.missile(.5,false)}
+// a charge leaves the nose and flies in a straight line along the aim (Nov 2026: it used to carry the ship's sideways drift,
+// so it landed off the gun sight and needed a reticle of its own). It keeps the ship's forward speed, so closing on a rock
+// still reaches further. dir is a unit vector near the nose (a guest's arrives with its fire message), else straight ahead.
+function blLaunch(e,P,dir){qRot(e.q,0,0,1,_f);const r=e.st.radius,sp=BL.spd*(vF(P,'blSpdK')||1);let d={x:_f.x,y:_f.y,z:_f.z};
+  if(dir){const l=hyp(dir.x,dir.y,dir.z)||0;if(l>0){const u={x:dir.x/l,y:dir.y/l,z:dir.z/l};if(u.x*_f.x+u.y*_f.y+u.z*_f.z>.9)d=u}}
+  const fw=Math.max(0,e.vx*d.x+e.vy*d.y+e.vz*d.z),vl=sp+fw;return{o:{x:e.x+_f.x*r,y:e.y+_f.y*r,z:e.z+_f.z*r},d,vl,L:blRange(P)*vl/sp}}
+// the local pilot's aim: from the nose to the point under the gun sight. The sight sits on the nose line 900 m out; the camera
+// ray through it meets the targeted rock where the pilot sees the sight, and the charge is sent there.
+function blAimDir(p,T){qRot(p.q,0,0,1,_f);const r=p.st.radius,G={x:p.x+_f.x*900,y:p.y+_f.y*900,z:p.z+_f.z*900};if(!T||!cam)return null;
+  let ux=G.x-cam.x,uy=G.y-cam.y,uz=G.z-cam.z;const ul=hyp(ux,uy,uz)||1;ux/=ul;uy/=ul;uz/=ul;
+  const Rh=(T.wpt?WPT_R:astR(T))+2,cx=cam.x-T.x,cy=cam.y-T.y,cz=cam.z-T.z,b=cx*ux+cy*uy+cz*uz,D=b*b-(cx*cx+cy*cy+cz*cz-Rh*Rh);if(D<0)return null;const t=-b-Math.sqrt(D);if(t<0)return null;
+  const dx=cam.x+ux*t-(p.x+_f.x*r),dy=cam.y+uy*t-(p.y+_f.y*r),dz=cam.z+uz*t-(p.z+_f.z*r),l=hyp(dx,dy,dz)||1,d={x:dx/l,y:dy/l,z:dz/l};
+  return d.x*_f.x+d.y*_f.y+d.z*_f.z>.9?d:null}
+function blTgtRef(){return W.tgt&&(W.tgt.kind==='ast'||W.tgt.kind==='wpt')&&validTgt(W.tgt)?W.tgt.ref:null}
 // where a charge fired now would land on a target, and how close to its nearest fault point (for the HUD rings)
 function blAim(e,a){qRot(e.q,0,0,1,_f);const R=astR(a),ox=e.x-a.x,oy=e.y-a.y,oz=e.z-a.z,b=ox*_f.x+oy*_f.y+oz*_f.z,c=ox*ox+oy*oy+oz*oz-R*R,D=b*b-c;if(D<0)return null;const t=-b-Math.sqrt(D);if(t<0)return null;
   return{x:e.x+_f.x*t,y:e.y+_f.y*t,z:e.z+_f.z*t,d:t}}
@@ -207,20 +221,12 @@ function blPilotUpdate(p,P,st,sec,dt){const hold=!!(keys.KeyF||mouse.r||touch.mi
   if(!blHull(P.cls)){if(isScoutCls(P.cls)&&!FAC_IDS.includes(P.faction)){if(press&&W.t-(W.drillMsg||0)>3){W.drillMsg=W.t;flash('The Skiff carries no limpets and no blast rig: limpets are faction scout kit. It flips beacons and finds marks.')}return}if(isScoutCls(P.cls)){limpetHold(hold,dt);return}if(press&&W.t-(W.drillMsg||0)>3){flash('No blast rig on this hull: only mining ships (Light, Medium and Heavy Miner) can mine. Switch at a core station Shipyard.');W.drillMsg=W.t}return}
   {const ch=!NET.cl&&chunkAt(p,sec);if(ch){p.mining=ch;p.mining0=ch;blCollect(p,P,ch,dt,sec)}}
   const cl=hold?blCloudNear(p,sec):null;if(cl){p.mining=cl;if(!NET.cl&&cl!==p.mining0)blCollect(p,P,cl,dt,sec);p.mining0=null;return}p.mining0=null;
-  if(press){if(NET.cl)netSend({t:'blast',k:'fire'});else blFire(p,P)}}
+  if(press){const d=blAimDir(p,blTgtRef());if(NET.cl)netSend({t:'blast',k:'fire',d:d?[+d.x.toFixed(4),+d.y.toFixed(4),+d.z.toFixed(4)]:null});else blFire(p,P,d)}}
 function blKeyPress(k){if(!S||!running||S.player.docked||!W.player||W.dead)return;const P=S.player;if(NET.cl){netSend({t:'blast',k});return}if(k==='det')blDetReq(P,W.player);else blCancel(P)}
 // HUD: fault-point rings on the targeted rock or salvage point, your charges, clouds, the magazine and the blast warning
-function blPredict(p,P,T){qRot(p.q,0,0,1,_f);const sp=BL.spd*(vF(P,'blSpdK')||1),r=p.st.radius,ox=p.x+_f.x*r,oy=p.y+_f.y*r,oz=p.z+_f.z*r,vx=p.vx+_f.x*sp,vy=p.vy+_f.y*sp,vz=p.vz+_f.z*sp,vl=hyp(vx,vy,vz)||1,dx=vx/vl,dy=vy/vl,dz=vz/vl;
-  const Rh=(T.wpt?WPT_R:astR(T))+2,cx=ox-T.x,cy=oy-T.y,cz=oz-T.z,b=cx*dx+cy*dy+cz*dz,cc=cx*cx+cy*cy+cz*cz-Rh*Rh,D=b*b-cc;if(D<0)return null;const t=-b-Math.sqrt(D);if(t<0)return null;
-  const hx=ox+dx*t-T.x,hy=oy+dy*t-T.y,hz=oz+dz*t-T.z,hl=hyp(hx,hy,hz)||1,R0=astR(T);return{at:{x:T.x+hx/hl*R0,y:T.y+hy/hl*R0,z:T.z+hz/hl*R0},d:t,ok:t/vl<=blRange(P)/sp}}
-function blFly(p,P){qRot(p.q,0,0,1,_f);const sp=BL.spd*(vF(P,'blSpdK')||1),r=p.st.radius,ox=p.x+_f.x*r,oy=p.y+_f.y*r,oz=p.z+_f.z*r,vx=p.vx+_f.x*sp,vy=p.vy+_f.y*sp,vz=p.vz+_f.z*sp,vl=hyp(vx,vy,vz)||1,L=blRange(P)*vl/sp;
-  return{o:{x:ox,y:oy,z:oz},end:{x:ox+vx/vl*L,y:oy+vy/vl*L,z:oz+vz/vl*L}}}
-// the charge reticle: a ring with four ticks where the charge will land (or end its run), joined to the launcher by a dotted flight line
-function blReticle(c,F,at,col,lab,far){const A=proj(at.x,at.y,at.z);if(A.behind)return;const O=proj(F.o.x,F.o.y,F.o.z),R=far?11:14,t=6;
-  if(!O.behind){c.save();c.globalAlpha=far?.35:.5;c.strokeStyle=col;c.lineWidth=1.5;c.setLineDash([2,6]);c.beginPath();c.moveTo(O.x,O.y);c.lineTo(A.x,A.y);c.stroke();c.restore()}
-  const shape=()=>{c.beginPath();c.arc(A.x,A.y,R,0,TAU);c.moveTo(A.x,A.y-R);c.lineTo(A.x,A.y-R-t);c.moveTo(A.x,A.y+R);c.lineTo(A.x,A.y+R+t);c.moveTo(A.x-R,A.y);c.lineTo(A.x-R-t,A.y);c.moveTo(A.x+R,A.y);c.lineTo(A.x+R+t,A.y)};
-  c.save();c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.5)';shape();c.stroke();c.lineWidth=2;c.strokeStyle=col;shape();c.stroke();c.fillStyle=col;c.beginPath();c.arc(A.x,A.y,2.2,0,TAU);c.fill();
-  if(lab){c.textAlign='center';c.font='700 11px "Saira Semi Condensed",sans-serif';c.lineWidth=3;c.strokeStyle='rgba(0,0,0,.6)';c.strokeText(lab,A.x,A.y+R+t+13);c.fillText(lab,A.x,A.y+R+t+13)}c.restore()}
+function blPredict(p,P,T){const A=blLaunch(p,P,blAimDir(p,T)),o=A.o,d=A.d;
+  const Rh=(T.wpt?WPT_R:astR(T))+2,cx=o.x-T.x,cy=o.y-T.y,cz=o.z-T.z,b=cx*d.x+cy*d.y+cz*d.z,cc=cx*cx+cy*cy+cz*cz-Rh*Rh,D=b*b-cc;if(D<0)return null;const t=-b-Math.sqrt(D);if(t<0)return null;
+  const hx=o.x+d.x*t-T.x,hy=o.y+d.y*t-T.y,hz=o.z+d.z*t-T.z,hl=hyp(hx,hy,hz)||1,R0=astR(T);return{at:{x:T.x+hx/hl*R0,y:T.y+hy/hl*R0,z:T.z+hz/hl*R0},d:t,ok:t<=A.L}}
 function blDraw(c){const p=W.player,P=S.player,s=S.sectors[W.sid];if(!p||!blHull(P.cls))return;c.save();c.lineWidth=1.5;c.font='600 11px "Saira Semi Condensed",sans-serif';c.textAlign='center';
   const T=W.tgt&&(W.tgt.kind==='ast'||W.tgt.kind==='wpt')&&validTgt(W.tgt)?W.tgt.ref:null,GREY='rgba(205,205,215,.8)';let pip=null;
   // a scan pulses when you target a rock, and again whenever you re-target it (R or Tab), so the fault points can be brought back
@@ -236,8 +242,8 @@ function blDraw(c){const p=W.player,P=S.player,s=S.sectors[W.sid];if(!p||!blHull
         pip={at:pr.at,col,lab:cl==='range'?`OUT OF RANGE · ${Math.round(pr.d)} / ${Math.round(blRange(P))} M`:cl==='on'?'ON POINT · FIRE (F)':`${cl==='near'?'NEAR':'OFF'} · ${Math.round(qd)} M`}}}}
     else{if(pr)pip={at:pr.at,col:pr.ok?'#e8e4d8':GREY,lab:pr.ok?'ON ROCK · R TO SHOW FAULT POINTS':`OUT OF RANGE · ${Math.round(pr.d)} / ${Math.round(blRange(P))} M`};
       else if(dist<blRange(P)+astR(T)+600){const L=proj(T.x,T.y,T.z);if(!L.behind){c.fillStyle='rgba(240,178,74,.9)';c.fillText('SCAN FADED · PRESS R TO RESCAN',L.x,L.y-Math.max(14,projR(L.d,astR(T)))-10)}}}}
-  // the charge reticle is always up in a mining hull in flight: on the rock where a charge would land, or where its run ends if it would miss
-  if(!S.player.docked&&!W.dead&&!W.bridge&&!W.gunseat){const F=blFly(p,P);if(!pip){const nearT=T&&d3(T,p)<blRange(P)+astR(T)+600;pip={at:F.end,col:nearT?'#ff5d4f':GREY,lab:nearT?'MISSES THE ROCK':'',far:!nearT}}blReticle(c,F,pip.at,pip.col,pip.lab,pip.far)}
+  // the charge's status rides on the gun sight itself (drawn in the HUD): its colour and the line under it
+  W.blPip=null;if(!S.player.docked&&!W.dead&&!W.bridge&&!W.gunseat){if(!pip&&T&&d3(T,p)<blRange(P)+astR(T)+600)pip={col:'#ff5d4f',lab:'MISSES THE ROCK'};W.blPip=pip}
   if(vF(P,'blScan'))for(const a of s.ast){if(a===T||!((a.scanT||0)>W.t)||d3(a,p)>2200)continue;for(const q of blPts(a)){const L=proj(q.x,q.y,q.z);if(L.behind)continue;c.strokeStyle='rgba(240,178,74,.5)';c.beginPath();c.arc(L.x,L.y,Math.max(3,projR(L.d,blWin(P,a))),0,TAU);c.stroke()}}
   for(const ch of s.charges||[]){if(ch.o!==blKey(P))continue;const L=proj(ch.x,ch.y,ch.z);if(L.behind)continue;c.fillStyle=ch.q==='on'?'#7ad9a7':ch.q==='near'?'#f0b24a':'#ff5d4f';c.beginPath();c.arc(L.x,L.y,3.5,0,TAU);c.fill()}
   for(const cl of s.clouds||[]){const L=proj(cl.x,cl.y,cl.z);if(L.behind)continue;const rr=Math.max(8,projR(L.d,cl.chunk?cl.cr+6:cl.r));c.strokeStyle='rgba(122,217,167,.85)';
