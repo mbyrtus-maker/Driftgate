@@ -7,7 +7,7 @@
 const ICO_SHAPE={ore:'15,2 26,9 27,21 16,28 4,22 3,9',comp:'5,5 25,5 25,25 5,25',wpn:'15,2 24,26 15,20 6,26',util:'11,3 19,3 19,11 27,11 27,19 19,19 19,27 11,27 11,19 3,19 3,11 11,11',msl:'15,2 19,9 19,22 23,28 7,28 11,22 11,9',chg:'10,3 20,3 27,10 27,20 20,27 10,27 3,20 3,10'};
 const ICO_CORE={ore:4,comp:3,wpn:2,util:3,msl:2,chg:5};
 const ICO_PAY={missile:'#ff6fcf',torpedo:'#d65aa8',swarm:'#ff8fe0'};
-const ICO_UTIL={drone:'#5fe3f0',beacon:'#3fc6d8',tune:'#8ff0ff',picket:'#2fb5c8'};
+const ICO_UTIL={drone:'#5fe3f0',beacon:'#3fc6d8',tune:'#8ff0ff'};
 const ICO_RED=['#ff6b6b','#ff9aa8','#e2505f','#ff7f50','#d94a4a'];
 const ICO_CYAN=['#6fd8e8','#4fc3d9','#9eeaf5','#38b2c9','#7fe0d8'];
 function itemKind(k){const I=ITEMS[k];if(!I)return'comp';if(RAWS.includes(k))return'ore';if(ICO_PAY[k])return'msl';if(k==='charge')return'chg';
