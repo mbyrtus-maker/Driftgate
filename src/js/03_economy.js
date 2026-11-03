@@ -202,7 +202,7 @@ function traderArrive(t){if(t.kind==='haul'){haulArrive(t);return}const B=S.stat
 const SHIP_T=120,SHIP_BASE=60,SHIP_PER=2;   // tonnes per shipment, flat cr, cr per tonne per jump
 const shipFee=(m,j)=>Math.round(SHIP_BASE+SHIP_PER*m*Math.max(1,j));
 function shipPick(inv0){const out={};let m=0;for(const k of Object.keys(inv0).filter(k=>inv0[k]>0).sort((a,b)=>baseValue(b)/mass(b)-baseValue(a)/mass(a))){const n=Math.min(inv0[k],Math.floor((SHIP_T-m)/mass(k)));if(n>0){out[k]=n;m+=n*mass(k)}}return out}
-function shipQuote(P,k){if(P===S.player&&S.player.docked&&typeof dockCtx==='function'){try{const c=dockCtx();if(c&&c.storage!==P.vault)return{why:'Goods ship only to a station with your vault.'}}catch(e){}}const to=vaultKey(P),src=P.vaults&&P.vaults[k],sid=vaultSid(k);if(!to||!src||!sid||k===to||!FAC_IDS.includes(P.faction)||S.unb)return null;if(!vaultOpen(k,P))return{why:vaultWhy(k,P)};
+function shipQuote(P,k){if(P===S.player&&S.player.docked&&typeof dockCtx==='function'){try{const c=dockCtx();if(c&&c.storage!==P.vault)return{why:'Goods ship only to a station with your hangar.'}}catch(e){}}const to=vaultKey(P),src=P.vaults&&P.vaults[k],sid=vaultSid(k);if(!to||!src||!sid||k===to||!FAC_IDS.includes(P.faction)||S.unb)return null;if(!vaultOpen(k,P))return{why:vaultWhy(k,P)};
   const load=shipPick(src),m=invMass(load);if(!m)return null;const j=HOP[sid][P.sector]||0;return{load,m,j,fee:shipFee(m,j),all:m>=invMass(src)}}
 function shipOrder(P,k){const q=shipQuote(P,k);if(!q||q.why)return q&&q.why?`Can't ship from there: ${q.why}.`:'Nothing to ship.';if(P.credits<q.fee)return`Shipping costs ${fmt(q.fee)} cr.`;
   const src=P.vaults[k];for(const i in q.load)inv.take(src,i,q.load[i]);if(!invMass(src))delete P.vaults[k];transfer('player',P.faction,q.fee);
@@ -210,7 +210,7 @@ function shipOrder(P,k){const q=shipQuote(P,k);if(!q||q.why)return q&&q.why?`Can
   return`✓ A ${FACTIONS[P.faction].short} freighter is bringing ${fmt(q.m)} t from ${vaultName(k)} (${q.j} jump${q.j===1?'':'s'}) for ${fmt(q.fee)} cr.${q.all?'':' That was a full load: order again for the rest.'} It can be raided on the way; pilots can escort it from Jobs.`}
 function shipArrive(t){const o=t.own,P=isMe(o.k)?S.player:S.pilots&&S.pilots[o.k];if(!P){inv.addAll(S.econ.stock[t.side]||S.econ.stock.pirate,t.load);t.load={};return}
   const what=haulWhat(t);if(P.vaultAt===o.to)inv.addAll(P.vault,t.load);else{P.vaults=P.vaults||{};inv.addAll(P.vaults[o.to]=P.vaults[o.to]||{},t.load)}t.load={};
-  keyFeed(o.k,`📦 Your shipment reached your vault at ${vaultName(o.to)}: ${what}.`,'good')}
+  keyFeed(o.k,`📦 Your shipment reached your hangar at ${vaultName(o.to)}: ${what}.`,'good')}
 function shipLostFeed(t,sid){if(t.own)keyFeed(t.own.k,`⚠ The freighter carrying your goods from ${vaultName(t.own.from)} was destroyed in ${DEF[sid].name}. Half the cargo is drifting there as salvage.`,'bad')}
 function haulArrive(t){const f=t.side;let into=null;cvEnd(t,true);if(t.own){shipArrive(t);return}
   if(t.car){const C=S.frigates.find(x=>x.id===t.car);if(C){C.store=C.store||{};into=C.store}}

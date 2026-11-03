@@ -253,7 +253,7 @@ function pirSetup(){if(!S||NET.cl)return;S.yards=S.yards||{};if(!S.yards.pirate)
 {const o=newGame;newGame=function(){const r=o.apply(this,arguments);try{pirSetup();aceInit()}catch(e){frameErr('expansion setup',e)}return r}}
 {const o=migrate;migrate=function(){const r=o.apply(this,arguments);try{pirSetup()}catch(e){}try{tuneCapMigrate()}catch(e){}return r}}
 function tuneCapMigrate(){if(!S)return;let n=0;const L=[S.player,...Object.values(S.pilots||{})].filter((P,i,a)=>P&&a.indexOf(P)===i);for(const P of L){for(const R of[P,...(P.ships||[])]){const T=R.tune;if(!T||typeof T!=='object')continue;for(const sl of SLOTS){const l=T[sl.id]||0;if(l>TUNE_MAX){inv.add(P.vault=P.vault||{},'tune',tuneItems(l)-tuneItems(TUNE_MAX));T[sl.id]=TUNE_MAX;n++}}}}
-  if(n&&S.player)feed(`Aurora tuning is now once per component: ${n} component${n>1?'s keep':' keeps'} one level and the spare Aurora Tuning went into your vault.`,'info')}
+  if(n&&S.player)feed(`Aurora tuning is now once per component: ${n} component${n>1?'s keep':' keeps'} one level and the spare Aurora Tuning went into your hangar.`,'info')}
 {const o=escName;escName=function(side){if(side==='pirate'){S.escSeq=(S.escSeq||0)+1;return PIR_ESC_NAMES[S.escSeq%PIR_ESC_NAMES.length]}return o.apply(this,arguments)}}
 {const o=carName;carName=function(side){if(side==='pirate')return pick(PIR_CAR_NAMES);return o.apply(this,arguments)}}
 {const o=shipLabel;shipLabel=function(e){if(e&&e.role==='frigate'&&e.tok&&e.side==='pirate'&&!e.pname)return`Unbound ${e.tok.name}`;return o.apply(this,arguments)}}
