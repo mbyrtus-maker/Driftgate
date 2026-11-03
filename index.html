@@ -343,6 +343,59 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white
 #legend .lgtag{color:var(--dim);font-size:12px}#legend .lgp{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px}#legend .lgp>div{border:1px solid var(--line);padding:6px 8px;font-size:12.5px;opacity:.55}#legend .lgp>div.on{opacity:1;border-color:var(--amber)}
 #legend .lgs{display:flex;flex-wrap:wrap;gap:8px 16px}#legend .lgs label{display:flex;gap:6px;align-items:center;font-size:13px}#legend .lgs input,#legend .lgs select{background:var(--deep);color:var(--ivory);border:1px solid var(--line);padding:3px 6px}
 @media (max-width:640px){#legend .lgt th:nth-child(5),#legend .lgt td:nth-child(5),#legend .lgt th:nth-child(6),#legend .lgt td:nth-child(6){display:none}}
+/* ---- minimal pass (Nov 2026, after Driftgate Beyond's screens): the same controls with lighter chrome. Boxes and borders
+   only where they carry meaning (the one primary action, a selection, a warning); labels small and quiet; rows on hairlines. */
+.console{background:#0a0f1c;border-color:rgba(54,67,95,.45)}
+.c-head{border-bottom-color:transparent;padding-bottom:6px}
+.c-foot{border-top-color:rgba(35,45,69,.55)}
+.tabs{gap:22px;border-bottom-color:rgba(35,45,69,.7)}
+#dTabs .mtabs{gap:26px}
+.tab{padding:11px 0 9px;color:#7d859c;font-size:14px;letter-spacing:.16em}
+.tab:hover{color:var(--ivory)}
+.tab[aria-selected="true"]{color:var(--ivory)}
+#dTabs .stabs{gap:18px;border-top-color:transparent}
+.stab{font-size:12.5px;opacity:1}
+#dTabs .tkey{border-color:transparent;padding:0;margin-left:5px;opacity:.5}
+.h3{font-size:12px;letter-spacing:.18em;color:#7d859c;margin:0 0 10px}
+.note{color:var(--dim)}
+.btn{border-color:rgba(54,67,95,.5);color:var(--ivory);padding:5px 10px}
+.btn:hover:not(:disabled),.btn:focus-visible{border-color:var(--amber);color:var(--amber)}
+.btn.sm{border-color:transparent;color:var(--dim);padding:3px 6px}
+.btn.sm:hover:not(:disabled),.btn.sm:focus-visible{border-color:rgba(240,178,74,.6);color:var(--amber)}
+.btn:disabled{opacity:.28}
+.btn.pri,.btn.sm.pri{background:var(--amber);border-color:var(--amber);color:#1a1205}
+.btn.bad,.btn.sm.bad{border-color:rgba(255,93,79,.55);color:var(--danger)}
+.btn[aria-pressed="true"]:not(.pri){color:var(--ivory);border-color:transparent;box-shadow:inset 0 -2px 0 var(--amber)}
+.jbar .btn[aria-pressed=true]{background:transparent;color:var(--ivory)}
+.act{gap:2px}
+table.t th{color:#7d859c;border-bottom-color:rgba(35,45,69,.7)}
+table.t td{border-bottom-color:rgba(35,45,69,.42);padding:8px 8px}
+table.t tr:hover td{background:rgba(255,255,255,.018)}
+.ico{display:inline-block;vertical-align:-2px;margin-right:7px;flex:none}
+.req .ico{margin-right:3px}
+.sw{display:none}
+.req{border-color:transparent;background:rgba(255,255,255,.03);padding:2px 7px}
+.req.ok{border-color:transparent}.req.no{border-color:transparent;background:rgba(255,93,79,.07)}
+.dchip{border-color:transparent;background:rgba(255,255,255,.04)}.dchip.hi{border-color:transparent;background:rgba(240,178,74,.1)}
+.dmk{font-size:11px;letter-spacing:.04em;margin-left:6px;white-space:nowrap}.dmk.hi{color:var(--ok)}.dmk.lo{color:#ff9a4a}
+.rcard,.jdet,.dcard,.bayc{border-color:transparent;background:rgba(255,255,255,.022)}
+.bayc.cur{border-color:transparent;box-shadow:inset 2px 0 0 var(--amber)}
+.cls{background:rgba(255,255,255,.022);border-color:transparent}
+.cls:hover,.role:hover{border-color:rgba(54,67,95,.8)}
+.cls[aria-pressed="true"]{border-color:var(--amber);background:rgba(240,178,74,.05)}
+.htags i{border-color:transparent;background:rgba(169,198,255,.08)}
+.slot{border-bottom-color:rgba(35,45,69,.42)}
+.jrow{border-bottom-color:rgba(35,45,69,.42)}.jrow.on{box-shadow:inset 2px 0 0 var(--amber)}
+.jlist{border-top-color:rgba(35,45,69,.7)}
+.kv span{color:#7d859c}
+.fac,.role{background:rgba(255,255,255,.022);border-color:transparent}
+.fac:hover,.fac:focus-visible,.role:hover{border-color:rgba(54,67,95,.8)}
+.fac[aria-pressed="true"]{border-color:var(--fc);box-shadow:none;background:rgba(255,255,255,.035)}
+.role[aria-pressed="true"]{border-color:var(--amber);box-shadow:none;background:rgba(240,178,74,.05)}
+.step i{border-color:transparent;background:rgba(240,178,74,.12)}
+details.tip{margin:0 0 12px}details.tip summary{cursor:pointer;list-style:none}details.tip summary::-webkit-details-marker{display:none}
+details.tip .more{color:var(--amber);font-size:11.5px;letter-spacing:.06em;margin-left:4px}details.tip[open] .more{display:none}
+.jty .ico{vertical-align:-1px;margin-right:6px}
 </style>
 
 <div id="app">
@@ -6645,7 +6698,7 @@ function renderDock(){
     h+=`<p class="note" style="margin:0 0 12px">Prices follow this ${c.kind}'s supply: scarce goods cost more, plentiful ones less. A whole purchase or sale goes at the price shown; the price moves afterwards. Purchases go into your hold, and whatever doesn't fit goes to your ${c.storageName.toLowerCase()}; Fill buys as much as your hold has room for. Sales draw from your hold first. Every credit moves between you and the ${sideName(c.wallet)} treasury.</p>`;
     h+=`<div class="tblw"><table class="t"><thead><tr><th>Item</th><th class="r">Stock</th><th class="r">Buy</th><th class="r">Sell</th><th class="r">Hold</th><th class="r">${esc(c.storageName)}</th><th></th></tr></thead><tbody>`;
     for(const k of items){const bp=mBuy(c,k),sp=mSell(c,k),have=countIn(k,srcs),hh=P.cargo[k]||0,vv=c.storage[k]||0,dm=demandOf(mR(c),k);
-      h+=`<tr><td class="iname">${sw(k)}${esc(ITEMS[k].name)}<span class="mass">${mass(k)} t</span>${dm==='high'?' <span class="dchip hi">high demand</span>':dm==='low'?' <span class="dchip lo">oversupplied</span>':''}</td><td class="r num">${st[k]||0}</td><td class="r num">${fmt(bp)}</td><td class="r num">${fmt(sp)}</td><td class="r num">${hh||'<span style="opacity:.35">0</span>'}</td><td class="r num">${vv||'<span style="opacity:.35">0</span>'}</td>
+      h+=`<tr><td class="iname">${sw(k)}${esc(ITEMS[k].name)}<span class="mass">${mass(k)} t</span>${dm==='high'?' <span class="dmk hi" title="High demand: sells well here">▲ wanted</span>':dm==='low'?' <span class="dmk lo" title="Oversupplied: cheap to buy here">▼ glut</span>':''}</td><td class="r num">${st[k]||0}</td><td class="r num">${fmt(bp)}</td><td class="r num">${fmt(sp)}</td><td class="r num">${hh||'<span style="opacity:.35">0</span>'}</td><td class="r num">${vv||'<span style="opacity:.35">0</span>'}</td>
       <td><div class="act"><button class="btn sm" data-act="buy" data-arg="${k}:1" ${!(st[k]>0)||P.credits<bp?'disabled':''}>Buy 1</button><button class="btn sm" data-act="buy" data-arg="${k}:10" ${!(st[k]>0)||P.credits<bp?'disabled':''}>Buy 10</button><button class="btn sm" data-act="buy" data-arg="${k}:fill" ${!(st[k]>0)||P.credits<bp||holdFree(p,P)<mass(k)?'disabled':''} title="Buy as much as fits in your hold">Fill</button><button class="btn sm" data-act="sell" data-arg="${k}:1" ${have<1?'disabled':''}>Sell 1</button><button class="btn sm" data-act="sell" data-arg="${k}:all" ${have<1?'disabled':''}>Sell all</button>${hh?`<button class="btn sm" data-act="mv" data-arg="${k}:in:all" title="Move all from your hold to your ${esc(c.storageName.toLowerCase())}">Store</button>`:vv?`<button class="btn sm" data-act="mv" data-arg="${k}:out:all" title="Move to your hold, as much as fits">Load</button>`:''}</div></td></tr>`}
     if(claimSold(c,P))h+=`<tr><td class="iname">${sw('beacon')}Claim Beacon<span class="mass">${mass('beacon')} t · takes an unclaimed or breached outpost</span></td><td class="r num">—</td><td class="r num">${fmt(CLAIM_PRICE)}</td><td class="r num">—</td><td class="r num">${P.cargo.beacon||0}</td><td class="r num">${c.storage.beacon||0}</td><td><div class="act"><button class="btn sm" data-act="buybeacon" ${P.credits>=CLAIM_PRICE?'':'disabled'}>Buy 1</button>${P.cargo.beacon?'':(c.storage.beacon?(beaconCls(P.cls)?`<button class="btn sm" data-act="mv" data-arg="beacon:out:1">Load</button>`:(f=>f?`<button class="btn sm" data-act="${f[0]}" data-arg="${f[1]}">${esc(f[2])}</button>`:'<span class="mass" style="margin:0">fighters and bombers only</span>')(hullFix(c,P,beaconCls,'interceptor'))):'')}</div></td></tr>`;
     h+=`</tbody></table></div>`;if(!items.length)h+=`<div class="empty">Nothing in stock.</div>`;
@@ -9320,6 +9373,45 @@ function trCareer(){const f=S.player.faction;if(!FAC_IDS.includes(f))return'Each
     varkesh:`${F.short} mines: +20% on Aurorite mining jobs, and the Ward Drones on your mining hulls are 40% tougher and hit 25% harder. Your signature hull is the <b>Bombard</b>, converted from a Heavy Miner at ${yard}: a slow shell cannon, about ten bolts a hit, whose shells also crack rock.`,
     ostrova:`${F.short} scouts: +40% on all scouting pay; Seers, Oracles and Vespers carry deeper shields that recharge slower; and Seers and Oracles carry the peek drive. Your signature hull is the <b>Vesper</b>, converted from an Advanced Scout at ${yard}: hold fire to charge its railgun, release to fire a slug out to 4 km.`}[f];
   return t+' Convert on <b>Ship → Shipyard</b> while flying the base hull. The other careers: '+FAC_IDS.filter(x=>x!==f).map(x=>FAC(x).short+' '+{halcyon:'hauls',varkesh:'mines',ostrova:'scouts'}[x]).join(', ')+'.'}
+
+//@src 16g_ui.js
+// ============================================================ the item icon system (from Driftgate Beyond, Nov 2026) and the
+// minimal menu pass. Every item gets an icon by kind and a colour:
+//   ore a hexagon in the ore's own colour; components a square in the colour of the ore they use most (raw units through the
+//   whole recipe, a tie going to the dearer ore); weapon parts a dart in reds; utility parts a plus in cyans; missiles a rocket
+//   and charges an octagon, in magentas. Fill is the colour at 20%, outline the colour, with a solid core.
+const ICO_SHAPE={ore:'15,2 26,9 27,21 16,28 4,22 3,9',comp:'5,5 25,5 25,25 5,25',wpn:'15,2 24,26 15,20 6,26',util:'11,3 19,3 19,11 27,11 27,19 19,19 19,27 11,27 11,19 3,19 3,11 11,11',msl:'15,2 19,9 19,22 23,28 7,28 11,22 11,9',chg:'10,3 20,3 27,10 27,20 20,27 10,27 3,20 3,10'};
+const ICO_CORE={ore:4,comp:3,wpn:2,util:3,msl:2,chg:5};
+const ICO_PAY={missile:'#ff6fcf',torpedo:'#d65aa8',swarm:'#ff8fe0'};
+const ICO_UTIL={drone:'#5fe3f0',beacon:'#3fc6d8',tune:'#8ff0ff',picket:'#2fb5c8'};
+const ICO_RED=['#ff6b6b','#ff9aa8','#e2505f','#ff7f50','#d94a4a'];
+const ICO_CYAN=['#6fd8e8','#4fc3d9','#9eeaf5','#38b2c9','#7fe0d8'];
+function itemKind(k){const I=ITEMS[k];if(!I)return'comp';if(RAWS.includes(k))return'ore';if(ICO_PAY[k])return'msl';if(k==='charge')return'chg';
+  if(I.variant){const V=VARIANTS[I.variant];return V&&V.slot==='weapon'?'wpn':'util'}if(ICO_UTIL[k])return'util';return'comp'}
+const ICO_ORE={};
+function itemOres(k,n,acc){const I=ITEMS[k];if(!I)return acc;if(RAWS.includes(k)){acc[k]=(acc[k]||0)+n;return acc}for(const i in I.recipe||{})itemOres(i,n*I.recipe[i],acc);return acc}
+function itemCol(k){const I=ITEMS[k];if(!I)return'#8c91a5';const kd=itemKind(k);if(kd==='ore')return I.col;if(kd==='msl')return ICO_PAY[k];if(kd==='chg')return'#d65aa8';
+  if(I.variant){const L=kd==='wpn'?ICO_RED:ICO_CYAN,ids=Object.keys(VARIANTS).filter(id=>(VARIANTS[id].slot==='weapon')===(kd==='wpn')),i=Math.max(0,ids.indexOf(I.variant));return L[i%L.length]}
+  if(ICO_UTIL[k])return ICO_UTIL[k];
+  if(!ICO_ORE[k]){const o=itemOres(k,1,{});let b=null,bn=-1;for(const r of RAWS){const n=o[r]||0;if(n>bn||(n===bn&&n>0&&b&&baseValue(r)>baseValue(b))){bn=n;b=r}}ICO_ORE[k]=b?ITEMS[b].col:I.col}return ICO_ORE[k]}
+function itemIco(k,sz){sz=sz||14;const kd=itemKind(k),c=itemCol(k);return`<svg class="ico" width="${sz}" height="${sz}" viewBox="0 0 30 30" aria-hidden="true"><polygon points="${ICO_SHAPE[kd]}" fill="${c}33" stroke="${c}" stroke-width="2"></polygon><circle cx="15" cy="15" r="${ICO_CORE[kd]}" fill="${c}"></circle></svg>`}
+// the old diamond swatch and the recipe chips now carry the icon
+sw=function(k){return ITEMS[k]?itemIco(k,16):''};
+chip=function(k,need,have){return`<span class="req ${have>=need?'ok':'no'}">${itemIco(k,12)}${need} ${esc(ITEMS[k].name)} <span style="opacity:.7">(${have})</span></span>`};
+// ---- job kinds get icons too (the shapes of Beyond's job boards): haul a square, mine a hexagon, fight a dart, scout (intel)
+// a diamond, the campaign move an octagon, each in its label's colour
+const JOB_ICO={haul:['comp','#9ee6b8'],mine:['ore','#9ee6b8'],fight:['wpn','#ff9d7a'],scout:['intel','#a9c6ff'],camp:['chg','#f0b24a']};
+ICO_SHAPE.intel='15,3 27,15 15,27 3,15';ICO_CORE.intel=3;
+function jobIco(t){const J=JOB_ICO[t];if(!J)return'';const c=J[1];return`<svg class="ico" width="13" height="13" viewBox="0 0 30 30" aria-hidden="true"><polygon points="${ICO_SHAPE[J[0]]}" fill="${c}33" stroke="${c}" stroke-width="2.2"></polygon></svg>`}
+{const o=jobsHtml;jobsHtml=function(){return o.apply(this,arguments).replace(/<span class="jty ty-([a-z]+)">/g,(m,t)=>m+jobIco(t))}}
+// ---- long explanations at the top of a dock tab fold to their first sentence; "More" opens the rest (kept open per tab
+// while you stay docked). Nothing is removed: the full text is one click away.
+const DOCK_TIPS=new Set();
+function dockFoldNote(){const B=$('dBody');if(!B)return;const n=B.firstElementChild;if(!n||!n.classList.contains('note')||n.tagName==='DETAILS')return;const txt=n.textContent||'';if(txt.length<170)return;
+  const html=n.innerHTML,cut=html.indexOf('. ');if(cut<20||html.slice(0,cut).includes('<'))return;const key=dockTab||'';
+  const d=document.createElement('details');d.className='note tip';d.open=DOCK_TIPS.has(key);d.innerHTML=`<summary>${html.slice(0,cut+1)} <span class="more">More</span></summary>${html.slice(cut+2)}`;
+  d.addEventListener('toggle',()=>{if(d.open)DOCK_TIPS.add(key);else DOCK_TIPS.delete(key)});n.replaceWith(d)}
+{const o=renderDock;renderDock=function(){const r=o.apply(this,arguments);try{dockFoldNote()}catch(e){}return r}}
 
 //@src 17_main.js
 // ============================================================ main loop

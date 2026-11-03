@@ -20,5 +20,6 @@ js/14_save_start_legend_training.js
 js/15_multiplayer_dev.js
 js/16_expansion.js
 js/16f_factions.js
+js/16g_ui.js
 js/17_main.js
 end.html
