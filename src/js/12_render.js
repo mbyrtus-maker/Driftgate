@@ -135,8 +135,10 @@ function buildScout(fk,g,L,eng,fc){const H=fk==='pirate'?[.6,.56,.46]:mixC([.78,
   g.set().loft([[-1,.05,.05],[-.7,.12,.1],[0,.15,.12,.02],[.7,.1,.08],[1.3,.015,.015]],8,H,0,2.2,{colFn:(k,i,p)=>p[1]<-.02?D:H});canopy(g,.2,.7,.1,.1,.08,[.55,.9,1]);
   g.set(0,.2,-.25).cyl(.02,.02,.3,5,D);g.set(0,.36,-.25).torus(.24,.03,18,3,fc,.8);g.set(0,.36,-.25).sphere(.05,3,5,fc,1);g.set(0,.08,.9).box(.02,.02,.7,D);
   S2(s=>{g.set().wing([.08*s,0,0,-.5,.03],[.62*s,-.04,-.48,-.68,.01],H,0,L,fc);nacelle(g,.13*s,-.04,-1.05,-.45,.07,D,fc,eng)})}
+// (7 Nov 2026) the hull's accent colour is its side's (sideCol): 'neutral' and 'player' (the Compact's, your company's)
+// drew nothing for a frigate, drone or mite before, with no faction colour to read
 function buildShip(fk,cls,g,L,eng){
-  const fc=hexRGB(fk==='pirate'?PIRATE.col:FACTIONS[fk].col),S2=f=>{f(1);f(-1)};
+  const fc=hexRGB(sideCol(fk)),S2=f=>{f(1);f(-1)};
   if(fk==='brood'){buildBrood(cls,g,L,eng,fc);return}if(cls==='frigate'){buildFrigate(fk,g,L,eng,fc);return}if(cls==='gunboat'){buildGunboat(fk,g,L,eng,fc);return}if(cls==='constructor'){buildConstructor(fk,g,L,eng,fc);return}if(cls==='scout'){buildScout(fk,g,L,eng,fc);return}
   if(cls==='limpet'){const D=[.2,.21,.24],M=[.55,.57,.6];g.set(0,.06,0).cyl(.6,.66,.12,12,D,0,true);g.set(0,.13,0).cyl(.62,.62,.04,12,fc,.7);
     g.set(0,.14,0,null,1,.55,1).sphere(.46,4,10,M,0);for(let i=0;i<4;i++){const a=i/4*TAU+TAU/8;g.set(Math.cos(a)*.66,.04,Math.sin(a)*.66).box(.2,.1,.2,D)}
@@ -215,7 +217,7 @@ function buildShip(fk,cls,g,L,eng){
 // light, heavy and bomber hulls for every side
 function buildShipX(fk,cls,g,L,eng){
   if(fk==='brood'||!['interceptor','heavy','bomber'].includes(cls))return false;
-  const fc=hexRGB(fk==='pirate'?PIRATE.col:FACTIONS[fk].col),S2=f=>{f(1);f(-1)};
+  const fc=hexRGB(sideCol(fk)),S2=f=>{f(1);f(-1)};
   if(fk==='halcyon'){const H=[.8,.84,.86],D=[.24,.3,.34],G=[.55,.9,1],under=(k,i,p)=>p[1]<-.03?D:H;
     if(cls==='interceptor'){ // Swift: small dart, deep delta wings, canards, single engine
       g.set().loft([[-.9,.08,.07],[-.7,.13,.1],[-.1,.15,.11,.01],[.5,.1,.08,.01],[1.25,0,0]],10,H,0,2.4,{colFn:under});canopy(g,.05,.6,.09,.07,.07,G);
@@ -357,14 +359,90 @@ function outpostMesh(type,owner){if(type==='rockbase'&&!mdlHas(type))type='relay
   else{for(let i=0;i<3;i++){const an=i/3*TAU;g.set(Math.cos(an)*40,-34,Math.sin(an)*40,qLook(Math.cos(an),-1.2,Math.sin(an),0,1,0,q0())).box(9,9,52,dk)}g.set(0,-20,0).box(26,14,26,fc,.8)}
   g.set(0,-18,0).torus(74,2,24,3,fc,1);
   return MESH[key]=g.upload()}
+// (9 Nov 2026) shield bubbles sit on the geometry they guard. A station's bubble was drawn at the entity's origin at one size
+// (165 x 150 x 165 m, an outpost's 132 x 110 x 132), but a player base is built round its hub with its buildings to one side
+// (its box up to 65 m off the origin), and the freeports, the Haven and the powers' stations outgrow 150 m, so their bubbles
+// sat off centre or cut through the hull. Now the bubble's centre and radii come from the mesh the game draws: the centre of
+// its box, and an ellipsoid (no axis under 3/4 of the longest) scaled to take in every vertex with 6% to spare, never
+// smaller than the old bubble. A spun mesh (an outpost, a station's ring) is taken round its y axis. Cached on the mesh;
+// `fl` is the old bubble's radii (the floor). The shield's hit test (shots, lasers, rails, missiles, the maw) uses the same
+// ellipsoid (bubSeg), so a shot stops where the bubble is drawn; host and guests build the same mesh, so they agree.
+function meshBub(core,spin,allSpin,fl){if(core._bub)return core._bub;const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9],L=[[core,!!allSpin]];if(spin&&spin.mode===G.TRIANGLES&&spin.n>3)L.push([spin,true]);
+  for(const[m,sp]of L){const d=m.data;for(let i=0;i<d.length;i+=10){const x=d[i],y=d[i+1],z=d[i+2];if(sp){const r=Math.hypot(x,z);lo[0]=Math.min(lo[0],-r);hi[0]=Math.max(hi[0],r);lo[2]=Math.min(lo[2],-r);hi[2]=Math.max(hi[2],r)}else{lo[0]=Math.min(lo[0],x);hi[0]=Math.max(hi[0],x);lo[2]=Math.min(lo[2],z);hi[2]=Math.max(hi[2],z)}lo[1]=Math.min(lo[1],y);hi[1]=Math.max(hi[1],y)}}
+  if(lo[1]>hi[1])return core._bub={c:[0,0,0],r:fl.slice()};
+  const c=lo.map((v,j)=>(v+hi[j])/2),h=hi.map((v,j)=>(v-lo[j])/2),hm=Math.max(h[0],h[1],h[2]),a=h.map(v=>Math.max(v,hm*.75));if(allSpin){c[0]=c[2]=0}if(allSpin||L.length>1)a[0]=a[2]=Math.max(a[0],a[2]);let s=0;
+  for(const[m,sp]of L){const d=m.data,rc=Math.hypot(c[0],c[2]);for(let i=0;i<d.length;i+=10){const x=d[i]-c[0],y=d[i+1]-c[1],z=d[i+2]-c[2],q=sp?((Math.hypot(d[i],d[i+2])+rc)/a[0])**2+(y/a[1])**2:(x/a[0])**2+(y/a[1])**2+(z/a[2])**2;if(q>s)s=q}}
+  s=Math.sqrt(s)*1.06;return core._bub={c,r:a.map((v,j)=>Math.max(v*s,fl[j]))}}
+const _sbq={x:0,y:0,z:0},_sbv={x:0,y:0,z:0},_sbi={x:0,y:0,z:0,w:1};
+// a station's bubble in the world: centre (x,y,z, turned with the station), turn q and radii (rx,ry,rz)
+function stBub(SE){const m=stationMesh(SE.fac,SE.kind),B=meshBub(m.core,m.spin,false,[165,150,165]),k=SE.sc||1,q=SE.q||Q_ID,o=SE._bubW||(SE._bubW={});qRot(q,B.c[0]*k,B.c[1]*k,B.c[2]*k,_sbq);
+  o.x=SE.x+_sbq.x;o.y=SE.y+_sbq.y;o.z=SE.z+_sbq.z;o.q=q;o.rx=B.r[0]*k;o.ry=B.r[1]*k;o.rz=B.r[2]*k;return o}
+// an outpost's (it spins about its own y, so only the centre's height counts)
+function opBub(OE){const o=OE.o,k=(OE.r||95)/95,B=meshBub(outpostMesh(opModel(o),o.owner),null,true,[132*k,110*k,132*k]),q=OE.q||Q_ID,w=OE._bubW||(OE._bubW={});qRot(q,0,B.c[1],0,_sbq);
+  w.x=OE.x+_sbq.x;w.y=OE.y+_sbq.y;w.z=OE.z+_sbq.z;w.q=q;w.rx=B.r[0];w.ry=B.r[1];w.rz=B.r[2];return w}
+// the segment a-b against a bubble (radii grown by pad): the fraction along it where it first meets the shell, 0 when it
+// starts inside, -1 when it misses
+function bubSeg(B,ax,ay,az,bx,by,bz,pad){pad=pad||0;const q=B.q;_sbi.x=-q.x;_sbi.y=-q.y;_sbi.z=-q.z;_sbi.w=q.w;const rx=B.rx+pad,ry=B.ry+pad,rz=B.rz+pad;
+  qRot(_sbi,ax-B.x,ay-B.y,az-B.z,_sbq);qRot(_sbi,bx-ax,by-ay,bz-az,_sbv);const px=_sbq.x/rx,py=_sbq.y/ry,pz=_sbq.z/rz,dx=_sbv.x/rx,dy=_sbv.y/ry,dz=_sbv.z/rz;
+  const C=px*px+py*py+pz*pz-1;if(C<=0)return 0;const A=dx*dx+dy*dy+dz*dz;if(A<1e-12)return-1;const H=px*dx+py*dy+pz*dz,D=H*H-A*C;if(D<0)return-1;const t=(-H-Math.sqrt(D))/A;return t>=0&&t<=1?t:-1}
+// is a point inside a bubble (grown by pad)
+function bubIn(B,x,y,z,pad){return bubSeg(B,x,y,z,x,y,z,pad)===0}
+// (9 Nov 2026) the live gun turret on stations, depots, freeports, the Haven, player bases and outposts (it was a plain box
+// with a box barrel), in the low-poly style of the station models: a turntable ring with a trunnion yoke that turns only
+// about its mount, and a chamfered gun housing that pitches between the yoke's cheeks, with a faceted sensor dome, a
+// mantlet, twin barrels in recoil sleeves with muzzle collars, accent panel lines and a lit sight in the owner's palette.
+// The same envelope as the old box (housing 16 x 12 x 18, barrels out to +48 along +z), the head's pivot where the box's
+// centre was, so seats, scale and aim are unchanged. About 550 triangles; cached per palette.
+// a solid through octagon-like sections along z: secs = [[z, [[x,y],...]], ...], every section the same vertex count
+function tuPrism(g,secs,col,em){const n=secs[0][1].length,cz=(secs[0][0]+secs[secs.length-1][0])/2;let cy=0;for(const p of secs[0][1])cy+=p[1]/n;const C=[0,cy,cz];
+  for(let s=0;s+1<secs.length;s++){const[z0,A]=secs[s],[z1,B]=secs[s+1];for(let i=0;i<n;i++){const j=(i+1)%n;g.quad([A[i][0],A[i][1],z0],[A[j][0],A[j][1],z0],[B[j][0],B[j][1],z1],[B[i][0],B[i][1],z1],col,em,C)}}
+  for(const[z,P]of[secs[0],secs[secs.length-1]]){let mx=0,my=0;for(const p of P){mx+=p[0]/n;my+=p[1]/n}for(let i=0;i<n;i++){const j=(i+1)%n;g.tri([mx,my,z],[P[i][0],P[i][1],z],[P[j][0],P[j][1],z],col,em,C)}}return g}
+// a chamfered rectangle (half-width w, half-height h, corner cut c, centred at height y)
+function tuOct(w,h,c,y){return[[-w,y-h+c],[-w+c,y-h],[w-c,y-h],[w,y-h+c],[w,y+h-c],[w-c,y+h],[-w+c,y+h],[-w,y+h-c]]}
+function turretMesh(fac){const key='tur'+(fac||'neutral');if(MESH[key])return MESH[key];const P=mdlPal(fac||'neutral'),LI=scaleC(P.c[0],.82),MI=P.c[1],DK=P.c[2],AC=P.c[3],GL=P.c[4],GW=P.c[5];
+  const qz=qAxis(1,0,0,Math.PI/2,q0()),qx=qAxis(0,0,1,-Math.PI/2,q0()),h=new GB(),b=new GB();
+  // the head: a chamfered housing with a tapered glacis and rear, a mantlet where the barrels leave it
+  h.set(0,0,0);tuPrism(h,[[-9,tuOct(6.6,4.6,2,.6)],[-6.5,tuOct(8,5.6,2.4,.5)],[3.5,tuOct(8,5.6,2.4,.5)],[8.6,tuOct(6.2,3.8,1.8,0)]],LI);
+  tuPrism(h,[[8.2,tuOct(5.6,2.9,1.2,.2)],[11.6,tuOct(5,2.5,1.1,.2)]],MI);
+  // twin barrels: a recoil sleeve, the barrel, an accent band and a muzzle collar each
+  for(const x of[-2.6,2.6]){h.set(x,.2,14.2,qz).cyl(1.5,1.4,5.6,6,MI);h.set(x,.2,30.5,qz).cyl(.95,.82,29,6,DK,0,false);h.set(x,.2,18.2,qz).cyl(1.04,1.04,1.1,6,AC,.35,false);h.set(x,.2,45.6,qz).cyl(1.45,1.3,3.4,6,MI)}
+  // a faceted sensor dome on the roof, a lit sight on the glacis, a vent at the back
+  {const r=2.9,y0=6.05,cx=-3.6,cz=-2.6,R1=[],R2=[];for(let i=0;i<6;i++){const a=i/6*TAU,a2=a+Math.PI/6;R1.push([cx+Math.cos(a)*r,y0,cz+Math.sin(a)*r]);R2.push([cx+Math.cos(a2)*r*.62,y0+r*.55,cz+Math.sin(a2)*r*.62])}
+    h.set(0,0,0);for(let i=0;i<6;i++){const j=(i+1)%6;h.tri(R1[i],R1[j],R2[i],GL,.18,[cx,y0,cz]);h.tri(R1[j],R2[j],R2[i],GL,.18,[cx,y0,cz]);h.tri(R2[i],R2[j],[cx,y0+r*.82,cz],GL,.18,[cx,y0,cz])}
+    h.set(cx,y0-.1,cz).cyl(r*1.12,r*1.12,.5,6,DK)}
+  h.set(4.3,2.7,8.15).box(2,1.1,.7,GW,.9);h.set(0,.6,-9.15).box(8,3.2,.4,DK);
+  // panel lines: accent strips along the roof and flanks, a dark seam across the roof
+  for(const x of[-5.4,5.4])h.set(x,6.15,-1.5).box(.55,.22,9.5,AC,.35);for(const x of[-8.06,8.06])h.set(x,1.2,-1.5).box(.16,.75,9.5,AC,.35);h.set(1.5,6.15,-5.2).box(7,.18,.45,DK);
+  // the mount: a turntable ring with an accent band, two yoke cheeks and the trunnion caps the head pitches on
+  b.set(0,-10.8,0).cyl(10.6,9.6,2.6,10,MI);b.set(0,-9.45,0).cyl(9.7,9.7,.35,10,AC,.4,false);b.set(0,-12.6,0).cyl(8,8.6,1.2,10,DK,0,false);
+  for(const x of[-9.3,9.3]){b.set(x,-4.1,0).box(2.2,11,8.6,LI);b.set(x,-5.2,0).box(2.4,1.2,8.8,DK);b.set(x+Math.sign(x)*1.6,0,0,qx).cyl(2.5,2.5,1.1,6,MI);b.set(x+Math.sign(x)*2.2,0,0,qx).cyl(1.1,1.1,.3,6,AC,.4)}
+  return MESH[key]={head:h.upload(),base:b.upload()}}
+// draw a turret at (x,y,z) on a mount facing n (outward from the hull), its guns along aim, scale s: the base turns only
+// about n, the head looks along aim (as the old box did) with its roof toward n
+const _tqb=q0(),_tqh=q0();
+function drawTurret(TM,x,y,z,nx,ny,nz,aim,s,tint){let l=Math.hypot(nx,ny,nz);if(l<1e-6){nx=0;ny=1;nz=0;l=1}nx/=l;ny/=l;nz/=l;
+  const d=aim.x*nx+aim.y*ny+aim.z*nz;let fx=aim.x-nx*d,fy=aim.y-ny*d,fz=aim.z-nz*d;if(Math.hypot(fx,fy,fz)<1e-3){if(Math.abs(nx)<.9){fx=0;fy=-nz;fz=ny}else{fx=-nz;fy=0;fz=nx}}
+  qLook(fx,fy,fz,nx,ny,nz,_tqb);mModel(MM,x,y,z,_tqb,s,s,s);drawMesh(TM.base,MM,tint);
+  if(Math.abs(d)>.995*Math.hypot(aim.x,aim.y,aim.z))qLook(aim.x,aim.y,aim.z,fx,fy,fz,_tqh);else qLook(aim.x,aim.y,aim.z,nx,ny,nz,_tqh);mModel(MM,x,y,z,_tqh,s,s,s);drawMesh(TM.head,MM,tint)}
 const GEN={},Q_ID={x:0,y:0,z:0,w:1};
 function genMeshes(){
-  GEN.turret=(()=>{const g=new GB();g.box(16,12,18,[.45,.47,.52]);g.set(0,0,28).box(4,4,40,[.35,.37,.4]);return g.upload()})();
   GEN.shield=new GB().sphere(1,12,18,[1,1,1],1).upload();
   GEN.ring=new GB().circleLines(1,96,[1,1,1]).upload(true);
-  GEN.gate=(()=>{const g=new GB();g.set(0,0,0,qAxis(1,0,0,Math.PI/2,q0())).torus(110,8,40,6,[.55,.57,.63],0,true);for(let i=0;i<12;i++){const a=i/12*TAU;g.set(Math.cos(a)*110,Math.sin(a)*110,0).box(9,9,20,[1,1,1],1)}return g.upload()})();
+  // (12 Nov 2026, graphics pass) the jump gate: it was a plain hoop with twelve lit cubes on it. Same size and place; now a main
+  // hoop with a dark inner liner and a thin outer rail, and twelve emitter pylons: a housing astride the hoop with a lit band
+  // through it (the lights stay where the cubes were), a fin outside, and an emitter horn with a lit tip pointing into the ring
+  GEN.gate=(()=>{const g=new GB(),qr=qAxis(1,0,0,Math.PI/2,q0()),B=[.55,.57,.63],D=[.3,.31,.36],M=[.44,.46,.52];
+    g.set(0,0,0,qr).torus(110,7,48,6,B,0,true);g.set(0,0,0,qr).torus(102.5,2.2,48,4,D,0,true);g.set(0,0,0,qr).torus(118,1.5,48,4,M,0,true);
+    for(let i=0;i<12;i++){const a=i/12*TAU,c=Math.cos(a),s=Math.sin(a),qa=qAxis(0,0,1,a,q0()),qc=qAxis(0,0,1,a-Math.PI/2,q0());
+      g.set(c*111,s*111,0,qa).box(21,11,15,M);g.set(c*111,s*111,0,qa).box(12,4.5,18,[1,1,1],1);g.set(c*123,s*123,0,qa).box(4,7,10,D);
+      g.set(c*95,s*95,0,qc).cyl(1.6,4.6,12,6,D);g.set(c*88,s*88,0,qc).cyl(.9,.9,3.5,6,[1,1,1],1)}
+    return g.upload()})();
   GEN.disc=(()=>{const g=new GB();for(let i=0;i<48;i++){const a=i/48*TAU,b=(i+1)/48*TAU;g.tri([0,0,0],[Math.cos(a)*104,Math.sin(a)*104,0],[Math.cos(b)*104,Math.sin(b)*104,0],[1,1,1],1)}return g.upload()})();
-  GEN.crate=new GB().box(1,1,1,[.5,.48,.42],0,true).upload();
+  // (12 Nov 2026, graphics pass) the cargo crate: it was a plain cube. Same size; now a body with corner posts, two dark bands
+  // and a hatch plate (its outline, which carries its colour, is drawn as before)
+  GEN.crate=(()=>{const g=new GB(),B=[.5,.48,.42],D=[.37,.36,.32],P=[.43,.41,.36];g.set(0,0,0).box(.94,.94,.94,B,0,true);
+    for(const y of[-.3,.3])g.set(0,y,0).box(1,.11,1,D,0,true);for(const x of[-.44,.44])for(const z of[-.44,.44])g.set(x,0,z).box(.12,1,.12,P,0,true);
+    g.set(0,.48,0).box(.5,.05,.5,D,0,true);return g.upload()})();
   // sector beacon: a spiked mast on a finned hub, a lamp at the top and a spinning halo, both lit in the holder's colour
   GEN.bcn=(()=>{const g=new GB(),M=[.5,.52,.57],D=[.22,.24,.28];g.set(0,-8,0).cyl(16,22,10,10,D);g.set(0,-26,0).cyl(1.5,14,26,10,M);g.set(0,22,0).cyl(3.6,2.4,50,8,M);g.set(0,-2,0).torus(25,3,24,6,M,0,true);
     for(let i=0;i<3;i++){const a=i/3*TAU;g.set(Math.cos(a)*22,-8,Math.sin(a)*22,qAxis(0,1,0,-a,q0())).box(18,7,3,D)}for(let i=0;i<2;i++)g.set(0,40,0,qAxis(0,1,0,i*Math.PI/2,q0())).box(26,2,2,D);return g.upload()})();
@@ -434,6 +512,12 @@ function useMesh(){G.useProgram(PM.p);G.uniformMatrix4fv(PM.u.uVP,false,VP);G.un
 function drawMesh(m,model,tint,em,alpha){G.uniformMatrix4fv(PM.u.uM,false,model);G.uniform3fv(PM.u.uTint,tint||ONE3);G.uniform3fv(PM.u.uEm,em||ZERO3);G.uniform1f(PM.u.uA,alpha===undefined?1:alpha);if(curMesh!==m){G.bindBuffer(G.ARRAY_BUFFER,m.buf);attribs([3,3,4],10);curMesh=m}G.drawArrays(m.mode,0,m.n)}
 let BBn=0;const BBmax=12000;
 function bbPush(ax,ay,az,r,g,b,a,u,v){const A=GEN.bb.arr,i=BBn*9;A[i]=ax;A[i+1]=ay;A[i+2]=az;A[i+3]=r;A[i+4]=g;A[i+5]=b;A[i+6]=a;A[i+7]=u;A[i+8]=v;BBn++}
+// an engine's glow (Beyond, 3 Nov 2026): the glow is a camera-facing disc, and seen from behind and above it leaned into the
+// hull round a recessed nozzle (the Varkesh drives sit in square housings), which cut its top off flat. It is now drawn
+// pulled towards the camera by its own size as far as the camera sits behind the engine, so it shows as a whole round
+// glow over the nozzle's circle; from the side or the front it stays on the nozzle, so the hull still hides it.
+function engGlow(ex,ey,ez,rr,fl,c){let dx=cam.x-ex,dy=cam.y-ey,dz=cam.z-ez;const l=hyp(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;const k=Math.max(0,dx*_f.x+dy*_f.y+dz*_f.z),o=rr*3*fl*k;
+  sprite(ex+dx*o,ey+dy*o,ez+dz*o,rr*3*fl,c,.85);sprite(ex+dx*o*1.02,ey+dy*o*1.02,ez+dz*o*1.02,rr*1.3*fl,[1,1,1],.75)}
 function sprite(x,y,z,s,c,a){if(BBn>=BBmax*6-6)return;const rx=-cX.x*s,ry=-cX.y*s,rz=-cX.z*s,ux=cY.x*s,uy=cY.y*s,uz=cY.z*s;
   bbPush(x-rx-ux,y-ry-uy,z-rz-uz,c[0],c[1],c[2],a,-1,-1);bbPush(x+rx-ux,y+ry-uy,z+rz-uz,c[0],c[1],c[2],a,1,-1);bbPush(x+rx+ux,y+ry+uy,z+rz+uz,c[0],c[1],c[2],a,1,1);
   bbPush(x-rx-ux,y-ry-uy,z-rz-uz,c[0],c[1],c[2],a,-1,-1);bbPush(x+rx+ux,y+ry+uy,z+rz+uz,c[0],c[1],c[2],a,1,1);bbPush(x-rx+ux,y-ry+uy,z-rz+uz,c[0],c[1],c[2],a,-1,1)}
@@ -467,12 +551,12 @@ function draw3D(){
   if(!W)return;
   const t=W.t,sec=S.sectors[W.sid];useMesh();
   for(const g of GATES[W.sid]){if(!inView(g.x,g.y,g.z,150))continue;qLook(-g.x,-g.y,-g.z,0,1,0,_qs);qMul(_qs,qAxis(0,0,1,t*.15,_qs2),_qs);mModel(MM,g.x,g.y,g.z,_qs,1,1,1);const down=S.gateDown[gateKey(W.sid,g.to)];drawMesh(GEN.gate,MM,down?[1,.4,.35]:ONE3)}
-  if(W.stationEnt&&W.stationEnt.turrets){const SEt=W.stationEnt;mdlStationTurrets(SEt);for(const tu of SEt.turrets){qRot(SEt.q,tu.p[0],tu.p[1],tu.p[2],_u);qLook(tu.aim.x,tu.aim.y,tu.aim.z,0,1,0,_qs);{const ts=SEt._mt&&SEt.fac!=='brood'&&MDL.ready?1.15:1.6;mModel(MM,SEt.x+_u.x,SEt.y+_u.y,SEt.z+_u.z,_qs,ts,ts,ts)}drawMesh(GEN.turret,MM,SEt.offline?[.5,.45,.45]:ONE3)}}
+  if(W.stationEnt&&W.stationEnt.turrets){const SEt=W.stationEnt;mdlStationTurrets(SEt);const TM=turretMesh(SEt.fac),ts=SEt._ts||(SEt._mt&&SEt.fac!=='brood'&&MDL.ready?1.15:1.6),tint=SEt.offline?[.5,.45,.45]:ONE3;for(const tu of SEt.turrets){qRot(SEt.q,tu.p[0],tu.p[1],tu.p[2],_u);const px=SEt.x+_u.x,py=SEt.y+_u.y,pz=SEt.z+_u.z;if(tu.n)qRot(SEt.q,tu.n[0],tu.n[1],tu.n[2],_u);drawTurret(TM,px,py,pz,_u.x,_u.y,_u.z,tu.aim,ts,tint)}}
   const SE=W.stationEnt;if(SE){const m=stationMesh(SE.fac,SE.kind),sq=SE.q||q0(),k=SE.sc||1;mModel(MM,SE.x,SE.y,SE.z,sq,k,k,k);drawMesh(m.core,MM);qMul(sq,qAxis(0,1,0,t*.08,_qs2),_qs);mModel(MM,SE.x,SE.y,SE.z,_qs,k,k,k);drawMesh(m.spin,MM);if(SE.fac==='brood')try{const om=broodOrgans(SE);if(om){mModel(MM,SE.x,SE.y,SE.z,sq,1,1,1);drawMesh(om,MM)}}catch(e){}}
   drawWorks(t);
   {const B=W.scaffold||(W.pbuild?{x:W.pbuild.x,y:W.pbuild.y,z:W.pbuild.z,owner:'player',prog:W.pbuild.prog}:null);if(B){const m=stationMesh(B.owner,'depot'),k=.15+.6*B.prog;mModel(MM,B.x,B.y,B.z,q0(),k,k,k);drawMesh(m.core,MM);qMul(q0(),qAxis(0,1,0,t*.5,_qs2),_qs);mModel(MM,B.x,B.y,B.z,_qs,k*B.prog,1,k*B.prog);drawMesh(m.spin,MM)}}
   const OE=W.outpostEnt;if(OE){const o=OE.o;qMul(OE.q||q0(),qAxis(0,1,0,t*.03,_qs2),_qs);mModel(MM,OE.x,OE.y,OE.z,_qs,1,1,1);drawMesh(outpostMesh(opModel(o),o.owner),MM,o.breached?[.55,.5,.5]:ONE3);
-    if(!(opModel(o)==='rockbase'&&mdlHas('rockbase'))){qLook(OE.aim.x,OE.aim.y,OE.aim.z,0,1,0,_qs);mModel(MM,OE.x,OE.y+40,OE.z,_qs,1,1,1);drawMesh(GEN.turret,MM)}}
+    if(!(opModel(o)==='rockbase'&&mdlHas('rockbase')))drawTurret(turretMesh(o.owner||'neutral'),OE.x,OE.y+40,OE.z,0,1,0,OE.aim,1,ONE3)}
   for(const a of sec.ast){const R=astR(a);if(!inView(a.x,a.y,a.z,R))continue;const sd=a.seed||a.id;astPose(a,t,_qs);mModel(MM,a.x,a.y,a.z,_qs,R,R*astScaleY(a),R);drawMesh(astMesh(sd%8,a.comet?'comet':mainOre(a)||'fe'),MM)}
   for(const c of W.npcCh||[]){if(!inView(c.x,c.y,c.z,c.cr))continue;qAxis(((c.id>>2)%5-2)/2,1,((c.id>>4)%3-1)/2,t*.6+c.id,_qs);qNorm(_qs);mModel(MM,c.x,c.y,c.z,_qs,c.cr,c.cr*.8,c.cr*.9);drawMesh(astMesh(c.id%8,c.k),MM)}
   for(const c of sec.clouds||[]){if(!c.chunk||!inView(c.x,c.y,c.z,c.cr))continue;qAxis(((c.id>>2)%5-2)/2,1,((c.id>>4)%3-1)/2,t*.6+c.id,_qs);qNorm(_qs);
@@ -485,9 +569,9 @@ function draw3D(){
   for(const c of sec.crates){if(!inView(c.x,c.y,c.z,20))continue;qAxis(.3,1,.2,t*1.1+c.id,_qs);qNorm(_qs);mModel(MM,c.x,c.y,c.z,_qs,16,16,16);drawMesh(GEN.crate,MM);drawMesh(GEN.crateL,MM,c.derelict?rgb(PLAYER_COL):[.9,.88,.8])}
   const hideP=cam.mode==='cockpit'||S.player.docked||W.dead;
   if(W.bridge){const F=W.bridge.f,O=bridgeOrigin(F);mModel(MM,O.x,O.y,O.z,F.q,1,1,1);qRot(F.q,.22,1,.3,_u);const l=hyp(_u.x,_u.y,_u.z);G.uniform3f(PM.u.uL,_u.x/l,_u.y/l,_u.z/l);G.uniform3fv(PM.u.uSun,BR_SUN);G.uniform3fv(PM.u.uAmb,BR_AMB);drawMesh(bridgeMesh(F.fac),MM);useMesh()}
-  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f&&!mdlHas(e.fac==='brood'?BROOD_MDL[e.cls]:e.cls))continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=e.side==='pirate'?'pirate':e.fac,m=shipMesh(fac,e.role==='limpet'?'limpet':e.cls);
+  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f&&!mdlHas(e.fac==='brood'?BROOD_MDL[e.cls]:e.cls))continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=meshFac(e),m=shipMesh(fac,e.role==='limpet'?'limpet':e.cls);
     mModel(MM,e.x,e.y,e.z,e.q,sc,sc,sc);const hurt=W.t-e.lastHit<.08;drawMesh(m.hull,MM,ONE3,hurt?[.35,.25,.15]:ZERO3);drawMesh(m.rim,MM);
-    if(hasTur(e.cls)&&!(W.gunseat&&gsEnt()===e)){const T=e.tur||{yaw:Math.PI,pitch:.1};turretQ(e,T,_gq3);{const m=turMount(e);qRot(e.q,0,m[0]*sc,m[1]*sc,_u)}mModel(MM,e.x+_u.x,e.y+_u.y,e.z+_u.z,_gq3,sc,sc,sc);const tm=gturretMesh(fac);drawMesh(tm.hull,MM,ONE3,ZERO3);drawMesh(tm.rim,MM)}}
+    if(hasTur(e.cls)&&!(W.gunseat&&gsEnt()===e))gfxDrawTurret(e,fac,sc)}
   drawBerthed();
   G.enable(G.BLEND);G.blendFunc(G.ONE,G.ONE);G.depthMask(false);useMesh();
   // ship shield bubbles: flash on hit, burst outward when they collapse, pulse when they come back
@@ -499,25 +583,25 @@ function draw3D(){
   for(const g of GATES[W.sid]){if(!inView(g.x,g.y,g.z,150))continue;qLook(-g.x,-g.y,-g.z,0,1,0,_qs);mModel(MM,g.x,g.y,g.z,_qs,1,1,1);const down=S.gateDown[gateKey(W.sid,g.to)];drawMesh(GEN.disc,MM,down?[1,.3,.25]:[.45,.7,1],ZERO3,down?.12:.2+.06*Math.sin(t*3))}
   {const B=S.beacons&&S.beacons[W.sid];if(B&&isScoutCls(S.player.cls)&&W.player&&d3(W.player,B)<BCN_R*5){mModel(MM,B.x,B.y,B.z,Q_ID,BCN_R,BCN_R,BCN_R);drawMesh(GEN.bcnZone,MM,B.owner?rgb(sideCol(B.owner)):[.85,.85,.8],ZERO3,.55)}}
   drawWorksFx(t);
-  if(SE&&SE.sMax&&!SE.offline&&SE.shield>0){const fr=SE.shield/SE.sMax+(W.t-SE.lastHit<.15?.7:0);mModel(MM,SE.x,SE.y,SE.z,SE.q||q0(),165*(SE.sc||1),150*(SE.sc||1),165*(SE.sc||1));drawMesh(GEN.shield,MM,rgb(sideCol(SE.fac)),ZERO3,.018+.045*fr)}
-  if(OE){const o=OE.o,os=oStats(o);if(o.shield>0){const fr=o.shield/os.sMax+(W.t-OE.lastHit<.15?.6:0);{const k=(OE.r||95)/95;mModel(MM,OE.x,OE.y,OE.z,q0(),132*k,110*k,132*k)}drawMesh(GEN.shield,MM,rgb(sideCol(o.owner)),ZERO3,.03+.07*fr)}
+  if(SE&&SE.sMax&&!SE.offline&&SE.shield>0){const fr=SE.shield/SE.sMax+(W.t-SE.lastHit<.15?.7:0),B=stBub(SE);mModel(MM,B.x,B.y,B.z,B.q,B.rx,B.ry,B.rz);drawMesh(GEN.shield,MM,rgb(sideCol(SE.fac)),ZERO3,.018+.045*fr)}
+  if(OE){const o=OE.o,os=oStats(o);if(o.shield>0){const fr=o.shield/os.sMax+(W.t-OE.lastHit<.15?.6:0);{const B=opBub(OE);mModel(MM,B.x,B.y,B.z,B.q,B.rx,B.ry,B.rz)}drawMesh(GEN.shield,MM,rgb(sideCol(o.owner)),ZERO3,.03+.07*fr)}
     if(!o.owner||o.breached||o.cap.p>0){mModel(MM,OE.x,OE.y,OE.z,OE.q||q0(),450,450,450);drawMesh(GEN.ring,MM,rgb(o.cap.side?sideCol(o.cap.side):'#ece4cf'),ZERO3,.35+.6*o.cap.p)}}
   {const D=GEN.dust,A=D.arr,sp=hyp(W.player.vx,W.player.vy,W.player.vz);const al=clamp(sp/250,.15,.8);for(let i=0;i<D.base.length;i++){const b=D.base[i],o=i*8;A[o]=((b[0]-cam.x)%1000+1000)%1000-500+cam.x;A[o+1]=((b[1]-cam.y)%1000+1000)%1000-500+cam.y;A[o+2]=((b[2]-cam.z)%1000+1000)%1000-500+cam.z;A[o+3]=.6;A[o+4]=.68;A[o+5]=.85;A[o+6]=al;A[o+7]=1.4}
     G.useProgram(PP.p);G.uniformMatrix4fv(PP.u.uVP,false,VP);G.uniform3f(PP.u.uOff,0,0,0);G.uniform1f(PP.u.uPx,DPR);G.bindBuffer(G.ARRAY_BUFFER,D.buf);G.bufferData(G.ARRAY_BUFFER,A,G.DYNAMIC_DRAW);attribs([3,4,1],8);G.drawArrays(G.POINTS,0,D.base.length);curMesh=null}
-  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead||cam.mode==='cockpit'))continue;if(W.bridge&&e===W.bridge.f)continue;const sc=e.st.radius*1.25;if(e.role==='limpet'){if((t*2.2+e.x*.01)%1<.45){qRot(e.q,0,.66*sc,0,_u);sprite(e.x+_u.x,e.y+_u.y,e.z+_u.z,sc*1.1,rgb(sideCol(e.side)),.95)}continue}const m=shipMesh(e.side==='pirate'?'pirate':e.fac,e.cls),c=rgb((e.isPlayer?S.player.trail:e.trail)||(e.isPlayer?FAC(e.fac).col:sideCol(e.side)));
+  for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead||cam.mode==='cockpit'))continue;if(W.bridge&&e===W.bridge.f)continue;const sc=e.st.radius*1.25;if(e.role==='limpet'){if((t*2.2+e.x*.01)%1<.45){qRot(e.q,0,.66*sc,0,_u);sprite(e.x+_u.x,e.y+_u.y,e.z+_u.z,sc*1.1,rgb(sideCol(e.side)),.95)}continue}const m=shipMesh(meshFac(e),e.cls),c=rgb((e.isPlayer?S.player.trail:e.trail)||(e.isPlayer?FAC(e.fac).col:sideCol(e.side)));
     const fl=e.thrusting?(e.boosting?1.9:1.25)+Math.sin(t*50+sc)*.15:.5;qRot(e.q,0,0,-1,_f);
-    for(const en of m.eng){qRot(e.q,en[0]*sc,en[1]*sc,en[2]*sc,_u);const ex=e.x+_u.x,ey=e.y+_u.y,ez=e.z+_u.z,rr=en[3]*sc;sprite(ex,ey,ez,rr*3*fl,c,.85);sprite(ex,ey,ez,rr*1.3*fl,[1,1,1],.75);
+    for(const en of m.eng){qRot(e.q,en[0]*sc,en[1]*sc,en[2]*sc,_u);const ex=e.x+_u.x,ey=e.y+_u.y,ez=e.z+_u.z,rr=en[3]*sc;engGlow(ex,ey,ez,rr,fl,c);
       if(e.thrusting){const Lt=rr*(e.boosting?16:9);streak(ex,ey,ez,ex+_f.x*Lt,ey+_f.y*Lt,ez+_f.z*Lt,rr*.8,c,.32)}}
-    if(e.isPlayer)sprite(e.x,e.y+sc*.3,e.z,sc*.18,rgb(PLAYER_COL),.6);
+    gfxFlash(e,sc,c);if(e.isPlayer)sprite(e.x,e.y+sc*.3,e.z,sc*.18,rgb(PLAYER_COL),.6);
     {const gk=e.gj?e.gj.t/GATE_HOLD:e.gjc?((W.t*.6)%1):(e.isPlayer&&W.gc?W.gc.t/GATE_HOLD:-1);if(gk>=0){sprite(e.x,e.y,e.z,sc*(2.2+3*gk)+6*Math.sin(t*9),[.6,.8,1],.18+.35*gk);sprite(e.x,e.y,e.z,sc*(1+gk),c,.25+.3*gk)}}}
   for(const b of W.shots){const sp=hyp(b.vx,b.vy,b.vz)||1,st=SHOT_STY[b.sty]||SHOT_STY.pulse,L=st[0],w=st[1],c=rgb(b.col);const ux=b.vx/sp,uy=b.vy/sp,uz=b.vz/sp;
-    bolt(b.x-ux*L,b.y-uy*L,b.z-uz*L,b.x,b.y,b.z,w*.95,c,1)}
+    const gp=gfxShotPos(b,sp,L);bolt(gp.x-ux*gp.L,gp.y-uy*gp.L,gp.z-uz*gp.L,gp.x,gp.y,gp.z,w*.95,c,1)}
   for(const e of W.ents){if(e.type!=='ship'||!e.mining||!e.alive)continue;const a=e.mining,sc=e.st.radius*1.25,nl=CLASSES[e.cls].lasers||1;qRot(e.q,0,0,1,_f);qRot(e.q,1,0,0,_r);const k=mainOre(a)||'fe',c=rgb(ITEMS[k].col);
-    for(let li=0;li<nl;li++){const o=(li-(nl-1)/2)*sc*.55,j=rnd(-6,6),sx=e.x+_f.x*sc+_r.x*o,sy=e.y+_f.y*sc+_r.y*o,sz=e.z+_f.z*sc+_r.z*o;capsule(sx,sy,sz,a.x+j,a.y-j,a.z+j,7,c,.3);capsule(sx,sy,sz,a.x+j,a.y-j,a.z+j,3,c,.6);capsule(sx,sy,sz,a.x+j,a.y-j,a.z+j,1.1,[1,1,1],.85)}if(Math.random()<.4)fxSpark({x:a.x+rnd(-12,12),y:a.y+rnd(-12,12),z:a.z+rnd(-12,12)},ITEMS[k].col,1)}
+    for(let li=0;li<nl;li++){const o=(li-(nl-1)/2)*sc*.55,j=rnd(-6,6),mh=gfxMineHead(e,li,nl,_gfv),sx=mh?mh.x:e.x+_f.x*sc+_r.x*o,sy=mh?mh.y:e.y+_f.y*sc+_r.y*o,sz=mh?mh.z:e.z+_f.z*sc+_r.z*o;capsule(sx,sy,sz,a.x+j,a.y-j,a.z+j,7,c,.3);capsule(sx,sy,sz,a.x+j,a.y-j,a.z+j,3,c,.6);capsule(sx,sy,sz,a.x+j,a.y-j,a.z+j,1.1,[1,1,1],.85)}if(Math.random()<.4)fxSpark({x:a.x+rnd(-12,12),y:a.y+rnd(-12,12),z:a.z+rnd(-12,12)},ITEMS[k].col,1)}
   for(const e of W.ents){if(e.type!=='ship'||!e.alive||!e.hitPt)continue;const ha=W.t-e.shHitT;if(ha<.25)sprite(e.x+e.hitPt.x,e.y+e.hitPt.y,e.z+e.hitPt.z,e.st.radius*(1.2-ha*2),[.6,.85,1],1-ha/.25)}
   {const p=W.player,sp=hyp(p.vx,p.vy,p.vz);if(sp>150&&!S.player.docked&&!W.dead){const A=GEN.dust.arr,al=clamp((sp-150)/380,0,.5)*(p.boosting?1.6:1),k=.055*(p.boosting?1.8:1);
     for(let i=0;i<180;i++){const o=i*8,x=A[o],y=A[o+1],z=A[o+2];if(!inView(x,y,z,10))continue;streak(x,y,z,x-p.vx*k,y-p.vy*k,z-p.vz*k,.9,[.7,.8,1],al)}}}
-  for(const b of W.beams){const e=b.src;if(!e.alive||(e.isPlayer&&(S.player.docked||W.dead)))continue;qRot(e.q,0,0,1,_f);const r=e.st.radius*1.25,sx=e.x+_f.x*r,sy=e.y+_f.y*r,sz=e.z+_f.z*r,c=rgb(b.col),fl=.8+Math.random()*.4;
+  for(const b of W.beams){const e=b.src;if(!e.alive||(e.isPlayer&&(S.player.docked||W.dead)))continue;qRot(e.q,0,0,1,_f);const r=e.st.radius*1.25,mh=b.ml?gfxMineHead(e,0,1,_gfv):null,sx=mh?mh.x:e.x+_f.x*r,sy=mh?mh.y:e.y+_f.y*r,sz=mh?mh.z:e.z+_f.z*r,c=rgb(b.col),fl=.8+Math.random()*.4;
     capsule(sx,sy,sz,b.x,b.y,b.z,7*fl,c,.22);capsule(sx,sy,sz,b.x,b.y,b.z,3*fl,c,.75);capsule(sx,sy,sz,b.x,b.y,b.z,1.1,[1,1,1],.95);sprite(sx,sy,sz,7*fl,c,.85);sprite(b.x,b.y,b.z,11*fl,c,.9);sprite(b.x,b.y,b.z,4*fl,[1,1,1],.8)}
   for(const m of W.missiles){const sp=hyp(m.vx,m.vy,m.vz)||1,ux=m.vx/sp,uy=m.vy/sp,uz=m.vz/sp,c=rgb(m.col),k=(MK[m.kind]||MK.missile).k,tx=m.x-ux*14*k,ty=m.y-uy*14*k,tz=m.z-uz*14*k;streak(tx,ty,tz,m.x,m.y,m.z,3*k,m.kind==='torpedo'?[1,.8,.4]:m.kind==='swarm'?[1,.55,.78]:[.85,.85,.9],.9);sprite(tx,ty,tz,(9+Math.random()*4)*k,c,1);sprite(tx,ty,tz,4*k,[1,1,1],1);if(k>1)sprite(m.x,m.y,m.z,26+8*Math.sin(W.t*12),[1,.75,.3],.5)}
   for(const d of W.decoys)sprite(d.x,d.y,d.z,16+Math.random()*8,[1,.85,.5],Math.min(1,d.life));

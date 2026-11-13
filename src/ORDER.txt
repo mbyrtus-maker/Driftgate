@@ -21,5 +21,6 @@ js/15_multiplayer_dev.js
 js/16_expansion.js
 js/16f_factions.js
 js/16g_ui.js
+js/16h_gfx.js
 js/17_main.js
 end.html

@@ -35,11 +35,11 @@ def wk_def():
     # defence platform: a braced gun deck (the game mounts live turrets on its corners) with a fire-control mast
     S=Comp();S.add('platform_large',(0,0,0),0,1.5)
     for i in range(4):
-        a=i*H/2+H/4;S.add('supports_low',(math.sin(a)*1.0,-.5,math.cos(a)*1.0),a,.9,True)
-    S.add('structure_detailed',(0,-.05,0),0,.9);S.add('structure_closed',(0,-.95,0),0,.8)
+        a=i*H/2+H/4;S.add('supports_low',(math.sin(a)*1.0,.01,math.cos(a)*1.0),a,.9,True)   # (12 Nov 2026) the braces hang from the deck's underside (they hung half a unit below it, holding nothing)
+    S.add('structure_detailed',(0,-.05,0),0,.9);S.add('structure_closed',(0,-.95,0),0,.97)   # (the keel block reaches the deck: it stopped short of it)
     S.add('machine_wireless',(0,.85,0),0,.8);S.add('satelliteDish_large',(0,1.3,0),0,.9)
     for i in range(4):
-        a=i*H/2;S.add('barrels',(math.sin(a)*.9,.05,math.cos(a)*.9),a,.6)
+        a=i*H/2+H/4;S.add('barrels',(math.sin(a)*1.66,.05,math.cos(a)*1.66),a,.6)   # (12 Nov 2026) the drum stacks stand in the deck's corners: they stood where the live turrets' turntables go
     return S.model()
 def wk_armor():
     # shield & hull works: a tall emitter pylon on a generator base, ringed by conduit
@@ -47,10 +47,11 @@ def wk_armor():
     y=-1.6+1.6*.9
     for k in range(3):S.add('rocket_fuelA',(0,y,0),k*.6,.75);y+=.5*.75
     S.add('rocket_sidesA',(0,y,0),0,.75);y+=.75
-    S.add('machine_wireless',(0,y,0),0,.7);S.add('satelliteDish_large',(0,y+.45,0),0,1.0)
+    S.add('machine_wireless',(0,y,0),0,.7);S.add('satelliteDish_large',(0,y+.11,0),0,1.0)
     S.add('pipe_ringHigh',(0,-1.0,0),0,1.3)
+    # (7 Nov 2026) the barrels between the base's fins stand against its body (r .69); the one on the fore fin against the fin
     for i in range(3):
-        a=i*2*H/3;S.add('machine_barrel',(math.sin(a)*1.05,-1.2,math.cos(a)*1.05),a,.8)
+        a=i*2*H/3;r=.95 if i==0 else .69;S.add('machine_barrel',(math.sin(a)*r,-1.2,math.cos(a)*r),a,.8)
     return S.model()
 import numpy as np,colorsys
 LIGHT,MID,DARK,ACC,GLASS,GLOW,WIN=0,1,2,3,4,5,6
@@ -106,15 +107,18 @@ def wk_yard():
     z0,z1=Z[0]-6,Z[-1]+6
     for x,y,w,h,r in [(-a,top-6,7,7,LIGHT),(a,top-6,7,7,LIGHT),(-a,bot+16,8,8,MID),(a,bot+16,8,8,MID),(-a+16,bot,8,8,MID),(a-16,bot,8,8,MID),(0,bot-6,12,6,DARK)]:
         B.beam((x,y,z0),(x,y,z1),w,h,r,hint=(0,1,0))
-    for z in (Z[0]+17,Z[-1]-17):                                                         # keel cradles under the hull
-        B.box((0,bot+10,z),(40,10,14),DARK);B.box((0,bot+16,z),(28,3,10),LIGHT)
+    for z in (Z[0]+17,Z[-1]-17):                                                         # keel cradles under the hull, on a post from the keel beam
+        B.box((0,bot+10,z),(40,10,14),DARK);B.box((0,bot+16,z),(28,3,10),LIGHT);B.box((0,bot+1,z),(10,10,10),MID)
     for zg in (-52,58):                                                                  # gantries: bridge, trolley, hoist
         for sx in (-1,1):B.beam((sx*(a+2),top-6,zg),(sx*(a+2),top+22,zg),8,8,MID)
         B.beam((-a-6,top+26,zg),(a+6,top+26,zg),10,10,LIGHT);B.box((0,top+26,zg),(22,14,18),MID);B.box((0,top+26,zg+9.5),(18,6,1),WIN)
         B.beam((0,top+18,zg),(0,top+2,zg),3,3,DARK);B.box((0,top,zg),(12,3,12),ACC)
         for sx in (-1,1):B.box((sx*(a+6),top+32,zg),(4,4,4),GLOW)
     # aft light gate framing the slip mouth
-    for sx in (-1,1):B.beam((sx*(a+8),bot-8,z1+14),(sx*(a+8),top+14,z1+14),10,10,LIGHT)
+    for sx in (-1,1):
+        B.beam((sx*(a+8),bot-8,z1+14),(sx*(a+8),top+14,z1+14),10,10,LIGHT)
+        for y in (top-6,bot+16):B.beam((sx*a,y,z1-3),(sx*(a+8),y,z1+14),6,6,MID,hint=(0,1,0))   # (7 Nov 2026) struts tie the gate to the longerons
+    B.beam((0,bot-6,z1-3),(0,bot-8,z1+14),8,6,DARK,hint=(1,0,0))                          # and the keel beam to its sill
     B.beam((-a-8,top+14,z1+14),(a+8,top+14,z1+14),10,10,LIGHT);B.beam((-a-8,bot-8,z1+14),(a+8,bot-8,z1+14),10,10,LIGHT)
     for t in np.linspace(0,1,7):
         B.box((-a-8+t*(2*a+16),top+20,z1+14),(4,4,4),GLOW);B.box((-a-8+t*(2*a+16),bot-14,z1+14),(4,4,4),GLOW)
