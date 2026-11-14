@@ -27,7 +27,9 @@ def lens_head(M,base,r,glow=WIN):
     # a mining-laser lens on a collar, facing +z
     # (11 Nov 2026) recorded as a mining head: the game's mining beams leave from these
     b=np.array(base,float);n0=len(M.T);ring(M,tuple(b),r*1.1,r*.18,ACC,seg=14,sides=5);M.blob(tuple(b+[0,0,r*.25]),r*.8,glow,sub=1,squash=(1,1,.55),noise=0);M.part(M.mine,b+[0,0,r*.69],n0)
-def launcher(M,base,n,role=DARK,sp=.08):
+def launcher(M,base,n,role=DARK,sp=.08,pylon=0):
+    # pylon: (14 Nov 2026, floating parts) a block from the tubes' axis up by that much, into the hull above (the rack hung clear of the belly)
+    if pylon:box(M,(base[0],base[1]+pylon/2,base[2]+.1),((n-1)*sp+.07,pylon,.12),MID,sh=.9)
     for k in range(n):tube(M,[np.array(base)+[k*sp-(n-1)*sp/2,0,0],np.array(base)+[k*sp-(n-1)*sp/2,0,.2]],[.032,.032],role,.9,6)
 def vents(M,pts,r):[M.vent(p,r) for p in pts]
 def sqdrive(M,c,s):drivebox(M,c,(s,s*.9,s*.7),c[2]-s*.38,s*.38)
@@ -108,7 +110,7 @@ def heron():     # heavy miner: a broad flattened lens hull with two stacked hop
         plate(M,[(sx*.75,.0,-.1),(sx*1.25,.02,-.55),(sx*1.2,.02,-.75),(sx*.7,.0,-.7)],.06,LIGHT)
         box(M,(sx*1.15,-.04,-.6),(.18,.14,.3),MID);M.blob((sx*1.15,.08,-.6),.05,WIN,sub=1,noise=0)                # drone bays
         plate(M,[(sx*.45,.18,-.85),(sx*.65,.48,-1.12),(sx*.65,.48,-1.22),(sx*.45,.09,-1.05)],.035,ACC,.95)          # tails, their roots on the hull (they stood off its falling stern)
-        launcher(M,(sx*.6,-.3,.4),3)
+        launcher(M,(sx*.6,-.3,.4),3,pylon=.14)
         for dx in (.2,.5):M.vent((sx*dx,0,-1.22),.11)
     lights(M,[(.4,.0,1.0),(-.4,.0,1.0),(0,.18,1.02)])
     return finish(M,3.2)
@@ -215,7 +217,7 @@ def sledge():    # heavy miner: the Heron's layout in Varkesh form: a broad, bul
     for sx in (1,-1):
         plate(M,[(sx*.9,.0,-.1),(sx*1.3,.02,-.5),(sx*1.25,.02,-.72),(sx*.85,.0,-.7)],.08,MID)
         abox(M,(sx*1.2,-.04,-.6),(.22,.18,.36),DARK,(.85,.85));M.blob((sx*1.2,.1,-.6),.05,WIN,sub=1,noise=0)       # drone bays
-        launcher(M,(sx*.7,-.38,.4),3)
+        launcher(M,(sx*.7,-.38,.4),3,pylon=.2)
         for dx in (.25,.6):
             for dy in (.12,-.12):abox(M,(sx*dx,dy,-1.3),(.24,.2,.16),DARK,(1.1,1.1));M.vent((sx*dx,dy,-1.39),.08)
         abox(M,(sx*.72,.28,-.6),(.08,.3,.45),ACC,(.7,.7),.9)
@@ -304,7 +306,7 @@ def lumen():     # medium miner: a central spire cockpit forward with mining len
     M=Mesh(72)
     loft(M,[(-1.0,DIA(.07,.07)),(-.6,DIA(.18,.17)),(.45,DIA(.2,.18)),(.95,DIA(.12,.11)),(1.08,DIA(.07,.06))],SP)     # central spire cockpit
     M.blob((0,.18,.6),.09,GLASS,sub=2,squash=(.9,.7,1.8),noise=0)
-    for sx in (1,-1):lens_head(M,(sx*.13,-.06,1.05),.07);barrel(M,(sx*.105,.085,.5),.3,.013,ACC)                    # mining lenses at the nose; a lance on each shoulder
+    for sx in (1,-1):lens_head(M,(sx*.09,-.06,1.05),.07);barrel(M,(sx*.105,.085,.5),.3,.013,ACC)                    # mining lenses at the nose; a lance on each shoulder
     for th in (PI/4,-PI/4):
         u=np.array([math.sin(th),math.cos(th),0.])
         pts=[np.array([0,0,-.5])+u*math.cos(a)*.78+np.array([0,0,math.sin(a)*.78]) for a in np.linspace(0,2*PI,37)]
@@ -359,8 +361,11 @@ def cairn():     # medium hauler: a spire, two rings, and three crystal cargo co
     for k in range(3):
         a=PI/2+k*2*PI/3;cx,cy=math.cos(a)*R,math.sin(a)*R
         crystal(M,-.85,.65,.2,.2,cx,cy)                                                                              # crystal cargo container
-        for z in (-.5,.3):tube(M,[(math.cos(a)*.12,math.sin(a)*.12,z),(math.cos(a)*(R-.15),math.sin(a)*(R-.15),z)],[.025,.025],LIGHT,.9,5,cap0=False,cap1=False)
-    M.blob((0,.14,.85),.06,GLASS,sub=2,squash=(.9,.7,1.8),noise=0)
+        for z in (-.5,.3):tube(M,[(math.cos(a)*.06,math.sin(a)*.06,z),(math.cos(a)*(R-.15),math.sin(a)*(R-.15),z)],[.025,.025],LIGHT,.9,5,cap0=False,cap1=False)   # (14 Nov 2026) from .06 (.12): the diamond spire is only .095 out on the two lower spokes' lines, so they hung clear of it
+    # (14 Nov 2026, the user: "the cockpit on the cairn is off the hull") the canopy sat at y .14 over the nose's taper, where the
+    # spire's ridge is only .08 high, so it floated .02 clear and further at its tip. It is now further aft, where the spire is
+    # thicker, and sunk into the ridge
+    M.blob((0,.098,.72),.06,GLASS,sub=2,squash=(.9,.7,1.5),noise=0)
     for sx in (1,-1):barrel(M,(sx*.066,-.062,.55),.3,.012,ACC)                                                       # a lance under each side of the spire
     M.vent((0,0,-1.12),.06)
     return finish(M,2.6)

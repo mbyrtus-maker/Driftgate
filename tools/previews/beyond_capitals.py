@@ -68,7 +68,7 @@ def bridge_varkesh(M,c,s=1.0):
     for k,(w,h,l,dy) in enumerate(((.42,.14,.7,0),(.32,.12,.52,.13),(.22,.1,.36,.24))):
         loft(M,[(z-l/2*s,[(a+x,b+y+dy*s) for a,b in SMH(w/2*s,h/2*s)]),(z+l/2*s,[(a+x,b+y+dy*s) for a,b in SMH(w/2*s*.92,h/2*s*.92)])],smh_role)
     windows(M,x,.18*s,y+.25*s,z+.18*s);[sidewin(M,x+sx*.105*s,y+.25*s,z-.12*s,z+.14*s) for sx in (1,-1)]
-    tube(M,[(x,y+.3*s,z-.08*s),(x,y+.62*s,z-.1*s)],[.016,.01],LIGHT,.9,5);ring(M,(x,y+.5*s,z-.09*s),.04*s,.008,ACC,seg=10,sides=4,axis='y')
+    tube(M,[(x,y+.25*s,z-.08*s),(x,y+.62*s,z-.1*s)],[.016,.01],LIGHT,.9,5);ring(M,(x,y+.5*s,z-.09*s),.04*s,.008,ACC,seg=10,sides=4,axis='y')
 def bridge_ostrova(M,c,s=1.0):
     # a faceted spire tower, a crystal window band round its head, a slender mast
     x,y,z=c;b=np.array([x,y,z])
@@ -195,8 +195,8 @@ def lantern():   # escort: a long faceted spire hull in three sections, two turr
         for k in range(6):
             a=PI/6+k*PI/3;x,y=math.cos(a)*.66,math.sin(a)*.66
             if abs(math.cos(a))>.5:pd(M,(x,y,z),.06,ACC,up=y>0)
-            else:tube(M,[(math.cos(a)*.38,math.sin(a)*.38,z),(x*.95,y*.95,z)],[.03,.03],LIGHT,.9,5,cap0=False,cap1=False)
-        for k in (0,3):a=PI/6+k*PI/3;tube(M,[(math.cos(a)*.38,math.sin(a)*.38,z),(math.cos(a)*.62,math.sin(a)*.62,z)],[.03,.03],LIGHT,.9,5,cap0=False,cap1=False)
+            else:tube(M,[(math.cos(a)*.3,math.sin(a)*.3,z),(x*.95,y*.95,z)],[.03,.03],LIGHT,.9,5,cap0=False,cap1=False)   # (14 Nov 2026, floating parts) spokes start at .3 (.38): their roots stood .007 off the faceted hull
+        for k in (0,3):a=PI/6+k*PI/3;tube(M,[(math.cos(a)*.3,math.sin(a)*.3,z),(math.cos(a)*.62,math.sin(a)*.62,z)],[.03,.03],LIGHT,.9,5,cap0=False,cap1=False)
     for sx in (1,-1):crystal(M,-.95,-.05,.14,.16,sx*.4,0)                                                            # crystal cores between the halos
     for k in range(4):a=PI/4+k*PI/2;tube(M,[(math.cos(a)*.18,math.sin(a)*.16,1.7),(math.cos(a)*.18,math.sin(a)*.16,1.95)],[.045,.045],DARK,.85,8,cap1=False);M.blob((math.cos(a)*.18,math.sin(a)*.16,1.92),.035,ACC,sub=1,noise=0)
     bridge_ostrova(M,(0,.33,-.55),1.0)

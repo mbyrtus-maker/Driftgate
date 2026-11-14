@@ -233,6 +233,73 @@ class Mesh:
             for j in range(8):
                 k=(j+1)%8;s.tri(R0[j],R0[k],R1[k],DARK,.8,ref=(top+bot)/2);s.tri(R0[j],R1[k],R1[j],DARK,.8,ref=(top+bot)/2)
             e.append((n0,len(s.T)))                           # the pedestal's triangles belong to the turret
+    # (14 Nov 2026, floating parts) Mesh.AUTOSEAT: build_models.py turns this on for ships. out() then seats every part that hangs
+    # clear of its hull by a hair (nacelles, pods, guns, fins, spines, eyes, plates: gap between SEAT_MIN and SEAT_MAX of the
+    # model's half-size): the part moves straight toward the nearest point of the rest of the model, by the gap plus a little
+    # sink, so it stands in what it joins instead of beside it. A part a builder means to keep clear (a crystal held in a ring, a
+    # slug between rails) is listed in the builder's `M.keep_clear=[(point,radius)]`; gaps wider than SEAT_MAX are left for a
+    # builder to fix by hand. Nothing that would grow the model's box is moved (its drawn and hit sizes depend on the box).
+    AUTOSEAT=False;SEAT_MIN=.003;SEAT_MAX=.05;SEAT_SINK=.008;SEATLOG=None
+    def seat_floaters(s):
+        import os,sys;D=os.path.dirname(os.path.abspath(__file__))
+        if D not in sys.path:sys.path.insert(0,D)
+        import mdlcheck as MC
+        keep_clear=getattr(s,'keep_clear',[])
+        for _pass in range(3):
+            T=np.array(s.T,float).reshape(-1,3,3)
+            if len(T)<20:return
+            lo=T.reshape(-1,3).min(0);hi=T.reshape(-1,3).max(0);c=(lo+hi)/2;half=float(max(hi-lo)/2);Tn=(T-c)/half
+            L=MC.comps(Tn);ar0=np.linalg.norm(np.cross(Tn[:,1]-Tn[:,0],Tn[:,2]-Tn[:,0]),axis=1);kp=np.nonzero(ar0>1e-9)[0];_,Lk=np.unique(L[kp],return_inverse=True)
+            moved=0;shifts=[]
+            isl=MC.islands(Tn,L,eps=Mesh.SEAT_MIN);allp=set(p for x in isl for p in x['parts']);main=kp[~np.isin(Lk,list(allp))]
+            for x in isl:
+                gap=x['gap']
+                if gap<=Mesh.SEAT_MIN or gap>Mesh.SEAT_MAX:continue
+                ti=kp[np.isin(Lk,x['parts'])];ctr=np.array(x['at'])*half+c
+                if any(np.linalg.norm(ctr-np.array(kc[0],float))<kc[1] for kc in keep_clear):continue
+                if len(x['parts'])>1 and x['size']>.6:
+                    # an assembly (rings with their spokes and crystals, a gun deck): moving it as one would throw it off its own axis
+                    if Mesh.SEATLOG is not None:Mesh.SEATLOG.append('not seated (an assembly of %d parts, by hand): gap %.3f at %s size %.2f'%(len(x['parts']),gap,np.round(ctr,3).tolist(),x['size']))
+                    continue
+                R_=Tn[main]      # the hull proper: a part seats on that, not on its neighbours that hang loose beside it
+                Vg=np.unique(np.round(Tn[ti].reshape(-1,3),6),axis=0);m=np.all((R_.min(1)<=Vg.max(0)+.3)&(R_.max(1)>=Vg.min(0)-.3),axis=1);R_=R_[m] if m.any() else R_
+                dist=lambda P:np.min([MC.pt_tri(P,R_[k:k+2500]) for k in range(0,len(R_),2500)],axis=0)
+                d=np.concatenate([dist(Vg[i:i+150]) for i in range(0,len(Vg),150)]);p=Vg[int(np.argmin(d))];gap=float(d.min())
+                if gap<=Mesh.SEAT_MIN or gap>Mesh.SEAT_MAX:continue      # (measured against the hull proper: a part that hangs from another loose part is left for the next pass)
+                h=1e-3;g=np.zeros(3)
+                for k in range(3):
+                    e=np.zeros(3);e[k]=h;g[k]=(dist((p+e)[None])[0]-dist((p-e)[None])[0])/(2*h)
+                if np.linalg.norm(g)<1e-6:continue
+                u=-g/np.linalg.norm(g);sh=u*(gap+Mesh.SEAT_SINK)*half;nt=T[ti]+sh;Ro=T[np.setdiff1d(np.arange(len(T)),ti)].reshape(-1,3)
+                boxok=lambda q:not((np.abs(np.minimum(Ro.min(0),q.reshape(-1,3).min(0))-lo)>2e-5).any() or (np.abs(np.maximum(Ro.max(0),q.reshape(-1,3).max(0))-hi)>2e-5).any())
+                how='moved'
+                if not boxok(nt):
+                    # the part is one of the model's extremes: stretch it toward the hull instead, near end full, far end fixed
+                    sv=(T[ti]@u);s0,s1=sv.min(),sv.max();w=(sv-s0)/max(s1-s0,1e-9);nt=T[ti]+sh*w[...,None]*1.0;how='stretched'
+                    if not boxok(nt):
+                        if Mesh.SEATLOG is not None:Mesh.SEATLOG.append('not seated (would change the box): gap %.3f at %s'%(gap,np.round(ctr,3).tolist()))
+                        continue
+                ts=set(int(i) for i in ti);ok=True;upd=[]
+                for Lr in (s.eng,s.gun,s.mine,s.seat,s.pd):
+                    for e in Lr:
+                        for rg in ([(e[2],e[3])] if Lr is s.eng else [e[3]]+([e[4]] if len(e)>4 else []) if Lr is s.pd else [e[-1]]):
+                            a,b=rg;n_in=sum(1 for i in range(a,b) if i in ts)
+                            if n_in==b-a and n_in:upd.append((e,False))
+                for e in s.cut:
+                    a,b=e[2];n_in=sum(1 for i in range(a,b) if i in ts)
+                    if n_in and n_in<b-a:ok=False
+                    elif n_in:upd.append((e,True))
+                if not ok:
+                    if Mesh.SEATLOG is not None:Mesh.SEATLOG.append('not seated (shares a recorded part with the hull): gap %.3f at %s'%(gap,np.round(ctr,3).tolist()))
+                    continue
+                shifts.append((ti,nt,upd,gap,ctr,how,sh));moved+=1;T[ti]=nt      # at once, so the next part's box check sees it
+            if not moved:break
+            for ti,nt,upd,gap,ctr,how,sh in shifts:
+                for k,i in enumerate(ti):s.T[i]=nt[k]
+                for e,iscut in upd:
+                    e[0]=np.array(e[0],float)+sh
+                    if iscut:e[1]=np.array(e[1],float)+sh
+                if Mesh.SEATLOG is not None:Mesh.SEATLOG.append('seated: gap %.3f at %s (%d tris) %s %.3f'%(gap,np.round(ctr,3).tolist(),len(ti),how,float(np.linalg.norm(sh))))
     def out(s):
         # the mesh for the pack (triangles, no normals, roles), the nozzles' throats opened; LAST keeps what was recorded:
         # each part's point, and 'pid', the part number of every triangle (0: hull) so a check can tell a part from the hull
@@ -240,6 +307,7 @@ class Mesh:
         if s.style=='brood' and not s.gun and len(s.T):
             # a Brood hull spits from its mouth: the point between its foremost parts (mandibles, maw), on the centreline
             V=np.array(s.T,float).reshape(-1,3);f=V[V[:,2]>V[:,2].max()-.06].mean(0);s.gun.append([np.array([0.0,f[1],V[:,2].max()]),(len(s.T),len(s.T))])
+        if Mesh.AUTOSEAT and not getattr(s,'noseat',False):s.seat_floaters()
         s.seat_parts();pid=np.zeros(len(s.T),int);k=0;LAST={'eng':[],'gun':[],'mine':[],'seat':[],'pd':[]}
         for key,L in (('eng',s.eng),('gun',s.gun),('mine',s.mine),('seat',s.seat),('pd',s.pd)):
             for e in L:
@@ -370,7 +438,7 @@ def watcher():   # scout: a slim stalker with a great glowing eye on a stalk and
     M.mirror(lambda s:(M.spine([.04*s,.05,.88],[.5*s,.4,1],[.4*s,.2,1],.75,.012,LIGHT,segs=10),
                        M.spine([.08*s,0,-.3],[s,-.1,-1],[.7*s,0,-1],.85,.02,DARK,segs=8),
                        M.membrane([np.array([.08*s,.02,.2]),np.array([.75*s,.05,-.2]),np.array([.65*s,.04,-.7]),np.array([.1*s,.02,-.5])])))
-    M.vent([0,0,-.99],.05)
+    M.vent([0,0,-.96],.05)      # (14 Nov 2026, floating parts) z -.99 -> -.96: the lip stood .012 clear of the stern's narrow tip once its throat was cut
     return M.out()
 def mite():      # drone / picket: a small round mite
     M=Mesh(19);zs=np.linspace(-.8,.8,10);prof=np.array([.05,.35,.5,.56,.58,.56,.5,.4,.25,.05])

@@ -129,7 +129,8 @@ function pickupAndGates(p,P,st){const sec=S.sectors[W.sid];
 }
 // gate transit: the field grabs the ship, lines it up on the gate axis and flings it down the tunnel (about 1.7 s),
 // then it drops out of the far gate (about 1.2 s of arrival with controls locked for the first half second)
-const JUMP_OUT=1.3,JIN={t:9,d:1.1},GATE_HOLD=5;
+// (14 Nov 2026) the jump runs as long as its sound: 2 s out through the ring and 2.2 s of streaks on arrival (was 1.3 and 1.1)
+const JUMP_OUT=2,JUMP_X=.145,JIN={t:9,d:2.2},GATE_HOLD=5;
 // line up on a gate and hold it: within ~500 m in front of the ring, near its axis, nose within 20° of straight through.
 // The gate field then holds the ship on the axis and counts down 5 seconds; break alignment or leave and it resets.
 function gateAxis(g){const l=hyp(g.x,g.y,g.z)||1;return{x:g.x/l,y:g.y/l,z:g.z/l}}
@@ -142,11 +143,11 @@ function gateCountdown(p){const dt=W.fdt||1/60;let best=null;for(const g of GATE
   if(z.cos<.94){if(W.gc){W.gc=null;SFX.beep(140);flash('Alignment lost. Line up with the gate again.',true)}return}
   if(gateLocked(p)){if(W.gc){W.gc=null}if(W.t-(W.gateLockMsg||0)>3){W.gateLockMsg=W.t;flash('Jammed or tethered: the gate field won\u2019t take you until the bar drains or the line breaks.',true)}return}
   if(!W.gc||W.gc.g!==g){W.gc={g,t:0,last:6}}
-  const C=W.gc;C.t+=dt;const n=Math.ceil(unbGateHold()-C.t);if(n<C.last&&n>0){C.last=n;SFX.count(n===1)}
+  const C=W.gc;C.t+=dt;const n=Math.ceil(unbGateHold()-C.t);if(n<C.last&&n>0){C.last=n;gjCount(n)}gjCharge(unbGateHold()-C.t);
   // the field: ease the ship onto the axis and let it creep toward the ring
   const tx=g.x-z.d.x*60,ty=g.y-z.d.y*60,tz=g.z-z.d.z*60,ex=tx-p.x,ey=ty-p.y,ez=tz-p.z,el=hyp(ex,ey,ez)||1,sp=Math.min(55,el*.35),k=Math.min(1,1.6*dt);
   p.vx+=(ex/el*sp-p.vx)*k;p.vy+=(ey/el*sp-p.vy)*k;p.vz+=(ez/el*sp-p.vz)*k;
-  if(C.t>=unbGateHold()){W.gc=null;W.gate=null;W.jump={to:g.to,t:0,g};p.inJump=true;W.tgt=null;SFX.jump();flash(`Jumping to ${DEF[g.to].name}.`)}}
+  if(C.t>=unbGateHold()){W.gc=null;W.gate=null;W.jump={to:g.to,t:0,g};p.inJump=true;W.tgt=null;gjGo();flash(`Jumping to ${DEF[g.to].name}.`)}}
 function drawGateCountdown(c,t){if(W.jump||!W.gate||S.player.docked||W.dead)return;const cx=VW/2,cy=VH*.36,G=W.gate,C=W.gc,col=FAC(S.player.faction).col,to=DEF[G.g.to].name;
   c.save();c.textAlign='center';c.textBaseline='middle';
   if(S.gateDown[gateKey(W.sid,G.g.to)]){c.font='600 14px "Saira Semi Condensed",sans-serif';c.fillStyle='#ff5d4f';c.fillText(ogSealed(W.sid,G.g.to)?`GATE TO ${to.toUpperCase()} SEALED BY BROOD OVERGROWTH`:`GATE TO ${to.toUpperCase()} HAS COLLAPSED`,cx,cy);c.restore();return}
@@ -160,9 +161,14 @@ function drawGateCountdown(c,t){if(W.jump||!W.gate||S.player.docked||W.dead)retu
   c.font='600 13px "Saira Semi Condensed",sans-serif';c.fillStyle='rgba(236,228,207,.9)';c.fillText(`JUMP TO ${to.toUpperCase()} · HOLD ALIGNMENT`,cx,cy+R+20);c.restore()}
 function gateTransit(J,dt){const p=W.player,g=J.g,l=hyp(g.x,g.y,g.z)||1,dx=g.x/l,dy=g.y/l,dz=g.z/l;
   qSlerp(p.q,qLook(dx,dy,dz,0,1,0,_tq),Math.min(1,3.2*dt));
-  if(J.t<.55){const k=Math.min(1,3.5*dt);p.x+=(g.x-p.x)*k;p.y+=(g.y-p.y)*k;p.z+=(g.z-p.z)*k;p.vx=(g.x-p.x)*3;p.vy=(g.y-p.y)*3;p.vz=(g.z-p.z)*3}
-  else{const sp=260+(J.t-.55)*(J.t-.55)*4200;p.vx=dx*sp;p.vy=dy*sp;p.vz=dz*sp;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt}
-  p.thrusting=true;p.boosting=J.t>.55;W.shake=Math.max(W.shake||0,.1+J.t*.12);
+  // (14 Nov 2026) the ship lunges the moment the jump starts, where the sound's blast lands (it used to drift to the ring's
+  // centre for half a second first): at the ring's centre while the ring is still ahead, then straight along the axis
+  // The ship reaches the ring J.x s (jumpX) after the jump starts, however far short of it the field left it (J.v0 is the speed
+  // that takes), so the crossing, the gate's burst (J.tx, the moment it crossed) and the sound's blast fall together.
+  {const rx=g.x-p.x,ry=g.y-p.y,rz=g.z-p.z,al=rx*dx+ry*dy+rz*dz;let ux=dx,uy=dy,uz=dz;if(al>20){const rl=hyp(rx,ry,rz)||1;ux=rx/rl;uy=ry/rl;uz=rz/rl}
+    if(J.v0===undefined){J.x=jumpX();J.v0=Math.max(0,al)/J.x}if(J.tx===undefined&&(al<=0||J.t>J.x*3))J.tx=J.t;
+    const sp=Math.max(J.v0,320+J.t*J.t*1500);p.vx=ux*sp;p.vy=uy*sp;p.vz=uz*sp;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt}
+  p.thrusting=true;p.boosting=true;W.shake=Math.max(W.shake||0,.14+J.t*.1);
   const f=$('fade');f.style.opacity=clamp((J.t-JUMP_OUT+.35)/.35,0,1)}
 let FJFX=0;function frigWarpStart(){FJFX=performance.now();const B=W&&W.bridge;if(B){B.yaw=Math.round(B.yaw/TAU)*TAU;B.pitch=0}}
 function warpStreaks3D(){const B=W.bridge;if(!B||!FJFX)return;const a=(performance.now()-FJFX)/1000;if(a>1.6)return;const F=B.f,O=bridgeOrigin(F),k=a<.75?Math.min(1,a/.15):Math.max(0,1-(a-.75)/.2);
@@ -178,7 +184,7 @@ function frigWarpFx(c){if(!FJFX)return;const a=(performance.now()-FJFX)/1000;if(
     const g=c.createRadialGradient(cx,cy,0,cx,cy,R*.45);g.addColorStop(0,`rgba(200,225,255,${.3*k})`);g.addColorStop(1,'rgba(200,225,255,0)');c.fillStyle=g;c.fillRect(0,0,VW,VH);c.restore()}
   const fl=a<.7?0:a<.78?(a-.7)/.08:Math.max(0,1-(a-.78)/.8);if(fl>0){c.fillStyle=`rgba(240,246,255,${(W.bridge?.4:.9)*fl})`;c.fillRect(0,0,VW,VH)}}
 function frigArriveFx(e){if(!W)return;W.fx.push({x:e.x,y:e.y,z:e.z,vx:0,vy:0,vz:0,life:.9,max:.9,c:[1,1,1],sz:e.st.radius*1.25*7,flash:true});W.fx.push({x:e.x,y:e.y,z:e.z,vx:0,vy:0,vz:0,life:1.4,max:1.4,c:[.7,.85,1],sz:e.st.radius*1.25*4,flash:true});const v=vAt(e);if(v>.03)SFX.arrive(Math.min(1,v*1.5))}
-function jumpFx(c){const out=W.jump,k=out?clamp((out.t-.25)/1.1,0,1):JIN.t<JIN.d?1-JIN.t/JIN.d:0;if(k<=0)return;
+function jumpFx(c){const out=W.jump,k=out?clamp(out.t/.4,0,1):JIN.t<JIN.d?1-JIN.t/JIN.d:0;if(k<=0)return;
   const cx=VW/2,cy=VH/2,R=Math.hypot(VW,VH)*.6,now=performance.now()/1000,col=FAC(S.player.faction).col;
   c.save();c.lineCap='round';for(let i=0;i<110;i++){const a=i*2.399963,sd=(i*0.6180339)%1,u=((sd+now*(.55+k*1.6))%1),r0=R*u*u,len=R*(.04+.22*k)*u;
     c.strokeStyle=i%5===0?hexA(col,.55*k):`rgba(210,228,255,${.45*k})`;c.lineWidth=1+u*2*k;c.beginPath();c.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);c.lineTo(cx+Math.cos(a)*(r0+len),cy+Math.sin(a)*(r0+len));c.stroke()}

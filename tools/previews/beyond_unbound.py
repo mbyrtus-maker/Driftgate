@@ -119,7 +119,7 @@ def plunderer():
     crystal(M,-1.25,.4,.19,.2,.6,0)                                                                                 # Ostrova crystal hold
     tube(M,[(0,.46,-.45),(0,.46,-1.75)],[.12,.14],GLASS,1.0,10,cap1=False);M.vent((0,.46,-1.76),.11,style='ostrova')               # boom engine on a pylon on top, crystal-clad
     for z in (-.7,-1.1,-1.5):ring(M,(0,.46,z),.14,.014,WIN,seg=14,sides=4)
-    for z in (-.8,-1.35):abox(M,(0,.33,z),(.08,.2,.16),DARK,(1,1),.75)
+    for z in (-.8,-1.35):abox(M,(0,.31,z),(.08,.24,.16),DARK,(1,1),.75)   # (14 Nov 2026, floating parts) the pylons' feet go down into the hull (they stood .02 above it); same top
     crystal(M,-1.15,.35,.13,.13,0,-.47)                                                                            # crystal pontoon underneath
     for z in (-.75,-.1):tube(M,[(0,-.2,z),(0,-.38,z)],[.03,.03],DARK,.8,5)
     sq_drive(M,(.3,-.02,-1.45),.26);M.vent((-.0,0,-1.36),.11,style='varkesh');[var_gun(M,(sx*.11,-.145,1.05),.4,.026) for sx in (1,-1)]   # Varkesh drive block; a stolen gun under each side of the cockpit pod

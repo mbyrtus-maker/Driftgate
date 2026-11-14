@@ -190,6 +190,9 @@ function bridgeMesh(fac){fac=fac||'halcyon';const key='bridge_'+fac;if(MESH[key]
   for(const c of BRIDGE.cons)if(c.id!=='cmd'&&c.id!=='strat'&&c.id!=='hatch')bridgeConsole(g,P,c);
   bridgeFurniture(g,P);bridgeLight(g.d);
   return MESH[key]=g.upload()}
+// a box with no back face (local -z): for plates that sit on a surface, so the hidden face never shares a plane with it
+function bridgeDecal(g,w,h,d,col,em){const x=w/2,y=h/2,z=d/2,v=[[-x,-y,-z],[x,-y,-z],[x,y,-z],[-x,y,-z],[-x,-y,z],[x,-y,z],[x,y,z],[-x,y,z]],c=[0,0,0];
+  for(const f of[[4,5,6,7],[0,1,5,4],[3,2,6,7],[0,3,7,4],[1,2,6,5]])g.quad(v[f[0]],v[f[1]],v[f[2]],v[f[3]],col,em,c);return g}
 const BR_SUN=[.62,.6,.56],BR_AMB=[.42,.43,.47];
 function bridgePal(F){return{F,
   PN:mixC([.6,.61,.63],F,.05),  // light wall panel
@@ -214,7 +217,7 @@ function bridgeShell(g,P){const v=(c,a,b)=>scaleC(c,a+Math.random()*(b-a)),Q4=Ma
   // side walls: solid lower and upper bands, solid fore and aft sections, window between z -6.5 and 12.5
   for(const s of[-1,1]){const X=22*s;
     g.set(X+.2*s,1.25,0).box(.4,2.5,30,P.MD);g.set(X+.2*s,10.25,0).box(.4,2,30,P.TR);
-    g.set(X+.2*s,5.5,-10.75).box(.4,11,8.5,P.MD);g.set(X+.2*s,5.5,13.75).box(.4,11,2.5,P.MD);
+    g.set(X+.2*s,4.625,-10.75).box(.4,9.25,8.5,P.MD);g.set(X+.2*s,4.625,13.75).box(.4,9.25,2.5,P.MD);
     for(let z=-14;z<14;z+=4)g.set(X-.03*s,1.3,z+2).box(.06,2.4,3.9,v(P.MD,.9,1.08));
     for(let z=-14.5;z<-7;z+=4)g.set(X-.03*s,5.9,z+2).box(.06,6.6,3.9,v(P.PN,.9,1.06));
     // window frame: sill, header, posts and ribs between panes, accent line on the sill
@@ -230,7 +233,7 @@ function bridgeShell(g,P){const v=(c,a,b)=>scaleC(c,a+Math.random()*(b-a)),Q4=Ma
     g.set(20.4*s,.06,0).box(.08,.04,28.6,P.AC,.35)}
   // front wall: big viewport from 1.6 to 9.6 with two mullions and corner posts
   g.set(0,.8,15.2).box(44,1.6,.4,P.MD);g.set(0,10.4,15.2).box(44,1.6,.4,P.TR);
-  for(const s of[-1,1]){g.set(20*s,5.5,15.2).box(4,11,.4,P.MD);g.set(18.1*s,5.6,14.8).box(.7,8.4,.9,P.TR);g.set(6*s,5.6,14.85).box(.6,8.2,.6,P.TR);g.set(12*s,5.6,14.9).box(.25,8,.3,P.DK)}
+  for(const s of[-1,1]){g.set(20*s,4.8,15.2).box(4,9.6,.4,P.MD);g.set(18.1*s,5.6,14.8).box(.7,8.4,.9,P.TR);g.set(6*s,5.6,14.85).box(.6,8.2,.6,P.TR);g.set(12*s,5.6,14.9).box(.25,8,.3,P.DK)}
   g.set(0,1.6,14.75).box(36.6,.35,.9,P.TR);g.set(0,9.6,14.75).box(36.6,.35,.9,P.TR);
   // ceiling chamfers fore and aft, floor chamfer aft (clear of the hatch)
   g.set(0,10.4,14.35,_bq(1,0,0,-Q4)).box(43,1.75,.22,P.TR);g.set(0,10.4,-14.35,_bq(1,0,0,Q4)).box(43,1.75,.22,P.TR);
@@ -240,7 +243,7 @@ function bridgeFloorCeil(g,P){const v=(c,a,b)=>scaleC(c,a+Math.random()*(b-a));
   g.set(0,-.2,0).box(44,.4,30,P.DK);g.set(0,11.2,0).box(44,.4,30,[.07,.075,.09]);
   for(let x=-22;x<22;x+=4)for(let z=-15;z<15;z+=4){const w=Math.min(4,22-x),d=Math.min(4,15-z);g.set(x+w/2,.012,z+d/2).box(w-.08,.024,d-.08,v(P.FL,.9,1.08))}
   // walkways: centre aisle to the viewport, crew row, dais approach, engineering and hatch bays
-  for(const[x,z,w,d]of[[0,6,5,14],[0,9.6,31,4.4],[-15,-8.5,9,7],[15,-10,8,7],[15,-1,6,5]]){g.set(x,.03,z).box(w,.04,d,[.15,.16,.19]);for(let i=-w/2+.6;i<w/2;i+=1.2)g.set(x+i,.055,z).box(.06,.01,d-.4,[.11,.12,.14])}
+  for(const[x,z,w,d]of[[0,6,5,14],[-9,9.6,13,4.4],[9,9.6,13,4.4],[-15,-8.5,9,7],[15,-10,8,7],[15,-1,6,5]]){g.set(x,.03,z).box(w,.04,d,[.15,.16,.19]);for(let i=-w/2+.6;i<w/2;i+=1.2)g.set(x+i,.055,z).box(.06,.01,d-.4,[.11,.12,.14])}
   for(const s of[-1,1])g.set(2.55*s,.07,6).box(.07,.04,14,P.AC,.35);
   // contact shadows under furniture
   for(const[x,z,r]of BR_SOLID)g.set(x,.065,z).cyl(r+.45,r+.45,.005,18,[.075,.08,.095],0,true);
@@ -270,13 +273,13 @@ function bridgeConsole(g,P,c){const col=hexRGB(c.col),q=c.face?qLook(c.face[0],0
   const qd=qMul(q,_bq(1,0,0,.3),q0()),dk=(lx,ly,lz)=>{qRot(qd,lx,ly,lz,_bv);qRot(q,0,2.05,.3,_u);return g.set(c.x+_u.x+_bv.x,2.05+_bv.y,c.z+_u.z+_bv.z,qd)};
   dk(0,0,0).box(4.3,.18,1.5,P.TR);dk(0,.1,-.05).box(3.9,.03,1.1,P.SC,.15);
   for(let r=0;r<3;r++)for(let k=0;k<8;k++)dk(-1.6+k*.46,.13,-.38+r*.32).box(.3,.03,.2,r===0&&k%3===0?col:k%5===2?P.AM:[.32,.36,.42],r===0&&k%3===0?.9:k%5===2?.7:.25);
-  dk(0,.1,.7).box(4.3,.05,.06,col,.8);
+  dk(0,.1,.7).box(4.26,.05,.06,col,.8);
   const qs=qMul(q,_bq(1,0,0,-.2),q0()),sv=(lx,ly,lz,sx)=>{qRot(qs,lx,ly,lz,_bv);qRot(q,0,3.35,-.5,_u);return g.set(c.x+_u.x+_bv.x,3.35+_bv.y,c.z+_u.z+_bv.z,qs,sx)};
   sv(0,0,0).box(4,2.05,.2,P.TR);sv(0,0,.11).box(3.7,1.78,.04,mixC(P.SC,col,.1),.4);
   sv(0,.8,.14).box(3.7,.1,.04,col,.95);
   for(let i=0;i<4;i++){const w=.4+((i*7+c.x*3)%5)/5*1.1;sv(-1.75+w/2,-.5-i*.1,.14).box(w,.05,.03,scaleC(col,.8),.85)}
   sv(1.45,-.6,.14).box(.5,.4,.03,scaleC(col,.5),.5);
-  sv(0,-1.05,.05).box(4,.08,.3,P.DK)}
+  sv(0,-1.05,.07).box(3.9,.08,.26,P.DK)}
 // command dais and chair, crew seats, back-wall screens and cabinets, engineering, hatch
 function bridgeFurniture(g,P){const yq=a=>_bq(0,1,0,a);
   // crew seats behind helm and weapons
@@ -284,7 +287,7 @@ function bridgeFurniture(g,P){const yq=a=>_bq(0,1,0,a);
     for(const a of[-1,1])g.set(x+a*1.05,1.55,8.6).box(.22,.18,1.4,P.MT)}
   // dais: two steps, accent nosing, chair, arm panels and side consoles
   g.set(0,.28,-6.5).box(11,.56,6.5,P.TR);g.set(0,.14,-2.9).box(6,.28,.9,P.TR);g.set(0,.58,-3.27).box(11,.04,.1,P.AC,.75);g.set(0,.3,-2.47).box(6,.04,.08,P.AC,.6);
-  for(const s of[-1,1])g.set(5.5*s,.58,-6.5).box(.1,.04,6.5,P.AC,.5);
+  for(const s of[-1,1])g.set(5.5*s,.58,-6.535).box(.1,.04,6.43,P.AC,.5);
   g.set(0,1.05,-6.2).cyl(.45,.7,1,12,P.MT);g.set(0,1.75,-6.2).box(2.6,.45,2.4,P.LE);g.set(0,2.02,-6.1).box(2.2,.1,2,scaleC(P.LE,1.25));g.set(0,2.75,-7.35).box(2.6,2,.45,P.LE);g.set(0,3.85,-7.35).box(1.6,.35,.4,P.LE);g.set(0,2.75,-7.6).box(2.7,2.1,.08,P.TR);g.set(0,2.75,-7.66).box(2.3,1.7,.04,P.DK);for(const k of[-1,1])g.set(k*1.2,2.75,-7.67).box(.06,1.7,.04,P.AC,.45);g.set(0,3.8,-7.62).box(2.2,.06,.06,P.AC,.8);
   for(const a of[-1,1]){g.set(a*1.45,2.3,-6.1).box(.35,.25,2,P.MT);g.set(a*1.45,2.45,-5.4).box(.3,.04,.6,a<0?P.GL:P.AM,.8);
     g.set(a*2.9,1.5,-5.1,yq(-a*.5)).box(1.4,1.9,.9,P.MD);const qs=qMul(yq(-a*.5),_bq(1,0,0,-.6),q0());g.set(a*2.9,2.6,-5.1,qs).box(1.3,1.05,.12,P.TR);
@@ -301,7 +304,7 @@ function bridgeFurniture(g,P){const yq=a=>_bq(0,1,0,a);
   // hatch: door in a heavy frame, hazard stripes, lit header
   g.set(15,4,-14.8).box(5.6,8.4,.5,P.TR);g.set(15,4,-14.52).box(4.2,7.2,.1,[.22,.235,.27]);g.set(15,4,-14.45).box(.06,7,.05,P.DK);for(const y of[2,6])g.set(15,y,-14.45).box(4,.06,.05,P.DK);
   g.set(15,8.2,-14.45).box(4,.3,.1,[.93,.89,.8],.85);
-  for(let i=0;i<7;i++)g.set(12.6+i*.8,.5,-14.5,_bq(0,0,1,.7)).box(.35,1,.06,i%2?[.1,.1,.1]:P.AM,i%2?0:.55);
+  for(let i=0;i<7;i++)bridgeDecal(g.set(12.6+i*.8,.53,-14.44,_bq(0,0,1,.7)),.35,1,.06,i%2?[.1,.1,.1]:P.AM,i%2?0:.55);
   for(const s of[-1,1])g.set(15+s*2.8,4,-14.5).box(.3,8,.08,P.AM,.45)}
 // baked lighting: corners and floor edges fall into shadow, pools of light under the ceiling strips and the table ring
 function bridgeLight(d){const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};

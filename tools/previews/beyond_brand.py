@@ -73,7 +73,8 @@ def vesper():
     for sx in (1,-1):
         crystal(M,.0,2.0,.07,.07,sx*.17,0)
         tube(M,[(sx*.08,0,.1),(sx*.17,0,.1)],[.03,.03],LIGHT,.9,5)
-    for z in (.7,1.15,1.6):ring(M,(0,0,z),.26,.03,ACC,seg=24,sides=5);ring(M,(0,0,z),.25,.012,WIN,seg=24,sides=4)
+    # (14 Nov 2026, floating parts) the halos' radius .26 -> .245 (and .25 -> .235): they stood .011 clear of the rails they run round
+    for z in (.7,1.15,1.6):ring(M,(0,0,z),.245,.03,ACC,seg=24,sides=5);ring(M,(0,0,z),.235,.012,WIN,seg=24,sides=4)
     crystal(M,1.0,1.45,.05,.05,0,0);M.blob((0,0,1.22),.07,GLOW,sub=1,noise=0);M.part(M.gun,(0,0,2.0),len(M.T))      # the slug between the rails; its shots leave from between the rail tips
     dish(M,(0,.2,-.25),.16)
     zc=-.75;R=.55
@@ -87,7 +88,8 @@ def vesper():
             M.vent((tip[0],tip[1],zc-.36),.035)
             tube(M,[u*sg*.18+[0,0,zc],u*sg*(R-.05)+[0,0,zc]],[.018,.018],LIGHT,.9,5,cap0=False,cap1=False)
     for k in range(3):a=PI/2+k*2*PI/3;M.vent((math.cos(a)*.06,math.sin(a)*.06,-1.26),.04)
-    return finish(M,2.7,1.0)
+    M=finish(M,2.7,1.0);M.keep_clear=[((0,0,.71),.2)]      # the slug floats between the rails by design (Mesh.seat_floaters leaves it)
+    return M
 def wraith():
     # the Wraith: a faceted stealth flying wing, clean and hard-angled, with some depth to it: a raised diamond body and spine, thick
     # wings blended into it with straight swept edges, drives buried in slit vents, two heavy guns hidden in the leading edge, a faceted
@@ -101,7 +103,7 @@ def wraith():
     for sx in (1,-1):
         W=[(sx*.345,0,.42),(sx*1.2,-.03,-.6),(sx*1.08,-.03,-.82),(sx*.43,0,-.9)]                                    # wing root on the body's side edge
         plate(M,W,.03,MID,.9)                                                                                          # thick swept wing
-        r0=np.array(W[0]);t1=np.array(W[1]);tube(M,[r0+(t1-r0)*.26+[0,.045,0],t1+[0,.045,0]],[.012,.012],GLOW,1.0,4,cap0=False,cap1=False)   # edge light, along the leading edge
+        r0=np.array(W[0]);t1=np.array(W[1]);tube(M,[r0+(t1-r0)*.26+[0,.02,0],t1+[0,.02,0]],[.012,.012],GLOW,1.0,4,cap0=False,cap1=False)   # edge light, along the leading edge
         barrel(M,(sx*.33,-.04,.38),.28,.019)                                                                           # the guns in the leading edge
         n0=len(M.T);plate(M,[(sx*.12,-.01,-.96),(sx*.34,-.01,-.94),(sx*.34,-.01,-.99),(sx*.12,-.01,-1.01)],.012,GLOW,1.0);M.eng.append([np.array((sx*.23,-.01,-1.0)),.07,n0,len(M.T)])   # slit vents: its drives (recorded, so the flares sit here and not on the edge lights)
     loft(M,[(.12,D(.12,.05,.205)),(.45,D(.1,.07,.18)),(.68,D(.03,.02,.15))],(GLASS,1.0))

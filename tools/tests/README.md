@@ -20,7 +20,8 @@ Set `DG_GAME` to test another file, and `DG_OUT` for where screenshots go (defau
 | ship.py | shipping a vault's goods: quote, fee, freighter, arrival, loss |
 | limpet.py | limpet plant, damage bonus, turrets ignore it, fighters shoot it off, drones go dark when jammed |
 | map.py | sector panel without ore tonnage, scanned prices, the map key |
-| mining_sight.py | only the charge reticle on a mining hull aimed at a rock (screenshots) |
+| mining_sight.py | a mining hull aimed at a rock: the charge status on the gun sight (screenshots) |
+| jumpsnd.py | Gate jump sounds and lights (from Driftgate Beyond, 14 Nov 2026): the charge starts so its blast lands on the jump; low beeps at 3, 2 and 1 seconds and a high beep at the jump; no second blast on arrival; a cancelled countdown fades the charge; the gate's beams grow as one and meet at the jump; an AI ship's half-second picture through the ring. In the quick suite. |
 | stores.py | depots and freeports trade from their own stores, treasuries shared, ledger balances, old saves migrate |
 | haul_rates.py | trade bots per hauler hull for an hour of game time: cr/hour against the pay ladder (slow, run by hand) |
 | dock_sweep.py | renders every dock tab at every station and outpost (and a Lair) for each faction and the Unbound, clicks the buttons on one of each kind; prints any exception (slow, ~20 min) |

@@ -223,8 +223,13 @@ function spawnTrader(t,arrive){const e=makeNPC('trader',t.side,t.cls,1,t.load,`t
   const start=fresh&&gin?{x:gin.x*.93,y:gin.y*.93,z:gin.z*.93}:t.leg===0&&SE?{x:SE.x+150,y:SE.y+40,z:SE.z}:randPos(700*SPACE,1800*SPACE);
   e.x=start.x;e.y=start.y;e.z=start.z;const dest=gout?W.ents.find(x=>x.type==='gate'&&x.to===nxt):(t.leg>=t.path.length-1?(t.car?(W.ents.find(x=>x.tok&&x.tok.id===t.car&&x.alive)||SE):SE):null);e.ai.dest=dest||{x:0,y:0,z:0};
   if(arrive&&gin)fxWarp(e,sideCol(t.side));faceInstant(e,e.ai.dest.x-e.x,e.ai.dest.y-e.y,e.ai.dest.z-e.z);e.tradeT=t;W.ents.push(e);return e}
+// (14 Nov 2026) A trader at a gate jumps like every other ship: onto the gate's axis, a count of five, then through
+// (npcGateJump removes it and leaves its picture lunging through the ring). It used to be marked as arrived 260 m short
+// with no count, and then sat braking for up to ten seconds until the galaxy's turn took it away. The galaxy's turn
+// finds it gone and moves the trader on at its usual time, as it does for one it removes itself.
 function traderThink(e,dt){const D=e.ai.dest,hit=W.t-e.lastHit<5;e.boosting=hit;if(e.ai.arrived){brake(e,dt);return}
-  const d=steer(e,D.x,D.y,D.z,dt,true,hit?1.15:.8);faceTo(e,D,dt);e.thrusting=true;if(d<(D.type==='gate'?260:220)&&!(D.type==='gate'&&gateLocked(e))){e.ai.arrived=true;if(D.type==='gate')fxWarp(e,sideCol(e.side))}}
+  if(D.type==='gate'&&(e.gj||d3(e,D)<420)){if(npcGateJump(e,D,dt,hit?1.15:.8))e.ai.arrived=true;return}
+  const d=steer(e,D.x,D.y,D.z,dt,true,hit?1.15:.8);faceTo(e,D,dt);e.thrusting=true;if(D.type!=='gate'&&d<220)e.ai.arrived=true}
 function traderLost(e){const id=e.home.split(':')[1],t=(S.traders||[]).find(x=>String(x.id)===id);if(!t)return;S.traders=S.traders.filter(x=>x!==t);
   if(t.kind==='haul'){cvEnd(t,false,W.sid);shipLostFeed(t,W.sid);if(friendSide(e.side))feed(`⚠ A ${FACTIONS[e.side].short} supply convoy was destroyed in ${DEF[W.sid].name}. Half its cargo is drifting there as salvage.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} supply convoy destroyed: half its hold is drifting free.`,'good');return}
   if(friendSide(e.side))feed(`${FACTIONS[e.side].short} trader carrying ${ITEMS[t.item].name} was destroyed in ${DEF[W.sid].name}.`,'bad');else if(W===LW)feed(`${FACTIONS[e.side].short} trader destroyed: its ${ITEMS[t.item].name} is drifting free.`,'good')}

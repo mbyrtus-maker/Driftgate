@@ -94,6 +94,13 @@ def seg_hits(T1,T2):
     e1=b-a;e2=c-a;h=np.cross(np.broadcast_to(d,(len(E),len(T2),3)),e2);det=(e1*h).sum(-1);ok=np.abs(det)>1e-12;f=1/np.where(ok,det,1)
     s=o-a;u=f*(s*h).sum(-1);q=np.cross(s,e1);v=f*(q*d).sum(-1);t=f*(e2*q).sum(-1)
     return bool((ok&(u>=0)&(v>=0)&(u+v<=1)&(t>=0)&(t<=1)).any())
+def mind(P,T,cp=150,ct=2500):
+    # (14 Nov 2026) exact distance from any of the points P to any of the triangles T, in chunks (islands() used to look at every
+    # few vertices and the first 4000 triangles, which made a part buried in a hull read as far from it)
+    best=9.0
+    for i in range(0,len(P),cp):
+        for j in range(0,len(T),ct):best=min(best,float(pt_tri(P[i:i+cp],T[j:j+ct]).min()))
+    return best
 def islands(T,L,eps=.012):
     ar0=np.linalg.norm(np.cross(T[:,1]-T[:,0],T[:,2]-T[:,0]),axis=1);T=T[ar0>1e-9];L=L[ar0>1e-9];_,L=np.unique(L,return_inverse=True)
     nc=L.max()+1;C=[T[L==c] for c in range(nc)];V=[np.unique(np.round(x.reshape(-1,3),5),axis=0) for x in C]
@@ -115,9 +122,9 @@ def islands(T,L,eps=.012):
     groups=sorted(G.values(),key=lambda g:-ar[g].sum());tot=ar.sum();out=[]
     rest=lambda g:np.concatenate([C[c] for c in range(nc) if c not in g])
     for g in groups[1:]:
-        gl=lo[g].min(0);gh=hi[g].max(0);Vg=np.concatenate([V[c] for c in g]);Vg=Vg[::max(1,len(Vg)//400)]
-        R_=rest(g);Rl=R_.reshape(-1,3);m=np.all((Rl>=gl-.3)&(Rl<=gh+.3),axis=1).reshape(-1,3).any(1);R_=R_[m] if m.any() else R_
-        gap=float(pt_tri(Vg,R_[:4000]).min()) if len(R_) else 9
+        gl=lo[g].min(0);gh=hi[g].max(0);Vg=np.concatenate([V[c] for c in g])
+        R_=rest(g);m=np.all((R_.min(1)<=gh+.3)&(R_.max(1)>=gl-.3),axis=1);R_=R_[m] if m.any() else R_   # (14 Nov 2026) by each triangle's box, not its vertices: a big hull panel with no vertex near the part is still near it
+        gap=mind(Vg,R_) if len(R_) else 9
         out.append({'gap':round(gap,3),'parts':g,'area%':round(100*ar[g].sum()/tot,2),'at':[round(float(x),2) for x in (gl+gh)/2],'size':round(float(np.linalg.norm(gh-gl)),3)})
     return out
 R=os.path.dirname(os.path.abspath(__file__))

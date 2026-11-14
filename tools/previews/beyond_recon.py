@@ -100,7 +100,7 @@ def harrier():   # heavy bomber: a long clean lens hull, tandem canopies, a forw
     for sx in (1,-1):
         plate(M,[(sx*.24,.0,.05),(sx*1.38,-.04,.55),(sx*1.32,-.04,.36),(sx*.24,.0,-.7)],.045,LIGHT)                  # forward-swept wing, larger
         M.blob((sx*1.35,-.04,.46),.05,WIN,sub=1,noise=0)
-        loft(M,[(-.55,[(a+sx*.6,b-.14) for a,b in LENS(.04,.04)]),(-.35,[(a+sx*.6,b-.14) for a,b in LENS(.09,.08)]),(.25,[(a+sx*.6,b-.14) for a,b in LENS(.09,.08)]),(.45,[(a+sx*.6,b-.14) for a,b in LENS(.03,.03)])],(MID,.95))   # torpedo pod under the wing
+        loft(M,[(-.55,[(a+sx*.6,b-.115) for a,b in LENS(.04,.04)]),(-.35,[(a+sx*.6,b-.115) for a,b in LENS(.09,.08)]),(.25,[(a+sx*.6,b-.115) for a,b in LENS(.09,.08)]),(.45,[(a+sx*.6,b-.115) for a,b in LENS(.03,.03)])],(MID,.95))   # torpedo pod under the wing (14 Nov 2026, floating parts: b-.14 -> b-.115, it hung .025 under the wing)
         torpedo(M,(sx*.6,-.25,-.25),.65,.045)
         plate(M,[(sx*.13,.16,-.68),(sx*.24,.4,-.96),(sx*.24,.4,-1.03),(sx*.13,.15,-.99)],.025,ACC,.95)
         M.vent((sx*.12,0,-1.27),.08)
@@ -192,7 +192,7 @@ def obelisk():   # bomber: the Sentinel's single-seat cousin: a spire with cryst
     for k in range(4):
         a=PI/4+k*PI/2;x,y=math.cos(a)*.42,math.sin(a)*.42
         torpedo(M,(x,y,-.6),.75,.05,LIGHT)                                                                           # torpedo lances on the halo
-        tube(M,[(math.cos(a)*.13,math.sin(a)*.13,-.2),(x*.88,y*.88,-.2)],[.02,.02],LIGHT,.9,4)
+        tube(M,[(math.cos(a)*.08,math.sin(a)*.08,-.2),(x*.88,y*.88,-.2)],[.02,.02],LIGHT,.9,4)   # (14 Nov 2026, floating parts) from .08 (.13): the spire's diamond is only .12 out on the diagonals
     for sx in (1,-1):plate(M,[(sx*.13,-.03,.3),(sx*.42,-.08,.05),(sx*.4,-.08,-.12),(sx*.13,-.03,-.2)],.022,WIN,.85)  # crystal fins
     vee_tail(M,-.72,.42)
     for sx in (1,-1):barrel(M,(sx*.092,-.085,.35),.32,.013,ACC)                                                      # a lance under each side of the spire

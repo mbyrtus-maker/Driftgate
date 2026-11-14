@@ -238,6 +238,10 @@ FIT.update({'by_st_halcyon':170,'by_st_varkesh':170,'by_st_ostrova':170,'by_dp_h
 #   DG_BBOX=out.json python3 build_models.py    writes each model's box before it is normalised ([lo,hi], model units) and
 #                                               packs nothing: compare two of these to see that a change kept a model's
 #                                               packed size and centre (tools/bboxcheck.py)
+# (14 Nov 2026, floating parts) the structures whose small attached parts (domes, beacons, dishes, lamps, roof panels) hung a hair
+# clear of what they stand on; Mesh.seat_floaters seats them (ships all get it; the Ostrova stations' floating segments, the
+# freeports' hoops and the R&D labs are left as they are, by design)
+SEAT_STRUCT={'by_hangar','by_defence','by_market','by_st_halcyon','by_st_varkesh','by_depot1','by_depot2','by_depot3','by_d5_core','by_d5_depot3','by_yard','by_storage','wk_prod','wk_yard','by_core','by_d2_core','by_d3_core','by_d4_core','by_d6_core','forge'}
 ONLY=set(x for x in _os.environ.get('DG_ONLY','').split(',') if x);BBOX=_os.environ.get('DG_BBOX')
 def pack():
     idx={};blob=bytearray();bb={}
@@ -249,7 +253,9 @@ def pack():
             m=dict(old_idx[name])
             while len(blob)%4:blob+=b'\0'
             o=m['o'];m['o']=len(blob);blob+=old_blob[o:o+m['n']*20];idx[name]=m;continue
-        _BRD.LAST=None;P,N,R=fn();P=np.array(P,dtype=float).reshape(-1,3,3);meta=_BRD.LAST or {}
+        _BRD.LAST=None;_BRD.Mesh.AUTOSEAT=((kind=='ship' or name in SEAT_STRUCT) and not _os.environ.get('DG_NOSEAT'));_BRD.Mesh.SEATLOG=[] if _os.environ.get('DG_SEATLOG') else None;P,N,R=fn()
+        if _BRD.Mesh.SEATLOG:print(name,'seat log:',*_BRD.Mesh.SEATLOG,sep='\n   ')
+        P=np.array(P,dtype=float).reshape(-1,3,3);meta=_BRD.LAST or {}
         allp=P.reshape(-1,3);lo,hi=allp.min(0),allp.max(0);c=(lo+hi)/2
         if BBOX:bb[name]=[[round(float(v),5) for v in lo],[round(float(v),5) for v in hi],len(P)];continue
         if kind=='struct':c[1]=(lo[1]+hi[1])/2

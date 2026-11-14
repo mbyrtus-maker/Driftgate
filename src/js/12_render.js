@@ -5,7 +5,7 @@ const ovc=$('ov'),octx=ovc.getContext('2d');
 let VW=0,VH=0,DPR=1;
 function shader(type,src){const s=G.createShader(type);G.shaderSource(s,src);G.compileShader(s);if(!G.getShaderParameter(s,G.COMPILE_STATUS))throw new Error(G.getShaderInfoLog(s));return s}
 function program(vs,fs,attrs){const p=G.createProgram();G.attachShader(p,shader(G.VERTEX_SHADER,vs));G.attachShader(p,shader(G.FRAGMENT_SHADER,fs));attrs.forEach((a,i)=>G.bindAttribLocation(p,i,a));G.linkProgram(p);if(!G.getProgramParameter(p,G.LINK_STATUS))throw new Error(G.getProgramInfoLog(p));const u={};const n=G.getProgramParameter(p,G.ACTIVE_UNIFORMS);for(let i=0;i<n;i++){const inf=G.getActiveUniform(p,i);u[inf.name]=G.getUniformLocation(p,inf.name)}return{p,u}}
-let PM,PB,PP,PS;
+let PM,PB,PP,PS,PSH;
 function initGL(){
   G.disable(G.DITHER);
   PM=program(`attribute vec3 aP;attribute vec3 aN;attribute vec4 aC;uniform mat4 uM,uVP;varying vec3 vN;varying vec4 vC;void main(){vec4 w=uM*vec4(aP,1.);vN=(uM*vec4(aN,0.)).xyz;vC=aC;gl_Position=uVP*w;}`,
@@ -16,6 +16,15 @@ function initGL(){
     `precision mediump float;varying vec4 vC;void main(){vec2 d=gl_PointCoord-.5;float f=max(0.,1.-length(d)*2.);gl_FragColor=vec4(vC.rgb*f*vC.a,1.);}`,['aP','aC','aS']);
   PS=program(`attribute vec3 aP;attribute vec2 aU;uniform mat4 uVP;uniform vec3 uOff;varying vec2 vU;void main(){vU=aU;gl_Position=uVP*vec4(aP+uOff,1.);}`,
     `precision mediump float;uniform sampler2D uT;varying vec2 vU;void main(){gl_FragColor=texture2D(uT,vU);}`,['aP','aU']);
+  // a shield taking a hit (graphics stage 7, 12 Nov 2026): drawn additively on the unit sphere. Bright toward the bubble's
+  // rim as the camera sees it and nearly clear at its centre; up to three hits (uH: a direction on the unit sphere and the
+  // hit's age as a fraction of the flash) each give a hot spot that spreads as a ripple ring and fades. Normals come from
+  // the sphere's own points and the bubble's radii (uS), so a stretched bubble keeps true normals; the view vector is
+  // normalised per vertex, so the fragment shader never holds world-sized numbers (mediump on phones).
+  PSH=program(`attribute vec3 aP;uniform mat4 uM,uVP;uniform vec3 uS,uCam;varying vec3 vO,vV,vN;void main(){vec4 w=uM*vec4(aP,1.);vO=aP;vN=normalize((uM*vec4(aP/(uS*uS),0.)).xyz);vV=normalize(uCam-w.xyz);gl_Position=uVP*w;}`,
+    `precision mediump float;uniform vec3 uC;uniform float uR,uA;uniform vec4 uH[3];varying vec3 vO,vV,vN;void main(){float f=1.-abs(dot(normalize(vN),normalize(vV)));float rim=pow(max(f,0.),2.4);vec3 o=normalize(vO);float hs=0.,rp=0.;
+for(int i=0;i<3;i++){vec4 h=uH[i];if(h.w<1.){float d=length(o-h.xyz),k=1.-h.w,x=(d-.1-1.2*h.w)*7.;hs+=k*k*exp(-d*d*26.);rp+=k*exp(-x*x)*smoothstep(0.,.12,h.w);}}
+gl_FragColor=vec4((uC*(rim*uR+(hs*1.3+rp*.75)*uA)+vec3(hs*hs*.55*uA))*1.,1.);}`,['aP']);
 }
 function attribs(layout,stride){for(let i=0;i<4;i++){if(i<layout.length)G.enableVertexAttribArray(i);else G.disableVertexAttribArray(i)}let off=0;layout.forEach((sz,i)=>{G.vertexAttribPointer(i,sz,G.FLOAT,false,stride*4,off*4);off+=sz})}
 
@@ -426,7 +435,7 @@ function drawTurret(TM,x,y,z,nx,ny,nz,aim,s,tint){let l=Math.hypot(nx,ny,nz);if(
   if(Math.abs(d)>.995*Math.hypot(aim.x,aim.y,aim.z))qLook(aim.x,aim.y,aim.z,fx,fy,fz,_tqh);else qLook(aim.x,aim.y,aim.z,nx,ny,nz,_tqh);mModel(MM,x,y,z,_tqh,s,s,s);drawMesh(TM.head,MM,tint)}
 const GEN={},Q_ID={x:0,y:0,z:0,w:1};
 function genMeshes(){
-  GEN.shield=new GB().sphere(1,12,18,[1,1,1],1).upload();
+  GEN.shield=new GB().sphere(1,18,28,[1,1,1],1).upload();
   GEN.ring=new GB().circleLines(1,96,[1,1,1]).upload(true);
   // (12 Nov 2026, graphics pass) the jump gate: it was a plain hoop with twelve lit cubes on it. Same size and place; now a main
   // hoop with a dark inner liner and a thin outer rail, and twelve emitter pylons: a housing astride the hoop with a lit band
@@ -524,6 +533,47 @@ function sprite(x,y,z,s,c,a){if(BBn>=BBmax*6-6)return;const rx=-cX.x*s,ry=-cX.y*
 function streak(x1,y1,z1,x2,y2,z2,w,c,a){if(BBn>=BBmax*6-6)return;const dx=x2-x1,dy=y2-y1,dz=z2-z1,mx=(x1+x2)/2-cam.x,my=(y1+y2)/2-cam.y,mz=(z1+z2)/2-cam.z;let sx=dy*mz-dz*my,sy=dz*mx-dx*mz,sz=dx*my-dy*mx;const l=hyp(sx,sy,sz)||1;sx=sx/l*w;sy=sy/l*w;sz=sz/l*w;
   bbPush(x1-sx,y1-sy,z1-sz,c[0],c[1],c[2],a,0,-1);bbPush(x1+sx,y1+sy,z1+sz,c[0],c[1],c[2],a,0,1);bbPush(x2+sx,y2+sy,z2+sz,c[0],c[1],c[2],a,0,1);
   bbPush(x1-sx,y1-sy,z1-sz,c[0],c[1],c[2],a,0,-1);bbPush(x2+sx,y2+sy,z2+sz,c[0],c[1],c[2],a,0,1);bbPush(x2-sx,y2-sy,z2-sz,c[0],c[1],c[2],a,0,-1)}
+// a ship's thrust plume (Beyond, graphics stage 7, 12 Nov 2026): a strip from the nozzle along the exhaust that tapers from
+// w0 to w1, coloured c0 at the nozzle and c1 at the tail. Its u runs 0 to 1 along it (eased, so the body stays bright for a
+// while) and v -1 to 1 across, so the billboard shader's round falloff makes it brightest at the nozzle's centre and soft at
+// every edge, fading to nothing at the tail.
+const PL_U=[0,.12,.38,1];
+function plumeStrip(x,y,z,fx,fy,fz,L,w0,w1,c,m0,m1,a){if(BBn>=BBmax*6-24||a<=.004)return;const mx=x+fx*L*.5-cam.x,my=y+fy*L*.5-cam.y,mz=z+fz*L*.5-cam.z;
+  let sx=fy*mz-fz*my,sy=fz*mx-fx*mz,sz=fx*my-fy*mx;const l=hyp(sx,sy,sz)||1;sx/=l;sy/=l;sz/=l;
+  let px=0,py=0,pz=0,pw=0,pr=0,pg=0,pb=0,pu=0;
+  for(let k=0;k<4;k++){const s=k/3,w=w0+(w1-w0)*s,m=m0+(m1-m0)*s,cx=x+fx*L*s,cy=y+fy*L*s,cz=z+fz*L*s,r=c[0]+(1-c[0])*m,g=c[1]+(1-c[1])*m,b=c[2]+(1-c[2])*m,u=PL_U[k];
+    if(k){bbPush(px-sx*pw,py-sy*pw,pz-sz*pw,pr,pg,pb,a,pu,-1);bbPush(px+sx*pw,py+sy*pw,pz+sz*pw,pr,pg,pb,a,pu,1);bbPush(cx+sx*w,cy+sy*w,cz+sz*w,r,g,b,a,u,1);
+      bbPush(px-sx*pw,py-sy*pw,pz-sz*pw,pr,pg,pb,a,pu,-1);bbPush(cx+sx*w,cy+sy*w,cz+sz*w,r,g,b,a,u,1);bbPush(cx-sx*w,cy-sy*w,cz-sz*w,r,g,b,a,u,-1)}
+    px=cx;py=cy;pz=cz;pw=w;pr=r;pg=g;pb=b;pu=u}}
+const PL_W=[1,1,1];
+// one engine's plume: an outer body in the engine's colour, a near-white hot core, and (under afterburner) a long faint haze.
+// A strip seen end-on has no width, so as the camera comes round behind the exhaust the strips fade and a round glow at the
+// nozzle (pulled towards the camera like engGlow's) takes over: from directly astern the plume reads as a hot disc with a halo.
+// A small flicker in length and brightness (ph: a phase of its own per engine) keeps it alive.
+function plume(ex,ey,ez,fx,fy,fz,rr,sc,boost,c,t,ph){let vx=ex-cam.x,vy=ey-cam.y,vz=ez-cam.z;const vl=hyp(vx,vy,vz)||1;vx/=vl;vy/=vl;vz/=vl;
+  const cx=fy*vz-fz*vy,cy=fz*vx-fx*vz,cz=fx*vy-fy*vx,sn=hyp(cx,cy,cz),side=clamp((sn-.06)/.4,0,1),aft=Math.max(0,-(fx*vx+fy*vy+fz*vz)),end=aft*(1-side);
+  const n=.5*Math.sin(t*31+ph)+.5*Math.sin(t*53.7+ph*2.3),fl=1+.07*n,br=(boost?1.25:1)*(1+.09*n),L=(rr*5+sc*.5)*(boost?1.75:1)*fl;
+  if(side>0){const a=side*br;
+    if(boost)plumeStrip(ex,ey,ez,fx,fy,fz,L*1.15,rr*2.5,rr*.6,c,.1,0,.16*a);
+    plumeStrip(ex,ey,ez,fx,fy,fz,L,rr*(boost?2.5:2.1),rr*.45,c,.35,0,.65*a);
+    plumeStrip(ex,ey,ez,fx,fy,fz,L*(boost?.5:.42),rr*(boost?.9:.75),rr*.15,c,.9,.55,.85*a)}
+  if(end>.02){const k=rr*3*(boost?1.9:1.25),o=k*aft;
+    sprite(ex-vx*o,ey-vy*o,ez-vz*o,rr*(boost?6.5:5.2)*fl,c,.3*end*br);sprite(ex-vx*o*1.03,ey-vy*o*1.03,ez-vz*o*1.03,rr*(boost?2.4:1.9)*fl,PL_W,.65*end*br)}}
+// shield hits, for the flash (graphics stage 7): where on its bubble a shield was struck. Visual state only: the hit's
+// direction from the bubble's centre (dx,dy,dz, world), turned into the bubble's own frame (q) and onto its unit sphere
+// (radii rx,ry,rz), kept with the time in o._shh, three slots, the oldest replaced. Nothing in play reads it.
+const SH_COL=new Float32Array([.45,.75,1]),_shq={x:0,y:0,z:0,w:1},_shv={x:0,y:0,z:0},SH_FL=.35,SH_U=new Float32Array(12);
+function shHitRec(o,dx,dy,dz,q,rx,ry,rz){if(!o||!W||!(dx||dy||dz))return;q=q||Q_ID;_shq.x=-q.x;_shq.y=-q.y;_shq.z=-q.z;_shq.w=q.w;qRot(_shq,dx,dy,dz,_shv);
+  const x=_shv.x/rx,y=_shv.y/ry,z=_shv.z/rz,l=hyp(x,y,z);if(!(l>0))return;const H=o._shh||(o._shh=[0,0,1,-99,0,0,1,-99,0,0,1,-99]);let j=0;for(let i=4;i<12;i+=4)if(H[i+3]<H[j+3])j=i;
+  H[j]=x/l;H[j+1]=y/l;H[j+2]=z/l;H[j+3]=W.t}
+// a ship's hit, from the shot (or whatever 'at' is: a beam's source ship, a missile) to the ship's bubble (radii 1, .7, 1.1)
+function shHitShip(e,at){if(at&&at.x!==undefined&&at!==e)shHitRec(e,at.x-e.x,at.y-e.y,at.z-e.z,e.q,1,.7,1.1)}
+// fill SH_U from o's hits; true when any is still in its flash
+function shHitU(o){const H=o._shh;let any=false;for(let i=0;i<12;i+=4){const a=H?(W.t-H[i+3])/SH_FL:2,on=a>=0&&a<1;SH_U[i]=H?H[i]:0;SH_U[i+1]=H?H[i+1]:0;SH_U[i+2]=H?H[i+2]:1;SH_U[i+3]=on?a:2;if(on)any=true}return any}
+function useShieldFx(){G.useProgram(PSH.p);G.uniformMatrix4fv(PSH.u.uVP,false,VP);G.uniform3f(PSH.u.uCam,cam.x,cam.y,cam.z);curMesh=null}
+// one flashing bubble (model matrix MM already set, radii sx,sy,sz): rim strength r, hot-spot strength a, colour c
+function drawShieldFx(sx,sy,sz,c,r,a){G.uniformMatrix4fv(PSH.u.uM,false,MM);G.uniform3f(PSH.u.uS,sx,sy,sz);G.uniform3fv(PSH.u.uC,c);G.uniform1f(PSH.u.uR,r);G.uniform1f(PSH.u.uA,a);G.uniform4fv(PSH.u['uH[0]'],SH_U);
+  const m=GEN.shield;if(curMesh!==m){G.bindBuffer(G.ARRAY_BUFFER,m.buf);attribs([3,3,4],10);curMesh=m}G.drawArrays(m.mode,0,m.n)}
 function capsule(x1,y1,z1,x2,y2,z2,w,c,a){if(BBn>=BBmax*6-24)return;let dx=x2-x1,dy=y2-y1,dz=z2-z1;const L=hyp(dx,dy,dz)||1e-3,mx=(x1+x2)/2-cam.x,my=(y1+y2)/2-cam.y,mz=(z1+z2)/2-cam.z;
   let sx=dy*mz-dz*my,sy=dz*mx-dx*mz,sz=dx*my-dy*mx;const l=hyp(sx,sy,sz)||1;sx=sx/l*w;sy=sy/l*w;sz=sz/l*w;const ux=dx/L*w,uy=dy/L*w,uz=dz/L*w,r=c[0],g=c[1],b=c[2];
   // body
@@ -572,26 +622,34 @@ function draw3D(){
   for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&hideP)continue;if(W.bridge&&e===W.bridge.f&&!mdlHas(e.fac==='brood'?BROOD_MDL[e.cls]:e.cls))continue;const sc=e.st.radius*1.25;if(!inView(e.x,e.y,e.z,sc*2))continue;const fac=meshFac(e),m=shipMesh(fac,e.role==='limpet'?'limpet':e.cls);
     mModel(MM,e.x,e.y,e.z,e.q,sc,sc,sc);const hurt=W.t-e.lastHit<.08;drawMesh(m.hull,MM,ONE3,hurt?[.35,.25,.15]:ZERO3);drawMesh(m.rim,MM);
     if(hasTur(e.cls)&&!(W.gunseat&&gsEnt()===e))gfxDrawTurret(e,fac,sc)}
+  gateGhostMesh();
   drawBerthed();
   G.enable(G.BLEND);G.blendFunc(G.ONE,G.ONE);G.depthMask(false);useMesh();
   // ship shield bubbles: flash on hit, burst outward when they collapse, pulse when they come back
   for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead||cam.mode==='cockpit'))continue;if(W.bridge&&e===W.bridge.f)continue;const R=e.st.radius*1.25*1.5;
     const ha=W.t-(e.shHitT===undefined?-9:e.shHitT),ba=W.t-(e.shBreakT===undefined?-9:e.shBreakT),ua=W.t-(e.shUpT===undefined?-9:e.shUpT);
-    if(ha<.35&&e.shield>0){mModel(MM,e.x,e.y,e.z,e.q,R,R*.7,R*1.1);drawMesh(GEN.shield,MM,[.45,.75,1],ZERO3,.13*(e.shHitA||.5)*(1-ha/.35))}
     if(ba<.7){const k=ba/.7,s=R*(1+k*1.6);mModel(MM,e.x,e.y,e.z,e.q,s,s*.7,s*1.1);drawMesh(GEN.shield,MM,[.6,.85,1],ZERO3,.3*(1-k))}
     if(ua<.6){mModel(MM,e.x,e.y,e.z,e.q,R,R*.7,R*1.1);drawMesh(GEN.shield,MM,[.45,.75,1],ZERO3,.12*(1-ua/.6))}}
-  for(const g of GATES[W.sid]){if(!inView(g.x,g.y,g.z,150))continue;qLook(-g.x,-g.y,-g.z,0,1,0,_qs);mModel(MM,g.x,g.y,g.z,_qs,1,1,1);const down=S.gateDown[gateKey(W.sid,g.to)];drawMesh(GEN.disc,MM,down?[1,.3,.25]:[.45,.7,1],ZERO3,down?.12:.2+.06*Math.sin(t*3))}
+  // a hit on a ship's shield: the rim lights, and each recorded hit gives a spreading hot spot (graphics stage 7)
+  {let on=false;for(const e of W.ents){if(e.type!=='ship'||!e.alive||!(e.shield>0))continue;if(e.isPlayer&&(S.player.docked||W.dead||cam.mode==='cockpit'))continue;if(W.bridge&&e===W.bridge.f)continue;
+    const ha=W.t-(e.shHitT===undefined?-9:e.shHitT),sp=shHitU(e);if(!(ha<SH_FL)&&!sp)continue;const R=e.st.radius*1.25*1.5;if(!inView(e.x,e.y,e.z,R*1.2))continue;
+    if(!on){useShieldFx();on=true}const A=e.shHitA||.5;mModel(MM,e.x,e.y,e.z,e.q,R,R*.7,R*1.1);drawShieldFx(R,R*.7,R*1.1,SH_COL,ha<SH_FL?.75*A*(1-ha/SH_FL):0,.5+.5*A)}
+    if(on)useMesh()}
+  for(const g of GATES[W.sid]){if(!inView(g.x,g.y,g.z,150))continue;qLook(-g.x,-g.y,-g.z,0,1,0,_qs);mModel(MM,g.x,g.y,g.z,_qs,1,1,1);const down=S.gateDown[gateKey(W.sid,g.to)];drawMesh(GEN.disc,MM,down?[1,.3,.25]:gateDiscC(g),ZERO3,down?.12:gateDiscA(g,t))}
   {const B=S.beacons&&S.beacons[W.sid];if(B&&isScoutCls(S.player.cls)&&W.player&&d3(W.player,B)<BCN_R*5){mModel(MM,B.x,B.y,B.z,Q_ID,BCN_R,BCN_R,BCN_R);drawMesh(GEN.bcnZone,MM,B.owner?rgb(sideCol(B.owner)):[.85,.85,.8],ZERO3,.55)}}
   drawWorksFx(t);
-  if(SE&&SE.sMax&&!SE.offline&&SE.shield>0){const fr=SE.shield/SE.sMax+(W.t-SE.lastHit<.15?.7:0),B=stBub(SE);mModel(MM,B.x,B.y,B.z,B.q,B.rx,B.ry,B.rz);drawMesh(GEN.shield,MM,rgb(sideCol(SE.fac)),ZERO3,.018+.045*fr)}
-  if(OE){const o=OE.o,os=oStats(o);if(o.shield>0){const fr=o.shield/os.sMax+(W.t-OE.lastHit<.15?.6:0);{const B=opBub(OE);mModel(MM,B.x,B.y,B.z,B.q,B.rx,B.ry,B.rz)}drawMesh(GEN.shield,MM,rgb(sideCol(o.owner)),ZERO3,.03+.07*fr)}
+  if(SE&&SE.sMax&&!SE.offline&&SE.shield>0){const fr=SE.shield/SE.sMax,B=stBub(SE),col=rgb(sideCol(SE.fac));mModel(MM,B.x,B.y,B.z,B.q,B.rx,B.ry,B.rz);drawMesh(GEN.shield,MM,col,ZERO3,.018+.045*fr);
+    {const ha=W.t-(SE.lastHit===undefined?-9:SE.lastHit),sp=shHitU(SE);if(ha<SH_FL||sp){useShieldFx();drawShieldFx(B.rx,B.ry,B.rz,col,ha<SH_FL?.6*(1-ha/SH_FL):0,.8);useMesh()}}}
+  if(OE){const o=OE.o,os=oStats(o);if(o.shield>0){const fr=o.shield/os.sMax,B=opBub(OE),col=rgb(sideCol(o.owner));mModel(MM,B.x,B.y,B.z,B.q,B.rx,B.ry,B.rz);drawMesh(GEN.shield,MM,col,ZERO3,.03+.07*fr);
+    {const ha=W.t-(OE.lastHit===undefined?-9:OE.lastHit),sp=shHitU(OE);if(ha<SH_FL||sp){useShieldFx();drawShieldFx(B.rx,B.ry,B.rz,col,ha<SH_FL?.6*(1-ha/SH_FL):0,.8);useMesh()}}}
     if(!o.owner||o.breached||o.cap.p>0){mModel(MM,OE.x,OE.y,OE.z,OE.q||q0(),450,450,450);drawMesh(GEN.ring,MM,rgb(o.cap.side?sideCol(o.cap.side):'#ece4cf'),ZERO3,.35+.6*o.cap.p)}}
   {const D=GEN.dust,A=D.arr,sp=hyp(W.player.vx,W.player.vy,W.player.vz);const al=clamp(sp/250,.15,.8);for(let i=0;i<D.base.length;i++){const b=D.base[i],o=i*8;A[o]=((b[0]-cam.x)%1000+1000)%1000-500+cam.x;A[o+1]=((b[1]-cam.y)%1000+1000)%1000-500+cam.y;A[o+2]=((b[2]-cam.z)%1000+1000)%1000-500+cam.z;A[o+3]=.6;A[o+4]=.68;A[o+5]=.85;A[o+6]=al;A[o+7]=1.4}
     G.useProgram(PP.p);G.uniformMatrix4fv(PP.u.uVP,false,VP);G.uniform3f(PP.u.uOff,0,0,0);G.uniform1f(PP.u.uPx,DPR);G.bindBuffer(G.ARRAY_BUFFER,D.buf);G.bufferData(G.ARRAY_BUFFER,A,G.DYNAMIC_DRAW);attribs([3,4,1],8);G.drawArrays(G.POINTS,0,D.base.length);curMesh=null}
+  gateFx(t);
   for(const e of W.ents){if(e.type!=='ship'||!e.alive)continue;if(e.isPlayer&&(S.player.docked||W.dead||cam.mode==='cockpit'))continue;if(W.bridge&&e===W.bridge.f)continue;const sc=e.st.radius*1.25;if(e.role==='limpet'){if((t*2.2+e.x*.01)%1<.45){qRot(e.q,0,.66*sc,0,_u);sprite(e.x+_u.x,e.y+_u.y,e.z+_u.z,sc*1.1,rgb(sideCol(e.side)),.95)}continue}const m=shipMesh(meshFac(e),e.cls),c=rgb((e.isPlayer?S.player.trail:e.trail)||(e.isPlayer?FAC(e.fac).col:sideCol(e.side)));
     const fl=e.thrusting?(e.boosting?1.9:1.25)+Math.sin(t*50+sc)*.15:.5;qRot(e.q,0,0,-1,_f);
-    for(const en of m.eng){qRot(e.q,en[0]*sc,en[1]*sc,en[2]*sc,_u);const ex=e.x+_u.x,ey=e.y+_u.y,ez=e.z+_u.z,rr=en[3]*sc;engGlow(ex,ey,ez,rr,fl,c);
-      if(e.thrusting){const Lt=rr*(e.boosting?16:9);streak(ex,ey,ez,ex+_f.x*Lt,ey+_f.y*Lt,ez+_f.z*Lt,rr*.8,c,.32)}}
+    let ei=0;for(const en of m.eng){qRot(e.q,en[0]*sc,en[1]*sc,en[2]*sc,_u);const ex=e.x+_u.x,ey=e.y+_u.y,ez=e.z+_u.z,rr=en[3]*sc;engGlow(ex,ey,ez,rr,fl,c);
+      if(e.thrusting)plume(ex,ey,ez,_f.x,_f.y,_f.z,rr,sc,e.boosting,c,t,sc+ei*1.7);ei++}
     gfxFlash(e,sc,c);if(e.isPlayer)sprite(e.x,e.y+sc*.3,e.z,sc*.18,rgb(PLAYER_COL),.6);
     {const gk=e.gj?e.gj.t/GATE_HOLD:e.gjc?((W.t*.6)%1):(e.isPlayer&&W.gc?W.gc.t/GATE_HOLD:-1);if(gk>=0){sprite(e.x,e.y,e.z,sc*(2.2+3*gk)+6*Math.sin(t*9),[.6,.8,1],.18+.35*gk);sprite(e.x,e.y,e.z,sc*(1+gk),c,.25+.3*gk)}}}
   for(const b of W.shots){const sp=hyp(b.vx,b.vy,b.vz)||1,st=SHOT_STY[b.sty]||SHOT_STY.pulse,L=st[0],w=st[1],c=rgb(b.col);const ux=b.vx/sp,uy=b.vy/sp,uz=b.vz/sp;

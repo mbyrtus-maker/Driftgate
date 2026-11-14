@@ -28,7 +28,7 @@ def architect():
     ring(M,(0,.02,1.4),.4,.04,ACC,seg=28,sides=5);M.blob((0,.02,1.4),.3,GLASS,sub=2,squash=(1,1,.18),noise=0)         # printing lens
     for k in range(5):a=k*2*PI/5;beam(M,(math.cos(a)*.2,.02+math.sin(a)*.2,1.42),(math.cos(a)*.5,.02+math.sin(a)*.5,1.95))
     box(M,(0,-.42,-.1),(.6,.32,1.0),MID,sh=.9);box(M,(0,-.42,-.1),(.64,.06,1.04),ACC)                               # folded depot module
-    for z in (-.5,.3):tube(M,[(-.32,-.2,z),(-.32,-.42,z)],[.02,.02],LIGHT,.9,4);tube(M,[(.32,-.2,z),(.32,-.42,z)],[.02,.02],LIGHT,.9,4)
+    for z in (-.5,.3):tube(M,[(-.32,-.1,z),(-.32,-.42,z)],[.02,.02],LIGHT,.9,4);tube(M,[(.32,-.1,z),(.32,-.42,z)],[.02,.02],LIGHT,.9,4)   # (14 Nov 2026, floating parts) they start at -.1 (-.2): inside the hull, whose belly is higher out at x .32
     for sx in (1,-1):barrel(M,(sx*.53,-.1,-.42),.3,.016)                                                              # a small gun under the front of each boom (clear of the printing lens ahead of the nose)
     M.vent((0,0,-1.21),.12);lights(M,[(.07,-.03,1.03),(-.07,-.03,1.03)],.03)
     return finish(M,3.0,1.0)
