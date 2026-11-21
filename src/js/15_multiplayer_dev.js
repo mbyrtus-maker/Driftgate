@@ -162,6 +162,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
   if(m.t==='newpilot'){if(!running||!S.player)return;if(!S.pilots[c.pid]){const lg=m.leg&&typeof m.leg==='object'?m.leg:null;if(S.unb){if(m.fac!=='pirate'||!lg||!((lg.pts||0)>=1)){send(L,{t:'msg',k:'flash',a:[m.fac!=='pirate'?'This is an Unbound crew galaxy: everyone here flies for the pirates.':'Joining an Unbound crew takes a Legend point of your own, earned flying for a faction.',true]});return}const NP=newPilot(c.pid,c.name,'pirate','raider',lg);runAs(c.pid,()=>unbP())}else if(FAC_IDS.includes(m.fac)&&START_HULLS.includes(m.cls))newPilot(c.pid,c.name,m.fac,m.cls,lg);else{send(L,{t:'msg',k:'flash',a:['This galaxy flies for the factions. Unbound crews need a galaxy of their own.',true]});return}}hJoin(c);return}
   if(!c.ready)return;const pid=c.pid,P=S.pilots[pid];if(!P)return;
   switch(m.t){
+    case 'gh':hClaim(pid,m);break;
     case 'u':{if(P.docked)break;MP.inp[pid]={...m,at:performance.now()};P.x=m.x;P.y=m.y;P.z=m.z;P.vx=m.vx;P.vy=m.vy;P.vz=m.vz;P.q=m.q;P.fa=!!m.fa;P.wpn=m.w==='l'?'laser':'kinetic';P.route=m.rt||null;break}
     case 'msl':hMissile(pid,m);break;
     case 'jam':{const e=MP.rp[pid];P.jamMode=!!m.on;if(e)e.jamMode=!!m.on;break}
@@ -203,7 +204,7 @@ function hostRecv(L,m){let c=MP.cl[L.peer];
   }}
 function hJoin(c){const P=S.pilots[c.pid];c.hello=true;
   if(!P){send(c.L,{t:'needpilot',r:MP.roster});return}
-  P.name=c.name||P.name;P.pid=c.pid;c.ready=true;c.known=new Set();delete P.off;
+  P.name=c.name||P.name;P.pid=c.pid;c.ready=true;c.known=new Set();c.kn=new Map();delete P.off;
   if(P.docked==='bridge')P.docked='station';if(P.docked==='turret'){hSeatClear(c.pid);P.docked=null}
   if(P.docked==='station'&&!S.stations[P.sector])P.docked=null;
   if(!WORLDS[P.sector])openWorld(P.sector);
@@ -238,7 +239,7 @@ function hBridgeTick(){for(const t of S.frigates||[])if(t.crew)for(const k in t.
   for(const pid in S.pilots||{}){const P=S.pilots[pid];if(P.docked!=='bridge'||pid===NET.me)continue;const c=Object.values(MP.cl).find(x=>x.pid===pid&&x.ready);if(!c)continue;
     const t=(S.frigates||[]).find(x=>x.id===P.bridgeId);
     if(!t){P.docked=null;delete P.bridgeId;if(!WORLDS[P.sector])openWorld(P.sector);spawnRP(pid);send(c.L,{t:'nobridge',gone:1});netRoster();continue}
-    if(t.sector!==P.sector){P.sector=t.sector;if(!WORLDS[P.sector])openWorld(P.sector);c.known=new Set();c.fullT=0;send(c.L,{t:'fjump',to:t.sector,id:t.id});sendFtok(c);send(c.L,syncMsg(c));netRoster();continue}
+    if(t.sector!==P.sector){P.sector=t.sector;if(!WORLDS[P.sector])openWorld(P.sector);c.known=new Set();c.kn=new Map();c.fullT=0;send(c.L,{t:'fjump',to:t.sector,id:t.id});sendFtok(c);send(c.L,syncMsg(c));netRoster();continue}
     const F=frigEnt(t);if(F){P.x=F.x;P.y=F.y-F.st.radius*.5;P.z=F.z;P.vx=F.vx;P.vy=F.vy;P.vz=F.vz}}}
 // ---- gunboat turrets with a remote gunner (host side)
 function seatPilotOf(id){if(id==='p_'+NET.me)return{sector:S.player.sector,docked:S.player.docked,name:S.player.name||MP.name};if(typeof id==='string'&&id.startsWith('p_'))return S.pilots[id.slice(2)]||null;return null}
@@ -254,7 +255,7 @@ function hSeatClear(pid){const P=S.pilots[pid];if(!P)return;const w=WORLDS[P.sec
 function hSeatTick(){const now=performance.now();for(const pid in S.pilots||{}){const P=S.pilots[pid];if(P.docked!=='turret'||pid===NET.me)continue;const c=Object.values(MP.cl).find(x=>x.pid===pid&&x.ready);if(!c)continue;
     const id=P.seatId||'',w=WORLDS[P.sector],e=w?entInWorld(w,id):null;
     if(e&&e.alive&&hasTur(e.cls)){turretOf(e).gunner=pid;P.x=e.x;P.y=e.y-e.st.radius*.6;P.z=e.z;P.vx=e.vx;P.vy=e.vy;P.vz=e.vz;P.missAt=0;continue}
-    const pl=seatPilotOf(id);if(pl&&!pl.docked&&pl.sector&&pl.sector!==P.sector){P.sector=pl.sector;if(!WORLDS[P.sector])openWorld(P.sector);c.known=new Set();c.fullT=0;send(c.L,{t:'gjump',to:P.sector,id});send(c.L,syncMsg(c));netRoster();continue}
+    const pl=seatPilotOf(id);if(pl&&!pl.docked&&pl.sector&&pl.sector!==P.sector){P.sector=pl.sector;if(!WORLDS[P.sector])openWorld(P.sector);c.known=new Set();c.kn=new Map();c.fullT=0;send(c.L,{t:'gjump',to:P.sector,id});send(c.L,syncMsg(c));netRoster();continue}
     if(!P.missAt){P.missAt=now;continue}if(now-P.missAt<3000&&!(pl&&pl.docked))continue;
     P.docked=null;delete P.seatId;P.missAt=0;if(MP.ginp)delete MP.ginp[pid];if(!WORLDS[P.sector])openWorld(P.sector);spawnRP(pid);send(c.L,{t:'gseatno',out:1});netRoster()}}
 function devFrigFor(pid,esc){return runAs(pid,()=>devFrig(true,esc))}
@@ -287,7 +288,7 @@ function rpDeath(e){const pid=e.rp,P=S.pilots[pid];
   despawnRP(pid,true);const old=WORLDS[P.sector];
   const st=shipStats(P.faction,P.cls,P.tiers,P.tune);P.hull=st.hull;P.shield=st.sCap;P.energy=st.eCap;P.sector=FAC_HOME(P.faction);P.x=P.y=P.z=0;P.vx=P.vy=P.vz=0;P.docked='station';droneTopUp(P,P.vault,P.faction);delete MP.inp[pid];
   if(old&&old!==LW&&!worldBusy(old)){if(old===W)setTimeout(()=>{if(WORLDS[old.sid]===old&&old!==LW&&!worldBusy(old))closeWorld(old)},0);else closeWorld(old)}if(!WORLDS[P.sector])openWorld(P.sector);
-  const c=Object.values(MP.cl).find(x=>x.pid===pid&&x.ready);if(c){sendPR(c,true,true);send(c.L,{t:'dead'})}netRoster()}
+  netFresh(pid);const c=Object.values(MP.cl).find(x=>x.pid===pid&&x.ready);if(c){sendPR(c,true,true);send(c.L,{t:'dead'})}netRoster()}
 function resolveTgt(id){if(id==='S')return W.stationEnt;if(id==='O')return W.outpostEnt;if(NET.host&&id==='p_'+NET.me)return W.player;return W.ents.find(x=>x.id===id&&x.alive)||null}
 function hMissile(pid,m){const e=MP.rp[pid],P=S.pilots[pid];if(!e)return;inW(worldOf(e),()=>{const T=resolveTgt(String(m.tg));if(!T||T===e)return;if(m.k==='jt'){runAs(pid,()=>{if(P.jt==null)P.jt=jtCap();if(P.jt<=0||P.cls!=='plunderer')return;P.jt--;if(!(P.jtT>0))P.jtT=40;launchMissile(e,T,P.tiers.weapon,'torpedo',0,true);const mm=W.missiles[W.missiles.length-1];if(mm){mm.jt=1;mm.dmg=0;mm.col='#b7c6ff'}unbShot()});return}const n0=W.missiles.length;
   if(m.k==='s'){if((P.swarm||0)>0&&CLASSES[P.cls].swarm&&T.type==='ship'){P.swarm--;launchSwarm(e,T,P.tiers.weapon)}}
@@ -295,7 +296,9 @@ function hMissile(pid,m){const e=MP.rp[pid],P=S.pilots[pid];if(!e)return;inW(wor
 function poseFrom(P,m){for(const k of['x','y','z','vx','vy','vz'])if(typeof m[k]==='number'&&isFinite(m[k]))P[k]=m[k];if(Array.isArray(m.q)&&m.q.length===4)P.q=m.q}
 function hJump(pid,m){const P=S.pilots[pid],from=P.sector,to=String(m.to);if(S.gateDown&&S.gateDown[gateKey(from,to)])return;if(P.docked||!GATES[from]||!GATES[from].some(g=>g.to===to))return;if(P.convoy&&MP.rp[pid])runAs(pid,()=>convoyJump());
   runAs(pid,()=>{const h=S.outposts.hollow;if((from==='ho'||to==='ho')&&h.owner&&h.owner!=='player'&&h.owner!==S.player.faction){const n=transfer('player',h.owner,40);if(n)feed(`Paid ${n} cr gate toll to ${sideName(h.owner)} at Hollow Relay.`,'news')}});
-  despawnRP(pid);P.sector=to;poseFrom(P,m);delete MP.inp[pid];if(!WORLDS[to])openWorld(to);if(!P.docked)spawnRP(pid);netRoster()}
+  despawnRP(pid);P.sector=to;poseFrom(P,m);delete MP.inp[pid];if(!WORLDS[to])openWorld(to);if(!P.docked)spawnRP(pid);netFresh(pid);netRoster()}
+// (Nov 2026) a guest in a new system has no ships drawn yet: send every ship there in full, not just the ones it hasn't seen
+function netFresh(pid){const c=Object.values(MP.cl).find(x=>x.pid===pid);if(c){c.known=new Set();c.kn=new Map();c.fullT=0}}
 function hDock(c,m){const pid=c.pid,P=S.pilots[pid],e=MP.rp[pid];if(!e)return;const w=worldOf(e);let ok=false;
   inW(w,()=>{if(m.d==='lair'){const L=(S.lairs||[]).find(x=>x.id===+m.id&&x.pid===pid&&x.sid===P.sector&&x.hull>0);ok=!!L&&d3(L,e)<320;if(ok)P.lairId=L.id}else if(m.d==='station'){const SE=W.stationEnt;ok=!!SE&&(SE.fac===P.faction||(!S.unb&&SE.fac==='neutral')||(S.unb&&SE.fac==='neutral'&&runAs(pid,()=>unbFreeportOK())))&&d3(SE,e)<520}else{const OE=W.outpostEnt;ok=!!OE&&OE.o.id===m.d&&!OE.o.breached&&OE.o.owner===P.faction&&d3(OE,e)<520}});
   if(!ok){send(c.L,{t:'nodock'});return}
@@ -308,8 +311,13 @@ function netSyncPilots(){for(const pid in MP.rp){const e=MP.rp[pid],P=S.pilots[p
 // per system, every tick: move remote ships to where their pilots say they are, fire their guns, run their mining lasers
 function netWorld(dt){const now=performance.now();
   for(const e of W.ents){if(!e.rp||!e.alive)continue;const u=MP.inp[e.rp],P=S.pilots[e.rp];if(!P)continue;
-    if(u){const age=Math.min(.25,(now-u.at)/1000);e.x=u.x+u.vx*age;e.y=u.y+u.vy*age;e.z=u.z+u.vz*age;e.vx=u.vx;e.vy=u.vy;e.vz=u.vz;e.q.x=u.q[0];e.q.y=u.q[1];e.q.z=u.q[2];e.q.w=u.q[3];qNorm(e.q);e.boosting=!!u.b;e.thrusting=!!u.th;e.wpn=u.w==='l'?'laser':'kinetic';e.inJump=!!u.j;
-      if(u.f&&now-u.at<600){if(S.unb&&e.cool<=0)runAs(e.rp,()=>unbShot());if(u.w==='l'&&!e.jamMode)fireLaser(e);else fire(e)}}
+    if(u){const age=Math.min(.25,(now-u.at)/1000),tx=u.x+u.vx*age,ty=u.y+u.vy*age,tz=u.z+u.vz*age;
+      // (Nov 2026) eased onto the guest's reported course rather than set on it, so updates that arrive unevenly don't jerk
+      // the guest's ship on the host's screen; a big gap (a jump, a dock, a respawn) still snaps
+      const dx=tx-e.x,dy=ty-e.y,dz=tz-e.z,far=Math.max(150,hyp(u.vx,u.vy,u.vz)*.4),k=1-Math.exp(-dt*25);_pq.x=u.q[0];_pq.y=u.q[1];_pq.z=u.q[2];_pq.w=u.q[3];
+      if(dx*dx+dy*dy+dz*dz>far*far||!e.netEased){e.x=tx;e.y=ty;e.z=tz;qCopy(e.q,_pq);e.netEased=1}else{e.x+=dx*k;e.y+=dy*k;e.z+=dz*k;qSlerp(e.q,_pq,Math.min(1,k*1.4))}
+      e.vx=u.vx;e.vy=u.vy;e.vz=u.vz;qNorm(e.q);e.boosting=!!u.b;e.thrusting=!!u.th;e.wpn=u.w==='l'?'laser':'kinetic';e.inJump=!!u.j;
+      if(u.f&&now-u.at<600){if(S.unb&&e.cool<=0)runAs(e.rp,()=>unbShot());if(u.w==='l'&&!e.jamMode){e._claim=1;try{fireLaser(e)}finally{e._claim=0}}else{const n0=W.shots.length;fire(e);for(let i=n0;i<W.shots.length;i++)if(W.shots[i].src===e)W.shots[i].claim=1}}}
     e.mining=null;
     if(u&&u.m){const sec=S.sectors[W.sid],cl=(sec.clouds||[]).find(c=>c.id===u.m);if(cl&&d3(cl,e)<BL.collectR+cl.r){e.mining=cl;blCollect(e,P,cl,dt,sec)}}
     else if(blHull(P.cls)){const sc=S.sectors[W.sid],ch=chunkAt(e,sc);if(ch){e.mining=ch;blCollect(e,P,ch,dt,sc)}}
@@ -317,6 +325,25 @@ function netWorld(dt){const now=performance.now();
       for(const k of Object.keys(cr.inv)){const ms=mass(k);while(cr.inv[k]&&room>=ms){inv.take(cr.inv,k,1);inv.add(P.cargo,k,1);room-=ms;took+=ms}}
       if(took)netMsg(e.rp,'feed',`Recovered ${took} t of salvage.`,'good');if(!Object.keys(cr.inv).length){sec.crates.splice(i,1);if(W.tgt&&W.tgt.ref===cr)W.tgt=null}}}
     if(W.pbuild&&W.pbuild.pid===e.rp)runAs(e.rp,()=>pbuildTick(dt))}}
+// ---- guests' guns hit what the guest sees (Nov 2026; the lesson from Ace of the Airways' co-op)
+// A guest aims at ships drawn where the host's last snapshot put them, a fraction of a second behind where the host has them
+// now. When the host fired the guest's guns at its own positions, a fast target the guest had squarely in the sights could
+// take no damage at all, while the guest's screen showed the hits. Now the guest's own cannon and laser decide hits on
+// small ships on the guest's screen and claim each one; the host checks the claim (a live, hostile ship within the gun's
+// reach of the guest's ship, no faster than the gun can fire) and deals the damage with the guest's own stats. The
+// host still flies the guest's shots, so stations, outposts, works, torpedoes, rock and capital ships (big and slow, with
+// their sub-targets) are hit there as before; on small ships those shots only spark. Tally: MP.claimN on the host.
+function netClaim(e,at,kind){if(!NET.cl||!W||!at||at.src!==W.player||at.jam||!e||!e.pup||e.role==='frigate')return;if(kind!=='kinetic'&&kind!=='laser')return;
+  const now=performance.now();if(now-(MP.clT||0)>1000){MP.clT=now;MP.clN=0}if(++MP.clN>40)return;netSend({t:'gh',id:e.id,k:kind==='laser'?'l':'k'})}
+function hClaim(pid,m){const T=MP.claimN=MP.claimN||{ok:0,noShip:0,noTarget:0,range:0,rate:0,idle:0},e=MP.rp[pid],P=S.pilots[pid];
+  if(!e||!e.alive||!P||P.docked){T.noShip++;return}const lz=m.k==='l';if(lz?false:e.jamMode){T.noTarget++;return}
+  const now=performance.now();
+  const w=worldOf(e);if(!w)return;inW(w,()=>{const id=String(m.id||''),t=id==='p_'+NET.me?(W===LW&&W.player&&!S.player.docked&&!W.dead?W.player:null):id.startsWith('p_')?MP.rp[id.slice(2)]||null:W.ents.find(x=>x.id===id&&!x.rp)||null;
+    if(!t||t.type!=='ship'||!t.alive||t.ghost||t===e||t.role==='frigate'||!W.ents.includes(t)||!(hostile(e.side,t.side)||(S.unb&&((e.rp&&t.side==='brood')||(t.rp&&e.side==='brood'))))){T.noTarget++;return}
+    const reach=(lz?LASER_RANGE:(e.st.shotSpd||SHOT_SPD)*SHOT_TTL*(e.st.shotTtl||1))+t.st.radius*2+350;if(d3(e,t)>reach){T.range++;return}
+    const R=MP.clR=MP.clR||{},r=R[pid]||(R[pid]={t:0,n:0});if(now-r.t>1000){r.t=now;r.n=0}if(++r.n>Math.ceil((lz?LASER_ROF:e.st.rof)*1.5)+3){T.rate++;return}
+    T.ok++;const dmg=lz?e.st.dmg*.5*(e.st.cautery?(t.side==='brood'&&t.role==='builder'?1.4:.88):1):e.st.dmg;
+    damageShip(t,dmg,e.side,{x:t.x,y:t.y,z:t.z,vx:0,vy:0,vz:0,src:e},lz?'laser':'kinetic')})}
 // ---- host -> pilots: snapshots, pilot records, galaxy sync, checkpoints
 const r1=v=>Math.round(v*10)/10,qi=v=>Math.round(v*1000);
 function shipRow(e,full){const id=e.isPlayer?'p_'+NET.me:e.id,fl=(e.thrusting?1:0)|(e.boosting?2:0)|(e.tuned?4:0)|(W.t-(e.shHitT===undefined?-9:e.shHitT)<.1?8:0)|(W.t-e.lastHit<.1?16:0)|(e.gj||(e.isPlayer&&W.gc)?32:0)|(e.order?(e.order.kind==='guard'?64:128):0)|(e.stealth?256:0)|(jamDark(e)?512:0),
@@ -333,12 +360,16 @@ function netTick(dt){if(NET.cl){clientTick(dt);return}if(!NET.host||!running||!S
       const SE=W.stationEnt,OE=W.outpostEnt,o=OE&&OE.o,B=W.scaffold||(W.pbuild?{x:W.pbuild.x,y:W.pbuild.y,z:W.pbuild.z,owner:S.player.faction,prog:W.pbuild.prog}:null);
       const gbs=W.ents.filter(e=>e.type==='ship'&&e.alive&&hasTur(e.cls));if(W===LW&&W.player&&hasTur(W.player.cls)&&!S.player.docked&&!gbs.includes(W.player))gbs.push(W.player);
       const gt=gbs.map(e=>{const T=turretOf(e);return[e.isPlayer?'p_'+NET.me:e.id,Math.round(T.yaw*100),Math.round(T.pitch*100),T.gunner==='local'?(S.player.name||MP.name):T.gunner?((S.pilots[T.gunner]||{}).name||'pilot'):'AI']});
-      const base={t:'sn',sid,T:Math.round(S.T*10)/10,m:ms,ev,gt,st:SE?[Math.round(SE.shield),SE.offline?1:0,SE.turrets.map(t=>[Math.round(t.aim.x*100),Math.round(t.aim.y*100),Math.round(t.aim.z*100)])]:0,
+      const evr=ev.filter(v=>v[0]==='x'||v[0]==='w'),evs=ev.filter(v=>v[0]!=='x'&&v[0]!=='w');
+      const base={t:'sn',sid,T:Math.round(S.T*10)/10,tt:Math.round(W.t*1000)/1000,m:ms,ev:evs,gt,st:SE?[Math.round(SE.shield),SE.offline?1:0,SE.turrets.map(t=>[Math.round(t.aim.x*100),Math.round(t.aim.y*100),Math.round(t.aim.z*100)])]:0,
         op:o?[Math.round(o.shield),Math.round(o.hull),Math.round(o.cap.p*100)/100,o.cap.side||0,o.breached?1:0,o.owner||0,Math.round(OE.aim.x*100),Math.round(OE.aim.y*100),Math.round(OE.aim.z*100)]:0,sc:B?[r1(B.x),r1(B.y),r1(B.z),B.owner,Math.round(B.prog*100)/100]:0,wk:(W.works||[]).map(w=>[w.id,Math.round(wkHp(w))]),de:W.decoys.map(d=>[r1(d.x),r1(d.y),r1(d.z),Math.round(d.life*10)/10]),
         nb:W.ents.filter(e=>e.npc&&e.alive&&e.ai&&e.ai.bl&&e.ai.bl.pts&&e.ai.bl.pts.length).map(e=>[e.id,e.ai.bl.st,e.ai.bl.pts.map(q=>[r1(q.x),r1(q.y),r1(q.z)])]),
         nc:(W.npcCh||[]).filter(c=>c.e&&c.e.alive).map(c=>[c.id,c.e.id,c.k,c.cr,r1(c.x),r1(c.y),r1(c.z),Math.round(c.vx),Math.round(c.vy),Math.round(c.vz)])};
-      for(const c of by[sid]){const me='p_'+c.pid,e=MP.rp[c.pid],P=S.pilots[c.pid];const rows=[];for(const s of ships){const id=s.isPlayer?'p_'+NET.me:s.id;if(id===me)continue;const full=!c.known.has(id)||(c.fullT||0)<=0;rows.push(shipRow(s,full));c.known.add(id)}
+      for(const c of by[sid]){const me='p_'+c.pid,e=MP.rp[c.pid],P=S.pilots[c.pid];const rows=[];for(const s of ships){const id=s.isPlayer?'p_'+NET.me:s.id;if(id===me)continue;const kn=c.kn||(c.kn=new Map()),nk=kn.get(id)||0,full=!c.known.has(id)||nk<3||(c.fullT||0)<=0;rows.push(shipRow(s,full));c.known.add(id);if(nk<3)kn.set(id,nk+1)}
+        // (Nov 2026) a ship new to this guest goes out in full in its first three snapshots: they travel unreliably, and one lost
+        // packet used to leave a new arrival unseen until the next full refresh, two seconds on
         if((c.fullT=(c.fullT||0)-1)<0)c.fullT=30;
+        if(evr.length)send(c.L,{t:'evr',sid,ev:evr});
         send(c.L,{...base,e:rows,ps:e?[Math.round(e.hull*10)/10,Math.round(e.shield*10)/10]:[P.hull,P.shield]},true)}})}}
   MP.prT-=dt;if(MP.prT<=0){MP.prT=.5;for(const c of readyCl())sendPR(c)}
   MP.ftT=(MP.ftT||0)-dt;if(MP.ftT<=0){MP.ftT=1;for(const c of readyCl())sendFtok(c)}
@@ -359,7 +390,7 @@ function clientRecv(m){
     case 'welcome':mpClientStart(m);break;
     case 'needpilot':MP.roster=m.r||MP.roster;if(MP.autoLaunch){const a=MP.autoLaunch;MP.autoLaunch=null;send(MP.host,{t:'newpilot',fac:a.fac,cls:a.cls,leg:legPack(MP.name)});mpStatus('Joining…');break}
       if(MP.roster.length&&MP.roster[0])selFac=MP.roster[0][2];MP.needPilot=true;running=false;$('hud').hidden=true;$('start').hidden=false;showStart();$('bContinue').hidden=true;mpStatus(`Connected to <b>${esc(MP.code)}</b>. ${MP.roster.length?'Already flying here: '+MP.roster.map(r=>`<b style="color:${sideCol(r[2])}">${esc(r[1])}</b> (${esc(FAC(r[2]).short)}, ${esc(DEF[r[3]].name)})`).join(', ')+'. Pick the same faction to start in their home system. ':''}Choose your ship, then Launch to join.`);break;
-    case 'sn':applySnap(m);break;
+    case 'sn':applySnap(m);break;case 'evr':if(LW&&m.sid===LW.sid&&running)pupEv(LW,m.ev);break;
     case 'pr':applyPR(m);if(S&&S.player&&S.player.docked&&!$('dock').hidden&&dockErr!=='Working…')renderDock();break;
     case 'sync':applySync(m.s);relinkFrigs();{const E=W&&W.stationEnt,R=W&&S.stations[W.sid];if(E&&R){E.rec=R;if(E.fac!==R.owner){E.fac=R.owner;E.name=R.name}}}break;
     case 'ftok':{const mine=new Map((m.f||[]).map(t=>[t.id,t]));S.frigates=(S.frigates||[]).filter(t=>t.owner!==MP.pid&&!mine.has(t.id)).concat(m.f||[]);relinkFrigs();if(W&&W.bridge&&W.bridge.panel)renderConsole(false);break}
@@ -371,7 +402,7 @@ function clientRecv(m){
     case 'bcn':{if(S.beacons&&m.sid&&m.b){S.beacons[m.sid]=m.b;S.bcnV=m.v||((S.bcnV||0)+1);if(W&&W.tgt&&W.tgt.kind==='beacon'&&W.sid===m.sid)W.tgt.ref=m.b;if(W&&W.bcnF&&W.sid===m.sid){W.bcnF.t=0;W.bcnF.side=null}}break}
     case 'nobridge':{if(W&&W.bridge)exitBridge();else if(S.player.docked==='bridge'){S.player.docked=null;ejectReset()}else if(m.gone)break;flash(m.gone?'The ship is gone. Your fighter is adrift.':'You can only board your own capital ship, close up.',true);break}
     case 'ckpt':MP.ckpt=m.ck;MP.ckMeta={gid:m.ck.gid,T:m.ck.T};try{localStorage.setItem(ckKey(),JSON.stringify(m.ck))}catch(e){}break;
-    case 'msg':if(m.k==='taken'){mpShutdown();running=false;$('hud').hidden=true;$('start').hidden=false;showStart();mpStatus(`The callsign <b>${esc(m.a[0])}</b> is already taken in this galaxy. Pick another one and join again.`,true);$('mpName').focus();break}if(m.k==='feed')feed(...m.a);else if(m.k==='distress'){feed(m.a[0],'bad');SFX.distress()}else if(m.k==='flash')flash(...m.a);else if(m.k==='stealthoff'){try{stealthOff(true)}catch(e){}}else if(m.k==='stat')mpStatus(m.a[0]);break;
+    case 'msg':if(m.k==='taken'){mpShutdown();running=false;$('hud').hidden=true;$('start').hidden=false;showStart();mpStatus(`The callsign <b>${esc(m.a[0])}</b> is already taken in this galaxy. Pick another one and join again.`,true);$('mpName').focus();break}if(m.k==='feed')feed(...m.a);else if(m.k==='distress'){feed(m.a[0],'bad');SFX.distress()}else if(m.k==='flash')flash(...m.a);else if(m.k==='sfx'){if(SFX_FWD.has(m.a[0]))SFX[m.a[0]](...m.a.slice(1))}else if(m.k==='stealthoff'){try{stealthOff(true)}catch(e){}}else if(m.k==='stat')mpStatus(m.a[0]);break;
     case 'actr':dockErr=m.err||'';if('route' in m&&S.player)S.player.route=m.route;if(!$('dock').hidden&&S.player.docked)renderDock();break;
     case 'dead':if(W){W.dead=W.t;$('deathMsg').hidden=false;W.tgt=null;if(W.player)W.player.alive=false}break;
     case 'roster':MP.roster=m.r;break;
@@ -413,11 +444,12 @@ function mkPup(r){const[id,side,fac,cls,role,tier,wpn,name]=r;const st=shipStats
 function relinkFrigs(){const w=LW;if(!w||!w.pup)return;for(const id in w.pup){const e=w.pup[id];if(e.role!=='frigate'||e.tokId==null)continue;const t=(S.frigates||[]).find(x=>x.id===e.tokId);if(!t)continue;e.tok=t;
     if(t.ctl){const C=fctl(t);if(C.tgtId&&!C.tgt){const T=C.tgtId==='S'?w.stationEnt:C.tgtId==='p_'+MP.pid?w.player:w.pup[C.tgtId];if(T)C._t=T}}}
   if(MP.fjB){const e=Object.values(w.pup).find(x=>x.role==='frigate'&&x.tokId===MP.fjB.id);if(e){W.bridge={f:e,...MP.fjB.keep,panel:null};cam.snap=true;const st=MP.fjB.keep.seat;MP.fjB=null;if(st)openConsole('strat')}else if(performance.now()-MP.fjB.at>8000){MP.fjB=null;if(S.player.docked==='bridge'){S.player.docked=null;ejectReset();const p=W.player;netSend({t:'undock',x:p.x,y:p.y,z:p.z,vx:0,vy:0,vz:0,q:[p.q.x,p.q.y,p.q.z,p.q.w]});flash('Lost contact with the capital ship. Your fighter is adrift.',true)}}}}
-function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.pup||{};const seen=new Set(),now=w.t,ast=S.sectors[w.sid].ast;
+function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.pup||{};const seen=new Set(),now=w.t,ast=S.sectors[w.sid].ast;if(m.tt!==undefined)pupClock(w,m.tt);
   for(const r of m.e){const id=r[0];let e=w.pup[id];const full=r.length>16;
     if(full&&(!e||e.cls!==r[3]||e.side!==r[1])){const fresh=!e;if(e){const i=w.ents.indexOf(e);if(i>=0)w.ents.splice(i,1)}e=mkPup(r);w.pup[id]=e;w.ents.push(e);if(fresh&&e.role==='frigate'&&w.t>3&&!(MP.fjB&&MP.fjB.id===e.tokId)){const ow=W;W=w;try{frigArriveFx(e)}finally{W=ow}}}
     if(!e)continue;seen.add(id);const o=full?8:1;
     e.tx=r[o];e.ty=r[o+1];e.tz=r[o+2];e.tq=e.tq||q0();e.tq.x=r[o+3]/1000;e.tq.y=r[o+4]/1000;e.tq.z=r[o+5]/1000;e.tq.w=r[o+6]/1000;e.vx=r[o+7];e.vy=r[o+8];e.vz=r[o+9];e.snapAt=now;
+    if(m.tt!==undefined)pupSample(e,m.tt,r,o);
     if(e.fresh===undefined){e.x=e.tx;e.y=e.ty;e.z=e.tz;qCopy(e.q,e.tq);qNorm(e.q);e.fresh=0}
     e.hull=r[o+10]/1000*e.st.hull;const sh=r[o+11]/1000*e.st.sCap;if(e.shield>1&&sh<=0){e.shBreakT=now}else if(e.shield<=0&&sh>e.st.sCap*.2)e.shUpT=now;e.shield=sh;
     const fl=r[o+12];e.jamOff=fl&512?now+1:0;e.stealth=!!(fl&256);e.masked=e.stealth||!!e.landed;e.maskR=e.stealth?STEALTH_R:0;e.thrusting=!!(fl&1);e.boosting=!!(fl&2);e.tuned=!!(fl&4);if(fl&8){e.shHitT=now;e.shHitA=.5}if(fl&16)e.lastHit=now;e.gjc=!!(fl&32);e.ord=fl&64?'guarding':fl&128?'escorting':null;
@@ -434,7 +466,17 @@ function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.p
   if(m.wk)for(const[id,hp]of m.wk){const x=(w.works||[]).find(y=>y.id===id);if(!x)continue;if(hp<wkHp(x)-1)x.lastHit=now;const o=W;W=w;try{wkSet(x,hp)}finally{W=o}}
   if(m.op&&w.outpostEnt){const OE=w.outpostEnt,o=OE.o;if(m.op[0]<o.shield)OE.lastHit=now;o.shield=m.op[0];o.hull=m.op[1];o.cap.p=m.op[2];o.cap.side=m.op[3]||null;o.breached=m.op[4]?(o.breached||S.T):0;o.owner=m.op[5]||null;OE.aim={x:m.op[6]/100,y:m.op[7]/100,z:m.op[8]/100}}
   w.scaffold=m.sc?{x:m.sc[0],y:m.sc[1],z:m.sc[2],owner:m.sc[3],prog:m.sc[4]}:null;
-  for(const v of m.ev){
+  pupEv(w,m.ev);
+  const p=w.player;if(p&&p.alive&&!S.player.docked&&!w.dead&&m.ps){const h=m.ps[0],sh=m.ps[1];
+    if(h<p.hull-.5){w.hurt=.25;w.shake=Math.max(w.shake||0,.45);SFX.hull();p.lastHit=now}
+    if(sh<p.shield-.5){p.lastHit=now;if(sh>0){w.shHit=.35;SFX.shield();p.shHitT=now;p.shHitA=.6}}
+    if(p.shield>0&&sh<=0){p.shBreakT=now;p.shDown=true;flash('Shields down! Hold Shift to boost away.',true);SFX.shieldDown()}
+    p.hull=h;p.shield=sh}}
+// one-off events from the host: shots, beams, explosions, warps, missile launches. Explosions and warps come on the
+// reliable channel (evr) so a lost snapshot can't swallow a kill (Nov 2026, from Ace of the Airways' co-op); shots and
+// beams ride the snapshots, where a lost one costs a tracer.
+function pupEv(w,list){const me='p_'+MP.pid;
+  for(const v of list||[]){
     if(v[0]==='s'){if(v[11]===me&&!v[12])continue;const src=v[11]?w.pup[v[11]]||null:null;w.shots.push({x:v[1],y:v[2],z:v[3],vx:v[4],vy:v[5],vz:v[6],ttl:v[7]/100,sty:v[8]||undefined,col:v[9],side:v[10],src,dmg:0});
       if(v[13]==='pd'){if(w.t-(w.pdT||0)>1.1){w.pdT=w.t;const vv=vAt({x:v[1],y:v[2],z:v[3]});if(vv>.04)SFX.pd(Math.min(1,vv*1.4))}}
       else if(v[8]==='capital'){const vv=vAt({x:v[1],y:v[2],z:v[3]});if(vv>.04)SFX.lance(Math.min(1,vv*1.3))}
@@ -443,11 +485,7 @@ function applySnap(m){const w=LW;if(!w||m.sid!==w.sid||!running)return;w.pup=w.p
     else if(v[0]==='x')fxBoom({x:v[1],y:v[2],z:v[3]},v[4],v[5]);
     else if(v[0]==='w')fxWarp({x:v[1],y:v[2],z:v[3]},v[4]);
     else if(v[0]==='m'){const src=w.pup[v[1]];if(src)SFX.missile(vAt(src)*.8,v[2])}}
-  const p=w.player;if(p&&p.alive&&!S.player.docked&&!w.dead&&m.ps){const h=m.ps[0],sh=m.ps[1];
-    if(h<p.hull-.5){w.hurt=.25;w.shake=Math.max(w.shake||0,.45);SFX.hull();p.lastHit=now}
-    if(sh<p.shield-.5){p.lastHit=now;if(sh>0){w.shHit=.35;SFX.shield();p.shHitT=now;p.shHitA=.6}}
-    if(p.shield>0&&sh<=0){p.shBreakT=now;p.shDown=true;flash('Shields down! Hold Shift to boost away.',true);SFX.shieldDown()}
-    p.hull=h;p.shield=sh}}
+}
 // the AI miners' blast cycle as the host sends it: a shot for each new charge, the blast when a chunk appears, the chunk drifting in
 function npcBlSnap(w,m){const seen=new Set();
   for(const[id,st,pts]of m.nb||[]){const e=w.pup[id];if(!e)continue;seen.add(id);const B=e.ai.bl||(e.ai.bl={st,pts:[]}),Q=pts.map(p=>({x:p[0],y:p[1],z:p[2]}));
@@ -462,9 +500,26 @@ function npcBlSnap(w,m){const seen=new Set();
     c.e=e;c.vx=r[7];c.vy=r[8];c.vz=r[9];out.push(c)}
   w.npcCh=out}
 // between snapshots: glide every remote ship along its velocity and ease it onto the host's position
+// (Nov 2026, from Ace of the Airways' co-op) Snapshots arrive unevenly over a real link, and a ship eased onto the newest
+// one lurched whenever one came late or two came together. A ship is now drawn a tenth of a second in the past, between
+// the two real snapshots either side of that moment; past the newest it coasts on its velocity for at most a quarter
+// second. The host world's clock comes with every snapshot (tt); its offset from ours follows the quickest arrivals, so a
+// late packet doesn't drag it, and a jump in it (a new system, a new galaxy) starts the samples over. Capital ships are
+// drawn at the newest snapshot, coasting, as before: pilots line up on their decks and hatches.
+const PUP_LAG=.1;
+function pupClock(w,tt){const s=tt-w.t,C=w.nclk||(w.nclk={});if(C.off!==undefined&&Math.abs(s-C.off)>2){C.off=undefined;C.gen=(C.gen||0)+1}
+  C.off=C.off===undefined?s:s>C.off?C.off+(s-C.off)*.3:C.off+(s-C.off)*.02}
+function pupSample(e,tt,r,o){const C=LW&&LW.nclk;if(!C)return;if(e.bgen!==C.gen){e.buf=[];e.bgen=C.gen}const B=e.buf||(e.buf=[]);if(B.length&&tt<=B[B.length-1].t)return;
+  B.push({t:tt,x:r[o],y:r[o+1],z:r[o+2],q:{x:r[o+3]/1000,y:r[o+4]/1000,z:r[o+5]/1000,w:r[o+6]/1000},vx:r[o+7],vy:r[o+8],vz:r[o+9]});if(B.length>10)B.shift()}
+function pupDraw(w,e,dt){const C=w.nclk,B=e.buf;if(!C||C.off===undefined||!B||!B.length)return false;
+  const rt=w.t+C.off-(e.role==='frigate'?0:PUP_LAG);let a=B[0],b=null;for(let i=B.length-1;i>=0;i--)if(B[i].t<=rt){a=B[i];b=B[i+1]||null;break}
+  let x,y,z,q;if(b){const f=clamp((rt-a.t)/Math.max(1e-3,b.t-a.t),0,1);x=a.x+(b.x-a.x)*f;y=a.y+(b.y-a.y)*f;z=a.z+(b.z-a.z)*f;e.vx=a.vx+(b.vx-a.vx)*f;e.vy=a.vy+(b.vy-a.vy)*f;e.vz=a.vz+(b.vz-a.vz)*f;q=_pq;qCopy(q,a.q);qSlerp(q,b.q,f)}
+  else{const k=clamp(rt-a.t,0,.25);x=a.x+a.vx*k;y=a.y+a.vy*k;z=a.z+a.vz*k;e.vx=a.vx;e.vy=a.vy;e.vz=a.vz;q=a.q}
+  const dx=x-e.x,dy=y-e.y,dz=z-e.z,far=Math.max(250,hyp(e.vx,e.vy,e.vz)*.5);if(dx*dx+dy*dy+dz*dz>far*far){e.x=x;e.y=y;e.z=z;qCopy(e.q,q)}else{const k=1-Math.exp(-dt*30);e.x+=dx*k;e.y+=dy*k;e.z+=dz*k;qSlerp(e.q,q,k)}qNorm(e.q);return true}
+const _pq={x:0,y:0,z:0,w:1};
 function clientWorld(dt){const w=W,p=w.player;npcBlWorld(dt);
   if(p&&p.alive&&!S.player.docked&&!w.dead&&!w.docking)physics(p,dt);
-  for(const id in w.pup||{}){const e=w.pup[id];const age=w.t-(e.snapAt||w.t),tx=e.tx+e.vx*age,ty=e.ty+e.vy*age,tz=e.tz+e.vz*age,k=Math.min(1,9*dt);
+  for(const id in w.pup||{}){const e=w.pup[id];if(pupDraw(w,e,dt))continue;const age=w.t-(e.snapAt||w.t),tx=e.tx+e.vx*age,ty=e.ty+e.vy*age,tz=e.tz+e.vz*age,k=Math.min(1,9*dt);
     e.x+=e.vx*dt;e.y+=e.vy*dt;e.z+=e.vz*dt;e.x+=(tx-e.x)*k;e.y+=(ty-e.y)*k;e.z+=(tz-e.z)*k;if(e.tq)qSlerp(e.q,e.tq,Math.min(1,12*dt))}
   shotsUpdate(dt);
   w.flareCd=Math.max(0,w.flareCd-dt);w.mslCd=Math.max(0,w.mslCd-dt);

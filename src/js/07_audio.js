@@ -181,7 +181,10 @@ const SFX0={
   truce(){thump(587,584,.35,.04,'sine');setTimeout(()=>thump(880,876,.5,.035,'sine'),220)},
   accord(){SFX0.alarm();setTimeout(()=>[294,370,440].forEach((f,i)=>setTimeout(()=>thump(f,f,.3,.06,'triangle'),i*170)),700)},
 };
-const SFX={};for(const k in SFX0)SFX[k]=(...a)=>{if(MUTE)return;SND.k=SFXG[k]||1;try{return SFX0[k](...a)}finally{SND.k=1}};
+// (Nov 2026, from Ace of the Airways' co-op) what the host does for a guest runs muted on the host (runAs); the guest's own
+// cues among it (a rank, a deed, the vault, heat and cover) go to that guest to play instead
+const SFX_FWD=new Set(['rankUp','deed','vault','take','fence','work','xpdr','heatUp','coverBlown','lockdown']);
+const SFX={};for(const k in SFX0)SFX[k]=(...a)=>{if(MUTE){if(SFX_FWD.has(k)&&typeof CTX!=='undefined'&&CTX&&NET.host&&CTX!==NET.me){const F=MP.sfxT||(MP.sfxT={}),key=CTX+k,t=performance.now();if(t-(F[key]||0)>150){F[key]=t;netMsg(CTX,'sfx',k,...a.filter(v=>typeof v==='number'||typeof v==='boolean'))}}return}SND.k=SFXG[k]||1;try{return SFX0[k](...a)}finally{SND.k=1}};
 addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button,.btn,[data-act],[data-fc],[data-tab],[data-fac],[data-cls],[data-role]');if(b&&!b.disabled)SFX.ui()},true);
 // one crackle of rock burning under the beam: a few milliseconds of band-passed white noise at a random pitch and level
 function mineCrackle(t,k){const c=AU.ctx;if(!AU.white||MUTE||!AU.on.sfx)return;const n=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain(),d=.01+Math.random()*.045,v=(.022+Math.random()*.055)*(k||1);
