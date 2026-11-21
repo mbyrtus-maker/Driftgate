@@ -5,6 +5,6 @@
 #   python3 tools/tests/haul_rates.py [page] [galaxies]   hauling cr/hour per hull against the pay ladder (slow)
 # Each test prints its results and an "errors [...]" line; anything in that list is a failure.
 cd "$(dirname "$0")/../.."
-QUICK="load start_screen keys brood_ui dock jobs ship limpet map mining_sight stores jumpsnd"
+QUICK="load start_screen keys brood_ui dock jobs ship limpet map mining_sight stores jumpsnd pad"
 for t in $QUICK; do echo "== $t"; timeout 300 python3 -u tools/tests/$t.py 2>&1 | tail -4; done
 if [ "$1" = full ]; then for trk in combat mining hauling scouting full; do echo "== training $trk"; TRK=$trk timeout 1200 python3 -u tools/tests/training.py 2>&1 | grep "course\|^end\|^errors\|^workarounds\|ERR"; done; fi

@@ -756,6 +756,7 @@ function drawOverlay(){
     c.font='600 11px "Saira Semi Condensed",sans-serif'}
   if(!touchUI()){const sc=Math.min(VW,VH)*.42;c.strokeStyle='rgba(236,228,207,.18)';c.lineWidth=1;c.beginPath();c.arc(VW/2,VH/2,sc*.07,0,TAU);c.stroke();c.beginPath();c.arc(VW/2,VH/2,sc,0,TAU);c.setLineDash([2,10]);c.stroke();c.setLineDash([]);
     if(mouse.free){c.save();c.fillStyle='rgba(236,228,207,.55)';c.font='600 11px "Saira Semi Condensed",sans-serif';c.textAlign='center';c.fillText('CURSOR FREE · ESC TO STEER',VW/2,VH/2+sc*.07+16);c.restore()}
+    else if(PAD.active&&!W.bridge&&!W.gunseat){const x=VW/2+PAD.lx*sc,y=VH/2+PAD.ly*sc;if(PAD.lx||PAD.ly){c.strokeStyle='rgba(236,228,207,.4)';c.beginPath();c.moveTo(VW/2,VH/2);c.lineTo(x,y);c.stroke();c.beginPath();c.arc(x,y,4,0,TAU);c.stroke()}}
     else if(mouse.in&&mouse.aim){c.strokeStyle='rgba(236,228,207,.4)';c.beginPath();c.moveTo(VW/2,VH/2);c.lineTo(mouse.x,mouse.y);c.stroke();c.beginPath();c.arc(mouse.x,mouse.y,4,0,TAU);c.stroke()}}
   if(touch.on){c.strokeStyle='rgba(236,228,207,.35)';c.lineWidth=1.5;c.beginPath();c.arc(touch.ox,touch.oy,70,0,TAU);c.stroke();c.fillStyle='rgba(240,178,74,.6)';const m=Math.min(70,hyp(touch.dx,touch.dy)),a=Math.atan2(touch.dy,touch.dx);c.beginPath();c.arc(touch.ox+Math.cos(a)*m,touch.oy+Math.sin(a)*m,16,0,TAU);c.fill()}
 }

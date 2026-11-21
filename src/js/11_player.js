@@ -81,10 +81,10 @@ function courseWatch(){const P=S.player;if(P.route===routeSeen)return;routeSeen=
 function playerUpdate(dt){
   const p=W.player,P=S.player,st=p.st;pbuildTick(dt);if(P.docked&&P.docked!=='turret')P.limpetUsed=false;if(P.docked||W.dead)return;courseWatch();if(jamDark(p)){p.boosting=false;p.thrusting=false;return}
   if(p.landed){landedTick(dt);updateLock(dt);return}
-  if(apOn){const man=keys.KeyW||keys.KeyS||keys.KeyA||keys.KeyD||keys.ArrowLeft||keys.ArrowRight||keys.ArrowUp||keys.ArrowDown||touch.on||(mouse.in&&mouse.aim&&!mouse.free&&hyp(mouse.x-VW/2,mouse.y-VH/2)>Math.min(VW,VH)*.42*.25);
+  if(apOn){const man=keys.KeyW||keys.KeyS||keys.KeyA||keys.KeyD||keys.ArrowLeft||keys.ArrowRight||keys.ArrowUp||keys.ArrowDown||touch.on||padSteering()||(!PAD.active&&mouse.in&&mouse.aim&&!mouse.free&&hyp(mouse.x-VW/2,mouse.y-VH/2)>Math.min(VW,VH)*.42*.25);
     if(man){apOn=false;flash('Autopilot off.')}else{p.wx=p.wy=p.wz=0;autopilot(p,dt);levelRoll(p,dt);if(keys.Space||mouse.l||touch.fire){if(P.wpn==='laser'&&!p.jamMode)fireLaser(p);else fire(p)}updateLock(dt);pickupAndGates(p,P,st);return}}
   const trk=keys.KeyZ&&W.tgt&&validTgt(W.tgt);
-  const si=trk?{yaw:0,pitch:0}:steerInput();let roll=0;if(keys.KeyA)roll-=1;if(keys.KeyD)roll+=1;
+  const si=trk?{yaw:0,pitch:0}:steerInput();let roll=0;if(keys.KeyA)roll-=1;if(keys.KeyD)roll+=1;roll=clamp(roll+padRoll(),-1,1);
   if(trk){const T=subAim()||W.tgt.ref,lp=W.tgt.kind==='ship'&&hostile('player',T.side)&&P.wpn!=='laser'?leadPoint(p,T,p.st.shotSpd||SHOT_SPD):T;faceDir(p,lp.x-p.x,lp.y-p.y,lp.z-p.z,dt)}
   // rotation with angular inertia: rates ease toward the stick instead of snapping
   const C=CLASSES[P.cls],H=handling(p),tr=st.turn*.9*H.turn,ag=7*(C.agile||1)*H.ag,ka=Math.min(1,ag*dt);

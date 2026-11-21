@@ -2090,3 +2090,25 @@ The user: "read coop lessons from Ace of Airways and make sure to run through yo
 - **What the host does for a guest reaches the guest.** Messages and flashes already went to the guest. Sound cues played inside the host's runs for a guest were muted and lost; the guest's own ones (rank, deed, vault, take, fence, work, transponder, heat, cover blown, lockdown) now go to that guest (`SFX_FWD`, rate-limited).
 - **Checked and already right in Driftgate:** no mirror of yourself (a guest's own ship is never sent back to it), callsigns kept and a taken callsign refused, respawn after death, rejoining, a hidden host tab keeps simulating (the Worker clock), toasts only for the pilot they concern (`flash` and `feed` under `CTX`), and a moving carrier's velocity in every snapshot for deck landings.
 - **Test:** `tools/tests/mp_claims.py` (`LAT=0.15` adds a link delay).
+
+## Controller support (Nov 2026)
+The user: "Also add controller support." Any pad the browser maps to the standard layout (DualSense, DualShock, Xbox) flies the ship alongside the mouse and keyboard (`src/js/16j_pad.js`). Built on what Ace of the Airways learned with its pads.
+- **Layout.**
+  - Sticks: the left stick steers, as the mouse does; the right stick rolls, in proportion.
+  - Triggers and bumpers: R2 fires, L2 thrusts, L1 is the afterburner (with thrust), R1 fires a missile.
+  - Face buttons: Cross (A) docks, launches, lands and boards. Circle (B) brakes, and closes the map or the manual. Square (X) fires a blast charge (hold to scoop). Triangle (Y) targets the nearest hostile.
+  - D-pad: up targets the ship at your nose, down fires flares, left cycles hostiles, right switches cannon and laser.
+  - Others: L3 is flight assist, R3 the camera, Options the galaxy map, Create/View the autopilot, the touchpad comms.
+  - Track, swarm, detonate, nearest rock and distress have no button until given one.
+- **How it plugs in.** Buttons press the key each action is bound to now (a remapped keyboard still works): holds stay down while the button is, taps last one frame. Every action therefore behaves exactly as from the keyboard, in multiplayer too (a guest's pad drives the guest's ship like their keys). Menus stay mouse and keyboard.
+- **Sticks** (Airways' lessons):
+  - Each axis is read through a round deadzone (adjustable) measured from where it really rests: worn sticks rest off centre.
+  - An axis nobody has moved counts as centred, and an untouched stick is slowly re-centred.
+  - On a pad with no standard layout, an axis parked at the end of its travel is a trigger and is ignored. Some browsers on a Mac report a trigger resting at -1 on what should be a stick axis; that read as full down.
+- **The pad in use.** While the pad has been used in the last 4 s:
+  - the mouse doesn't steer (a mouse left off-centre would keep turning the ship), and the steering ring shows the stick;
+  - prompts name the pad's buttons (`kb`);
+  - moving a stick takes the ship off autopilot, as the keys do.
+- **Rumble** on a hit (harder for a bigger one) and when the ship is lost, read off the hull, so a guest feels it too.
+- **Settings.** The Pilot's Manual (H) has a Controller section: every action's button can be changed (a button does one job: whatever had it swaps); steering speed, deadzone, invert pitch, swap sticks, rumble; and a live readout of the axes (which one is drifting). Saved on this device (`driftgate.pad`). Connecting a controller says so in a flash.
+- **Test:** `tools/tests/pad.py` (in the quick suite).
